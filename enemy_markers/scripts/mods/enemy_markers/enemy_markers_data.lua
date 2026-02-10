@@ -1,5 +1,48 @@
 local mod = get_mod("enemy_markers")
 
+-- list of debuffs to show
+mod.buffs = {
+	-- DoT
+	"bleed",
+	"flamer_assault",
+	"rending_debuff",
+	"warp_fire",
+	"neurotoxin_interval_buff",
+	"neurotoxin_interval_buff2",
+	"neurotoxin_interval_buff3",
+	"exploding_toxin_interval_buff",
+	-- Weapons/Blessings
+	"increase_impact_received_while_staggered",
+	"increase_damage_received_while_staggered",
+	"power_maul_sticky_tick",
+	"increase_damage_taken",
+	-- Psyker
+	"psyker_discharge_damage_debuff",
+	"psyker_protectorate_spread_chain_lightning_interval_improved",
+	"psyker_protectorate_spread_charged_chain_lightning_interval_improved",
+	"psyker_force_staff_quick_attack_debuff",
+	-- Ogryn
+	"ogryn_recieve_damage_taken_increase_debuff",
+	"ogryn_taunt_increased_damage_taken_buff",
+	"ogryn_staggering_damage_taken_increase",
+	-- Veteran
+	"veteran_improved_tag_debuff",
+	-- Zealot
+	"zealot_bled_enemies_take_more_damage_effect",
+	-- Arbite
+	"adamant_drone_enemy_debuff",
+	"adamant_drone_talent_debuff",
+	"adamant_melee_weakspot_hits_count_as_stagger_debuff",
+	"adamant_staggered_enemies_deal_less_damage_debuff",
+	"adamant_staggering_increases_damage_taken",
+	-- Broker
+	"broker_punk_rage_improved_shout_debuff",
+	"toxin_damage_debuff",
+	"toxin_damage_debuff_monster",
+	-- "stagger",
+	-- "suppression",
+}
+
 local lookup_border_color = function(colour_string)
 	local border_colours = {
 		["Gold"] = {
@@ -150,7 +193,12 @@ return {
 						default_value = true,
 					},
 					{
-						setting_id = "horde_enable",
+						setting_id = "hb_horde_enable",
+						type = "checkbox",
+						default_value = false,
+					},
+					{
+						setting_id = "hb_hide_after_no_damage",
 						type = "checkbox",
 						default_value = false,
 					},

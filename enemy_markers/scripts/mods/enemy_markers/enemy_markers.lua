@@ -21,6 +21,7 @@ local mod = get_mod("enemy_markers")
 mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localization")
 local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
+local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
 
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -49,6 +50,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	-- add new marker templates to templates table
 	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
+	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
 end)
 
 -- Hook into the frame update
@@ -83,8 +85,10 @@ end)
 -- Caching enemy markers and broadphase results
 mod.enemy_cache = {}
 mod.enemy_markers = {}
-mod._broadphase_results = {}
 mod.enemy_healthbars = {}
+mod.enemy_debuffs = {}
+
+mod._broadphase_results = {}
 local healthbar_ids = {}
 
 -- Per-frame update tracking
@@ -347,11 +351,74 @@ mod.update_enemy_healthbars = function()
 	end
 end
 
--- example function, replace with real function that goes through the enemies in "scan_enemies" and either adds new debuff indicators to the enemy (needs a new ui element for a neat, world-friendly debuff indicator, showing the stacks of debuffs in an organised and decluttered way - maybe using emotes?) or updates the existing debuff indicators.
+local debuff_ids = {}
 mod.update_enemy_debuffs = function()
-	-- should check fs.debuffs to see if enabled...
-	-- the buff extension can be found by:
-	-- ScriptUnit.extension(enemy_unit, "buff_system")
+	if not mod.frame_settings.enable.debuff then
+		return
+	end
+
+	local units_to_remove = {}
+
+	-- First, handle the removal of debuffs for dead enemies
+	for unit, data in pairs(mod.enemy_cache) do
+		-- Check if the unit is alive
+		if not Unit.alive(unit) then
+			-- Immediately remove the debuff when the enemy dies
+			local debuff_id = debuff_ids[unit] -- Get debuff ID from debuff_ids table
+			if debuff_id then
+				-- Trigger the event to remove the debuff as soon as the enemy dies
+				Managers.event:trigger("remove_world_debuff", debuff_id)
+				mod.enemy_debuffs[unit] = nil -- Clear the stored debuff ID
+				debuff_ids[unit] = nil -- Also clear the debuff ID from debuff_ids table
+				mod.marked_dead[unit] = true -- Mark this unit as permanently dead for debuffs
+			end
+			-- Mark the unit for removal from the cache
+			table.insert(units_to_remove, unit)
+		else
+			-- Check the health of the unit and remove debuff if health is zero
+			local health_extension = ScriptUnit.has_extension(unit, "health_system")
+			if health_extension then
+				local health_percent = health_extension:current_health_percent()
+				if health_percent <= 0 then -- Health is zero, so immediately remove the debuff
+					local debuff_id = debuff_ids[unit] -- Get debuff ID from debuff_ids table
+					if debuff_id then -- Remove the debuff immediately
+						Managers.event:trigger("remove_world_debuff", debuff_id)
+						mod.enemy_debuffs[unit] = nil -- Clear the stored debuff ID
+						debuff_ids[unit] = nil -- Also clear the debuff ID from debuff_ids table
+						mod.marked_dead[unit] = true -- Mark this unit as permanently dead for debuffs
+					end
+					-- Mark the unit for removal from the cache
+					table.insert(units_to_remove, unit)
+				end
+			end
+		end
+	end
+
+	-- Remove dead enemies from the cache after processing
+	for _, unit in ipairs(units_to_remove) do
+		mod.enemy_cache[unit] = nil
+	end
+
+	-- Second, only add debuffs for living enemies that are not dead and removed
+	for unit, data in pairs(mod.enemy_cache) do
+		-- Don't add debuffs for dead enemies or already marked as dead
+		if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
+			-- Trigger the event to add a debuff for the unit
+			Managers.event:trigger(
+				"add_world_marker_unit",
+				"enemy_debuff", -- Debuff template name
+				unit, -- The enemy unit
+				function(debuff_id)
+					-- Inside this callback, store the debuff_id with the unit
+					debuff_ids[unit] = debuff_id -- Store the debuff_id for the unit
+					marker_to_unit[unit] = debuff_id -- Link debuff_id to the unit in marker_to_unit
+				end
+			)
+
+			-- Save the debuff ID for future reference
+			mod.enemy_debuffs[unit] = unit
+		end
+	end
 end
 
 -- update function to build the mod frame_settings, run scan, then update healthbars, markers and debuffs. This function may need to be called each time an enemy updates, so when they get hurt, a debuff applies, etc. the broadphase system seems good for this.

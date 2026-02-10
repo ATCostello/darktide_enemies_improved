@@ -435,7 +435,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			breed_type = "disabler"
 		end
 
-		content.header_text = breed_type
+		content.header_text = tostring(breed_type)
 	end
 
 	-- Reset icon visibility
@@ -492,10 +492,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Hide health bar if no damage for the last 5 seconds
 	local time_since_last_damage = t - (last_damaged_time[unit] or 0)
-	if time_since_last_damage > 5 then
-		marker.draw = false -- Hide the health bar if no damage in the last 5 seconds
-	else
-		marker.draw = true -- Otherwise, show the health bar
+
+	if mod:get("hb_hide_after_no_damage") == true then
+		if time_since_last_damage > 5 then
+			marker.draw = false -- Hide the health bar if no damage in the last 5 seconds
+		else
+			marker.draw = true -- Otherwise, show the health bar
+		end
 	end
 
 	-- hide
@@ -520,7 +523,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- logic to hide if disabled in options:
 	if breed_type == "horde" then
-		if mod:get("horde_enable") == false then
+		if mod:get("hb_horde_enable") == false then
 			marker.draw = false
 		end
 	end
