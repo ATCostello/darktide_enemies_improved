@@ -14,14 +14,14 @@ local DEBUFF_COLORS = {
 
 -- The size for the debuff indicator widget
 local size = {
-	200, -- Width
-	6, -- Height
+	mod:get("hb_size_width") or 200,
+	mod:get("hb_size_height") or 6,
 }
 
 template.size = size
 template.name = "enemy_debuff"
 template.unit_node = "j_neck"
-template.position_offset = { 0, 0, 0.5 }
+template.position_offset = { 0, 0, 0.8 }
 
 template.check_line_of_sight = true
 template.max_distance = 20
@@ -65,17 +65,17 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	return UIWidget.create_definition({
 		-- DEBUFF ICONS
 		{
-			pass_type = "text",
+			pass_type = "texture",
 			style_id = "debuff_icon",
-			value = "😍",
+			value = "content/ui/materials/icons/generic/danger",
 			style = {
-				horizontal_alignment = "left",
+				horizontal_alignment = "right",
 				vertical_alignment = "center",
-				text_horizontal_alignment = "left",
+				text_horizontal_alignment = "right",
 				text_vertical_alignment = "top",
 				offset = {
-					-bar_width * 0.5,
-					-bar_height - 4,
+					bar_width * 0.5 - 20,
+					-bar_height - 8,
 					6,
 				},
 				font_type = "proxima_nova_bold",
@@ -83,14 +83,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { 400, 20 },
+				size = { 20, 20 },
 			},
 		},
 		-- DEBUFF NAME
 		{
 			pass_type = "text",
 			style_id = "debuff_name",
-			value = "<debuff_name>",
+			value = "",
 			value_id = "debuff_name",
 			style = {
 				horizontal_alignment = "center",
@@ -99,7 +99,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_vertical_alignment = "top",
 				offset = {
 					0,
-					-bar_height - 4,
+					-bar_height - 8,
 					6,
 				},
 				font_type = "proxima_nova_bold",
@@ -115,7 +115,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "text",
 			style_id = "stack_counter",
-			value = "<stack_counter>",
+			value = "",
 			value_id = "stack_counter",
 			style = {
 				horizontal_alignment = "right",
@@ -124,7 +124,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_vertical_alignment = "top",
 				offset = {
 					bar_width * 0.5,
-					-bar_height - 4,
+					-bar_height - 8,
 					6,
 				},
 				font_type = "proxima_nova_bold",
@@ -150,8 +150,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
-	-- Track all debuffs
-
 	-- Fetch all buffs, stat buffs, and keywords from the buff extension
 	local debuffs = buff_extension:buffs()
 	local stat_buffs = buff_extension:stat_buffs()
@@ -159,27 +157,36 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Reset debuff icon and stack counter
 	local debuff_count = 0
-	local debuff_icon = "content/ui/materials/icons/traits/trait_poison" -- Default icon (poison)
-	local debuff_color = { 255, 255, 255, 255 }
+	local default_debuff_icon = "content/ui/materials/icons/generic/danger"
+	local default_debuff_color = { 255, 150, 150, 150 }
 
-	if buffs then
+	if debuffs then
 		for _, buff in ipairs(debuffs) do
 			local buff_name = buff:template_name()
 
-			if table.find(mod.buffs, buff_name) then
-				mod:echo(buff_name)
-				content.debuff_name = buff_name
+			if table.find(mod.debuffs, buff_name) then
+				-- count stacks of current buff applied to unit
+				local stack_count = buff_extension:current_stacks(buff_name) or 1
+
+				-- Add counter of current buffs
 				debuff_count = debuff_count + 1
+
+				-- Update debuff icon and color
+				content.debuff_icon = mod.debuff_icons[buff_name] or default_debuff_icon
+				if content.value_id_1 then
+					content.value_id_1 = mod.debuff_icons[buff_name] or default_debuff_icon
+				end
+
+				style.debuff_icon.color = mod.debuff_colours[buff_name] or default_debuff_color
+
+				-- Update stack counter text
+				content.stack_counter = "x " .. tostring(stack_count)
+
+				-- update debuff name
+				--content.debuff_name = buff_name
 			end
 		end
 	end
-
-	-- Update debuff icon and color
-	style.debuff_icon.value = debuff_icon
-	style.debuff_icon.color = debuff_color
-
-	-- Update stack counter text
-	content.stack_counter = tostring(debuff_count)
 
 	-- hide
 	local is_inside_frustum = content.is_inside_frustum
@@ -195,6 +202,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
 		end
+	end
+
+	-- hide if debuff counter is at 0
+	if debuff_count <= 0 then
+		marker.draw = false
 	end
 
 	local draw = marker.draw

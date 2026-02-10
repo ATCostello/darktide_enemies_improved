@@ -51,6 +51,38 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+
+	-- Preload Preset Icons
+	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
+	Managers.package:load(
+		"packages/ui/views/inventory_background_view/inventory_background_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	Managers.package:load(
+		"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	-- Preload Weapon Icons
+	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
+	Managers.package:load(
+		"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	-- Other stuff that probably isn't needed but don't dare remove just yet
+	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
+	Managers.package:load(
+		"packages/ui/views/masteries_overview_view/masteries_overview_view",
+		"enemy_markers",
+		nil,
+		true
+	)
 end)
 
 -- Hook into the frame update
@@ -58,6 +90,10 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	mod._frame_index = mod._frame_index + 1
 	mod.update_enemies()
 
+
+	-- 
+	dbg_markers = self._markers_by_type
+	
 	local markers = self._markers
 	if not markers then
 		return
@@ -69,9 +105,9 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			local name = marker.template.name
 
 			-- Hide default health bars
-			if name and string.find(name, "health_bar") then
+			if name and string.find(name, "damage_indicator") then
 				-- Allow custom bar
-				if name and string.find(name, "health_bar") and name ~= "enemy_healthbar" then
+				if name and string.find(name, "damage_indicator") and name ~= "enemy_healthbar" then
 					marker.draw = false
 					marker.alpha_multiplier = 0
 					marker.force_invisible = true
@@ -87,15 +123,12 @@ mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
-
 mod._broadphase_results = {}
 local healthbar_ids = {}
+mod.marked_dead = {}
 
 -- Per-frame update tracking
 mod._frame_index = 0
-
--- Cache for dead enemies to avoid adding markers back for them
-mod.marked_dead = {}
 
 -- Get type cache for marker settings
 local function get_type_cache(mod, marker_type)
@@ -367,7 +400,7 @@ mod.update_enemy_debuffs = function()
 			local debuff_id = debuff_ids[unit] -- Get debuff ID from debuff_ids table
 			if debuff_id then
 				-- Trigger the event to remove the debuff as soon as the enemy dies
-				Managers.event:trigger("remove_world_debuff", debuff_id)
+				Managers.event:trigger("remove_world_marker", debuff_id)
 				mod.enemy_debuffs[unit] = nil -- Clear the stored debuff ID
 				debuff_ids[unit] = nil -- Also clear the debuff ID from debuff_ids table
 				mod.marked_dead[unit] = true -- Mark this unit as permanently dead for debuffs
@@ -382,7 +415,7 @@ mod.update_enemy_debuffs = function()
 				if health_percent <= 0 then -- Health is zero, so immediately remove the debuff
 					local debuff_id = debuff_ids[unit] -- Get debuff ID from debuff_ids table
 					if debuff_id then -- Remove the debuff immediately
-						Managers.event:trigger("remove_world_debuff", debuff_id)
+						Managers.event:trigger("remove_world_marker", debuff_id)
 						mod.enemy_debuffs[unit] = nil -- Clear the stored debuff ID
 						debuff_ids[unit] = nil -- Also clear the debuff ID from debuff_ids table
 						mod.marked_dead[unit] = true -- Mark this unit as permanently dead for debuffs
@@ -421,6 +454,13 @@ mod.update_enemy_debuffs = function()
 	end
 end
 
+mod.clear_caches = function()
+	table.clear(mod.enemy_markers)
+	table.clear(mod.enemy_healthbars)
+	table.clear(mod.enemy_debuffs)
+	table.clear(healthbar_ids)
+end
+
 -- update function to build the mod frame_settings, run scan, then update healthbars, markers and debuffs. This function may need to be called each time an enemy updates, so when they get hurt, a debuff applies, etc. the broadphase system seems good for this.
 mod.update_enemies = function()
 	build_frame_settings(mod)
@@ -428,4 +468,8 @@ mod.update_enemies = function()
 	mod.update_enemy_markers()
 	mod.update_enemy_healthbars() -- Add healthbar update call
 	mod.update_enemy_debuffs() -- Add debuff update call
+end
+
+mod.on_setting_changed = function(setting_id)
+	mod.clear_caches()
 end
