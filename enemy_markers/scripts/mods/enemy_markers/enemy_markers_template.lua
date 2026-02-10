@@ -27,7 +27,7 @@ template.check_line_of_sight = mod:get("enemy_markers_require_line_of_sight") or
 template.screen_clamp = mod:get("enemy_markers_keep_on_screen") or false
 
 template.evolve_distance = 1
-template.max_distance = mod:get("enemy_markers_max_distance") or 50
+template.max_distance = mod:get("draw_distance") or 25
 template.data = {}
 
 template.scale = 1

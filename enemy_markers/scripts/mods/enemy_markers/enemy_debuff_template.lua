@@ -4,14 +4,6 @@ local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
--- Debuff colors for different types of debuffs
-local DEBUFF_COLORS = {
-	poison = { 255, 0, 255, 0 },
-	burn = { 255, 255, 0, 0 },
-	slow = { 255, 0, 0, 255 },
-	bleed = { 255, 255, 0, 255 },
-}
-
 -- The size for the debuff indicator widget
 local size = {
 	mod:get("hb_size_width") or 200,
@@ -24,7 +16,7 @@ template.unit_node = "j_neck"
 template.position_offset = { 0, 0, 0.8 }
 
 template.check_line_of_sight = true
-template.max_distance = 20
+template.max_distance = mod:get("draw_distance") or 25
 template.screen_clamp = false
 template.bar_settings = {
 	alpha_fade_delay = 2.6,
@@ -46,10 +38,6 @@ template.fade_settings = {
 	easing_function = math.ease_exp,
 }
 
--- Icon size and spacing between debuff icons
-local DEBUFF_ICON_SIZE = 32
-local DEBUFF_SPACING = 5
-
 -- The template for debuff indicators
 template.create_widget_defintion = function(template, scenegraph_id)
 	local size = template.size
@@ -63,6 +51,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	}
 
 	return UIWidget.create_definition({
+
 		-- DEBUFF ICONS
 		{
 			pass_type = "texture",
@@ -72,9 +61,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "right",
 				vertical_alignment = "center",
 				text_horizontal_alignment = "right",
-				text_vertical_alignment = "top",
+				text_vertical_alignment = "center",
 				offset = {
-					bar_width * 0.5 - 20,
+					bar_width * 0.5 - 35,
 					-bar_height - 8,
 					6,
 				},
@@ -84,6 +73,31 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { 20, 20 },
+				drop_shadow = true,
+			},
+		},
+		-- ICON BACKGROUND (FOR VISIBILITY)
+		{
+			pass_type = "texture",
+			style_id = "debuff_icon_background",
+			value = "content/ui/materials/effects/terminal_header_glow",
+			style = {
+				scale_to_material = true,
+				horizontal_alignment = "right",
+				vertical_alignment = "center",
+				offset = {
+					bar_width * 0.5 - 35,
+					-bar_height - 8,
+					4,
+				},
+				color = {
+					20,
+					255,
+					255,
+					150,
+				},
+
+				size = { 30, 30 },
 			},
 		},
 		-- DEBUFF NAME
@@ -123,7 +137,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_horizontal_alignment = "right",
 				text_vertical_alignment = "top",
 				offset = {
-					bar_width * 0.5,
+					(bar_width * 0.5),
 					-bar_height - 8,
 					6,
 				},

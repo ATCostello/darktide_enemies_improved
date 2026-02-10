@@ -83,6 +83,18 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 		nil,
 		true
 	)
+	Managers.package:load(
+		"packages/ui/views/mastery_view/mastery_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	Managers.package:load(
+		"packages/ui/views/mission_board_view/mission_board_view",
+		"enemy_markers",
+		nil,
+		true
+	)
 end)
 
 -- Hook into the frame update
@@ -90,10 +102,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	mod._frame_index = mod._frame_index + 1
 	mod.update_enemies()
 
-
-	-- 
-	dbg_markers = self._markers_by_type
-	
 	local markers = self._markers
 	if not markers then
 		return

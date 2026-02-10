@@ -92,6 +92,8 @@ mod.debuff_icons = {
 	broker_stimm_field_close = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	broker_tox_grenade = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	broker_toxin_stacks_stun_interval = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
+	-- rending 
+	rending_debuff = "content/ui/materials/icons/item_types/upper_bodies"
 }
 
 mod.debuff_colours = {
@@ -135,6 +137,8 @@ mod.debuff_colours = {
 	broker_stimm_field_close = { 255, 50, 255, 20 },
 	broker_tox_grenade = { 255, 50, 255, 20 },
 	broker_toxin_stacks_stun_interval = { 255, 50, 255, 20 },
+	-- rending 
+	rending_debuff = { 255, 150, 20, 250 },
 }
 
 local hb_frames = {
@@ -173,6 +177,21 @@ local hb_frames = {
 	{
 		text = "content/ui/materials/bars/simple/frame",
 		value = "content/ui/materials/bars/simple/frame",
+	},
+}
+
+local damage_number_types = {
+	{
+		text = "readable",
+		value = "readable",
+	},
+	{
+		text = "floating",
+		value = "floating",
+	},
+	{
+		text = "flashy",
+		value = "flashy",
 	},
 }
 
@@ -289,6 +308,15 @@ return {
 						},
 					},
 					{
+						setting_id = "draw_distance",
+						type = "numeric",
+						default_value = 25,
+						range = {
+							10,
+							100,
+						},
+					},
+					{
 						setting_id = "ads_los_opacity",
 						type = "numeric",
 						default_value = 25,
@@ -326,6 +354,11 @@ return {
 						default_value = true,
 					},
 					{
+						setting_id = "hb_show_enemy_type",
+						type = "checkbox",
+						default_value = false,
+					},
+					{
 						setting_id = "hb_horde_enable",
 						type = "checkbox",
 						default_value = false,
@@ -339,6 +372,12 @@ return {
 						setting_id = "hb_show_damage_numbers",
 						type = "checkbox",
 						default_value = false,
+					},
+					{
+						setting_id = "hb_damage_number_types",
+						type = "dropdown",
+						options = damage_number_types,
+						default_value = "floating",
 					},
 					{
 						setting_id = "hb_show_armour_types",

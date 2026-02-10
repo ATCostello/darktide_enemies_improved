@@ -12,6 +12,8 @@ template.show_damage_numbers = mod:get("hb_show_damage_numbers") or false
 template.show_armor_types = mod:get("hb_show_armour_types") or false
 template.hide_after_no_damage = mod:get("hb_hide_after_no_damage") or false
 template.horde_enable = mod:get("hb_horde_enable") or false
+template.hb_show_enemy_type = mod:get("hb_show_enemy_type") or false
+
 template.frame_type = mod:get("hb_frame") or "content/ui/materials/frames/masteries/panel_main_lower_frame"
 
 local size = {
@@ -38,8 +40,9 @@ template.position_offset = {
 	0,
 	0.8,
 }
+
 template.check_line_of_sight = true
-template.max_distance = 20
+template.max_distance = mod:get("draw_distance") or 25
 template.screen_clamp = false
 template.bar_settings = {
 	alpha_fade_delay = 2.6,
@@ -51,6 +54,7 @@ template.bar_settings = {
 	duration_health_ghost = 3,
 	health_animation_threshold = 0,
 }
+
 template.fade_settings = {
 	default_fade = 0,
 	fade_from = 0,
@@ -64,7 +68,19 @@ template.fade_settings = {
 local damage_number_types = table.enum("readable", "floating", "flashy")
 template.show_dps = true
 template.skip_damage_from_others = false
-template.damage_number_type = damage_number_types.readable
+
+local hb_damage_number_type = mod:get("hb_damage_number_types")
+if hb_damage_number_type then
+	if hb_damage_number_type == "readable" then
+		template.damage_number_type = damage_number_types.readable
+	elseif hb_damage_number_type == "floating" then
+		template.damage_number_type = damage_number_types.floating
+	elseif hb_damage_number_type == "flashy" then
+		template.damage_number_type = damage_number_types.flashy
+	end
+else
+	template.damage_number_type = damage_number_types.readable
+end
 
 template.damage_number_settings = {
 	add_numbers_together_timer = 3, -- change to 0.2 to make damage seperate, or super high to make it all combine into one
@@ -72,7 +88,7 @@ template.damage_number_settings = {
 	crit_color = "orange",
 	crit_hit_size_scale = 1.5,
 	default_color = "white",
-	default_font_size = 17,
+	default_font_size = 14,
 	dps_font_size = 14.4,
 	dps_y_offset = -36,
 	duration = 3,
@@ -83,20 +99,20 @@ template.damage_number_settings = {
 	has_taken_damage_timer_remove_after_time = 5,
 	has_taken_damage_timer_y_offset = 34,
 	hundreds_font_size = 14.4,
-	max_float_y = 0,
+	max_float_y = 50,
 	shrink_duration = 1,
 	visibility_delay = 2,
 	weakspot_color = "yellow",
-	x_offset = 1,
+	x_offset = (template.size[1] / 2) - 10,
 	x_offset_between_numbers = 38,
-	y_offset = 15,
+	y_offset = -50,
 	flashy_font_size_dmg_multiplier = {
 		1,
-		2,
+		1.5,
 	},
 	flashy_font_size_dmg_scale_range = {
-		100,
-		600,
+		50,
+		300,
 	},
 }
 
@@ -231,7 +247,7 @@ local function _floating_damage_number_function(
 
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
-		local duration = damage_number.duration
+		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math.clamp(time / duration, 0, 1)
 
@@ -343,7 +359,7 @@ local function _flashy_damage_number_function(
 			x_position = world_to_screen_position[1]
 		end
 
-		local duration = damage_number.duration
+		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math.clamp(time / duration, 0, 1)
 
@@ -789,19 +805,19 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_height,
 				},
 				color = {
-					255,
+					200,
 					255,
 					255,
 					255,
 				},
 			},
 		},
-		-- subtle background glow
+		-- subtle background glowing segments
 		{
 			pass_type = "texture",
-			style_id = "background_glow",
-			value = "content/ui/materials/frames/frame_glow_01",
-			value_id = "background_glow",
+			style_id = "background_glow_segments",
+			value = "content/ui/materials/effects/terminal_header_glow",
+			value_id = "background_glow_segments",
 			style = {
 				scale_to_material = true,
 				vertical_alignment = "center",
@@ -815,10 +831,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_height,
 				},
 				color = {
-					200,
-					200,
-					200,
 					0,
+					255,
+					255,
+					255,
 				},
 			},
 		},
@@ -869,7 +885,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "text",
 			style_id = "header_text",
-			value = "<header_text>",
+			value = "",
 			value_id = "header_text",
 			style = {
 				horizontal_alignment = "left",
@@ -894,7 +910,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "text",
 			style_id = "health_counter",
-			value = "<health_counter>",
+			value = "",
 			value_id = "health_counter",
 			style = {
 				horizontal_alignment = "left",
@@ -912,6 +928,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { bar_width, 20 },
+				drop_shadow = true,
 			},
 		},
 
@@ -935,6 +952,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { bar_width, 20 },
+				drop_shadow = true,
 			},
 		},
 	}, scenegraph_id)
@@ -952,7 +970,10 @@ template.on_enter = function(widget, marker, template)
 	local unit_data_extension = ScriptUnit.extension(unit, "unit_data_system")
 	local breed = unit_data_extension:breed()
 
-	content.header_text = breed.name
+	if template.hb_show_enemy_type then
+		content.header_text = breed.name
+	end
+
 	content.breed = breed
 	content.unit_data_extension = unit_data_extension
 
@@ -1226,8 +1247,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if tags.witch then
 			breed_type = "witch"
 		end
-
-		content.header_text = tostring(breed_type)
+		if template.hb_show_enemy_type then
+			content.header_text = tostring(breed_type)
+		end
 	end
 
 	-- Reset icon visibility
