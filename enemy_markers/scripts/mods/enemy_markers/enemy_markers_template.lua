@@ -26,7 +26,6 @@ template.ping_size = ping_size
 template.check_line_of_sight = mod:get("enemy_markers_require_line_of_sight") or false
 template.screen_clamp = mod:get("enemy_markers_keep_on_screen") or false
 
-template.evolve_distance = 1
 template.max_distance = mod:get("draw_distance") or 25
 template.data = {}
 
@@ -44,6 +43,8 @@ template.ping_min_size = { ping_size[1] * scale_fraction, ping_size[2] * scale_f
 template.ping_max_size = { ping_size[1], ping_size[2] }
 template.position_offset = { 0, 0, 0.2 }
 template.screen_margins = { down = 0.23148148148148148, left = 0.234375, right = 0.234375, up = 0.23148148148148148 }
+
+template.evolve_distance = 1
 
 template.scale_settings = {
 	scale_from = 0.4,

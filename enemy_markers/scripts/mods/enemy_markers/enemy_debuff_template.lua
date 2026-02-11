@@ -29,13 +29,23 @@ template.bar_settings = {
 	health_animation_threshold = 0.1,
 }
 
+template.evolve_distance = 1
+
+template.scale_settings = {
+	scale_from = 0.4,
+	scale_to = 1,
+	distance_max = template.max_distance,
+	distance_min = template.evolve_distance,
+	easing_function = math.easeCubic,
+}
+
 template.fade_settings = {
-	default_fade = 0,
+	default_fade = 1,
 	fade_from = 0,
 	fade_to = 1,
 	distance_max = template.max_distance,
-	distance_min = template.max_distance * 0.5,
-	easing_function = math.ease_exp,
+	distance_min = template.max_distance - template.evolve_distance * 2,
+	easing_function = math.easeCubic,
 }
 
 -- The template for debuff indicators
@@ -68,7 +78,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					6,
 				},
 				font_type = "proxima_nova_bold",
-				font_size = 16,
+				font_size = 20,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
@@ -91,10 +101,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					4,
 				},
 				color = {
-					20,
-					255,
-					255,
-					150,
+					30,
+					0,
+					0,
+					0,
 				},
 
 				size = { 30, 30 },
@@ -117,7 +127,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					6,
 				},
 				font_type = "proxima_nova_bold",
-				font_size = 16,
+				font_size = 20,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
@@ -142,7 +152,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					6,
 				},
 				font_type = "proxima_nova_bold",
-				font_size = 16,
+				font_size = 20,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },

@@ -83,14 +83,23 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 		nil,
 		true
 	)
+	Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/mission_board_view/mission_board_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/marks_vendor_view/marks_vendor_view", "enemy_markers", nil, true)
 	Managers.package:load(
-		"packages/ui/views/mastery_view/mastery_view",
+		"packages/ui/views/marks_goods_vendor_view/marks_goods_vendor_view",
 		"enemy_markers",
 		nil,
 		true
 	)
 	Managers.package:load(
-		"packages/ui/views/mission_board_view/mission_board_view",
+		"packages/ui/views/premium_currency_purchase_view/premium_currency_purchase_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	Managers.package:load(
+		"packages/ui/views/store_view/store_view",
 		"enemy_markers",
 		nil,
 		true
