@@ -23,6 +23,8 @@ template.size = size
 template.icon_size = icon_size
 template.ping_size = ping_size
 
+template.alerted = false
+
 template.check_line_of_sight = mod:get("enemy_markers_require_line_of_sight") or false
 template.screen_clamp = mod:get("enemy_markers_keep_on_screen") or false
 
@@ -156,9 +158,9 @@ end
 
 template.on_enter = function(widget)
 	local content = widget.content
-
 	content.spawn_progress_timer = 0
 end
+
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local content = widget.content
@@ -169,6 +171,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local style = widget.style
 
 	local can_interact = false
+
+	if template.alerted == true then
+		mod:echo("CHANGE COLOUR")
+		style.background.color = { 200, 255, 60, 60 }
+	end
 
 	local scale_speed = 8
 	local scale_progress = content.scale_progress or 0

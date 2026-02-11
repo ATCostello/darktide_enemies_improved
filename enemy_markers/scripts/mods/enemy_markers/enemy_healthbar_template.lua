@@ -13,6 +13,7 @@ template.show_armor_types = mod:get("hb_show_armour_types") or false
 template.hide_after_no_damage = mod:get("hb_hide_after_no_damage") or false
 template.horde_enable = mod:get("hb_horde_enable") or false
 template.hb_show_enemy_type = mod:get("hb_show_enemy_type") or false
+template.hb_text_show_damage = mod:get("hb_text_show_damage") or false
 
 template.frame_type = mod:get("hb_frame") or "content/ui/materials/frames/masteries/panel_main_lower_frame"
 
@@ -1151,10 +1152,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- Health counter
-	if (t - (content.last_damage_taken_time or 0)) > 3 then
+	if template.hb_text_show_damage and (t - (content.last_damage_taken_time or 0)) > 3 then
 		content.health_counter = string.format("%d / %d", health_current, health_max)
-	elseif latest_damage_number then
-		content.health_counter = string.format("%d / %d (-%d)", health_current, health_max, latest_damage_number.value)
+	elseif template.hb_text_show_damage and latest_damage_number then
+		content.health_counter = string.format("%d / %d ({#color(255, 255, 50)}-%d)", health_current, health_max, latest_damage_number.value)
 	else
 		content.health_counter = string.format("%d / %d", health_current, health_max)
 	end

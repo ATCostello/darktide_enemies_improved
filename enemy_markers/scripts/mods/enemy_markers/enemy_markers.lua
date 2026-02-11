@@ -34,6 +34,16 @@ mod.frame_settings = {}
 -- Lazy per-marker-type cache
 mod.fc_typecache = {}
 
+-- Caching enemy markers and broadphase results
+mod.enemy_cache = {}
+mod.enemy_markers = {}
+mod.enemy_markers_alerted = {}
+mod.enemy_healthbars = {}
+mod.enemy_debuffs = {}
+mod._broadphase_results = {}
+local healthbar_ids = {}
+mod.marked_dead = {}
+
 -- Global colour lookup
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -52,7 +62,12 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
 
-	-- Preload Preset Icons
+	-- clear caches on markers init
+	table.clear(mod.enemy_markers)
+	table.clear(mod.enemy_healthbars)
+	table.clear(mod.enemy_debuffs)
+
+	-- Preload views to get textures/icons, to prevent crashing.
 	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
 	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
 	Managers.package:load(
@@ -67,7 +82,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 		nil,
 		true
 	)
-	-- Preload Weapon Icons
+
 	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
 	Managers.package:load(
 		"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
@@ -75,7 +90,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 		nil,
 		true
 	)
-	-- Other stuff that probably isn't needed but don't dare remove just yet
+
 	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
 	Managers.package:load(
 		"packages/ui/views/masteries_overview_view/masteries_overview_view",
@@ -98,17 +113,11 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 		nil,
 		true
 	)
-	Managers.package:load(
-		"packages/ui/views/store_view/store_view",
-		"enemy_markers",
-		nil,
-		true
-	)
+	Managers.package:load("packages/ui/views/store_view/store_view", "enemy_markers", nil, true)
 end)
 
 -- Hook into the frame update
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
-	mod._frame_index = mod._frame_index + 1
 	mod.update_enemies()
 
 	local markers = self._markers
@@ -134,18 +143,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		end
 	end
 end)
-
--- Caching enemy markers and broadphase results
-mod.enemy_cache = {}
-mod.enemy_markers = {}
-mod.enemy_healthbars = {}
-mod.enemy_debuffs = {}
-mod._broadphase_results = {}
-local healthbar_ids = {}
-mod.marked_dead = {}
-
--- Per-frame update tracking
-mod._frame_index = 0
 
 -- Get type cache for marker settings
 local function get_type_cache(mod, marker_type)
@@ -191,12 +188,11 @@ local function build_frame_settings(mod)
 	end
 
 	fs.is_ads = is_ads
-
-	-- LOS global settings
 	fs.los_enabled = mod:get("los_fade_enable") == true
 	fs.los_opacity = (mod:get("los_opacity") or 100) / 100
 	fs.ads_los_opacity = (mod:get("ads_los_opacity") or 100) / 100
 	fs.ads_blend = math.lerp(fs.ads_blend or 0, is_ads and 1 or 0, 0.25)
+	fs.draw_distance = mod:get(mod:get("draw_distance")) or 50
 
 	-- Feature toggles
 	fs.enable = {
@@ -238,7 +234,7 @@ mod.scan_enemies = function()
 	local broadphase = broadphase_system.broadphase
 	local from_pos = Unit.world_position(player_unit, 1)
 	local enemy_side_names = side:relation_side_names("enemy")
-	local range = mod:get("enemy_marker_scan_range") or 60
+	local range = mod.frame_settings.draw_distance or 50
 
 	-- Clear previous frame broadphase results
 	table.clear(mod._broadphase_results)
@@ -284,6 +280,59 @@ local set_marker_id = function(marker_id)
 		end
 	end
 end
+
+local ALERTED_MODES = {
+	alerted = 5,
+	directional_alerted = 3,
+	hesitate = 4,
+	instant_aggro = 1,
+	moving_alerted = 2,
+}
+
+local get_unit_id = function(unit)
+	if unit then
+		return Managers.state.unit_spawner:game_object_id(unit)
+	else
+		return 0
+	end
+end
+
+local add_unit_to_alerted = function(unit)
+	if not mod.enemy_markers_alerted[get_unit_id(unit)] then
+		table.insert(mod.enemy_markers_alerted, get_unit_id(unit))
+		mod:echo("added unit to alerted")
+	end
+end
+
+mod:hook_safe(CLASS.BtAlertedAction, "enter", function(self, unit, breed, blackboard, scratchpad, action_data, t)
+	local alerted_mode = self:_select_alerted_mode(action_data)
+
+	if alerted_mode == ALERTED_MODES.alerted then
+		mod:echo("ALERTED")
+		add_unit_to_alerted(unit)
+	elseif alerted_mode == ALERTED_MODES.moving_alerted then
+		mod:echo("MOVING ALERTED")
+		add_unit_to_alerted(unit)
+	elseif alerted_mode == ALERTED_MODES.hesitate then
+		mod:echo("HESITATE")
+		add_unit_to_alerted(unit)
+	elseif alerted_mode == ALERTED_MODES.directional_alerted then
+		mod:echo("DIRECTIONAL ALERTED")
+		add_unit_to_alerted(unit)
+	elseif alerted_mode == ALERTED_MODES.instant_aggro then
+		mod:echo("INSTANT AGGRO")
+		add_unit_to_alerted(unit)
+	end
+end)
+
+mod:hook_safe(
+	CLASS.BtAlertedAction,
+	"leave",
+	function(self, unit, breed, blackboard, scratchpad, action_data, t, reason, destroy)
+		--template.set_alerted(false)
+		mod:echo("no AGGRO")
+	end
+)
 
 -- Adding markers for new enemies and storing marker_id in the map
 mod.update_enemy_markers = function()
@@ -350,6 +399,24 @@ mod.update_enemy_markers = function()
 
 			-- Save the marker ID for future reference
 			mod.enemy_markers[unit] = unit
+		end
+	end
+
+	-- check for alerted enemies and adjust the marker accordingly
+	for unit, data in pairs(mod.enemy_cache) do
+		for id, unit_id in pairs(mod.enemy_markers_alerted) do
+			if unit_id == get_unit_id(unit) then
+				local marker_id = marker_ids[unit] -- Get marker ID from marker_ids table
+
+				-- need to grab marker via this id, then change the styling
+				local ui_manager = Managers.ui
+				local hud = ui_manager:get_hud()
+				local world_markers = hud and hud:element("HudElementWorldMarkers")
+				local markers_by_id = world_markers and world_markers._markers_by_id
+
+				local marker = markers_by_id[marker_id]
+				marker.widget.style.background.color = { 255, 255, 50, 50 }
+			end
 		end
 	end
 end

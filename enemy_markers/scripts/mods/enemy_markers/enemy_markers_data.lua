@@ -374,6 +374,11 @@ return {
 						default_value = false,
 					},
 					{
+						setting_id = "hb_text_show_damage",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
 						setting_id = "hb_damage_number_types",
 						type = "dropdown",
 						options = damage_number_types,
