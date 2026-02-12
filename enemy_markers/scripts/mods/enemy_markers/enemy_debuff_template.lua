@@ -14,6 +14,7 @@ template.size = size
 template.name = "enemy_debuff"
 template.unit_node = "j_neck"
 template.position_offset = { 0, 0, 0.8 }
+template.max_visible_rows = mod:get("max_visible_rows") or 5
 
 template.check_line_of_sight = true
 template.max_distance = mod:get("draw_distance") or 25
@@ -53,199 +54,267 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local size = template.size
 	local bar_width = size[1]
 	local bar_height = size[2]
+	local max_rows = template.max_visible_rows or 5
 
-	local debuff_offset = {
-		-bar_width * 0.5,
-		0,
-		0,
+	local passes = {}
+	local content = {}
+	local style = {}
+
+	for i = 1, max_rows do
+		local icon_bg_id = "debuff_icon_background_" .. i
+		local icon_id = "debuff_icon_" .. i
+		local text_id = "stack_counter_" .. i
+
+		local row_offset = -bar_height - 8 - ((i - 1) * (bar_height + 8))
+
+		content[icon_bg_id] = "content/ui/materials/effects/terminal_header_glow"
+		content[icon_id] = ""
+		content[text_id] = ""
+
+		-- ICON BACKGROUND
+		passes[#passes + 1] = {
+			pass_type = "texture",
+			style_id = icon_bg_id,
+			value_id = icon_bg_id,
+			visibility_function = function(content, style)
+				return content[icon_id] ~= nil -- visible only if icon exists
+			end,
+		}
+
+		style[icon_bg_id] = {
+			scale_to_material = true,
+			horizontal_alignment = "right",
+			vertical_alignment = "center",
+			offset = {
+				bar_width * 0.5 - 35,
+				row_offset,
+				4, -- behind icon
+			},
+			color = { 20, 0, 0, 0 },
+			size = { 30, 30 },
+		}
+
+		-- ICON
+		passes[#passes + 1] = {
+			pass_type = "texture",
+			style_id = icon_id,
+			value_id = icon_id,
+			visibility_function = function(content, style)
+				return content[icon_id] ~= nil
+			end,
+		}
+
+		style[icon_id] = {
+			horizontal_alignment = "right",
+			vertical_alignment = "center",
+			offset = {
+				bar_width * 0.5 - 35,
+				row_offset,
+				6,
+			},
+			size = { 20, 20 },
+			color = { 255, 255, 255, 255 },
+		}
+
+		-- STACK COUNTER
+		passes[#passes + 1] = {
+			pass_type = "text",
+			style_id = text_id,
+			value_id = text_id,
+			visibility_function = function(content, style)
+				return content[text_id] ~= nil and content[text_id] ~= ""
+			end,
+		}
+
+		style[text_id] = {
+			horizontal_alignment = "right",
+			vertical_alignment = "center",
+			text_horizontal_alignment = "right",
+			text_vertical_alignment = "top",
+			offset = {
+				bar_width * 0.5,
+				row_offset,
+				6,
+			},
+			font_type = "proxima_nova_bold",
+			font_size = 18,
+			text_color = { 255, 220, 220, 220 },
+			size = { 200, 20 },
+		}
+	end
+
+	return {
+		scenegraph_id = scenegraph_id,
+		passes = passes,
+		content = content,
+		style = style,
 	}
-
-	return UIWidget.create_definition({
-
-		-- DEBUFF ICONS
-		{
-			pass_type = "texture",
-			style_id = "debuff_icon",
-			value = "content/ui/materials/icons/generic/danger",
-			style = {
-				horizontal_alignment = "right",
-				vertical_alignment = "center",
-				text_horizontal_alignment = "right",
-				text_vertical_alignment = "center",
-				offset = {
-					bar_width * 0.5 - 35,
-					-bar_height - 8,
-					6,
-				},
-				font_type = "proxima_nova_bold",
-				font_size = 20,
-				default_font_size = 16,
-				text_color = { 220, 220, 220, 220 },
-				default_text_color = { 220, 220, 220, 220 },
-				size = { 20, 20 },
-				drop_shadow = true,
-			},
-		},
-		-- ICON BACKGROUND (FOR VISIBILITY)
-		{
-			pass_type = "texture",
-			style_id = "debuff_icon_background",
-			value = "content/ui/materials/effects/terminal_header_glow",
-			style = {
-				scale_to_material = true,
-				horizontal_alignment = "right",
-				vertical_alignment = "center",
-				offset = {
-					bar_width * 0.5 - 35,
-					-bar_height - 8,
-					4,
-				},
-				color = {
-					30,
-					0,
-					0,
-					0,
-				},
-
-				size = { 30, 30 },
-			},
-		},
-		-- DEBUFF NAME
-		{
-			pass_type = "text",
-			style_id = "debuff_name",
-			value = "",
-			value_id = "debuff_name",
-			style = {
-				horizontal_alignment = "center",
-				vertical_alignment = "center",
-				text_horizontal_alignment = "center",
-				text_vertical_alignment = "top",
-				offset = {
-					0,
-					-bar_height - 8,
-					6,
-				},
-				font_type = "proxima_nova_bold",
-				font_size = 20,
-				default_font_size = 16,
-				text_color = { 220, 220, 220, 220 },
-				default_text_color = { 220, 220, 220, 220 },
-				size = { 400, 20 },
-			},
-		},
-
-		-- DEBUFF STACK COUNTER
-		{
-			pass_type = "text",
-			style_id = "stack_counter",
-			value = "",
-			value_id = "stack_counter",
-			style = {
-				horizontal_alignment = "right",
-				vertical_alignment = "center",
-				text_horizontal_alignment = "right",
-				text_vertical_alignment = "top",
-				offset = {
-					(bar_width * 0.5),
-					-bar_height - 8,
-					6,
-				},
-				font_type = "proxima_nova_bold",
-				font_size = 20,
-				default_font_size = 16,
-				text_color = { 220, 220, 220, 220 },
-				default_text_color = { 220, 220, 220, 220 },
-				size = { 400, 20 },
-			},
-		},
-	}, scenegraph_id)
 end
 
 -- Function to update the debuff indicator widget
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
-	local content = widget.content
-	local style = widget.style
 	local unit = marker.unit
 	local buff_extension = ScriptUnit.has_extension(unit, "buff_system")
 
-	-- Early exit if there's no buff system
 	if not buff_extension then
+		marker.draw = false
 		return
 	end
 
-	-- Fetch all buffs, stat buffs, and keywords from the buff extension
 	local debuffs = buff_extension:buffs()
-	local stat_buffs = buff_extension:stat_buffs()
-	local keywords = buff_extension:keywords()
-
-	-- Reset debuff icon and stack counter
-	local debuff_count = 0
-	local default_debuff_icon = "content/ui/materials/icons/generic/danger"
-	local default_debuff_color = { 255, 150, 150, 150 }
+	local active = {}
 
 	if debuffs then
 		for _, buff in ipairs(debuffs) do
-			local buff_name = buff:template_name()
+			local name = buff:template_name()
 
-			if table.find(mod.debuffs, buff_name) then
-				-- count stacks of current buff applied to unit
-				local stack_count = buff_extension:current_stacks(buff_name) or 1
+			if table.find(mod.debuffs, name) then
+				local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
-				-- Add counter of current buffs
-				debuff_count = debuff_count + 1
-
-				-- Update debuff icon and color
-				content.debuff_icon = mod.debuff_icons[buff_name] or default_debuff_icon
-				if content.value_id_1 then
-					content.value_id_1 = mod.debuff_icons[buff_name] or default_debuff_icon
-				end
-
-				style.debuff_icon.color = mod.debuff_colours[buff_name] or default_debuff_color
-
-				-- Update stack counter text
-				content.stack_counter = "x " .. tostring(stack_count)
-
-				-- update debuff name
-				--content.debuff_name = buff_name
+				active[#active + 1] = {
+					name = name,
+					stacks = stacks,
+				}
 			end
 		end
 	end
 
-	-- hide
-	local is_inside_frustum = content.is_inside_frustum
-	local distance = content.distance
-	local line_of_sight_progress = content.line_of_sight_progress or 0
+	table.sort(active, function(a, b)
+		return a.stacks > b.stacks
+	end)
 
-	if marker.raycast_initialized then
-		local raycast_result = marker.raycast_result
-		local line_of_sight_speed = 3
+	local max_rows = template.max_visible_rows or 5
+	marker.draw = (#active > 0)
 
-		if raycast_result then
-			line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+	local content = widget.content
+	local style = widget.style
+
+	widget._state = widget._state or {}
+
+	local bar_height = template.size[2]
+	local row_height = bar_height + 8
+
+	local slide_speed = 16
+	local fade_speed = 10
+	local stack_speed = 8
+	local glow_threshold = 5
+
+	local active_lookup = {}
+
+	-- =========================================
+	-- UPDATE STATE (KEYED BY DEBUFF NAME)
+	-- =========================================
+	for index, debuff in ipairs(active) do
+		local state = widget._state[debuff.name]
+
+		if not state then
+			state = {
+				alpha = 0,
+				scale = 0,
+				icon_scale = 1.25,
+				prev_stacks = debuff.stacks,
+				y = -bar_height - 8 - ((index - 1) * row_height),
+			}
+			widget._state[debuff.name] = state
+		end
+
+		-- Fade in
+		state.alpha = math.min(state.alpha + dt * 255 * fade_speed, 255)
+
+		-- Target Y per debuff
+		local target_y = -bar_height - 8 - ((index - 1) * row_height)
+		state.y = math.lerp(state.y, target_y, math.min(dt * slide_speed, 1))
+
+		-- Stack change animation
+		if debuff.stacks > state.prev_stacks then
+			state.scale = 1
+		elseif debuff.stacks < state.prev_stacks then
+			state.scale = -0.5
+		end
+
+		state.prev_stacks = debuff.stacks
+		state.scale = math.lerp(state.scale, 0, math.min(dt * stack_speed, 1))
+		state.icon_scale = math.lerp(state.icon_scale, 0, math.min(dt * 6, 1))
+
+		active_lookup[debuff.name] = true
+	end
+
+	-- Fade out removed debuffs
+	for name, state in pairs(widget._state) do
+		if not active_lookup[name] then
+			state.alpha = math.max(state.alpha - dt * 255 * fade_speed, 0)
+			if state.alpha <= 0 then
+				widget._state[name] = nil
+			end
+		end
+	end
+
+	-- =========================================
+	-- DRAW ROWS
+	-- =========================================
+	for i = 1, max_rows do
+		local icon_id = "debuff_icon_" .. i
+		local text_id = "stack_counter_" .. i
+
+		local icon_style = style[icon_id]
+		local text_style = style[text_id]
+
+		local debuff = active[i]
+
+		if debuff then
+			local state = widget._state[debuff.name]
+
+			-- Horizontal slide on appear
+			local appear_offset = 15 * (state.alpha / 255 - 1)
+
+			icon_style.offset[1] = template.size[1] * 0.5 - 35 + appear_offset
+			icon_style.offset[2] = state.y
+
+			text_style.offset[1] = template.size[1] * 0.5 + appear_offset
+			text_style.offset[2] = state.y
+
+			content[icon_id] = mod.debuff_icons[debuff.name] or "content/ui/materials/icons/generic/danger"
+
+			content[text_id] = "x " .. debuff.stacks
+
+			-- colour mutation
+			local colour = mod.debuff_colours and mod.debuff_colours[debuff.name]
+			colour = colour or { 255, 255, 255, 255 }
+
+			local c = icon_style.color
+
+			c[1] = state.alpha -- A
+			c[2] = colour[2] or colour[1] or 255 -- R
+			c[3] = colour[3] or colour[2] or 255 -- G
+			c[4] = colour[4] or colour[3] or 255 -- B
+
+			-- Glow effect
+			if debuff.stacks >= glow_threshold then
+				c[1] = math.min(c[1] + 40, 255)
+				c[2] = math.min(c[2] + 40, 255)
+				c[3] = math.min(c[3] + 40, 255)
+			end
+
+			-- Stack pulse
+			local scale = 1 + (0.35 * state.scale)
+			text_style.font_size = 18 * scale
+			text_style.text_color[1] = state.alpha
+
+			-- Icon pulse
+			local icon_scale = 1 + state.icon_scale
+			icon_style.size[1] = 20 * icon_scale
+			icon_style.size[2] = 20 * icon_scale
+
+			-- Background moves with icon
+			local bg_style = style["debuff_icon_background_" .. i]
+			if bg_style then
+				bg_style.offset[1] = template.size[1] * 0.5 - 35 + appear_offset
+				bg_style.offset[2] = state.y
+			end
 		else
-			line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+			content[icon_id] = nil
+			content[text_id] = nil
 		end
-	end
-
-	-- hide if debuff counter is at 0
-	if debuff_count <= 0 then
-		marker.draw = false
-	end
-
-	local draw = marker.draw
-
-	if draw then
-		local scale = marker.scale
-
-		-- header text is optional
-		local header_style = style.header_text
-		if header_style then
-			header_style.font_size = header_style.default_font_size * scale
-		end
-
-		content.line_of_sight_progress = line_of_sight_progress
-		widget.alpha_multiplier = line_of_sight_progress
 	end
 end
 

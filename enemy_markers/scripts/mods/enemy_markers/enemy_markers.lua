@@ -381,11 +381,13 @@ mod.update_enemy_markers = function()
 		mod_bh = unit_behaviour_extension
 		if unit_behaviour_extension then
 			local perception_component = unit_behaviour_extension._perception_component
-			local target_unit = perception_component.target_unit
-			if target_unit then
-				add_unit_to_alerted(unit)
-			else
-				remove_unit_from_alerted(unit)
+			if perception_component then
+				local target_unit = perception_component.target_unit
+				if target_unit then
+					add_unit_to_alerted(unit)
+				else
+					remove_unit_from_alerted(unit)
+				end
 			end
 		end
 
