@@ -63,9 +63,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
 
 	-- clear caches on markers init
-	table.clear(mod.enemy_markers)
-	table.clear(mod.enemy_healthbars)
-	table.clear(mod.enemy_debuffs)
+	mod.clear_caches()
 
 	-- Preload views to get textures/icons, to prevent crashing.
 	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
@@ -300,39 +298,14 @@ end
 local add_unit_to_alerted = function(unit)
 	if not mod.enemy_markers_alerted[get_unit_id(unit)] then
 		table.insert(mod.enemy_markers_alerted, get_unit_id(unit))
-		mod:echo("added unit to alerted")
 	end
 end
 
-mod:hook_safe(CLASS.BtAlertedAction, "enter", function(self, unit, breed, blackboard, scratchpad, action_data, t)
-	local alerted_mode = self:_select_alerted_mode(action_data)
-
-	if alerted_mode == ALERTED_MODES.alerted then
-		mod:echo("ALERTED")
-		add_unit_to_alerted(unit)
-	elseif alerted_mode == ALERTED_MODES.moving_alerted then
-		mod:echo("MOVING ALERTED")
-		add_unit_to_alerted(unit)
-	elseif alerted_mode == ALERTED_MODES.hesitate then
-		mod:echo("HESITATE")
-		add_unit_to_alerted(unit)
-	elseif alerted_mode == ALERTED_MODES.directional_alerted then
-		mod:echo("DIRECTIONAL ALERTED")
-		add_unit_to_alerted(unit)
-	elseif alerted_mode == ALERTED_MODES.instant_aggro then
-		mod:echo("INSTANT AGGRO")
-		add_unit_to_alerted(unit)
+local remove_unit_from_alerted = function(unit)
+	if mod.enemy_markers_alerted[get_unit_id(unit)] then
+		table.remove(mod.enemy_markers_alerted, get_unit_id(unit))
 	end
-end)
-
-mod:hook_safe(
-	CLASS.BtAlertedAction,
-	"leave",
-	function(self, unit, breed, blackboard, scratchpad, action_data, t, reason, destroy)
-		--template.set_alerted(false)
-		mod:echo("no AGGRO")
-	end
-)
+end
 
 -- Adding markers for new enemies and storing marker_id in the map
 mod.update_enemy_markers = function()
@@ -404,6 +377,18 @@ mod.update_enemy_markers = function()
 
 	-- check for alerted enemies and adjust the marker accordingly
 	for unit, data in pairs(mod.enemy_cache) do
+		local unit_behaviour_extension = ScriptUnit.has_extension(unit, "behavior_system")
+		mod_bh = unit_behaviour_extension
+		if unit_behaviour_extension then
+			local perception_component = unit_behaviour_extension._perception_component
+			local target_unit = perception_component.target_unit
+			if target_unit then
+				add_unit_to_alerted(unit)
+			else
+				remove_unit_from_alerted(unit)
+			end
+		end
+
 		for id, unit_id in pairs(mod.enemy_markers_alerted) do
 			if unit_id == get_unit_id(unit) then
 				local marker_id = marker_ids[unit] -- Get marker ID from marker_ids table
@@ -542,7 +527,10 @@ mod.clear_caches = function()
 	table.clear(mod.enemy_markers)
 	table.clear(mod.enemy_healthbars)
 	table.clear(mod.enemy_debuffs)
-	table.clear(healthbar_ids)
+	if healthbar_ids then
+		table.clear(healthbar_ids)
+	end
+	table.clear(mod.enemy_markers_alerted)
 end
 
 -- update function to build the mod frame_settings, run scan, then update healthbars, markers and debuffs. This function may need to be called each time an enemy updates, so when they get hurt, a debuff applies, etc. the broadphase system seems good for this.

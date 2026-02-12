@@ -172,11 +172,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local can_interact = false
 
-	if template.alerted == true then
-		mod:echo("CHANGE COLOUR")
-		style.background.color = { 200, 255, 60, 60 }
-	end
-
 	local scale_speed = 8
 	local scale_progress = content.scale_progress or 0
 	local line_of_sight_progress = content.line_of_sight_progress or 0
