@@ -16,6 +16,8 @@ local draw_distance_setting = mod:get("draw_distance") or 25
 local show_names = mod:get("debuff_names") == true
 local names_fade = mod:get("debuff_names_fade") == true
 
+local enable_horde = mod:get("debuff_horde_enable") or false
+
 -- timing (seconds) for name pop
 local NAME_FADE_IN = 0.15
 local NAME_VISIBLE = 1.0
@@ -255,7 +257,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
-	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
+	-- don't process hordes if disabled
+	local breed_tags = mod.get_breed_tags(unit)
+	if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
+		marker.draw = false
+
+		return
+	end
+
+	local buff_extension = ScriptUnit.extension(unit, "buff_system")
 	if not buff_extension then
 		marker.draw = false
 		return
@@ -377,6 +387,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				state.name_visible = false
 			end
 		end
+		marker.draw = true
 
 		active_lookup[name] = true
 	end

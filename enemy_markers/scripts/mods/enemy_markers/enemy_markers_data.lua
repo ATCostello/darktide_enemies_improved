@@ -482,6 +482,11 @@ return {
 						type = "checkbox",
 						default_value = true,
 					},
+					{
+						setting_id = "markers_horde_enable",
+						type = "checkbox",
+						default_value = false,
+					},
 				},
 			},
 			{
@@ -573,6 +578,11 @@ return {
 						setting_id = "debuff_names_fade",
 						type = "checkbox",
 						default_value = true,
+					},
+					{
+						setting_id = "debuff_horde_enable",
+						type = "checkbox",
+						default_value = false,
 					},
 				},
 			},

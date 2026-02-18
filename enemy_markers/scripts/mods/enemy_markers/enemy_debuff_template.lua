@@ -12,10 +12,11 @@ local hb_size_width = mod:get("hb_size_width") or 200
 local hb_size_height = mod:get("hb_size_height") or 6
 local max_visible_rows_setting = mod:get("max_visible_rows") or 5
 local draw_distance_setting = mod:get("draw_distance") or 25
-
 -- Optional: show debuff names & pop behaviour
 local show_names = mod:get("debuff_names") == true
 local names_fade = mod:get("debuff_names_fade") == true
+
+local enable_horde = mod:get("debuff_horde_enable") or false
 
 -- timing (seconds) for name pop
 local NAME_FADE_IN = 0.15
@@ -254,18 +255,30 @@ end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local unit = marker.unit
+
 	if not unit then
 		marker.draw = false
 		return
 	end
 
-	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
+	-- don't process hordes if disabled
+	local breed_tags = mod.get_breed_tags(unit)
+	if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
+		marker.draw = false
+
+		return
+	end
+
+	local buff_extension = ScriptUnit.extension(unit, "buff_system")
+
 	if not buff_extension then
 		marker.draw = false
 		return
 	end
 
 	local debuffs = buff_extension:buffs()
+	local keywords = buff_extension and buff_extension:keywords()
+
 	if not debuffs or #debuffs == 0 then
 		marker.draw = false
 	else
@@ -288,6 +301,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				name = name,
 				stacks = stacks,
 			}
+		end
+	end
+
+	-- get from keywords
+	if keywords and #keywords > 0 then
+		for i = 1, #keywords do
+			local keyword = keywords[i]
+			local name = keyword
+
+			if array_contains(mod.dot_debuffs, name) then
+				local stacks = 1
+
+				active_count = active_count + 1
+				active[active_count] = {
+					name = name,
+					stacks = stacks,
+				}
+			end
 		end
 	end
 
@@ -391,6 +422,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		active_lookup[name] = true
+		marker.draw = true
 	end
 
 	-- Fade out removed debuffs
@@ -461,19 +493,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local t_name = state.name_time or 0
 						local a = 0
 
-						if names_fade == true then
-							if t_name <= NAME_FADE_IN then
-								a = (t_name / NAME_FADE_IN) -- fade in
-							elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
-								a = 1 -- fully visible
-							elseif t_name <= NAME_TOTAL then
-								local remain = NAME_TOTAL - t_name
-								a = remain / NAME_FADE_OUT -- fade out
-							else
-								a = 0
-							end
+						if t_name <= NAME_FADE_IN then
+							a = (t_name / NAME_FADE_IN) -- fade in
+						elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
+							a = 1 -- fully visible
+						elseif t_name <= NAME_TOTAL then
+							local remain = NAME_TOTAL - t_name
+							a = remain / NAME_FADE_OUT -- fade out
 						else
-							a = 100
+							a = 0
 						end
 
 						-- clamp & apply

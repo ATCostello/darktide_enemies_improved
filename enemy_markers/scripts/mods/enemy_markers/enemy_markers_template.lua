@@ -21,6 +21,8 @@ local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or false
 local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
 local MAX_DISTANCE_SETTING = mod:get("draw_distance") or 25
 
+local enable_horde = mod:get("marker_horde_enable") or false
+
 -- Pre-cache math & Application globals used every frame
 local math_min = math.min
 local math_max = math.max
@@ -199,6 +201,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local content = widget.content
 	local distance = content.distance or 0
 	local data = marker.data
+
+	local unit = marker.unit
+	-- don't process hordes if disabled
+	if unit then
+		local breed_tags = mod.get_breed_tags(unit)
+		if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
+			marker.draw = false
+			return
+		end
+	end
 
 	local evolve_distance = template.evolve_distance
 	local style = widget.style

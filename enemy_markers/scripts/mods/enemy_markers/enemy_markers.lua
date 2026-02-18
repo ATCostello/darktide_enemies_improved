@@ -49,7 +49,7 @@ local healthbar_ids = {}
 mod.marked_dead = {}
 
 -- Per-frame processing cap and temp buffers (1)
-local MAX_ENEMIES_PER_FRAME = 80 -- tune if needed
+local MAX_ENEMIES_PER_FRAME = 100 -- tune if needed
 local _enemy_units_temp = {} -- compact list of units this frame
 local _last_enemy_index = 0 -- rotating index for fairness
 
@@ -688,14 +688,9 @@ mod.update_enemy_utility_debuffs = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		if enemy_cache[unit] and not mod.enemy_utility_debuffs[unit] and not marked_dead[unit] then
-			Managers_event:trigger(
-				"add_world_marker_unit",
-				EnemyUtilityDebuffTemplate.name,
-				unit,
-				function(marker_id)
-					utility_debuff_ids[unit] = marker_id
-				end
-			)
+			Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
+				utility_debuff_ids[unit] = marker_id
+			end)
 
 			mod.enemy_utility_debuffs[unit] = unit
 		end
@@ -824,4 +819,14 @@ mod.on_setting_changed = function(setting_id)
 	-- Reset draw distance cache so it picks up new settings
 	_last_draw_distance_key = nil
 	_last_draw_distance_value = 50
+end
+
+mod.get_breed_tags = function(unit)
+	local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+	if not breed then
+		return
+	end
+	local tags = breed.tags
+	return tags
 end
