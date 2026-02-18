@@ -22,6 +22,8 @@ mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localizati
 local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
+local EnemyUtilityDebuffTemplate =
+	mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
 
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -40,22 +42,24 @@ mod.enemy_markers = {}
 mod.enemy_markers_alerted = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
+mod.enemy_utility_debuffs = {}
+
 mod._broadphase_results = {}
 local healthbar_ids = {}
 mod.marked_dead = {}
 
 -- Per-frame processing cap and temp buffers (1)
-local MAX_ENEMIES_PER_FRAME = 80       -- tune if needed
-local _enemy_units_temp = {}           -- compact list of units this frame
-local _last_enemy_index = 0            -- rotating index for fairness
+local MAX_ENEMIES_PER_FRAME = 80 -- tune if needed
+local _enemy_units_temp = {} -- compact list of units this frame
+local _last_enemy_index = 0 -- rotating index for fairness
 
 -- Alerted throttling (2)
 local _alert_last_t = 0
-local ALERT_UPDATE_INTERVAL = 0.1      -- seconds
+local ALERT_UPDATE_INTERVAL = 0.1 -- seconds
 
 -- Dead bookkeeping cleanup (5)
 local _dead_cleanup_accum = 0
-local DEAD_CLEANUP_INTERVAL = 5        -- seconds
+local DEAD_CLEANUP_INTERVAL = 5 -- seconds
 
 -- Global colour lookup
 local COLOUR_LOOKUP = {
@@ -96,7 +100,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
-
+	self._marker_templates[EnemyUtilityDebuffTemplate.name] = EnemyUtilityDebuffTemplate
 	-- clear caches on markers init
 	mod.clear_caches()
 
@@ -440,15 +444,10 @@ mod.update_enemy_markers = function(units, num_units, t)
 	for i = 1, num_units do
 		local unit = units[i]
 		if enemy_cache[unit] and not mod.enemy_markers[unit] and not marked_dead[unit] then
-			Managers_event:trigger(
-				"add_world_marker_unit",
-				EnemyMarkersTemplate.name,
-				unit,
-				function(marker_id)
-					marker_ids[unit] = marker_id
-					marker_to_unit[unit] = marker_id
-				end
-			)
+			Managers_event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
+				marker_ids[unit] = marker_id
+				marker_to_unit[unit] = marker_id
+			end)
 
 			mod.enemy_markers[unit] = unit
 		end
@@ -580,6 +579,7 @@ end
 -----------------------------------------------------------------------
 
 local debuff_ids = {}
+local utility_debuff_ids = {}
 
 -- Updated to accept compact unit list and count (1)
 mod.update_enemy_debuffs = function(units, num_units)
@@ -630,21 +630,77 @@ mod.update_enemy_debuffs = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		if enemy_cache[unit] and not mod.enemy_debuffs[unit] and not marked_dead[unit] then
-			Managers_event:trigger(
-				"add_world_marker_unit",
-				"enemy_debuff",
-				unit,
-				function(debuff_id)
-					debuff_ids[unit] = debuff_id
-					marker_to_unit[unit] = debuff_id
-				end
-			)
+			Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
+				debuff_ids[unit] = debuff_id
+				marker_to_unit[unit] = debuff_id
+			end)
 
 			mod.enemy_debuffs[unit] = unit
 		end
 	end
 end
 
+mod.update_enemy_utility_debuffs = function(units, num_units)
+	local fs = mod.frame_settings
+	if not (fs.enable and fs.enable.debuff) then
+		return
+	end
+
+	local enemy_cache = mod.enemy_cache
+	local marked_dead = mod.marked_dead
+	local to_remove = {}
+
+	-- Remove on death
+	for i = 1, num_units do
+		local unit = units[i]
+		local entry = enemy_cache[unit]
+		if entry then
+			local alive = Unit_alive(unit)
+			local remove_now = false
+
+			if not alive then
+				remove_now = true
+			else
+				local health_extension = ScriptUnit_has_extension(unit, "health_system")
+				if health_extension and health_extension:current_health_percent() <= 0 then
+					remove_now = true
+				end
+			end
+
+			if remove_now then
+				local id = utility_debuff_ids[unit]
+				if id then
+					Managers_event:trigger("remove_world_marker", id)
+					mod.enemy_utility_debuffs[unit] = nil
+					utility_debuff_ids[unit] = nil
+					marked_dead[unit] = true
+				end
+				to_remove[#to_remove + 1] = unit
+			end
+		end
+	end
+
+	for i = 1, #to_remove do
+		enemy_cache[to_remove[i]] = nil
+	end
+
+	-- Add for living enemies
+	for i = 1, num_units do
+		local unit = units[i]
+		if enemy_cache[unit] and not mod.enemy_utility_debuffs[unit] and not marked_dead[unit] then
+			Managers_event:trigger(
+				"add_world_marker_unit",
+				EnemyUtilityDebuffTemplate.name,
+				unit,
+				function(marker_id)
+					utility_debuff_ids[unit] = marker_id
+				end
+			)
+
+			mod.enemy_utility_debuffs[unit] = unit
+		end
+	end
+end
 -----------------------------------------------------------------------
 -- Cache clearing
 -----------------------------------------------------------------------
@@ -664,6 +720,10 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_markers_alerted)
 	if debuff_ids then
 		table_clear(debuff_ids)
+	end
+	table_clear(mod.enemy_utility_debuffs)
+	if utility_debuff_ids then
+		table_clear(utility_debuff_ids)
 	end
 	-- also compact temp unit list
 	table_clear(_enemy_units_temp)
@@ -738,6 +798,7 @@ mod.update_enemies = function(dt, t)
 
 	if enable.debuff then
 		mod.update_enemy_debuffs(temp, to_process)
+		mod.update_enemy_utility_debuffs(temp, to_process)
 	end
 
 	-- Periodic cleanup of marked_dead entries for units no longer in cache (5)

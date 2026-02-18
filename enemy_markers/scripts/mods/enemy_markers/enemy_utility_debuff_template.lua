@@ -1,15 +1,14 @@
 local mod = get_mod("enemy_markers")
 
-local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
 -----------------------------------------------------------------------
--- Cached settings (evaluated once at load; cheap and static)
+-- Cached settings
 -----------------------------------------------------------------------
 
 local hb_size_width = mod:get("hb_size_width") or 200
-local hb_size_height = mod:get("hb_size_height") or 6
+local hb_size_height = mod:get("hb_size_height") or 15
 local max_visible_rows_setting = mod:get("max_visible_rows") or 5
 local draw_distance_setting = mod:get("draw_distance") or 25
 
@@ -29,7 +28,7 @@ local size = {
 }
 
 template.size = size
-template.name = "enemy_debuff"
+template.name = "enemy_utility_debuff"
 template.unit_node = "j_neck"
 template.position_offset = { 0, 0, 0.8 }
 template.max_visible_rows = max_visible_rows_setting
@@ -68,7 +67,7 @@ template.fade_settings = {
 }
 
 -----------------------------------------------------------------------
--- Small local helpers / cached globals to avoid repeated lookups
+-- Locals/helpers
 -----------------------------------------------------------------------
 
 local ScriptUnit_has_extension = ScriptUnit.has_extension
@@ -80,7 +79,6 @@ local math_floor = math.floor
 local pairs = pairs
 local Localize = Localize
 
--- Cheap table.find replacement to avoid generic helper overhead
 local function array_contains(tbl, value)
 	if not tbl or not value then
 		return false
@@ -109,17 +107,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local content = {}
 	local style = {}
 
-	-- Precompute constant offsets
 	local base_y = -bar_height - 8
 	local row_step = bar_height + 8
 	local icon_x = bar_width * 0.5 - 50
-	local name_x = bar_width * 0.5 - 100 -- to the left of icon
-	local stack_x = bar_width * 0.5 + 10 -- to the right of icon
+	local name_x = bar_width * 0.5 - 100
+	local stack_x = bar_width * 0.5 + 10
 
 	for i = 1, max_rows do
-		local icon_bg_id = "debuff_icon_background_" .. i
-		local icon_id = "debuff_icon_" .. i
-		local stack_text_id = "stack_counter_" .. i
+		local icon_bg_id = "util_icon_background_" .. i
+		local icon_id = "util_icon_" .. i
+		local stack_text_id = "util_stack_counter_" .. i
 		local name_text_id = "debuff_name_" .. i
 
 		local row_offset_y = base_y - ((i - 1) * row_step)
@@ -129,13 +126,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		content[stack_text_id] = "" -- no text by default
 		content[name_text_id] = "" -- name text
 
-		-- ICON BACKGROUND
+		-- BACKGROUND
 		passes[#passes + 1] = {
 			pass_type = "texture",
 			style_id = icon_bg_id,
 			value_id = icon_bg_id,
 			visibility_function = function(content, style)
-				-- visible only if its icon is present
 				return content[icon_id] ~= nil
 			end,
 		}
@@ -147,7 +143,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			offset = {
 				icon_x,
 				row_offset_y,
-				4, -- behind icon
+				4,
 			},
 			color = { 20, 0, 0, 0 },
 			size = { 30, 30 },
@@ -175,7 +171,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			color = { 255, 255, 255, 255 },
 		}
 
-		-- STACK COUNTER (right side of row)
+		-- STACK COUNTER
 		passes[#passes + 1] = {
 			pass_type = "text",
 			style_id = stack_text_id,
@@ -197,7 +193,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				6,
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 18,
+			font_size = 16,
 			text_color = { 255, 220, 220, 220 },
 			size = { bar_width * 0.25, 20 },
 		}
@@ -272,7 +268,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = true
 	end
 
-	-- Gather active debuffs that we care about
 	local active = {}
 	local active_count = 0
 
@@ -280,7 +275,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local buff = debuffs[i]
 		local name = buff:template_name()
 
-		if array_contains(mod.dot_debuffs, name) then
+		if array_contains(mod.utility_debuffs, name) then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -295,12 +290,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 	end
 
-	-- Truncate 'active' length (important if previous frame had more)
 	for i = active_count + 1, #active do
 		active[i] = nil
 	end
 
-	-- Sort by stack count desc
 	if active_count > 1 then
 		table_sort(active, function(a, b)
 			return a.stacks > b.stacks
@@ -320,25 +313,23 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local slide_speed = 16
 	local fade_speed = 10
 	local stack_speed = 8
-	local glow_threshold = 5
+	local glow_threshold = 3
 
 	local active_lookup = {}
 
-	-------------------------------------------------------------------
-	-- UPDATE STATE (KEYED BY DEBUFF NAME)
-	-------------------------------------------------------------------
+	-- UPDATE STATE
 	for index = 1, active_count do
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
-		local y_base = -bar_height - 8 - ((index - 1) * row_height)
+		local y_base = bar_height + 28 + ((index - 1) * row_height)
 
 		local state = state_table[name]
 		if not state then
 			state = {
 				alpha = 0,
 				scale = 0,
-				icon_scale = 1.25,
+				icon_scale = 1.1,
 				prev_stacks = stacks,
 				y = y_base,
 
@@ -349,11 +340,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			state_table[name] = state
 		end
 
-		-- Fade in (icon / row alpha)
 		local alpha = state.alpha + dt * 255 * fade_speed
 		state.alpha = (alpha < 255) and alpha or 255
 
-		-- Target Y per debuff
 		local target_y = y_base
 		local lerp_t = dt * slide_speed
 		if lerp_t > 1 then
@@ -361,7 +350,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 		state.y = math_lerp(state.y, target_y, lerp_t)
 
-		-- Stack change animation
 		if stacks > state.prev_stacks then
 			state.scale = 1
 		elseif stacks < state.prev_stacks then
@@ -393,7 +381,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active_lookup[name] = true
 	end
 
-	-- Fade out removed debuffs
+	-- Fade out removed
 	for name, state in pairs(state_table) do
 		if not active_lookup[name] then
 			local alpha = state.alpha - dt * 255 * fade_speed
@@ -405,14 +393,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-------------------------------------------------------------------
 	-- DRAW ROWS
-	-------------------------------------------------------------------
 	local template_size_1 = template.size[1]
 
 	for i = 1, max_rows do
-		local icon_id = "debuff_icon_" .. i
-		local stack_text_id = "stack_counter_" .. i
+		local icon_id = "util_icon_" .. i
+		local stack_text_id = "util_stack_counter_" .. i
 		local name_text_id = "debuff_name_" .. i
 
 		local icon_style = style[icon_id]
@@ -527,7 +513,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_style.size[2] = 20 * icon_scale
 
 				-- Background moves with icon
-				local bg_style = style["debuff_icon_background_" .. i]
+				local bg_style = style["util_icon_background_" .. i]
 				if bg_style then
 					bg_style.offset[1] = icon_offset_x
 					bg_style.offset[2] = state.y
