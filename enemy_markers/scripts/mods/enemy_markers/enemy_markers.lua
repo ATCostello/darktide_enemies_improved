@@ -61,7 +61,22 @@ local ALERT_UPDATE_INTERVAL = 0.1 -- seconds
 local _dead_cleanup_accum = 0
 local DEAD_CLEANUP_INTERVAL = 5 -- seconds
 
+-----------------------------------------------------------------------
+-- Horde healthbar clustering
+-----------------------------------------------------------------------
+
+-- tune these defaults
+local HORDE_CLUSTER_RADIUS_SQ = 8 ^ 2      -- ~8m radius squared
+local HORDE_MIN_UNITS_FOR_CLUSTER = 6     -- minimum units in a horde clump
+
+-- Cluster data for current frame
+local _horde_clusters = {}         -- { [idx] = { breed_name, units={unit,...}, center=Vector3, total_current, total_max, rep_unit } }
+local _horde_cluster_by_unit = {}  -- [unit] = idx
+
+-----------------------------------------------------------------------
 -- Global colour lookup
+-----------------------------------------------------------------------
+
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
 	Silver = { 255, 187, 198, 201 },
@@ -186,35 +201,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 end)
 
 -----------------------------------------------------------------------
--- Settings/type cache helpers
------------------------------------------------------------------------
-
--- Get type cache for marker settings
-local function get_type_cache(mod, marker_type)
-	if not marker_type then
-		return
-	end
-
-	local cache = mod.fc_typecache
-	local tc = cache[marker_type]
-
-	if tc then
-		return tc
-	end
-
-	tc = {
-		alpha = mod:get(marker_type .. "_alpha") or 1,
-		scale = (mod:get(marker_type .. "_scale") or 100) / 100,
-		max_distance = mod:get(marker_type .. "_max_distance"),
-		require_los = mod:get(marker_type .. "_require_line_of_sight") == true,
-		keep_on_screen = mod:get(marker_type .. "_keep_on_screen") == true,
-	}
-
-	cache[marker_type] = tc
-	return tc
-end
-
------------------------------------------------------------------------
 -- Frame settings builder (minimize mod:get per-frame)
 -----------------------------------------------------------------------
 
@@ -268,6 +254,8 @@ local function build_frame_settings(mod, dt)
 	enable.markers = mod:get("markers_enable")
 	enable.healthbar = mod:get("healthbar_enable")
 	enable.debuff = mod:get("debuff_enable")
+	enable.horde = mod:get("hb_horde_enable") or false
+	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
 end
 
 -----------------------------------------------------------------------
@@ -391,6 +379,124 @@ local function remove_unit_from_alerted(unit)
 end
 
 -----------------------------------------------------------------------
+-- Horde clustering helpers
+-----------------------------------------------------------------------
+
+-- Build clusters from a compact list of units for this frame
+local function _build_horde_clusters(units, num_units)
+	table_clear(_horde_clusters)
+	table_clear(_horde_cluster_by_unit)
+
+	-- Collect horde candidates
+	local candidates = {} -- { { unit, breed_name, pos }, ... }
+	local c_count = 0
+
+	for i = 1, num_units do
+		local unit = units[i]
+		if Unit_alive(unit) then
+			local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+			local breed = unit_data_extension and unit_data_extension:breed()
+			local tags = breed and breed.tags
+
+			if tags and (tags.horde or tags.roamer) then
+				local pos = Unit.world_position(unit, 1)
+				c_count = c_count + 1
+				candidates[c_count] = {
+					unit = unit,
+					breed_name = breed.name,
+					pos = pos,
+				}
+			end
+		end
+	end
+
+	if c_count < HORDE_MIN_UNITS_FOR_CLUSTER then
+		return
+	end
+
+	-- Simple clustering by (breed_name, distance)
+	local used = {}
+
+	for i = 1, c_count do
+		if not used[i] then
+			local seed = candidates[i]
+			local breed_name = seed.breed_name
+			local pos_i = seed.pos
+
+			local units_in_cluster = { seed.unit }
+			local sum_x, sum_y = pos_i.x, pos_i.y
+			local base_z = pos_i.z+1.4
+
+			local count = 1
+
+			for j = i + 1, c_count do
+				if not used[j] then
+					local cand = candidates[j]
+					if cand.breed_name == breed_name then
+						local pos_j = cand.pos
+						local dx = pos_j.x - pos_i.x
+						local dy = pos_j.y - pos_i.y
+						local dz = pos_j.z - pos_i.z
+						local dist_sq = dx * dx + dy * dy + dz * dz
+
+						if dist_sq ~= dist_sq or dist_sq == math.huge or dist_sq == -math.huge then
+							-- NaN or inf, skip this candidate
+						else
+							if dist_sq <= HORDE_CLUSTER_RADIUS_SQ then
+								used[j] = true
+								units_in_cluster[#units_in_cluster + 1] = cand.unit
+								sum_x = sum_x + pos_j.x
+								sum_y = sum_y + pos_j.y
+								count = count + 1
+							end
+						end		
+					end
+				end
+			end
+
+			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
+				local inv = 1 / count
+    			local center = {x = sum_x * inv, y = sum_y * inv, z = base_z}
+
+				-- Sum health across cluster members
+				local total_current = 0
+				local total_max = 0
+
+				for _, u in ipairs(units_in_cluster) do
+					local he = ScriptUnit_has_extension(u, "health_system")
+					if he then
+						total_current = total_current + (he:current_health() or 0)
+						total_max = total_max + (he:max_health() or 0)
+					end
+				end
+
+				local idx = #_horde_clusters + 1
+				local rep_unit = units_in_cluster[1]
+
+				_horde_clusters[idx] = {
+					breed_name = breed_name,
+					units = units_in_cluster,
+					center = center,
+					total_current = total_current,
+					total_max = total_max,
+					rep_unit = rep_unit,
+				}
+
+				for _, u in ipairs(units_in_cluster) do
+					_horde_cluster_by_unit[u] = idx
+				end
+			end
+		end
+	end
+end
+
+-- Public helper for the templates
+mod.get_horde_cluster_for_unit = function(unit)
+	local idx = _horde_cluster_by_unit[unit]
+	return idx and _horde_clusters[idx] or nil
+end
+
+-----------------------------------------------------------------------
 -- Enemy markers
 -----------------------------------------------------------------------
 
@@ -466,8 +572,10 @@ mod.update_enemy_markers = function(units, num_units, t)
 			local unit = units[i]
 			if enemy_cache[unit] then
 				local behaviour_ext = ScriptUnit_has_extension(unit, "behavior_system")
+
 				if behaviour_ext then
 					local perception_component = behaviour_ext._perception_component
+
 					local target_unit = perception_component and perception_component.target_unit
 					if target_unit then
 						add_unit_to_alerted(unit)
@@ -511,6 +619,9 @@ mod.update_enemy_markers = function(units, num_units, t)
 			end
 		end
 	end
+
+	-- Special Attack sounds can be grabbed from breed -> sounds -> events -> vce_special_attack
+	-- this could be used to "flash" the markers when an enemy is about to do a special attack! could be cooool
 end
 
 -----------------------------------------------------------------------
@@ -522,6 +633,14 @@ mod.update_enemy_healthbars = function(units, num_units)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.healthbar) then
 		return
+	end
+
+	if fs.enable.horde_clusters then 
+		-- Build horde clusters for this frame so we know which units belong to a consolidated horde
+		_build_horde_clusters(units, num_units)
+	else
+		table_clear(_horde_clusters)
+		table_clear(_horde_cluster_by_unit)
 	end
 
 	local enemy_cache = mod.enemy_cache
@@ -565,11 +684,35 @@ mod.update_enemy_healthbars = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		if enemy_cache[unit] and not mod.enemy_healthbars[unit] and not marked_dead[unit] then
+			local cluster = fs.enable.horde_clusters and mod.get_horde_cluster_for_unit(unit) or nil
+
+			-- If this unit is part of a horde cluster, only give a healthbar to the representative
+			if cluster then
+				-- Clustered mode: only the representative unit gets a bar,
+				-- regardless of hb_horde_enable
+				if cluster.rep_unit ~= unit then
+					goto continue_healthbar_loop
+				end
+			else
+				-- Not in a cluster (or clustering disabled): apply hb_horde_enable rules
+				local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+				local breed = unit_data_extension and unit_data_extension:breed()
+				local tags = breed and breed.tags
+				local is_horde = tags and (tags.horde or tags.roamer)
+
+				-- If this is a horde unit and per-unit horde bars are disabled, skip
+				if is_horde and not fs.enable.horde then
+					goto continue_healthbar_loop
+				end
+			end
+
 			Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
 				healthbar_ids[unit] = marker_id
 			end)
 
 			mod.enemy_healthbars[unit] = unit
+
+			::continue_healthbar_loop::
 		end
 	end
 end
@@ -696,6 +839,7 @@ mod.update_enemy_utility_debuffs = function(units, num_units)
 		end
 	end
 end
+
 -----------------------------------------------------------------------
 -- Cache clearing
 -----------------------------------------------------------------------
@@ -722,6 +866,10 @@ mod.clear_caches = function()
 	end
 	-- also compact temp unit list
 	table_clear(_enemy_units_temp)
+
+	-- clear horde cluster state
+	table_clear(_horde_clusters)
+	table_clear(_horde_cluster_by_unit)
 end
 
 -----------------------------------------------------------------------
@@ -780,7 +928,7 @@ mod.update_enemies = function(dt, t)
 
 	-- trim any extra entries in temp
 	for i = to_process + 1, count do
-		temp[i] = nil
+			temp[i] = nil
 	end
 
 	if enable.markers then

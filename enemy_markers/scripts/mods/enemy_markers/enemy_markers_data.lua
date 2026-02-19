@@ -509,6 +509,11 @@ return {
 						default_value = false,
 					},
 					{
+						setting_id = "hb_horde_clusters_enable",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
 						setting_id = "hb_hide_after_no_damage",
 						type = "checkbox",
 						default_value = false,

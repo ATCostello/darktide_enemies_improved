@@ -195,9 +195,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				6,
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 16,
-			text_color = { 255, 220, 220, 220 },
+			font_size = 18,
+			text_color = { 0, 255, 255, 255 }, -- brighter base colour; alpha still controlled in update
 			size = { bar_width * 0.25, 20 },
+
+			-- Make it pop against busy backgrounds
+			drop_shadow = true,
+			shadow_offset = { 1, -1 },
+			shadow_color = { 200, 0, 0, 0 },
 		}
 
 		-- DEBUFF NAME (left side of row, same Y as icon)
@@ -222,19 +227,22 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			offset = {
 				name_x,
 				row_offset_y,
-				6,
+				7, -- nudge slightly above icons so it doesn’t overlap
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 14,
-			text_color = { 0, 200, 200, 200 }, -- alpha controlled in update
+			font_size = 18, -- was 14
+			text_color = { 0, 255, 255, 255 }, -- brighter base colour; alpha still controlled in update
 
-			-- Max width for debuff name: grows left, never right.
-			-- Increase/decrease this number to taste.
-			size = { 600, 18 },
+			-- Narrower width so long names don’t shrink too much
+			size = { 260, 22 }, -- was { 600, 18 }
 
-			-- Force a single line and clip/ellipsis when too long
 			truncated = true,
 			max_lines = 1,
+
+			-- Make it pop against busy backgrounds
+			drop_shadow = true,
+			shadow_offset = { 1, -1 },
+			shadow_color = { 200, 0, 0, 0 },
 		}
 	end
 

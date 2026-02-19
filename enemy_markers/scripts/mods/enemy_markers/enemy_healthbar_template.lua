@@ -15,6 +15,8 @@ template.show_damage_numbers = mod:get("hb_show_damage_numbers") or false
 template.show_armor_types = mod:get("hb_show_armour_types") or false
 template.hide_after_no_damage = mod:get("hb_hide_after_no_damage") or false
 template.horde_enable = mod:get("hb_horde_enable") or false
+template.horde_clusters_enable = mod:get("hb_horde_clusters_enable") or false
+
 template.hb_show_enemy_type = mod:get("hb_show_enemy_type") or false
 template.hb_text_show_damage = mod:get("hb_text_show_damage") or false
 
@@ -77,11 +79,14 @@ local Managers_player = Managers.player
 local Color_color = Color
 local Vector3 = Vector3
 local Vector3Box = Vector3Box
+
 local math_clamp = math.clamp
 local math_lerp = math.lerp
 local math_min = math.min
 local math_max = math.max
 local math_random = math.random
+local math_sqrt = math.sqrt
+
 local string_format = string.format
 local table_remove = table.remove
 local table_clone = table.clone
@@ -162,7 +167,7 @@ local armor_type_string_lookup = {
 }
 
 -----------------------------------------------------------------------
--- Damage number render helpers
+-- Damage number render helpers (unchanged)
 -----------------------------------------------------------------------
 
 local function _readable_damage_number_function(
@@ -505,7 +510,6 @@ end
 template.damage_number_function = function(pass, ui_renderer, ui_style, ui_content, position, size)
 	local damage_numbers = ui_content.damage_numbers
 	if not damage_numbers or #damage_numbers == 0 and not (template.show_dps and ui_content.damage_has_started) then
-		-- Fast early-out when nothing to render and no DPS
 		ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
 		return
 	end
@@ -539,7 +543,6 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 			local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
 			local text = string_format("%d DPS", dps_value)
 			local dps_y_offset = damage_number_settings.dps_y_offset
-
 			local damage_has_started_position
 
 			if template.damage_number_type == damage_number_types.readable then
@@ -782,6 +785,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 		},
+
 		-- CURRENT HEALTH (main bar)
 		{
 			pass_type = "rect",
@@ -805,6 +809,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 		},
+
 		-- SHADOW
 		{
 			pass_type = "texture",
@@ -830,6 +835,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 		},
+
 		-- TOP EDGE HIGHLIGHT
 		{
 			pass_type = "texture",
@@ -855,6 +861,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 		},
+
 		-- subtle background glowing segments
 		{
 			pass_type = "texture",
@@ -1036,12 +1043,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local style = widget.style
 	local unit = marker.unit
 
-	-- Early-out if unit is gone
 	if not unit then
 		marker.remove = true
 		return
 	end
 
+	-------------------------------------------------------------------
+	-- Health / alive
+	-------------------------------------------------------------------
 	local health_extension = ScriptUnit_has_extension(unit, "health_system")
 	local health_current = 0
 	local health_max = 0
@@ -1055,12 +1064,116 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		is_dead = not health_extension:is_alive()
 	end
 
+	-------------------------------------------------------------------
+	-- Breed / type
+	-------------------------------------------------------------------
+	local unit_data_extension = content.unit_data_extension or ScriptUnit_has_extension(unit, "unit_data_system")
+	content.unit_data_extension = unit_data_extension
+	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
+	content.breed = breed
+
+	local breed_type = "enemy"
+
+	if breed then
+		local tags = breed.tags or {}
+
+		if tags.horde or tags.roamer then
+			breed_type = "horde"
+		end
+		if tags.elite then
+			breed_type = "elite"
+		end
+		if tags.special then
+			breed_type = "special"
+		end
+		if tags.monster then
+			breed_type = "monster"
+		end
+		if tags.captain then
+			breed_type = "captain"
+		end
+		if tags.disabler then
+			breed_type = "disabler"
+		end
+		if tags.witch then
+			breed_type = "witch"
+		end
+
+		if template.hb_show_enemy_type then
+			content.header_text = tostring(breed_type)
+		end
+	end
+
+	-------------------------------------------------------------------
+	-- Horde cluster: pooled HP + center position
+	-------------------------------------------------------------------
+	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
+	local in_horde_cluster = false
+
+	if cluster and template.horde_clusters_enable then
+		in_horde_cluster = true
+
+		-- Only the cluster representative should ever have a bar marker, because
+		-- enemy_markers.lua only spawns a bar for cluster.rep_unit.
+		-- Still, guard and bail out if somehow non-rep gets here.
+		if cluster.rep_unit ~= unit then
+			marker.draw = false
+			return
+		end
+
+		-- Recompute pooled health so it stays up-to-date as members take damage/die
+		local total_current = 0
+		local total_max = 0
+
+		for _, u in ipairs(cluster.units) do
+			if HEALTH_ALIVE[u] then
+				local he = ScriptUnit_has_extension(u, "health_system")
+				if he then
+					total_current = total_current + (he:current_health() or 0)
+					total_max = total_max + (he:max_health() or 0)
+				end
+			end
+		end
+
+		if total_max > 0 then
+			health_current = total_current
+			health_max = total_max
+			health_percent = total_current / total_max
+		else
+			health_current = 0
+			health_max = 0
+			health_percent = 0
+		end
+
+		-- Move bar to horde center, before template.position_offset is applied
+		if cluster.center then
+			local c = cluster.center
+
+			local cx, cy, cz = c.x, c.y, c.z
+
+			-- Base position for bar; template.position_offset will be added later
+			local pos = Vector3(cx, cy, cz)
+
+			if not marker.world_position then
+				marker.world_position = Vector3Box(pos)
+			else
+				marker.world_position:store(pos)
+			end
+		end
+	else
+	end
+
+	-------------------------------------------------------------------
+	-- Bar logic (uses possibly overridden health_percent)
+	-------------------------------------------------------------------
 	local bar_logic = marker.bar_logic
 	bar_logic:update(dt, t, health_percent)
 
 	local health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
 
+	-------------------------------------------------------------------
 	-- Track damage (per-hit diff for text & numbers)
+	-------------------------------------------------------------------
 	local damage_taken_since_last = 0
 	local prev_hp = previous_health[unit]
 	if prev_hp then
@@ -1073,7 +1186,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	local difficulty_manager = Managers_state.difficulty
 	local max_health_setting = (content.breed and content.breed.name and difficulty_manager)
-		and difficulty_manager:get_minion_max_health(content.breed.name)
+			and difficulty_manager:get_minion_max_health(content.breed.name)
 		or health_max
 
 	local total_damage_taken
@@ -1094,8 +1207,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.last_hit_zone_name = health_extension:last_hit_zone_name() or "center_mass"
 			content.last_damaging_unit = last_damaging_unit
 
-			local breed = content.breed
-			local hit_zone_weakspot_types = breed and breed.hit_zone_weakspot_types
+			local breed_local = content.breed
+			local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
 
 			if hit_zone_weakspot_types and hit_zone_weakspot_types[content.last_hit_zone_name] then
 				content.hit_weakspot = true
@@ -1120,7 +1233,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local old_damage_taken = content.damage_taken or 0
 	local damage_number_settings = template.damage_number_settings
-	local local_player = Managers_player:local_player(1)
+	local Managers_player_local = Managers_player
+	local local_player = Managers_player_local:local_player(1)
 	local local_player_unit = local_player and local_player.player_unit
 	local show_damage_number = (
 		not template.skip_damage_from_others
@@ -1161,8 +1275,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					random_number = math_random(),
 					float_right = math_random() > 0.5,
 				}
-				local breed = content.breed
-				local hit_zone_weakspot_types = breed and breed.hit_zone_weakspot_types
+				local breed_local = content.breed
+				local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
 
 				if hit_zone_weakspot_types and hit_zone_weakspot_types[content.last_hit_zone_name] then
 					damage_number.hit_weakspot = true
@@ -1190,8 +1304,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				latest_damage_number.y_position = nil
 				latest_damage_number.start_time = t
 
-				local breed = content.breed
-				local hit_zone_weakspot_types = breed and breed.hit_zone_weakspot_types
+				local breed_local = content.breed
+				local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
 
 				if hit_zone_weakspot_types and hit_zone_weakspot_types[content.last_hit_zone_name] then
 					latest_damage_number.hit_weakspot = true
@@ -1234,30 +1348,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if health_fraction and health_ghost_fraction then
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
-		local bar_width = template.size[1]
-		local default_width_offset = -bar_width * 0.5
-		local health_width = bar_width * health_fraction
+		local bar_width_total = template.size[1]
+		local default_width_offset = -bar_width_total * 0.5
+		local health_width = bar_width_total * health_fraction
 
 		style.bar.size[1] = health_width
 
-		local ghost_bar_width = math_max(bar_width * health_ghost_fraction - health_width, 0)
+		local ghost_bar_width = math_max(bar_width_total * health_ghost_fraction - health_width, 0)
 		local ghost_bar_style = style.ghost_bar
 
 		ghost_bar_style.offset[1] = default_width_offset + health_width
 		ghost_bar_style.size[1] = ghost_bar_width
 
-		local background_width = math_max(bar_width - ghost_bar_width - health_width, 0)
+		local background_width = math_max(bar_width_total - ghost_bar_width - health_width, 0)
 		background_width = math_max(background_width - spacing, 0)
 
 		local background_style = style.background
-		background_style.offset[1] = default_width_offset + bar_width - background_width
+		background_style.offset[1] = default_width_offset + bar_width_total - background_width
 		background_style.size[1] = background_width
 
 		local health_max_style = style.health_max
-		local health_max_width = bar_width - math_max(bar_width * health_max_fraction, 0)
+		local health_max_width = bar_width_total - math_max(bar_width_total * health_max_fraction, 0)
 
 		health_max_width = math_max(health_max_width - spacing, 0)
-		health_max_style.offset[1] = default_width_offset + (bar_width - health_max_width * 0.5)
+		health_max_style.offset[1] = default_width_offset + (bar_width_total - health_max_width * 0.5)
 		health_max_style.size[1] = health_max_width
 
 		marker.health_fraction = health_fraction
@@ -1268,7 +1382,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local toughness_style = style.toughness_bar
 
 		if toughness_fraction > 0 then
-			local toughness_width = bar_width * toughness_fraction
+			local toughness_width = bar_width_total * toughness_fraction
 			toughness_style.size[1] = toughness_width
 			toughness_style.offset[1] = default_width_offset
 		else
@@ -1280,65 +1394,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			style.bar.color = { 255, 255, 255, 50 }
 		end
 	elseif health_fraction then
-		-- Only health_fraction present
-		local bar_width = template.size[1]
-		style.bar.size[1] = bar_width * health_fraction
+		local bar_width_total = template.size[1]
+		style.bar.size[1] = bar_width_total * health_fraction
 	end
 
 	-- set frame background
 	content.frame = template.frame_type
 
 	-------------------------------------------------------------------
-	-- Breed / icon logic
+	-- Icon logic / colors
 	-------------------------------------------------------------------
-	local unit_data_extension = content.unit_data_extension or ScriptUnit_has_extension(unit, "unit_data_system")
-	content.unit_data_extension = unit_data_extension
-	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
-	content.breed = breed
-
-	local breed_type = "enemy"
-
-	if breed then
-		local tags = breed.tags
-
-		if tags.horde or tags.roamer then
-			breed_type = "horde"
-		end
-		if tags.elite then
-			breed_type = "elite"
-		end
-		if tags.special then
-			breed_type = "special"
-		end
-		if tags.monster then
-			breed_type = "monster"
-		end
-		if tags.captain then
-			breed_type = "captain"
-		end
-		if tags.disabler then
-			breed_type = "disabler"
-		end
-		if tags.witch then
-			breed_type = "witch"
-		end
-
-		if template.hb_show_enemy_type then
-			content.header_text = tostring(breed_type)
-		end
-	end
-
-	-- Reset icon visibility alpha
 	style.icon_elite.color[1] = 0
 	style.icon_boss.color[1] = 0
 	style.icon_shield.color[1] = 0
 
-	-- ELITE / SPECIAL / OGRYN (NOTE: original code set alpha to 0 as well)
 	if breed_type == "elite" or breed_type == "ogryn" then
 		style.icon_elite.color[1] = 0
 	end
 
-	-- MONSTER / BOSS
 	if breed_type == "monster" then
 		style.icon_boss.color[1] = 0
 		style.frame.color = { 200, 200, 60, 200 }
@@ -1389,8 +1462,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.remove = true
 	end
 
-	-- hide by options
-	if breed_type == "horde" and not template.horde_enable then
+	-- hide by options: only hide non-clustered horde units when horde disabled
+	if breed_type == "horde" and not template.horde_enable and not in_horde_cluster then
 		marker.draw = false
 	end
 

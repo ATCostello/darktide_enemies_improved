@@ -203,14 +203,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local data = marker.data
 
 	local unit = marker.unit
-	-- don't process hordes if disabled
-	if unit then
-		local breed_tags = mod.get_breed_tags(unit)
-		if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
-			marker.draw = false
-			return
-		end
-	end
+	
 
 	local evolve_distance = template.evolve_distance
 	local style = widget.style
