@@ -66,12 +66,13 @@ local DEAD_CLEANUP_INTERVAL = 5 -- seconds
 -----------------------------------------------------------------------
 
 -- tune these defaults
-local HORDE_CLUSTER_RADIUS_SQ = 8 ^ 2      -- ~8m radius squared
+local HORDE_CLUSTER_RADIUS_SQ = 15 ^ 2
 local HORDE_MIN_UNITS_FOR_CLUSTER = 6     -- minimum units in a horde clump
 
 -- Cluster data for current frame
 local _horde_clusters = {}         -- { [idx] = { breed_name, units={unit,...}, center=Vector3, total_current, total_max, rep_unit } }
 local _horde_cluster_by_unit = {}  -- [unit] = idx
+-- Tracks the highest pooled max HP seen for each cluster index
 
 -----------------------------------------------------------------------
 -- Global colour lookup
@@ -456,9 +457,13 @@ local function _build_horde_clusters(units, num_units)
 
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
-    			local center = {x = sum_x * inv, y = sum_y * inv, z = base_z}
+				local center = {
+					x = sum_x * inv,
+					y = sum_y * inv,
+					z = base_z,
+				}
 
-				-- Sum health across cluster members
+				-- Sum health across cluster members (current & instantaneous max)
 				local total_current = 0
 				local total_max = 0
 
@@ -471,16 +476,20 @@ local function _build_horde_clusters(units, num_units)
 				end
 
 				local idx = #_horde_clusters + 1
-				local rep_unit = units_in_cluster[1]
+                local rep_unit = units_in_cluster[1]
 
-				_horde_clusters[idx] = {
-					breed_name = breed_name,
-					units = units_in_cluster,
-					center = center,
-					total_current = total_current,
-					total_max = total_max,
-					rep_unit = rep_unit,
-				}
+                _horde_clusters[idx] = {
+                    breed_name    = breed_name,
+                    units         = units_in_cluster,
+                    center        = center,
+                    total_current = total_current,
+                    total_max     = total_max,
+                    rep_unit      = rep_unit,
+                }
+
+                for _, u in ipairs(units_in_cluster) do
+                    _horde_cluster_by_unit[u] = idx
+                end
 
 				for _, u in ipairs(units_in_cluster) do
 					_horde_cluster_by_unit[u] = idx

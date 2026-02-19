@@ -148,6 +148,7 @@ template.damage_number_settings = {
 
 local previous_health = {}
 local last_damaged_time = {} -- unused but keep for compatibility if referenced elsewhere
+local peak_cluster_max_by_rep = {} -- [rep_unit] = highest pooled max HP seen
 
 local BREED_COLORS = {
 	horde = { 200, 255, 0, 0 },
@@ -1105,7 +1106,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-------------------------------------------------------------------
-	-- Horde cluster: pooled HP + center position
+	-- Horde cluster: pooled HP + center position with stable max
 	-------------------------------------------------------------------
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
@@ -1123,22 +1124,29 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		-- Recompute pooled health so it stays up-to-date as members take damage/die
 		local total_current = 0
-		local total_max = 0
+		local total_max_instant = 0
 
 		for _, u in ipairs(cluster.units) do
 			if HEALTH_ALIVE[u] then
 				local he = ScriptUnit_has_extension(u, "health_system")
 				if he then
 					total_current = total_current + (he:current_health() or 0)
-					total_max = total_max + (he:max_health() or 0)
+					total_max_instant = total_max_instant + (he:max_health() or 0)
 				end
 			end
 		end
 
-		if total_max > 0 then
+		-- Stable max per representative unit: never decrease while this rep is alive
+		local peak = peak_cluster_max_by_rep[unit] or 0
+		if total_max_instant > peak then
+			peak = total_max_instant
+			peak_cluster_max_by_rep[unit] = peak
+		end
+
+		if peak > 0 then
 			health_current = total_current
-			health_max = total_max
-			health_percent = total_current / total_max
+			health_max = peak
+			health_percent = total_current / peak
 		else
 			health_current = 0
 			health_max = 0
@@ -1148,7 +1156,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Move bar to horde center, before template.position_offset is applied
 		if cluster.center then
 			local c = cluster.center
-
 			local cx, cy, cz = c.x, c.y, c.z
 
 			-- Base position for bar; template.position_offset will be added later
@@ -1161,6 +1168,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 		end
 	else
+		-- Non-horde or clusters disabled: let engine use unit_node + position_offset
+		-- and clear any stored peak for this rep to avoid leaking between uses.
+		peak_cluster_max_by_rep[unit] = nil
+		if marker.world_position then
+			marker.world_position = nil
+		end
 	end
 
 	-------------------------------------------------------------------
