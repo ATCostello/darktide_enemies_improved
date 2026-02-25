@@ -1,20 +1,3 @@
--- features to add:
---
--- MARKERS:
--- initial (unaggroed) colour
--- player aggroed colour
--- friend aggroed colour
--- pulsing on special attacks
---
--- HEALTHBARS:
--- initial colour
--- shield colour
--- 20% health execute
---
--- DEBUFFS:
--- icons (emojis?)
--- stacks
--- stack grouping for hordes?
 
 local mod = get_mod("enemy_markers")
 
@@ -22,61 +5,37 @@ mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localizati
 local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
-local EnemyUtilityDebuffTemplate =
-	mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
-
+local EnemyUtilityDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
 local HudElementSmartTagging = require("scripts/ui/hud/elements/smart_tagging/hud_element_smart_tagging")
 
--- Per-frame computed settings
 mod.frame_settings = {}
-
--- Lazy per-marker-type cache
-mod.fc_typecache = {}
-
--- Caching enemy markers and broadphase results
 mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_markers_alerted = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
 mod.enemy_utility_debuffs = {}
-
 mod._broadphase_results = {}
 local healthbar_ids = {}
 mod.marked_dead = {}
 
--- Per-frame processing cap and temp buffers (1)
-local MAX_ENEMIES_PER_FRAME = 100 -- tune if needed
-local _enemy_units_temp = {} -- compact list of units this frame
-local _last_enemy_index = 0 -- rotating index for fairness
+local MAX_ENEMIES_PER_FRAME = 100
+local _enemy_units_temp = {}
+local _last_enemy_index = 0
 
--- Alerted throttling (2)
 local _alert_last_t = 0
-local ALERT_UPDATE_INTERVAL = 0.1 -- seconds
+local ALERT_UPDATE_INTERVAL = 0.1
 
--- Dead bookkeeping cleanup (5)
 local _dead_cleanup_accum = 0
-local DEAD_CLEANUP_INTERVAL = 5 -- seconds
+local DEAD_CLEANUP_INTERVAL = 5
 
------------------------------------------------------------------------
--- Horde healthbar clustering
------------------------------------------------------------------------
-
--- tune these defaults
 local HORDE_CLUSTER_RADIUS_SQ = 15 ^ 2
-local HORDE_MIN_UNITS_FOR_CLUSTER = 6     -- minimum units in a horde clump
-
--- Cluster data for current frame
-local _horde_clusters = {}         -- { [idx] = { breed_name, units={unit,...}, center=Vector3, total_current, total_max, rep_unit } }
-local _horde_cluster_by_unit = {}  -- [unit] = idx
--- Tracks the highest pooled max HP seen for each cluster index
-
------------------------------------------------------------------------
--- Global colour lookup
------------------------------------------------------------------------
+local HORDE_MIN_UNITS_FOR_CLUSTER = 6
+local _horde_clusters = {}
+local _horde_cluster_by_unit = {}
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -87,10 +46,6 @@ local COLOUR_LOOKUP = {
 	Terminal = Color.terminal_background(200, true),
 	Default = { 255, 161, 166, 169 },
 }
-
------------------------------------------------------------------------
--- Helpers to avoid repeated global table lookups
------------------------------------------------------------------------
 
 local Managers_player = Managers.player
 local Managers_state = Managers.state
@@ -108,8 +63,25 @@ local next = next
 local pairs = pairs
 
 -----------------------------------------------------------------------
--- Add marker templates + preload resources once
+-- Add marker templates + preload resources
 -----------------------------------------------------------------------
+dbg_em = mod
+
+mod.on_game_state_changed = function(state, state_name)
+-- Preload views to get textures/icons, to prevent crashing.
+	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/inventory_background_view/inventory_background_view","enemy_markers",nil,true)
+	Managers.package:load("packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view","enemy_markers",nil,true)
+	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view","enemy_markers",nil,true)
+	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
+	Managers.package:load("packages/ui/views/masteries_overview_view/masteries_overview_view","enemy_markers",nil,true)
+	Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
+
+	-- for terminal_header_glow
+	Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemy_markers", nil, true)
+end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	-- add new marker templates to templates table
@@ -117,61 +89,13 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
 	self._marker_templates[EnemyUtilityDebuffTemplate.name] = EnemyUtilityDebuffTemplate
+
 	-- clear caches on markers init
 	mod.clear_caches()
-
-	-- Preload views to get textures/icons, to prevent crashing.
-	-- This is all one-time, so it's fine to be a bit heavy.
-	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/inventory_background_view/inventory_background_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load(
-		"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-
-	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-
-	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/masteries_overview_view/masteries_overview_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/mission_board_view/mission_board_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/marks_vendor_view/marks_vendor_view", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/marks_goods_vendor_view/marks_goods_vendor_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load(
-		"packages/ui/views/premium_currency_purchase_view/premium_currency_purchase_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load("packages/ui/views/store_view/store_view", "enemy_markers", nil, true)
 end)
 
 -----------------------------------------------------------------------
--- Hook into the frame update
+-- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
@@ -183,39 +107,36 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		return
 	end
 
-	-- Hide default health bars (all damage_indicator variants except our custom)
+	mod.markers = self._markers_by_type
+
+	-- Hide default health bars (all damage_indicator variants except our custom one)
 	for i = 1, #markers do
 		local marker = markers[i]
 		local template = marker and marker.template
 
 		if template then
 			local name = template.name
-			-- cheap check first: avoid string.find unless "damage_indicator" might be present
 			if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
 				marker.draw = false
 				marker.alpha_multiplier = 0
-				marker.force_invisible = true
-				marker.visibility_group = "never"
 			end
 		end
 	end
 end)
 
 -----------------------------------------------------------------------
--- Frame settings builder (minimize mod:get per-frame)
+-- Frame settings builder
 -----------------------------------------------------------------------
 
--- Cached last-used draw distance setting key to avoid extra lookups
 local _last_draw_distance_key
 local _last_draw_distance_value = 50
 
 local function build_frame_settings(mod, dt)
 	local fs = mod.frame_settings
 
-	-- Store dt for features that need time accumulation (5)
 	fs.dt = dt or 0
 
-	-- ADS detection ONCE per frame
+	-- ADS detection
 	local is_ads = false
 	local player = Managers_player:local_player(1)
 	if player then
@@ -231,7 +152,7 @@ local function build_frame_settings(mod, dt)
 
 	fs.is_ads = is_ads
 
-	-- LOS fade settings (3: shared, to be respected by templates)
+	-- LOS stuff
 	local los_enabled = mod:get("los_fade_enable") == true
 	local los_opacity = (mod:get("los_opacity") or 100) / 100
 	local ads_los_opacity = (mod:get("ads_los_opacity") or 100) / 100
@@ -241,7 +162,7 @@ local function build_frame_settings(mod, dt)
 	fs.ads_los_opacity = ads_los_opacity
 	fs.ads_blend = math_lerp(fs.ads_blend or 0, is_ads and 1 or 0, 0.25)
 
-	-- Draw distance setting may itself be a key referencing another setting
+	-- Draw distance stuff
 	local draw_distance_key = mod:get("draw_distance")
 	if draw_distance_key ~= _last_draw_distance_key then
 		_last_draw_distance_key = draw_distance_key
@@ -249,7 +170,7 @@ local function build_frame_settings(mod, dt)
 	end
 	fs.draw_distance = _last_draw_distance_value
 
-	-- Feature toggles (single batch of mod:get per frame)
+	-- Feature toggles
 	fs.enable = fs.enable or {}
 	local enable = fs.enable
 	enable.markers = mod:get("markers_enable")
@@ -260,7 +181,7 @@ local function build_frame_settings(mod, dt)
 end
 
 -----------------------------------------------------------------------
--- Enemy scanning: broadphase + cache
+-- Enemy scanning
 -----------------------------------------------------------------------
 
 mod.scan_enemies = function()
@@ -296,7 +217,6 @@ mod.scan_enemies = function()
 	local enemy_side_names = side:relation_side_names("enemy")
 	local range = mod.frame_settings.draw_distance or 50
 
-	-- Clear previous frame broadphase results
 	table_clear(mod._broadphase_results)
 
 	local num_hits = broadphase.query(broadphase, from_pos, range, mod._broadphase_results, enemy_side_names)
@@ -336,15 +256,6 @@ local marker_ids = {}
 -- Table to map marker IDs to units
 local marker_to_unit = {}
 
--- Unused helper retained for compatibility if referenced elsewhere
-local set_marker_id = function(marker_id)
-	for unit, stored_marker_id in pairs(marker_to_unit) do
-		if stored_marker_id == marker_id then
-			return unit
-		end
-	end
-end
-
 -----------------------------------------------------------------------
 -- Alerted enemies
 -----------------------------------------------------------------------
@@ -383,13 +294,12 @@ end
 -- Horde clustering helpers
 -----------------------------------------------------------------------
 
--- Build clusters from a compact list of units for this frame
+-- Build clusters from a compact list of units
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 
-	-- Collect horde candidates
-	local candidates = {} -- { { unit, breed_name, pos }, ... }
+	local candidates = {}
 	local c_count = 0
 
 	for i = 1, num_units do
@@ -426,7 +336,7 @@ local function _build_horde_clusters(units, num_units)
 
 			local units_in_cluster = { seed.unit }
 			local sum_x, sum_y = pos_i.x, pos_i.y
-			local base_z = pos_i.z+1.4
+			local base_z = pos_i.z+1.8
 
 			local count = 1
 
@@ -463,7 +373,7 @@ local function _build_horde_clusters(units, num_units)
 					z = base_z,
 				}
 
-				-- Sum health across cluster members (current & instantaneous max)
+				-- Sum health across cluster members
 				local total_current = 0
 				local total_max = 0
 
@@ -499,7 +409,6 @@ local function _build_horde_clusters(units, num_units)
 	end
 end
 
--- Public helper for the templates
 mod.get_horde_cluster_for_unit = function(unit)
 	local idx = _horde_cluster_by_unit[unit]
 	return idx and _horde_clusters[idx] or nil
@@ -509,7 +418,6 @@ end
 -- Enemy markers
 -----------------------------------------------------------------------
 
--- Updated to accept compact unit list and count (1,2,4)
 mod.update_enemy_markers = function(units, num_units, t)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.markers) then
@@ -568,15 +476,12 @@ mod.update_enemy_markers = function(units, num_units, t)
 		end
 	end
 
-	-- Alerted logic: build alerted set & recolor relevant markers,
-	-- throttled to avoid expensive behavior checks every frame (2)
 	local now = (Managers_time and Managers_time:time("gameplay")) or t or 0
 	local enemy_markers_alerted = mod.enemy_markers_alerted
 
 	if now - _alert_last_t > ALERT_UPDATE_INTERVAL then
 		_alert_last_t = now
 
-		-- First pass: build alerted set
 		for i = 1, num_units do
 			local unit = units[i]
 			if enemy_cache[unit] then
@@ -598,7 +503,6 @@ mod.update_enemy_markers = function(units, num_units, t)
 		end
 	end
 
-	-- Second pass: recolor markers for alerted enemies
 	if next(enemy_markers_alerted) then
 		local ui_manager = Managers_ui
 		local hud = ui_manager and ui_manager:get_hud()
@@ -637,7 +541,6 @@ end
 -- Enemy healthbars
 -----------------------------------------------------------------------
 
--- Updated to accept compact unit list and count (1)
 mod.update_enemy_healthbars = function(units, num_units)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.healthbar) then
@@ -645,7 +548,6 @@ mod.update_enemy_healthbars = function(units, num_units)
 	end
 
 	if fs.enable.horde_clusters then 
-		-- Build horde clusters for this frame so we know which units belong to a consolidated horde
 		_build_horde_clusters(units, num_units)
 	else
 		table_clear(_horde_clusters)
@@ -733,7 +635,6 @@ end
 local debuff_ids = {}
 local utility_debuff_ids = {}
 
--- Updated to accept compact unit list and count (1)
 mod.update_enemy_debuffs = function(units, num_units)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.debuff) then
@@ -886,7 +787,6 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	-- Early-out: if all features disabled, skip everything
 	build_frame_settings(mod, dt or 0)
 	local fs = mod.frame_settings
 	local enable = fs.enable
@@ -899,12 +799,10 @@ mod.update_enemies = function(dt, t)
 
 	local enemy_cache = mod.enemy_cache
 
-	-- If enemy cache is empty, nothing to do
 	if not next(enemy_cache) then
 		return
 	end
 
-	-- Build a compact list of units, capped per frame (1)
 	local temp = _enemy_units_temp
 	local count = 0
 
@@ -953,7 +851,7 @@ mod.update_enemies = function(dt, t)
 		mod.update_enemy_utility_debuffs(temp, to_process)
 	end
 
-	-- Periodic cleanup of marked_dead entries for units no longer in cache (5)
+	-- Periodic cleanup of marked_dead entries for units no longer in cache
 	_dead_cleanup_accum = _dead_cleanup_accum + (fs.dt or 0)
 	if _dead_cleanup_accum > DEAD_CLEANUP_INTERVAL then
 		_dead_cleanup_accum = 0
@@ -970,10 +868,7 @@ end
 -----------------------------------------------------------------------
 
 mod.on_setting_changed = function(setting_id)
-	-- Clearing caches ensures new settings take effect cleanly.
 	mod.clear_caches()
-
-	-- Reset draw distance cache so it picks up new settings
 	_last_draw_distance_key = nil
 	_last_draw_distance_value = 50
 end

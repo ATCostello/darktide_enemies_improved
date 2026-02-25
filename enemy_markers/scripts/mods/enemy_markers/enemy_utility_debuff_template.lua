@@ -12,13 +12,11 @@ local hb_size_height = mod:get("hb_size_height") or 15
 local max_visible_rows_setting = mod:get("max_visible_rows") or 5
 local draw_distance_setting = mod:get("draw_distance") or 25
 
--- Optional: show debuff names & pop behaviour
 local show_names = mod:get("debuff_names") == true
 local names_fade = mod:get("debuff_names_fade") == true
 
 local enable_horde = mod:get("debuff_horde_enable") or false
 
--- timing (seconds) for name pop
 local NAME_FADE_IN = 0.15
 local NAME_VISIBLE = 1.0
 local NAME_FADE_OUT = 0.4
@@ -31,7 +29,7 @@ local size = {
 
 template.size = size
 template.name = "enemy_utility_debuff"
-template.unit_node = "j_neck"
+template.unit_node = "root_point"
 template.position_offset = { 0, 0, 0.8 }
 template.max_visible_rows = max_visible_rows_setting
 
@@ -54,9 +52,8 @@ template.evolve_distance = 1
 template.scale_settings = {
 	scale_from = 0.4,
 	scale_to = 1,
-	distance_max = template.max_distance,
-	distance_min = template.evolve_distance,
-	easing_function = math.easeCubic,
+	distance_max = 25,
+	distance_min = 0.5,
 }
 
 template.fade_settings = {
@@ -113,7 +110,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local row_step = bar_height + 8
 	local icon_x = bar_width * 0.5 - 50
 	local name_x = bar_width * 0.5 - 100
-	local stack_x = bar_width * 0.5 + 10
+	local stack_x = bar_width * 0.5 + 20
 
 	for i = 1, max_rows do
 		local icon_bg_id = "util_icon_background_" .. i
@@ -124,9 +121,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		local row_offset_y = base_y - ((i - 1) * row_step)
 
 		content[icon_bg_id] = "content/ui/materials/effects/terminal_header_glow"
-		content[icon_id] = "" -- no icon by default
-		content[stack_text_id] = "" -- no text by default
-		content[name_text_id] = "" -- name text
+		content[icon_id] = ""
+		content[stack_text_id] = ""
+		content[name_text_id] = ""
 
 		-- BACKGROUND
 		passes[#passes + 1] = {
@@ -147,8 +144,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				4,
 			},
+			default_offset = {
+				icon_x,
+				row_offset_y,
+				4,
+			},
 			color = { 20, 0, 0, 0 },
 			size = { 30, 30 },
+			default_size = { 30, 30 },
 		}
 
 		-- ICON
@@ -169,7 +172,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
+			default_offset = {
+				icon_x,
+				row_offset_y,
+				6,
+			},
 			size = { 20, 20 },
+			default_size = { 20, 20 },
+
 			color = { 255, 255, 255, 255 },
 		}
 
@@ -194,18 +204,25 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
+			default_offset = {
+				stack_x,
+				row_offset_y,
+				6,
+			},
 			font_type = "proxima_nova_bold",
 			font_size = 18,
-			text_color = { 0, 255, 255, 255 }, -- brighter base colour; alpha still controlled in update
-			size = { bar_width * 0.25, 20 },
+			default_font_size = 18,
 
-			-- Make it pop against busy backgrounds
+			text_color = { 0, 255, 255, 255 },
+			size = { bar_width * 0.25, 20 },
+			default_size = { bar_width * 0.25, 20 },
+
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
 			shadow_color = { 200, 0, 0, 0 },
 		}
 
-		-- DEBUFF NAME (left side of row, same Y as icon)
+		-- DEBUFF NAME
 		passes[#passes + 1] = {
 			pass_type = "text",
 			style_id = name_text_id,
@@ -227,19 +244,25 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			offset = {
 				name_x,
 				row_offset_y,
-				7, -- nudge slightly above icons so it doesn’t overlap
+				7,
+			},
+			default_offset = {
+				name_x,
+				row_offset_y,
+				7,
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 18, -- was 14
-			text_color = { 0, 255, 255, 255 }, -- brighter base colour; alpha still controlled in update
+			font_size = 18,
+			default_font_size = 18,
 
-			-- Narrower width so long names don’t shrink too much
-			size = { 260, 22 }, -- was { 600, 18 }
+			text_color = { 0, 255, 255, 255 },
+
+			size = { 260, 22 },
+			default_size = { 260, 22 },
 
 			truncated = true,
 			max_lines = 1,
 
-			-- Make it pop against busy backgrounds
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
 			shadow_color = { 200, 0, 0, 0 },
@@ -260,6 +283,8 @@ end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local unit = marker.unit
+	local content = widget.content
+
 	if not unit then
 		marker.draw = false
 		return
@@ -272,6 +297,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		return
 	end
+
+	-------------------------------------------------------------------
+	-- Breed / type
+	-------------------------------------------------------------------
+	local unit_data_extension = content.unit_data_extension or ScriptUnit_has_extension(unit, "unit_data_system")
+	content.unit_data_extension = unit_data_extension
+	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
+	content.breed = breed
 
 	local buff_extension = ScriptUnit.extension(unit, "buff_system")
 	if not buff_extension then
@@ -350,10 +383,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_scale = 1.1,
 				prev_stacks = stacks,
 				y = y_base,
-
-				-- name pop state
 				name_time = 0,
-				name_visible = show_names, -- start visible on first appearance
+				name_visible = show_names,
 			}
 			state_table[name] = state
 		end
@@ -380,7 +411,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if stack_lerp_t > 1 then
 			stack_lerp_t = 1
 		end
-		state.scale = math_lerp(state.scale, 0, stack_lerp_t)
+		state.scale = math_lerp(state.scale, 0.5, stack_lerp_t)
 
 		local icon_lerp_t = dt * 6
 		if icon_lerp_t > 1 then
@@ -388,7 +419,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 		state.icon_scale = math_lerp(state.icon_scale, 0, icon_lerp_t)
 
-		-- Update name pop timer if enabled
 		if show_names and state.name_visible then
 			state.name_time = state.name_time + dt
 			if state.name_time >= NAME_TOTAL and names_fade == true then
@@ -400,7 +430,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active_lookup[name] = true
 	end
 
-	-- Fade out removed
 	for name, state in pairs(state_table) do
 		if not active_lookup[name] then
 			local alpha = state.alpha - dt * 255 * fade_speed
@@ -410,6 +439,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				state.alpha = alpha
 			end
 		end
+	end
+
+	-------------------------------------------------------------------
+	-- Height / healthbar position logic
+	-------------------------------------------------------------------
+	local root_position = Unit.world_position(unit, 1)
+
+	if not marker.world_position then
+		root_position.z = root_position.z + content.breed.base_height
+		marker.world_position = Vector3Box(root_position)
+	else
+		root_position.z = root_position.z + content.breed.base_height
+
+		marker.world_position:store(root_position)
 	end
 
 	-- DRAW ROWS
@@ -432,12 +475,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local state = state_table[name]
 
 			if state then
-				-- Horizontal slide on appear
 				local alpha_factor = state.alpha / 255
 				local appear_offset = 15 * (alpha_factor - 1)
 
 				local icon_offset_x = template_size_1 * 0.5 - 45 + appear_offset
-				local stack_offset_x = template_size_1 * 0.5 + 10 + appear_offset
+				local stack_offset_x = template_size_1 * 0.5 + 20 + appear_offset
 				local name_offset_x = template_size_1 * 0.5 - 70 + appear_offset
 
 				icon_style.offset[1] = icon_offset_x
@@ -456,7 +498,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				content[stack_text_id] = "x " .. stacks
 
-				-- Optional localized debuff name with pop fade
 				if show_names then
 					if state.name_visible and name_text_style then
 						local loc_id = name
@@ -507,9 +548,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				local c = icon_style.color
 
-				-- A
 				c[1] = state.alpha
-				-- R, G, B with fallbacks
 				c[2] = colour[2] or colour[1] or 255
 				c[3] = colour[3] or colour[2] or 255
 				c[4] = colour[4] or colour[3] or 255
@@ -521,21 +560,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					c[3] = (c[3] + 40 < 255) and (c[3] + 40) or 255
 				end
 
-				-- Stack pulse
-				local scale = 1 + (0.35 * state.scale)
-				stack_text_style.font_size = 18 * scale
-				stack_text_style.text_color[1] = state.alpha
-
-				-- Icon pulse
-				local icon_scale = 1 + state.icon_scale
-				icon_style.size[1] = 20 * icon_scale
-				icon_style.size[2] = 20 * icon_scale
-
 				-- Background moves with icon
 				local bg_style = style["util_icon_background_" .. i]
 				if bg_style then
 					bg_style.offset[1] = icon_offset_x
 					bg_style.offset[2] = state.y
+				end
+
+				-- change text scale
+				local draw = marker.draw
+
+				if draw then
+					local scale = marker.scale
+
+					local stack_counter = style["stack_counter_" .. i]
+
+					if stack_counter then
+						stack_counter.font_size = stack_counter.default_font_size * scale
+					end
+
+					local debuff_name = style["debuff_name_" .. i]
+
+					if debuff_name then
+						debuff_name.font_size = debuff_name.default_font_size * scale
+					end
 				end
 			end
 		else

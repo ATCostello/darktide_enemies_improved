@@ -4,7 +4,7 @@ local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
 -----------------------------------------------------------------------
--- Cached settings / constants (evaluated once)
+-- Cached settings / constants
 -----------------------------------------------------------------------
 
 local max_size_value = 32
@@ -16,14 +16,11 @@ local icon_size = { max_size_value / 2, max_size_value / 2 }
 local background_size = { max_size_value, max_size_value }
 local scale_fraction = 0.75
 
--- Settings that were previously mod:get() inline
 local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or false
 local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
 local MAX_DISTANCE_SETTING = mod:get("draw_distance") or 25
-
 local enable_horde = mod:get("marker_horde_enable") or false
 
--- Pre-cache math & Application globals used every frame
 local math_min = math.min
 local math_max = math.max
 local math_sin = math.sin
@@ -76,9 +73,8 @@ template.evolve_distance = 1
 template.scale_settings = {
 	scale_from = 0.4,
 	scale_to = 1,
-	distance_max = template.max_distance,
-	distance_min = template.evolve_distance,
-	easing_function = math.easeCubic,
+	distance_max = 25,
+	distance_min = 0.5,
 }
 
 template.fade_settings = {
@@ -96,7 +92,6 @@ template.fade_settings = {
 
 -- Fatshark typo: world markers expect `create_widget_defintion`
 template.create_widget_defintion = function(template, scenegraph_id)
-	-- use the shared size table from outer scope
 	return UIWidget.create_definition({
 		{
 			pass_type = "texture",
@@ -107,7 +102,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
 				size = background_size,
+				default_size = background_size,
+
 				offset = { 0, 0, 1 },
+				default_offset = { 0, 0, 1 },
+
 				color = { 200, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
@@ -123,7 +122,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
 				size = size,
+				default_size = size,
+
 				offset = { 0, 0, 5 },
+				default_offset = { 0, 0, 5 },
+
 				color = { 0, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
@@ -139,7 +142,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
 				size = ping_size,
+				default_size = ping_size,
+
 				offset = { 0, 0, 0 },
+				default_offset = { 0, 0, 0 },
+
 				color = { 255, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
@@ -155,7 +162,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
 				size = icon_size,
+				default_size = icon_size,
+
 				offset = { 0, 0, 3 },
+				default_offset = { 0, 0, 3 },
+
 				color = { 0, 200, 175, 0 },
 			},
 			visibility_function = function(content, style)
@@ -171,7 +182,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				horizontal_alignment = "center",
 				vertical_alignment = "center",
 				size = arrow_size,
+				default_size = arrow_size,
+
 				offset = { 0, 0, 2 },
+				default_offset = { 0, 0, 2 },
+
 				color = Color.ui_hud_green_super_light(255, true),
 			},
 			visibility_function = function(content, style)
@@ -203,12 +218,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local data = marker.data
 
 	local unit = marker.unit
-	
 
 	local evolve_distance = template.evolve_distance
 	local style = widget.style
 
-	-- currently always false; kept for compatibility / future use
 	local can_interact = false
 
 	local scale_speed = 8
@@ -222,7 +235,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		scale_progress = math_max(scale_progress - dt * scale_speed, 0)
 	end
 
-	-- scaling controlled by marker.scale unless explicitly ignored
 	marker.ignore_scale = false
 	local global_scale = (marker.ignore_scale and 1) or marker.scale or 1
 

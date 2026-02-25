@@ -8,7 +8,7 @@ local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
 -----------------------------------------------------------------------
--- Cached mod settings (evaluated once at load)
+-- Cached mod settings
 -----------------------------------------------------------------------
 
 template.show_damage_numbers = mod:get("hb_show_damage_numbers") or false
@@ -31,7 +31,7 @@ local draw_distance_setting = mod:get("draw_distance") or 25
 
 template.size = size
 template.name = "enemy_healthbar"
-template.unit_node = "j_neck"
+template.unit_node = "root_point"
 template.position_offset = { 0, 0, 0.8 }
 
 template.check_line_of_sight = true
@@ -44,7 +44,7 @@ template.bar_settings = {
 	animate_on_health_increase = true,
 	bar_spacing = 2,
 	duration_health = 1,
-	duration_health_ghost = 3,
+	duration_health_ghost = 2,
 	health_animation_threshold = 0,
 }
 
@@ -53,9 +53,8 @@ template.evolve_distance = 1
 template.scale_settings = {
 	scale_from = 0.4,
 	scale_to = 1,
-	distance_max = template.max_distance,
-	distance_min = template.evolve_distance,
-	easing_function = math.easeCubic,
+	distance_max = 25,
+	distance_min = 0.5,
 }
 
 template.fade_settings = {
@@ -147,8 +146,8 @@ template.damage_number_settings = {
 }
 
 local previous_health = {}
-local last_damaged_time = {} -- unused but keep for compatibility if referenced elsewhere
-local peak_cluster_max_by_rep = {} -- [rep_unit] = highest pooled max HP seen
+local last_damaged_time = {}
+local peak_cluster_max_by_rep = {}
 
 local BREED_COLORS = {
 	horde = { 200, 255, 0, 0 },
@@ -168,7 +167,7 @@ local armor_type_string_lookup = {
 }
 
 -----------------------------------------------------------------------
--- Damage number render helpers (unchanged)
+-- Damage number render helpers
 -----------------------------------------------------------------------
 
 local function _readable_damage_number_function(
@@ -682,7 +681,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					0,
 				},
+				default_offset = {
+					bar_offset[1] - 6,
+					bar_offset[2],
+					0,
+				},
 				size = {
+					bar_width + 12,
+					bar_height + 6,
+				},
+				default_size = {
 					bar_width + 12,
 					bar_height + 6,
 				},
@@ -702,7 +710,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				vertical_alignment = "center",
 				offset = bar_offset,
+				default_offset = bar_offset,
+
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -726,7 +740,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					1,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					1,
+				},
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -750,12 +773,21 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					2,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					2,
+				},
 				size = {
 					bar_width,
 					bar_height,
 				},
+				default_size = {
+					bar_width,
+					bar_height,
+				},
 				color = {
-					180,
+					150,
 					120,
 					40,
 					40,
@@ -774,7 +806,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					3.5,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					3.5,
+				},
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -798,7 +839,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					3,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					3,
+				},
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -824,7 +874,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					5,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					5,
+				},
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -850,12 +909,21 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					6,
 				},
+				defaultoffset = {
+					bar_offset[1],
+					bar_offset[2],
+					6,
+				},
 				size = {
 					bar_width,
 					bar_height,
 				},
+				default_size = {
+					bar_width,
+					bar_height,
+				},
 				color = {
-					200,
+					0,
 					255,
 					255,
 					255,
@@ -877,7 +945,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					0,
 				},
+				default_offset = {
+					bar_offset[1],
+					bar_offset[2],
+					0,
+				},
 				size = {
+					bar_width,
+					bar_height,
+				},
+				default_size = {
 					bar_width,
 					bar_height,
 				},
@@ -899,7 +976,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
 				offset = { -bar_width * 0.5 - 16, 0, 6 },
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
+
 				size = { 32, 32 },
+				default_size = { 32, 32 },
+
 				color = { 0, 255, 255, 255 },
 			},
 		},
@@ -913,22 +994,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
 				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				size = { 32, 32 },
-				color = { 0, 255, 100, 255 },
-			},
-		},
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
 
-		-- SHIELD ICON
-		{
-			pass_type = "texture",
-			style_id = "icon_shield",
-			value = "content/ui/materials/icons/traits/trait_shield",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
 				size = { 32, 32 },
-				color = { 0, 200, 200, 255 },
+				default_size = { 32, 32 },
+
+				color = { 0, 255, 100, 255 },
 			},
 		},
 
@@ -948,12 +1019,18 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					-bar_height - 8,
 					6,
 				},
+				default_offset = {
+					-bar_width * 0.5,
+					-bar_height - 8,
+					6,
+				},
 				font_type = "proxima_nova_bold",
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { (bar_width / 2) - 2, 20 },
+				default_size = { (bar_width / 2) - 2, 20 },
 			},
 		},
 
@@ -973,12 +1050,19 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_height + 8,
 					6,
 				},
+				default_offset = {
+					-bar_width * 0.5,
+					bar_height + 8,
+					6,
+				},
 				font_type = "proxima_nova_bold",
 				font_size = 18,
-				default_font_size = 14,
+				default_font_size = 18,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { bar_width, 20 },
+				default_size = { bar_width, 20 },
+
 				drop_shadow = true,
 			},
 		},
@@ -997,12 +1081,19 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					-bar_height - 20,
 					1,
 				},
+				default_offset = {
+					bar_width * 0.5,
+					-bar_height - 20,
+					1,
+				},
 				font_type = "proxima_nova_bold",
 				font_size = 18,
-				default_font_size = 14,
+				default_font_size = 18,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { bar_width, 20 },
+				default_size = { bar_width, 20 },
+
 				drop_shadow = true,
 			},
 		},
@@ -1176,17 +1267,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-------------------------------------------------------------------
-	-- Bar logic (uses possibly overridden health_percent)
-	-------------------------------------------------------------------
 	local bar_logic = marker.bar_logic
 	bar_logic:update(dt, t, health_percent)
 
 	local health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
 
-	-------------------------------------------------------------------
-	-- Track damage (per-hit diff for text & numbers)
-	-------------------------------------------------------------------
 	local damage_taken_since_last = 0
 	local prev_hp = previous_health[unit]
 	if prev_hp then
@@ -1401,11 +1486,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			toughness_style.size[1] = 0
 		end
-
-		-- 25% health EXECUTE color
-		if health_fraction <= 0.25 then
-			style.bar.color = { 255, 255, 255, 50 }
-		end
 	elseif health_fraction then
 		local bar_width_total = template.size[1]
 		style.bar.size[1] = bar_width_total * health_fraction
@@ -1419,7 +1499,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	style.icon_elite.color[1] = 0
 	style.icon_boss.color[1] = 0
-	style.icon_shield.color[1] = 0
 
 	if breed_type == "elite" or breed_type == "ogryn" then
 		style.icon_elite.color[1] = 0
@@ -1442,13 +1521,21 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local icon_offset_y = 0
 
-	if style.icon_shield.color[1] > 0 then
-		style.icon_shield.offset[2] = icon_offset_y
-		icon_offset_y = icon_offset_y + 16
-	end
-
 	if style.icon_elite.color[1] > 0 then
 		style.icon_elite.offset[2] = icon_offset_y
+	end
+
+	-------------------------------------------------------------------
+	-- Height / healthbar position logic
+	-------------------------------------------------------------------
+	local root_position = Unit.world_position(unit, 1)
+
+	if not in_horde_cluster and not marker.world_position then
+		root_position.z = root_position.z + content.breed.base_height
+		marker.world_position = Vector3Box(root_position)
+	elseif not in_horde_cluster then
+		root_position.z = root_position.z + content.breed.base_height
+		marker.world_position:store(root_position)
 	end
 
 	-------------------------------------------------------------------
@@ -1475,7 +1562,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.remove = true
 	end
 
-	-- hide by options: only hide non-clustered horde units when horde disabled
+	-- only hide non-clustered horde units when horde disabled
 	if breed_type == "horde" and not template.horde_enable and not in_horde_cluster then
 		marker.draw = false
 	end
@@ -1490,8 +1577,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local scale = marker.scale
 
 		local header_style = style.header_text
+		local health_counter = style.health_counter
+
 		if header_style then
 			header_style.font_size = header_style.default_font_size * scale
+		end
+		if health_counter then
+			health_counter.font_size = health_counter.default_font_size * scale
 		end
 	end
 end

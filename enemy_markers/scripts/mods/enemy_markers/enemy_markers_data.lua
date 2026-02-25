@@ -1,6 +1,5 @@
 local mod = get_mod("enemy_markers")
 
--- Split debuffs into DPS (DoT) and Utility (non-DPS) for separate widgets
 mod.dot_debuffs = {
 	-- DoT (Show above health bar as cool icons with stacks)
 	"bleed",
@@ -54,7 +53,6 @@ mod.utility_debuffs = {
 	"broker_punk_rage_improved_shout_debuff",
 }
 
--- Keep your existing flat list for compatibility
 mod.debuffs = {}
 for _, name in ipairs(mod.dot_debuffs) do
 	mod.debuffs[#mod.debuffs + 1] = name
