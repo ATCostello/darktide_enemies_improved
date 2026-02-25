@@ -754,7 +754,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_height,
 				},
 				color = {
-					160,
+					0,
 					90,
 					90,
 					90,
@@ -820,7 +820,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_height,
 				},
 				color = {
-					200,
+					0,
 					90,
 					160,
 					220,
@@ -909,7 +909,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_offset[2],
 					6,
 				},
-				defaultoffset = {
+				default_offset = {
 					bar_offset[1],
 					bar_offset[2],
 					6,
@@ -1261,16 +1261,38 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		-- Non-horde or clusters disabled: let engine use unit_node + position_offset
 		-- and clear any stored peak for this rep to avoid leaking between uses.
-		peak_cluster_max_by_rep[unit] = nil
+		--peak_cluster_max_by_rep[unit] = nil
+		if not HEALTH_ALIVE[unit] then
+			peak_cluster_max_by_rep[unit] = nil
+		end
+
 		if marker.world_position then
 			marker.world_position = nil
 		end
 	end
 
 	local bar_logic = marker.bar_logic
-	bar_logic:update(dt, t, health_percent)
 
-	local health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
+	-- Failsafe percent clamp
+	health_percent = health_percent or 0
+	health_percent = math_clamp(health_percent, 0, 1)
+
+	if bar_logic then
+		bar_logic:update(dt, t, health_percent)
+	end
+
+	local health_fraction, health_ghost_fraction, health_max_fraction
+
+	if bar_logic then
+		health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
+	end
+
+	-- Fallback if animation system fails
+	if not health_fraction then
+		health_fraction = health_percent
+		health_ghost_fraction = health_percent
+		health_max_fraction = 1
+	end
 
 	local damage_taken_since_last = 0
 	local prev_hp = previous_health[unit]
@@ -1446,8 +1468,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if health_fraction and health_ghost_fraction then
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
-		local bar_width_total = template.size[1]
+
+		local scale = marker.scale or 1
+		local bar_width_total = template.size[1] * scale
 		local default_width_offset = -bar_width_total * 0.5
+
 		local health_width = bar_width_total * health_fraction
 
 		style.bar.size[1] = health_width
