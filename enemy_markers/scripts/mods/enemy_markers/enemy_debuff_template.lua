@@ -76,21 +76,28 @@ local math_lerp = math.lerp
 local math_floor = math.floor
 local pairs = pairs
 local Localize = Localize
+local ScriptUnit_extension = ScriptUnit.extension
 
-local function array_contains(tbl, value)
-	if not tbl or not value then
-		return false
+-- O(1) lookup table (rebuilt only if mod.dot_debuffs changes)
+local dot_lookup = {}
+
+local function rebuild_dot_lookup()
+	table.clear(dot_lookup)
+	local list = mod.dot_debuffs
+	if not list then
+		return
 	end
 
-	for i = 1, #tbl do
-		if tbl[i] == value then
-			return true
-		end
+	for i = 1, #list do
+		dot_lookup[list[i]] = true
 	end
-
-	return false
 end
 
+-- build once at load
+rebuild_dot_lookup()
+
+local localized_cache = {}
+local stack_string_cache = {}
 -----------------------------------------------------------------------
 -- Widget definition
 -----------------------------------------------------------------------
@@ -277,6 +284,7 @@ end
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local unit = marker.unit
 	local content = widget.content
+	local need_sort = false
 
 	if not unit then
 		marker.draw = false
@@ -299,8 +307,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
 	content.breed = breed
 
-	local buff_extension = ScriptUnit.extension(unit, "buff_system")
-
+	local buff_extension = ScriptUnit_extension(unit, "buff_system")
 	if not buff_extension then
 		marker.draw = false
 		return
@@ -316,14 +323,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- Gather active debuffs that we care about
-	local active = {}
+	widget._active = widget._active or {}
+	local active = widget._active
 	local active_count = 0
+
+	-- clear without reallocating
+	for i = 1, #active do
+		active[i] = nil
+	end
 
 	for i = 1, #debuffs do
 		local buff = debuffs[i]
 		local name = buff:template_name()
 
-		if array_contains(mod.dot_debuffs, name) then
+		if dot_lookup[name] then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -340,7 +353,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local keyword = keywords[i]
 			local name = keyword
 
-			if array_contains(mod.dot_debuffs, name) then
+			if dot_lookup[name] then
 				local stacks = 1
 
 				active_count = active_count + 1
@@ -361,14 +374,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- Sort by stack count desc
-	if active_count > 1 then
+	if active_count > 1 and need_sort then
 		table_sort(active, function(a, b)
 			return a.stacks > b.stacks
 		end)
 	end
 
 	local max_rows = template.max_visible_rows or 5
-	local content = widget.content
 	local style = widget.style
 
 	widget._state = widget._state or {}
@@ -418,6 +430,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			lerp_t = 1
 		end
 		state.y = math_lerp(state.y, target_y, lerp_t)
+
+		if stacks ~= state.prev_stacks then
+			need_sort = true
+		end
 
 		-- Stack change animation
 		if stacks > state.prev_stacks then
@@ -483,6 +499,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	local template_size_1 = template.size[1]
 
+	local base_icon_x = template_size_1 * 0.5 - 45
+	local base_stack_x = template_size_1 * 0.5 + 20
+	local base_name_x = template_size_1 * 0.5 - 70
+
 	for i = 1, max_rows do
 		local icon_id = "debuff_icon_" .. i
 		local stack_text_id = "stack_counter_" .. i
@@ -504,9 +524,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local alpha_factor = state.alpha / 255
 				local appear_offset = 15 * (alpha_factor - 1)
 
-				local icon_offset_x = template_size_1 * 0.5 - 45 + appear_offset
-				local stack_offset_x = template_size_1 * 0.5 + 20 + appear_offset
-				local name_offset_x = template_size_1 * 0.5 - 70 + appear_offset
+				local icon_offset_x = base_icon_x + appear_offset
+				local stack_offset_x = base_stack_x + appear_offset
+				local name_offset_x = base_name_x + appear_offset
 
 				icon_style.offset[1] = icon_offset_x
 				icon_style.offset[2] = state.y
@@ -522,12 +542,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
 					or "content/ui/materials/icons/generic/danger"
 
-				content[stack_text_id] = "x " .. stacks
+				local stack_str = stack_string_cache[stacks]
+				if not stack_str then
+					stack_str = "x " .. stacks
+					stack_string_cache[stacks] = stack_str
+				end
 
+				content[stack_text_id] = stack_str
 				if show_names then
 					if state.name_visible and name_text_style then
-						local loc_id = name
-						content[name_text_id] = mod:localize(loc_id)
+						local loc = localized_cache[name]
+						if not loc then
+							loc = mod:localize(name)
+							localized_cache[name] = loc
+						end
+
+						content[name_text_id] = loc
 
 						-- compute name alpha based on timer
 						local t_name = state.name_time or 0

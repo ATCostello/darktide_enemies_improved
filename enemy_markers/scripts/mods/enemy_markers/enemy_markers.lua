@@ -1,11 +1,11 @@
-
 local mod = get_mod("enemy_markers")
 
 mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localization")
 local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
-local EnemyUtilityDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
+local EnemyUtilityDebuffTemplate =
+	mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
@@ -22,7 +22,7 @@ mod._broadphase_results = {}
 local healthbar_ids = {}
 mod.marked_dead = {}
 
-local MAX_ENEMIES_PER_FRAME = 100
+local MAX_ENEMIES_PER_FRAME = 300
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
@@ -36,6 +36,7 @@ local HORDE_CLUSTER_RADIUS_SQ = 15 ^ 2
 local HORDE_MIN_UNITS_FOR_CLUSTER = 6
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
+local _last_cluster_count = 0
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -62,21 +63,47 @@ local math_max = math.max
 local next = next
 local pairs = pairs
 
+-- Marker fade settings
+local DIST_FADE_START = 10        -- meters where fade begins
+local DIST_FADE_END = 50          -- full fade at draw distance
+local MIN_ALPHA = 0.1            -- never fully invisible
+local STACKING_FADE_STRENGTH = 0  -- extra fade per overlapping marker (optional)
+
 -----------------------------------------------------------------------
 -- Add marker templates + preload resources
 -----------------------------------------------------------------------
 dbg_em = mod
 
 mod.on_game_state_changed = function(state, state_name)
--- Preload views to get textures/icons, to prevent crashing.
+	-- Preload views to get textures/icons, to prevent crashing.
 	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
 	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/inventory_background_view/inventory_background_view","enemy_markers",nil,true)
-	Managers.package:load("packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view","enemy_markers",nil,true)
+	Managers.package:load(
+		"packages/ui/views/inventory_background_view/inventory_background_view",
+		"enemy_markers",
+		nil,
+		true
+	)
+	Managers.package:load(
+		"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
+		"enemy_markers",
+		nil,
+		true
+	)
 	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view","enemy_markers",nil,true)
+	Managers.package:load(
+		"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
+		"enemy_markers",
+		nil,
+		true
+	)
 	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/masteries_overview_view/masteries_overview_view","enemy_markers",nil,true)
+	Managers.package:load(
+		"packages/ui/views/masteries_overview_view/masteries_overview_view",
+		"enemy_markers",
+		nil,
+		true
+	)
 	Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
 
 	-- for terminal_header_glow
@@ -202,7 +229,6 @@ mod.scan_enemies = function()
 
 	local broadphase_system = extension_manager:system("broadphase_system")
 	local side_system = extension_manager:system("side_system")
-
 	if not broadphase_system or not side_system then
 		return
 	end
@@ -217,29 +243,33 @@ mod.scan_enemies = function()
 	local enemy_side_names = side:relation_side_names("enemy")
 	local range = mod.frame_settings.draw_distance or 50
 
-	table_clear(mod._broadphase_results)
+	local results = mod._broadphase_results
+	table_clear(results)
 
-	local num_hits = broadphase.query(broadphase, from_pos, range, mod._broadphase_results, enemy_side_names)
+	local num_hits = broadphase.query(broadphase, from_pos, range, results, enemy_side_names)
 
-	-- Mark all cached enemies as unseen this frame
-	for _, data in pairs(mod.enemy_cache) do
+	local cache = mod.enemy_cache
+
+	-- mark unseen
+	for _, data in pairs(cache) do
 		data.seen = false
 	end
 
-	-- Add or update enemies in the cache
-	local enemy_cache = mod.enemy_cache
-	local results = mod._broadphase_results
-
 	for i = 1, num_hits do
-		local enemy_unit = results[i]
+		local unit = results[i]
 
-		if Unit_alive(enemy_unit) then
-			local entry = enemy_cache[enemy_unit]
+		if Unit_alive(unit) then
+			local entry = cache[unit]
 
 			if not entry then
-				enemy_cache[enemy_unit] = {
-					unit = enemy_unit,
+				cache[unit] = {
+					unit = unit,
 					seen = true,
+
+					-- 🔥 cache extensions ONCE
+					health_ext = ScriptUnit_has_extension(unit, "health_system"),
+					unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system"),
+					behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 				}
 			else
 				entry.seen = true
@@ -336,7 +366,7 @@ local function _build_horde_clusters(units, num_units)
 
 			local units_in_cluster = { seed.unit }
 			local sum_x, sum_y = pos_i.x, pos_i.y
-			local base_z = pos_i.z+1.8
+			local base_z = pos_i.z + 1.8
 
 			local count = 1
 
@@ -360,7 +390,7 @@ local function _build_horde_clusters(units, num_units)
 								sum_y = sum_y + pos_j.y
 								count = count + 1
 							end
-						end		
+						end
 					end
 				end
 			end
@@ -386,20 +416,16 @@ local function _build_horde_clusters(units, num_units)
 				end
 
 				local idx = #_horde_clusters + 1
-                local rep_unit = units_in_cluster[1]
+				local rep_unit = units_in_cluster[1]
 
-                _horde_clusters[idx] = {
-                    breed_name    = breed_name,
-                    units         = units_in_cluster,
-                    center        = center,
-                    total_current = total_current,
-                    total_max     = total_max,
-                    rep_unit      = rep_unit,
-                }
-
-                for _, u in ipairs(units_in_cluster) do
-                    _horde_cluster_by_unit[u] = idx
-                end
+				_horde_clusters[idx] = {
+					breed_name = breed_name,
+					units = units_in_cluster,
+					center = center,
+					total_current = total_current,
+					total_max = total_max,
+					rep_unit = rep_unit,
+				}
 
 				for _, u in ipairs(units_in_cluster) do
 					_horde_cluster_by_unit[u] = idx
@@ -432,29 +458,15 @@ mod.update_enemy_markers = function(units, num_units, t)
 	for i = 1, num_units do
 		local unit = units[i]
 		local entry = enemy_cache[unit]
-		if entry then
-			local alive = Unit_alive(unit)
-			local remove_now = false
-
-			if not alive then
-				remove_now = true
-			else
-				local health_extension = ScriptUnit_has_extension(unit, "health_system")
-				if health_extension and health_extension:current_health_percent() <= 0 then
-					remove_now = true
-				end
+		if entry and entry.dead then
+			local marker_id = marker_ids[unit]
+			if marker_id then
+				Managers_event:trigger("remove_world_marker", marker_id)
+				mod.enemy_markers[unit] = nil
+				marker_ids[unit] = nil
+				marked_dead[unit] = true
 			end
-
-			if remove_now then
-				local marker_id = marker_ids[unit]
-				if marker_id then
-					Managers_event:trigger("remove_world_marker", marker_id)
-					mod.enemy_markers[unit] = nil
-					marker_ids[unit] = nil
-					marked_dead[unit] = true
-				end
-				to_remove[#to_remove + 1] = unit
-			end
+			to_remove[#to_remove + 1] = unit
 		end
 	end
 
@@ -547,8 +559,11 @@ mod.update_enemy_healthbars = function(units, num_units)
 		return
 	end
 
-	if fs.enable.horde_clusters then 
-		_build_horde_clusters(units, num_units)
+	if fs.enable.horde_clusters then
+		if num_units ~= _last_cluster_count then
+			_build_horde_clusters(units, num_units)
+			_last_cluster_count = num_units
+		end
 	else
 		table_clear(_horde_clusters)
 		table_clear(_horde_cluster_by_unit)
@@ -562,28 +577,14 @@ mod.update_enemy_healthbars = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		local entry = enemy_cache[unit]
-		if entry then
-			local alive = Unit_alive(unit)
-			local remove_now = false
-
-			if not alive then
-				remove_now = true
-			else
-				local health_ext = ScriptUnit_has_extension(unit, "health_system")
-				if health_ext and health_ext:current_health_percent() <= 0 then
-					remove_now = true
-				end
+		if entry and entry.dead then
+			local hb_id = healthbar_ids[unit]
+			if hb_id then
+				Managers_event:trigger("remove_world_marker", hb_id)
+				healthbar_ids[unit] = nil
+				mod.enemy_healthbars[unit] = nil
 			end
-
-			if remove_now then
-				local hb_id = healthbar_ids[unit]
-				if hb_id then
-					Managers_event:trigger("remove_world_marker", hb_id)
-					healthbar_ids[unit] = nil
-					mod.enemy_healthbars[unit] = nil
-				end
-				to_remove[#to_remove + 1] = unit
-			end
+			to_remove[#to_remove + 1] = unit
 		end
 	end
 
@@ -622,8 +623,7 @@ mod.update_enemy_healthbars = function(units, num_units)
 			end)
 
 			mod.enemy_healthbars[unit] = unit
-
-			::continue_healthbar_loop::
+ 			::continue_healthbar_loop::
 		end
 	end
 end
@@ -649,29 +649,15 @@ mod.update_enemy_debuffs = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		local entry = enemy_cache[unit]
-		if entry then
-			local alive = Unit_alive(unit)
-			local remove_now = false
-
-			if not alive then
-				remove_now = true
-			else
-				local health_extension = ScriptUnit_has_extension(unit, "health_system")
-				if health_extension and health_extension:current_health_percent() <= 0 then
-					remove_now = true
-				end
+		if entry and entry.dead then
+			local debuff_id = debuff_ids[unit]
+			if debuff_id then
+				Managers_event:trigger("remove_world_marker", debuff_id)
+				mod.enemy_debuffs[unit] = nil
+				debuff_ids[unit] = nil
+				marked_dead[unit] = true
 			end
-
-			if remove_now then
-				local debuff_id = debuff_ids[unit]
-				if debuff_id then
-					Managers_event:trigger("remove_world_marker", debuff_id)
-					mod.enemy_debuffs[unit] = nil
-					debuff_ids[unit] = nil
-					marked_dead[unit] = true
-				end
-				to_remove[#to_remove + 1] = unit
-			end
+			to_remove[#to_remove + 1] = unit
 		end
 	end
 
@@ -707,29 +693,15 @@ mod.update_enemy_utility_debuffs = function(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		local entry = enemy_cache[unit]
-		if entry then
-			local alive = Unit_alive(unit)
-			local remove_now = false
-
-			if not alive then
-				remove_now = true
-			else
-				local health_extension = ScriptUnit_has_extension(unit, "health_system")
-				if health_extension and health_extension:current_health_percent() <= 0 then
-					remove_now = true
-				end
+		if entry and entry.dead then
+			local id = utility_debuff_ids[unit]
+			if id then
+				Managers_event:trigger("remove_world_marker", id)
+				mod.enemy_utility_debuffs[unit] = nil
+				utility_debuff_ids[unit] = nil
+				marked_dead[unit] = true
 			end
-
-			if remove_now then
-				local id = utility_debuff_ids[unit]
-				if id then
-					Managers_event:trigger("remove_world_marker", id)
-					mod.enemy_utility_debuffs[unit] = nil
-					utility_debuff_ids[unit] = nil
-					marked_dead[unit] = true
-				end
-				to_remove[#to_remove + 1] = unit
-			end
+			to_remove[#to_remove + 1] = unit
 		end
 	end
 
@@ -783,6 +755,103 @@ mod.clear_caches = function()
 end
 
 -----------------------------------------------------------------------
+-- Marker Distance / Overlap Fading
+-----------------------------------------------------------------------
+
+mod.apply_marker_fade = function()
+	local ui_manager = Managers_ui
+	local hud = ui_manager and ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+
+	if not world_markers then
+		return
+	end
+
+	local markers_by_id = world_markers._markers_by_id
+	if not markers_by_id then
+		return
+	end
+
+	local player = Managers_player:local_player(1)
+	if not player then
+		return
+	end
+
+	local player_unit = player.player_unit
+	if not player_unit or not Unit_alive(player_unit) then
+		return
+	end
+
+	local player_pos = Unit.world_position(player_unit, 1)
+
+	-- Optional stacking tracking
+	local screen_positions = {}
+
+	for marker_id, marker in pairs(markers_by_id) do
+		if marker and marker.unit and Unit_alive(marker.unit) then
+
+			if marker.template and 
+			(marker.template.name == EnemyMarkersTemplate.name or 
+			marker.template.name == EnemyHealthbarTemplate.name or 
+			marker.template.name == EnemyDebuffTemplate.name or 
+			marker.template.name == EnemyUtilityDebuffTemplate.name) then
+				--------------------------------------------------
+				-- DISTANCE FADE
+				--------------------------------------------------
+				local unit_pos = Unit.world_position(marker.unit, 1)
+
+				local dx = unit_pos.x - player_pos.x
+				local dy = unit_pos.y - player_pos.y
+				local dz = unit_pos.z - player_pos.z
+
+				local dist = math.sqrt(dx*dx + dy*dy + dz*dz)
+
+				local fade = 1
+
+				if dist > DIST_FADE_START then
+					local t = math.clamp((dist - DIST_FADE_START) / (DIST_FADE_END - DIST_FADE_START), 0, 1)
+					fade = 1 - t
+				end
+
+				fade = math.max(fade, MIN_ALPHA)
+
+				--------------------------------------------------
+				-- OPTIONAL: simple stacking fade (same screen region)
+				--------------------------------------------------
+				local widget = marker.widget
+				if widget and widget.offset then
+					local sx = math.floor(widget.offset[1] / 50)
+					local sy = math.floor(widget.offset[2] / 50)
+
+					local key = sx .. ":" .. sy
+					screen_positions[key] = (screen_positions[key] or 0) + 1
+
+					local stack_count = screen_positions[key]
+					if stack_count > 1 then
+						fade = fade - (stack_count - 1) * STACKING_FADE_STRENGTH
+					end
+				end
+
+				marker.alpha_multiplier = math.clamp(fade, MIN_ALPHA, 1)
+
+				local final_alpha = math.clamp(fade, MIN_ALPHA, 1)
+
+				local widget = marker.widget
+				if widget and widget.style then
+					for _, style in pairs(widget.style) do
+						if style.color then
+							-- Mutate existing table (no allocations)
+							local base_alpha = 255
+							style.color[1] = base_alpha * final_alpha
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+-----------------------------------------------------------------------
 -- Main update orchestration
 -----------------------------------------------------------------------
 
@@ -820,6 +889,22 @@ mod.update_enemies = function(dt, t)
 
 	local to_process = math_min(count, MAX_ENEMIES_PER_FRAME)
 
+	-- SINGLE PASS death detection
+	for i = 1, to_process do
+		local unit = temp[i]
+		local entry = mod.enemy_cache[unit]
+
+		if entry then
+			local dead = false
+
+			if not Unit_alive(unit) then
+				dead = true
+			end
+
+			entry.dead = dead
+		end
+	end
+
 	-- select a rotating window of units into first to_process entries
 	if to_process < count then
 		local idx = _last_enemy_index
@@ -835,7 +920,7 @@ mod.update_enemies = function(dt, t)
 
 	-- trim any extra entries in temp
 	for i = to_process + 1, count do
-			temp[i] = nil
+		temp[i] = nil
 	end
 
 	if enable.markers then
@@ -850,6 +935,9 @@ mod.update_enemies = function(dt, t)
 		mod.update_enemy_debuffs(temp, to_process)
 		mod.update_enemy_utility_debuffs(temp, to_process)
 	end
+
+		-- Apply distance / stacking fade to all active markers
+	mod.apply_marker_fade()
 
 	-- Periodic cleanup of marked_dead entries for units no longer in cache
 	_dead_cleanup_accum = _dead_cleanup_accum + (fs.dt or 0)

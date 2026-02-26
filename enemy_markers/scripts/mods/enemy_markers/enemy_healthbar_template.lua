@@ -78,6 +78,7 @@ local Managers_player = Managers.player
 local Color_color = Color
 local Vector3 = Vector3
 local Vector3Box = Vector3Box
+local difficulty_manager = Managers.state.difficulty
 
 local math_clamp = math.clamp
 local math_lerp = math.lerp
@@ -169,6 +170,24 @@ local armor_type_string_lookup = {
 -----------------------------------------------------------------------
 -- Damage number render helpers
 -----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+-- Cached damage number colors (NO per-frame allocation)
+-----------------------------------------------------------------------
+
+local CACHED_DAMAGE_COLORS = {}
+
+local function _init_damage_colors()
+	if next(CACHED_DAMAGE_COLORS) then
+		return
+	end
+
+	local settings = template.damage_number_settings
+
+	CACHED_DAMAGE_COLORS.default = Color_color[settings.default_color](255, true)
+	CACHED_DAMAGE_COLORS.crit = Color_color[settings.crit_color](255, true)
+	CACHED_DAMAGE_COLORS.weakspot = Color_color[settings.weakspot_color](255, true)
+end
 
 local function _readable_damage_number_function(
 	ui_content,
@@ -520,10 +539,16 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 	local dps_font_size = damage_number_settings.dps_font_size * scale
 	local hundreds_font_size = damage_number_settings.hundreds_font_size * scale
 	local font_type = ui_style.font_type
-	local default_color = Color_color[damage_number_settings.default_color](255, true)
-	local crit_color = Color_color[damage_number_settings.crit_color](255, true)
-	local weakspot_color = Color_color[damage_number_settings.weakspot_color](255, true)
-	local text_color = table_clone(default_color)
+
+	_init_damage_colors()
+
+	local default_color = CACHED_DAMAGE_COLORS.default
+	local crit_color = CACHED_DAMAGE_COLORS.crit
+	local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
+
+	-- reuse same table reference
+	local text_color = ui_style.text_color
+
 	local num_damage_numbers = #damage_numbers
 	local z_position = position[3]
 	local y_position = position[2]
@@ -931,42 +956,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 		},
 
-		-- subtle background glowing segments
-		{
-			pass_type = "texture",
-			style_id = "background_glow_segments",
-			value = "content/ui/materials/effects/terminal_header_glow",
-			value_id = "background_glow_segments",
-			style = {
-				scale_to_material = true,
-				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					0,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					0,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					0,
-					255,
-					255,
-					255,
-				},
-			},
-		},
-
 		-- ELITE ICON
 		{
 			pass_type = "texture",
@@ -1124,6 +1113,27 @@ template.on_enter = function(widget, marker, template)
 
 	local bar_settings = template.bar_settings
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
+
+	if breed then
+		local tags = breed.tags or {}
+		if tags.horde or tags.roamer then
+			content._breed_type = "horde"
+		elseif tags.elite then
+			content._breed_type = "elite"
+		elseif tags.special then
+			content._breed_type = "special"
+		elseif tags.monster then
+			content._breed_type = "monster"
+		elseif tags.captain then
+			content._breed_type = "captain"
+		elseif tags.disabler then
+			content._breed_type = "disabler"
+		elseif tags.witch then
+			content._breed_type = "witch"
+		else
+			content._breed_type = "enemy"
+		end
+	end
 end
 
 -----------------------------------------------------------------------
@@ -1152,7 +1162,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if health_extension then
 		health_current = health_extension:current_health() or 0
 		health_max = health_extension:max_health() or 0
-		health_percent = health_extension:current_health_percent() or 0
+		health_percent = health_max > 0 and (health_current / health_max) or 0
 		is_dead = not health_extension:is_alive()
 	end
 
@@ -1164,36 +1174,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
 	content.breed = breed
 
-	local breed_type = "enemy"
+	local breed_type = content._breed_type or "enemy"
 
-	if breed then
-		local tags = breed.tags or {}
-
-		if tags.horde or tags.roamer then
-			breed_type = "horde"
-		end
-		if tags.elite then
-			breed_type = "elite"
-		end
-		if tags.special then
-			breed_type = "special"
-		end
-		if tags.monster then
-			breed_type = "monster"
-		end
-		if tags.captain then
-			breed_type = "captain"
-		end
-		if tags.disabler then
-			breed_type = "disabler"
-		end
-		if tags.witch then
-			breed_type = "witch"
-		end
-
-		if template.hb_show_enemy_type then
-			content.header_text = tostring(breed_type)
-		end
+	if template.hb_show_enemy_type then
+		content.header_text = tostring(breed_type)
 	end
 
 	-------------------------------------------------------------------
@@ -1210,14 +1194,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Still, guard and bail out if somehow non-rep gets here.
 		if cluster.rep_unit ~= unit then
 			marker.draw = false
-			return
+			in_horde_cluster = false
+		else
+			marker.draw = true
 		end
 
 		-- Recompute pooled health so it stays up-to-date as members take damage/die
 		local total_current = 0
 		local total_max_instant = 0
 
-		for _, u in ipairs(cluster.units) do
+		local units = cluster.units
+		for i = 1, #units do
+			local u = units[i]
 			if HEALTH_ALIVE[u] then
 				local he = ScriptUnit_has_extension(u, "health_system")
 				if he then
@@ -1250,21 +1238,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local cx, cy, cz = c.x, c.y, c.z
 
 			-- Base position for bar; template.position_offset will be added later
-			local pos = Vector3(cx, cy, cz)
-
 			if not marker.world_position then
-				marker.world_position = Vector3Box(pos)
+				marker.world_position = Vector3Box(Vector3(cx, cy, cz))
 			else
-				marker.world_position:store(pos)
+				marker.world_position:store(Vector3(cx, cy, cz))
 			end
 		end
 	else
-		-- Non-horde or clusters disabled: let engine use unit_node + position_offset
-		-- and clear any stored peak for this rep to avoid leaking between uses.
-		--peak_cluster_max_by_rep[unit] = nil
-		if not HEALTH_ALIVE[unit] then
-			peak_cluster_max_by_rep[unit] = nil
-		end
+		-- Non-horde or clusters disabled
+
+		peak_cluster_max_by_rep[unit] = nil
 
 		if marker.world_position then
 			marker.world_position = nil
@@ -1304,7 +1287,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- DAMAGE NUMBERS LOGIC
 	-------------------------------------------------------------------
-	local difficulty_manager = Managers_state.difficulty
 	local max_health_setting = (content.breed and content.breed.name and difficulty_manager)
 			and difficulty_manager:get_minion_max_health(content.breed.name)
 		or health_max
@@ -1447,19 +1429,29 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Health counter text
 	-------------------------------------------------------------------
-	if template.hb_text_show_damage then
-		if (t - (content.last_damage_taken_time or 0)) > 3 or not latest_damage_number then
-			content.health_counter = string_format("%d / %d", health_current, health_max)
-		else
+	if
+		content._last_health_current ~= health_current
+		or content._last_health_max ~= health_max
+		or content._last_damage_value ~= (latest_damage_number and latest_damage_number.value)
+	then
+		content._last_health_current = health_current
+		content._last_health_max = health_max
+		content._last_damage_value = latest_damage_number and latest_damage_number.value
+
+		if
+			template.hb_text_show_damage
+			and latest_damage_number
+			and (t - (content.last_damage_taken_time or 0)) <= 3
+		then
 			content.health_counter = string_format(
 				"%d / %d ({#color(255, 255, 50)}-%d)",
 				health_current,
 				health_max,
 				latest_damage_number.value
 			)
+		else
+			content.health_counter = string_format("%d / %d", health_current, health_max)
 		end
-	else
-		content.health_counter = string_format("%d / %d", health_current, health_max)
 	end
 
 	-------------------------------------------------------------------
@@ -1537,12 +1529,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local bar_color = BREED_COLORS[breed_type] or BREED_COLORS.horde
 	style.bar.color = bar_color
 
-	style.ghost_bar.color = {
-		bar_color[1],
-		bar_color[2] * 0.5,
-		bar_color[3] * 0.5,
-		bar_color[4] * 0.5,
-	}
+	local ghost_color = style.ghost_bar.color
+	ghost_color[1] = bar_color[1]
+	ghost_color[2] = bar_color[2] * 0.5
+	ghost_color[3] = bar_color[3] * 0.5
+	ghost_color[4] = bar_color[4] * 0.5
 
 	local icon_offset_y = 0
 
@@ -1553,14 +1544,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
-	local root_position = Unit.world_position(unit, 1)
 
-	if not in_horde_cluster and not marker.world_position then
+	if not in_horde_cluster then
+		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height
-		marker.world_position = Vector3Box(root_position)
-	elseif not in_horde_cluster then
-		root_position.z = root_position.z + content.breed.base_height
-		marker.world_position:store(root_position)
+
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
 	end
 
 	-------------------------------------------------------------------
