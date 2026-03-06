@@ -11,7 +11,7 @@ local max_size_value = 32
 
 local size = { max_size_value, max_size_value }
 local ping_size = { max_size_value, max_size_value }
-local arrow_size = { max_size_value, max_size_value }
+local arrow_size = { max_size_value * 8, max_size_value * 8 }
 local icon_size = { max_size_value / 2, max_size_value / 2 }
 local background_size = { max_size_value, max_size_value }
 local scale_fraction = 0.75
@@ -20,6 +20,24 @@ local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or false
 local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
 local MAX_DISTANCE_SETTING = mod:get("draw_distance") or 25
 local enable_horde = mod:get("marker_horde_enable") or false
+
+-----------------------------------------------------------------------
+-- Specialist Tracking Settings
+-----------------------------------------------------------------------
+
+local TRACK_SPECIALISTS = mod:get("track_specialists") or true
+local SHOW_DISTANCE = mod:get("specialist_show_distance") or false
+local SPECIAL_PULSE = mod:get("specialist_special_move_flash") or true
+
+local ScriptUnit_extension = ScriptUnit.extension
+
+local TRACKED_ENEMY_TYPES = {
+	trapper = true,
+	bomber = true,
+	sniper = true,
+	mutant = true,
+	dog = true,
+}
 
 local math_min = math.min
 local math_max = math.max
@@ -31,7 +49,7 @@ local Application_time_since_launch = Application.time_since_launch
 -----------------------------------------------------------------------
 
 template.name = "enemy_markers"
-template.unit_node = "j_head"
+template.unit_node = "root_point"
 template.min_distance = 0
 
 template.size = size
@@ -41,7 +59,7 @@ template.ping_size = ping_size
 template.alerted = false
 
 template.check_line_of_sight = CHECK_LOS
-template.screen_clamp = SCREEN_CLAMP
+template.screen_clamp = true
 template.max_distance = MAX_DISTANCE_SETTING
 
 template.data = {}
@@ -60,13 +78,9 @@ template.background_max_size = { background_size[1], background_size[2] }
 template.ping_min_size = { ping_size[1] * scale_fraction, ping_size[2] * scale_fraction }
 template.ping_max_size = { ping_size[1], ping_size[2] }
 
-template.position_offset = { 0, 0, 0.2 }
-template.screen_margins = {
-	down = 0.23148148148148148,
-	left = 0.234375,
-	right = 0.234375,
-	up = 0.23148148148148148,
-}
+template.position_offset = { 0, 0, 0.8 }
+template.screen_margins = {down = 0.23148148148148148, left = 0.234375, right = 0.234375, up = 0.23148148148148148}
+
 
 template.evolve_distance = 1
 
@@ -110,7 +124,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 200, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
-				return content.background ~= nil
+				return not content.is_clamped and content.background ~= nil
 			end,
 		},
 		{
@@ -130,7 +144,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 0, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
-				return content.ring ~= nil
+				return content.ring == nil
 			end,
 		},
 		{
@@ -170,7 +184,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 0, 200, 175, 0 },
 			},
 			visibility_function = function(content, style)
-				return content.icon ~= nil
+				return content.icon == nil
 			end,
 		},
 		{
@@ -187,25 +201,87 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { 0, 0, 2 },
 				default_offset = { 0, 0, 2 },
 
-				color = Color.ui_hud_green_super_light(255, true),
+				color = { 255, 255, 255, 255 },
 			},
 			visibility_function = function(content, style)
-				return content.is_clamped and content.arrow ~= nil
+				return content.special_attack_imminent
 			end,
 			change_function = function(content, style)
 				style.angle = content.angle
+			end,
+		},
+		{
+			pass_type = "text",
+			style_id = "distance_text",
+			value = "",
+			value_id = "distance_text",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				text_horizontal_alignment = "left",
+				text_vertical_alignment = "bottom",
+				offset = {
+					0,
+					-2,
+					6,
+				},
+				default_offset = {
+					0,
+					-2,
+					6,
+				},
+				font_type = "proxima_nova_bold",
+				font_size = 14,
+				default_font_size = 14,
+				text_color = { 220, 220, 220, 220 },
+				default_text_color = { 220, 220, 220, 220 },
+				size = { 100, 32 },
+				default_size = { 100, 32 },
+
+				drop_shadow = true,
+			},
+			visibility_function = function(content)
+				return content.is_clamped and content.show_distance
 			end,
 		},
 	}, scenegraph_id)
 end
 
 -----------------------------------------------------------------------
+-- Specialist detection
+-----------------------------------------------------------------------
+
+local function is_tracked_enemy(marker)
+	if not TRACK_SPECIALISTS then
+		return false
+	end
+
+	local breed_name = marker.data and marker.data.breed_name
+
+	if not breed_name then
+		return false
+	end
+
+	return TRACKED_ENEMY_TYPES[breed_name] == true
+end
+
+-----------------------------------------------------------------------
 -- Lifecycle
 -----------------------------------------------------------------------
 
-template.on_enter = function(widget)
+template.on_enter = function(widget, marker, template)
 	local content = widget.content
 	content.spawn_progress_timer = 0
+
+	local unit = marker.unit
+	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+
+	content.breed = breed
+
+	content.distance_text = ""
+	content.show_distance = false
+	content.special_attack_imminent = false
 end
 
 -----------------------------------------------------------------------
@@ -237,6 +313,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	marker.ignore_scale = false
 	local global_scale = (marker.ignore_scale and 1) or marker.scale or 1
+
+	-- marker height
+	if content.breed then
+		local root_position = Unit.world_position(unit, 1)
+		root_position.z = root_position.z + (0.7 * content.breed.base_height)
+
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
+	end
 
 	-- line-of-sight fade
 	if marker.raycast_initialized then
@@ -303,11 +391,72 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local animating = (scale_progress ~= content.scale_progress)
 
+	-----------------------------------------------------------------------
+	-- Special attack warning pulse
+	-----------------------------------------------------------------------
+
+	mod.pulse_t = (mod.pulse_t or 0) + mod.frame_settings.dt
+
+	if SPECIAL_PULSE and marker.special_attack_imminent then
+		content.special_attack_imminent = true
+		local pulse = math.abs(math.sin(mod.pulse_t * 5))
+
+		local flash = math.min(255, 150 + pulse * 100)
+		local size_scale = 1 + pulse * 0.5
+
+		local r, g, b = flash, 50, 50
+
+		style.arrow.color[2] = r
+		style.arrow.color[3] = g
+		style.arrow.color[4] = b
+
+		style.background.color[2] = r
+		style.background.color[3] = g
+		style.background.color[4] = b
+
+		style.arrow.size[1] = arrow_size[1] * size_scale
+		style.arrow.size[2] = arrow_size[2] * size_scale
+
+		style.background.size[1] = background_size[1] * size_scale
+		style.background.size[2] = background_size[2] * size_scale
+	else
+		content.special_attack_imminent = false
+		style.background.color[2] = 255
+		style.background.color[3] = 255
+		style.background.color[4] = 255
+
+		style.arrow.color[2] = 255
+		style.arrow.color[3] = 255
+		style.arrow.color[4] = 255
+
+		style.arrow.size[1] = arrow_size[1]
+		style.arrow.size[2] = arrow_size[2]
+
+		style.background.size[1] = background_size[1]
+		style.background.size[2] = background_size[2]
+	end
+
+	local angle = content.angle or 0
+	local dist = style.arrow.size[2] * 0.7
+
+	local text_offset = style.distance_text.offset
+	text_offset[1] = 0
+	text_offset[2] = -(style.arrow.size[2] * 0.2)
+
 	content.line_of_sight_progress = line_of_sight_progress
 	content.scale_progress = scale_progress
 
 	widget.alpha_multiplier = line_of_sight_progress or 1
 	widget.visible = true
+
+	-- Distance text for specialists
+	if SHOW_DISTANCE and marker.is_specialist then
+		content.show_distance = true
+		content.distance_text = string.format("%dm", math.floor(distance))
+	else
+		content.show_distance = false
+		content.distance_text = ""
+	end
 
 	if data then
 		data.distance = distance

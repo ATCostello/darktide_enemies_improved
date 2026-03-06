@@ -619,6 +619,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					bg_style.offset[2] = state.y
 				end
 
+				if not marker.is_inside_frustum then
+					marker.draw = false
+				end
+				
 				-- change text scale
 				local draw = marker.draw
 

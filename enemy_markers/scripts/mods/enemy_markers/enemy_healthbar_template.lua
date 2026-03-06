@@ -27,9 +27,16 @@ local size = {
 	mod:get("hb_size_height") or 6,
 }
 
+local min_size = {
+	0,
+	0,
+}
+
 local draw_distance_setting = mod:get("draw_distance") or 25
 
 template.size = size
+
+template.min_size = min_size
 template.name = "enemy_healthbar"
 template.unit_node = "root_point"
 template.position_offset = { 0, 0, 0.8 }
@@ -39,13 +46,13 @@ template.max_distance = draw_distance_setting
 template.screen_clamp = false
 template.bar_settings = {
 	alpha_fade_delay = 2.6,
-	alpha_fade_duration = 0.5,
+	alpha_fade_duration = 0.6,
 	alpha_fade_min_value = 50,
 	animate_on_health_increase = true,
 	bar_spacing = 2,
 	duration_health = 1,
-	duration_health_ghost = 2,
-	health_animation_threshold = 0,
+	duration_health_ghost = 2.5,
+	health_animation_threshold = 0.1,
 }
 
 template.evolve_distance = 1
@@ -54,7 +61,7 @@ template.scale_settings = {
 	scale_from = 0.4,
 	scale_to = 1,
 	distance_max = 25,
-	distance_min = 0.5,
+	distance_min = 5,
 }
 
 template.fade_settings = {
@@ -728,32 +735,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 		},
 
-		-- BACKGROUND PLATE
-		{
-			pass_type = "rect",
-			style_id = "background",
-			style = {
-				vertical_alignment = "center",
-				offset = bar_offset,
-				default_offset = bar_offset,
-
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					200,
-					20,
-					20,
-					20,
-				},
-			},
-		},
-
 		-- MAX HEALTH
 		{
 			pass_type = "rect",
@@ -820,43 +801,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 		},
 
-		-- TOUGHNESS OVERLAY
-		{
-			pass_type = "rect",
-			style_id = "toughness_bar",
-			style = {
-				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					3.5,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					3.5,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					0,
-					90,
-					160,
-					220,
-				},
-			},
-		},
-
 		-- CURRENT HEALTH (main bar)
 		{
 			pass_type = "rect",
-			style_id = "bar",
+			style_id = "current_health",
 			style = {
 				vertical_alignment = "center",
 				offset = {
@@ -1162,7 +1110,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if health_extension then
 		health_current = health_extension:current_health() or 0
 		health_max = health_extension:max_health() or 0
-		health_percent = health_max > 0 and (health_current / health_max) or 0
+		health_percent = health_extension:current_health_percent() or 0
 		is_dead = not health_extension:is_alive()
 	end
 
@@ -1259,12 +1207,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Failsafe percent clamp
 	health_percent = health_percent or 0
 	health_percent = math_clamp(health_percent, 0, 1)
+	--mod:echo(health_percent)
 
 	if bar_logic then
 		bar_logic:update(dt, t, health_percent)
 	end
 
 	local health_fraction, health_ghost_fraction, health_max_fraction
+
+	marker.health_fraction = health_fraction
+	marker.health_ghost_fraction = health_ghost_fraction
 
 	if bar_logic then
 		health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
@@ -1457,57 +1409,40 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
-	if health_fraction and health_ghost_fraction then
-		local bar_settings = template.bar_settings
-		local spacing = bar_settings.bar_spacing
-
+	if health_fraction then
+		health_fraction = 0
 		local scale = marker.scale or 1
-		local bar_width_total = template.size[1] * scale
-		local default_width_offset = -bar_width_total * 0.5
 
-		local health_width = bar_width_total * health_fraction
+		local max_style = style.health_max
+		local current_health_style = style.current_health
+		local ghost_style = style.ghost_bar
+		local frame_style = style.frame
 
-		style.bar.size[1] = health_width
+		local base_width = max_style.default_size[1]
+		local total_width = base_width * scale
+		local left_edge = -total_width * 0.5
 
-		local ghost_bar_width = math_max(bar_width_total * health_ghost_fraction - health_width, 0)
-		local ghost_bar_style = style.ghost_bar
+		-- Background
+		max_style.size[1] = total_width
+		max_style.offset[1] = left_edge
 
-		ghost_bar_style.offset[1] = default_width_offset + health_width
-		ghost_bar_style.size[1] = ghost_bar_width
+		-- Frame
+		frame_style.size[1] = total_width + 12
+		frame_style.offset[1] = left_edge - 6
 
-		local background_width = math_max(bar_width_total - ghost_bar_width - health_width, 0)
-		background_width = math_max(background_width - spacing, 0)
+		-- Main bar
+		local health_width = total_width * health_fraction
+		current_health_style.size[1] = health_width
+		current_health_style.offset[1] = left_edge
 
-		local background_style = style.background
-		background_style.offset[1] = default_width_offset + bar_width_total - background_width
-		background_style.size[1] = background_width
-
-		local health_max_style = style.health_max
-		local health_max_width = bar_width_total - math_max(bar_width_total * health_max_fraction, 0)
-
-		health_max_width = math_max(health_max_width - spacing, 0)
-		health_max_style.offset[1] = default_width_offset + (bar_width_total - health_max_width * 0.5)
-		health_max_style.size[1] = health_max_width
-
-		marker.health_fraction = health_fraction
-
-		-- Toughness
-		local toughness_extension = ScriptUnit_has_extension(unit, "toughness_system")
-		local toughness_fraction = toughness_extension and toughness_extension:current_toughness_percent() or 0
-		local toughness_style = style.toughness_bar
-
-		if toughness_fraction > 0 then
-			local toughness_width = bar_width_total * toughness_fraction
-			toughness_style.size[1] = toughness_width
-			toughness_style.offset[1] = default_width_offset
-		else
-			toughness_style.size[1] = 0
+		-- Ghost
+		if health_ghost_fraction then
+			local ghost_width = math.max(total_width * health_ghost_fraction - health_width, 0)
+			ghost_style.size[1] = ghost_width
+			ghost_style.offset[1] = left_edge + health_width
 		end
-	elseif health_fraction then
-		local bar_width_total = template.size[1]
-		style.bar.size[1] = bar_width_total * health_fraction
+		dbg_style = style
 	end
-
 	-- set frame background
 	content.frame = template.frame_type
 
@@ -1527,7 +1462,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local bar_color = BREED_COLORS[breed_type] or BREED_COLORS.horde
-	style.bar.color = bar_color
+	style.current_health.color = bar_color
 
 	local ghost_color = style.ghost_bar.color
 	ghost_color[1] = bar_color[1]
@@ -1586,6 +1521,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if template.hide_after_no_damage and time_since_last_damage > 5 then
+		marker.draw = false
+	end
+
+	if not marker.is_inside_frustum then
 		marker.draw = false
 	end
 

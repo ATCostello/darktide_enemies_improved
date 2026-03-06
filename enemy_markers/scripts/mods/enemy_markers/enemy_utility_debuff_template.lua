@@ -1,5 +1,6 @@
 local mod = get_mod("enemy_markers")
 
+local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
@@ -8,13 +9,11 @@ local template = {}
 -----------------------------------------------------------------------
 
 local hb_size_width = mod:get("hb_size_width") or 200
-local hb_size_height = mod:get("hb_size_height") or 15
+local hb_size_height = mod:get("hb_size_height") or 6
 local max_visible_rows_setting = mod:get("max_visible_rows") or 5
 local draw_distance_setting = mod:get("draw_distance") or 25
-
 local show_names = mod:get("debuff_names") == true
 local names_fade = mod:get("debuff_names_fade") == true
-
 local enable_horde = mod:get("debuff_horde_enable") or false
 
 local NAME_FADE_IN = 0.15
@@ -66,7 +65,7 @@ template.fade_settings = {
 }
 
 -----------------------------------------------------------------------
--- Locals/helpers
+-- Small local helpers / cached globals to avoid repeated lookups
 -----------------------------------------------------------------------
 
 local ScriptUnit_has_extension = ScriptUnit.has_extension
@@ -77,21 +76,28 @@ local math_lerp = math.lerp
 local math_floor = math.floor
 local pairs = pairs
 local Localize = Localize
+local ScriptUnit_extension = ScriptUnit.extension
 
-local function array_contains(tbl, value)
-	if not tbl or not value then
-		return false
+-- O(1) lookup table (rebuilt only if mod.dot_debuffs changes)
+local dot_lookup = {}
+
+local function rebuild_dot_lookup()
+	table.clear(dot_lookup)
+	local list = mod.utility_debuffs
+	if not list then
+		return
 	end
 
-	for i = 1, #tbl do
-		if tbl[i] == value then
-			return true
-		end
+	for i = 1, #list do
+		dot_lookup[list[i]] = true
 	end
-
-	return false
 end
 
+-- build once at load
+rebuild_dot_lookup()
+
+local localized_cache = {}
+local stack_string_cache = {}
 -----------------------------------------------------------------------
 -- Widget definition
 -----------------------------------------------------------------------
@@ -106,7 +112,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local content = {}
 	local style = {}
 
-	local base_y = -bar_height - 8
+	local base_y = bar_height + 8
 	local row_step = bar_height + 8
 	local icon_x = bar_width * 0.5 - 50
 	local name_x = bar_width * 0.5 - 100
@@ -115,17 +121,17 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	for i = 1, max_rows do
 		local icon_bg_id = "util_icon_background_" .. i
 		local icon_id = "util_icon_" .. i
-		local stack_text_id = "util_stack_counter_" .. i
-		local name_text_id = "debuff_name_" .. i
+		local stack_text_id = "stack_counter_" .. i
+		local name_text_id = "util_name_" .. i
 
-		local row_offset_y = base_y - ((i - 1) * row_step)
+		local row_offset_y = base_y + ((i - 1) * row_step)
 
 		content[icon_bg_id] = "content/ui/materials/effects/terminal_header_glow"
 		content[icon_id] = ""
 		content[stack_text_id] = ""
 		content[name_text_id] = ""
 
-		-- BACKGROUND
+		-- ICON BACKGROUND
 		passes[#passes + 1] = {
 			pass_type = "texture",
 			style_id = icon_bg_id,
@@ -246,17 +252,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				7,
 			},
-			default_offset = {
-				name_x,
-				row_offset_y,
-				7,
-			},
 			font_type = "proxima_nova_bold",
 			font_size = 18,
 			default_font_size = 18,
 
 			text_color = { 0, 255, 255, 255 },
-
 			size = { 260, 22 },
 			default_size = { 260, 22 },
 
@@ -284,6 +284,7 @@ end
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local unit = marker.unit
 	local content = widget.content
+	local need_sort = false
 
 	if not unit then
 		marker.draw = false
@@ -306,27 +307,36 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
 	content.breed = breed
 
-	local buff_extension = ScriptUnit.extension(unit, "buff_system")
+	local buff_extension = ScriptUnit_extension(unit, "buff_system")
 	if not buff_extension then
 		marker.draw = false
 		return
 	end
 
 	local debuffs = buff_extension:buffs()
+	local keywords = buff_extension and buff_extension:keywords()
+
 	if not debuffs or #debuffs == 0 then
 		marker.draw = false
 	else
 		marker.draw = true
 	end
 
-	local active = {}
+	-- Gather active debuffs that we care about
+	widget._active = widget._active or {}
+	local active = widget._active
 	local active_count = 0
+
+	-- clear without reallocating
+	for i = 1, #active do
+		active[i] = nil
+	end
 
 	for i = 1, #debuffs do
 		local buff = debuffs[i]
 		local name = buff:template_name()
 
-		if array_contains(mod.utility_debuffs, name) then
+		if dot_lookup[name] then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -334,6 +344,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				name = name,
 				stacks = stacks,
 			}
+		end
+	end
+
+	-- get from keywords
+	if keywords and #keywords > 0 then
+		for i = 1, #keywords do
+			local keyword = keywords[i]
+			local name = keyword
+
+			if dot_lookup[name] then
+				local stacks = 1
+
+				active_count = active_count + 1
+				active[active_count] = {
+					name = name,
+					stacks = stacks,
+				}
+			end
 		end
 	end
 
@@ -345,14 +373,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active[i] = nil
 	end
 
-	if active_count > 1 then
+	-- Sort by stack count desc
+	if active_count > 1 and need_sort then
 		table_sort(active, function(a, b)
 			return a.stacks > b.stacks
 		end)
 	end
 
 	local max_rows = template.max_visible_rows or 5
-	local content = widget.content
 	local style = widget.style
 
 	widget._state = widget._state or {}
@@ -364,23 +392,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local slide_speed = 16
 	local fade_speed = 10
 	local stack_speed = 8
-	local glow_threshold = 3
+	local glow_threshold = 5
 
 	local active_lookup = {}
 
-	-- UPDATE STATE
+	-------------------------------------------------------------------
+	-- UPDATE STATE (KEYED BY DEBUFF NAME)
+	-------------------------------------------------------------------
 	for index = 1, active_count do
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
-		local y_base = bar_height + 28 + ((index - 1) * row_height)
+		local y_base = bar_height + 8 + ((index - 1) * row_height)
 
 		local state = state_table[name]
 		if not state then
 			state = {
 				alpha = 0,
 				scale = 0,
-				icon_scale = 1.1,
+				icon_scale = 1.25,
 				prev_stacks = stacks,
 				y = y_base,
 				name_time = 0,
@@ -389,9 +419,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			state_table[name] = state
 		end
 
+		-- Fade in
 		local alpha = state.alpha + dt * 255 * fade_speed
 		state.alpha = (alpha < 255) and alpha or 255
 
+		-- Target Y per debuff
 		local target_y = y_base
 		local lerp_t = dt * slide_speed
 		if lerp_t > 1 then
@@ -399,6 +431,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 		state.y = math_lerp(state.y, target_y, lerp_t)
 
+		if stacks ~= state.prev_stacks then
+			need_sort = true
+		end
+
+		-- Stack change animation
 		if stacks > state.prev_stacks then
 			state.scale = 1
 		elseif stacks < state.prev_stacks then
@@ -411,7 +448,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if stack_lerp_t > 1 then
 			stack_lerp_t = 1
 		end
-		state.scale = math_lerp(state.scale, 0.5, stack_lerp_t)
+		state.scale = math_lerp(state.scale, 0, stack_lerp_t)
 
 		local icon_lerp_t = dt * 6
 		if icon_lerp_t > 1 then
@@ -419,17 +456,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 		state.icon_scale = math_lerp(state.icon_scale, 0, icon_lerp_t)
 
+		-- Update name pop timer if enabled
 		if show_names and state.name_visible then
 			state.name_time = state.name_time + dt
 			if state.name_time >= NAME_TOTAL and names_fade == true then
 				state.name_visible = false
 			end
 		end
-		marker.draw = true
 
 		active_lookup[name] = true
+		marker.draw = true
 	end
 
+	-- Fade out removed debuffs
 	for name, state in pairs(state_table) do
 		if not active_lookup[name] then
 			local alpha = state.alpha - dt * 255 * fade_speed
@@ -455,13 +494,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.world_position:store(root_position)
 	end
 
+	-------------------------------------------------------------------
 	-- DRAW ROWS
+	-------------------------------------------------------------------
 	local template_size_1 = template.size[1]
+
+	local base_icon_x = template_size_1 * 0.5 - 45
+	local base_stack_x = template_size_1 * 0.5 + 20
+	local base_name_x = template_size_1 * 0.5 - 70
 
 	for i = 1, max_rows do
 		local icon_id = "util_icon_" .. i
-		local stack_text_id = "util_stack_counter_" .. i
-		local name_text_id = "debuff_name_" .. i
+		local stack_text_id = "stack_counter_" .. i
+		local name_text_id = "util_name_" .. i
 
 		local icon_style = style[icon_id]
 		local stack_text_style = style[stack_text_id]
@@ -475,12 +520,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local state = state_table[name]
 
 			if state then
+				-- Horizontal slide on appear
 				local alpha_factor = state.alpha / 255
 				local appear_offset = 15 * (alpha_factor - 1)
 
-				local icon_offset_x = template_size_1 * 0.5 - 45 + appear_offset
-				local stack_offset_x = template_size_1 * 0.5 + 20 + appear_offset
-				local name_offset_x = template_size_1 * 0.5 - 70 + appear_offset
+				local icon_offset_x = base_icon_x + appear_offset
+				local stack_offset_x = base_stack_x + appear_offset
+				local name_offset_x = base_name_x + appear_offset
 
 				icon_style.offset[1] = icon_offset_x
 				icon_style.offset[2] = state.y
@@ -496,30 +542,36 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
 					or "content/ui/materials/icons/generic/danger"
 
-				content[stack_text_id] = "x " .. stacks
+				local stack_str = stack_string_cache[stacks]
+				if not stack_str then
+					stack_str = "x " .. stacks
+					stack_string_cache[stacks] = stack_str
+				end
 
+				content[stack_text_id] = stack_str
 				if show_names then
 					if state.name_visible and name_text_style then
-						local loc_id = name
-						content[name_text_id] = mod:localize(loc_id)
+						local loc = localized_cache[name]
+						if not loc then
+							loc = mod:localize(name)
+							localized_cache[name] = loc
+						end
+
+						content[name_text_id] = loc
 
 						-- compute name alpha based on timer
 						local t_name = state.name_time or 0
 						local a = 0
 
-						if names_fade == true then
-							if t_name <= NAME_FADE_IN then
-								a = (t_name / NAME_FADE_IN) -- fade in
-							elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
-								a = 1 -- fully visible
-							elseif t_name <= NAME_TOTAL then
-								local remain = NAME_TOTAL - t_name
-								a = remain / NAME_FADE_OUT -- fade out
-							else
-								a = 0
-							end
+						if t_name <= NAME_FADE_IN then
+							a = (t_name / NAME_FADE_IN) -- fade in
+						elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
+							a = 1 -- fully visible
+						elseif t_name <= NAME_TOTAL then
+							local remain = NAME_TOTAL - t_name
+							a = remain / NAME_FADE_OUT -- fade out
 						else
-							a = 100
+							a = 0
 						end
 
 						-- clamp & apply
@@ -567,6 +619,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					bg_style.offset[2] = state.y
 				end
 
+				if not marker.is_inside_frustum then
+					marker.draw = false
+				end
+
 				-- change text scale
 				local draw = marker.draw
 
@@ -579,12 +635,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						stack_counter.font_size = stack_counter.default_font_size * scale
 					end
 
-					local debuff_name = style["debuff_name_" .. i]
+					local debuff_name = style["util_name_" .. i]
 
 					if debuff_name then
 						debuff_name.font_size = debuff_name.default_font_size * scale
 					end
 				end
+
+				-- Stack pulse
+				local scale = 1
+				stack_text_style.font_size = stack_text_style.font_size * scale
+				stack_text_style.text_color[1] = state.alpha
+
+				-- Icon pulse
+				--local icon_scale = marker.scale + state.icon_scale
+				--icon_style.size[1] = icon_style.size[1] * icon_scale
+				--icon_style.size[2] = icon_style.size[2] * icon_scale
 			end
 		else
 			content[icon_id] = nil
