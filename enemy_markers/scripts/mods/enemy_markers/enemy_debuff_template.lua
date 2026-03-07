@@ -21,10 +21,7 @@ local NAME_VISIBLE = 1.0
 local NAME_FADE_OUT = 0.4
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
-local size = {
-	hb_size_width,
-	hb_size_height,
-}
+local size = { hb_size_width, hb_size_height }
 
 template.size = size
 template.name = "enemy_debuff"
@@ -145,16 +142,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			scale_to_material = true,
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
-			offset = {
-				icon_x,
-				row_offset_y,
-				4,
-			},
-			default_offset = {
-				icon_x,
-				row_offset_y,
-				4,
-			},
+			offset = { icon_x, row_offset_y, 4 },
+			default_offset = { icon_x, row_offset_y, 4 },
 			color = { 20, 0, 0, 0 },
 			size = { 30, 30 },
 			default_size = { 30, 30 },
@@ -173,16 +162,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		style[icon_id] = {
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
-			offset = {
-				icon_x,
-				row_offset_y,
-				6,
-			},
-			default_offset = {
-				icon_x,
-				row_offset_y,
-				6,
-			},
+			offset = { icon_x, row_offset_y, 6 },
+			default_offset = { icon_x, row_offset_y, 6 },
 			size = { 20, 20 },
 			default_size = { 20, 20 },
 
@@ -205,16 +186,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "left",
 			text_vertical_alignment = "center",
-			offset = {
-				stack_x,
-				row_offset_y,
-				6,
-			},
-			default_offset = {
-				stack_x,
-				row_offset_y,
-				6,
-			},
+			offset = { stack_x, row_offset_y, 6 },
+			default_offset = { stack_x, row_offset_y, 6 },
 			font_type = "proxima_nova_bold",
 			font_size = 18,
 			default_font_size = 18,
@@ -247,11 +220,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
-			offset = {
-				name_x,
-				row_offset_y,
-				7,
-			},
+			offset = { name_x, row_offset_y, 7 },
 			font_type = "proxima_nova_bold",
 			font_size = 18,
 			default_font_size = 18,
@@ -340,10 +309,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
-			active[active_count] = {
-				name = name,
-				stacks = stacks,
-			}
+			active[active_count] = { name = name, stacks = stacks }
 		end
 	end
 
@@ -357,10 +323,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local stacks = 1
 
 				active_count = active_count + 1
-				active[active_count] = {
-					name = name,
-					stacks = stacks,
-				}
+				active[active_count] = { name = name, stacks = stacks }
 			end
 		end
 	end
@@ -622,7 +585,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				if not marker.is_inside_frustum then
 					marker.draw = false
 				end
-				
+
 				-- change text scale
 				local draw = marker.draw
 
@@ -648,9 +611,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				stack_text_style.text_color[1] = state.alpha
 
 				-- Icon pulse
-				--local icon_scale = marker.scale + state.icon_scale
-				--icon_style.size[1] = icon_style.size[1] * icon_scale
-				--icon_style.size[2] = icon_style.size[2] * icon_scale
+				-- local icon_scale = marker.scale + state.icon_scale
+				-- icon_style.size[1] = icon_style.size[1] * icon_scale
+				-- icon_style.size[2] = icon_style.size[2] * icon_scale
 			end
 		else
 			content[icon_id] = nil

@@ -21,9 +21,6 @@ mod.enemy_utility_debuffs = {}
 mod._broadphase_results = {}
 local healthbar_ids = {}
 mod.marked_dead = {}
-mod.unit_id_lookup = mod.unit_id_lookup or {}
-mod.auto_source_lookup = mod.auto_source_lookup or {}
-mod.wwise_unit_lookup = mod.wwise_unit_lookup or {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
 local MAX_ENEMIES_PER_FRAME = 300
@@ -288,12 +285,6 @@ mod.scan_enemies = function()
 					special_attack_imminent = false,
 					special_attack_timer = 0,
 				}
-
-				local unit_id = Managers_state.unit_spawner:game_object_id(unit)
-
-				if unit_id then
-					mod.unit_id_lookup[unit_id] = unit
-				end
 			else
 				entry.seen = true
 			end
@@ -421,11 +412,7 @@ local function _build_horde_clusters(units, num_units)
 
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
-				local center = {
-					x = sum_x * inv,
-					y = sum_y * inv,
-					z = base_z,
-				}
+				local center = { x = sum_x * inv, y = sum_y * inv, z = base_z }
 
 				-- Sum health across cluster members
 				local total_current = 0
@@ -469,198 +456,517 @@ end
 -- Enemy markers
 -----------------------------------------------------------------------
 mod:hook(WwiseWorld, "make_manual_source", function(func, wwise_world, unit)
+	local source = func(wwise_world, unit)
 
-    local source = func(wwise_world, unit)
+	if unit and Unit_alive(unit) then
+		mod.source_unit_cache[source] = unit
+	end
 
-    if unit and Unit_alive(unit) then
-        mod.source_unit_cache[source] = unit
-    end
-
-    return source
+	return source
 end)
 
 mod.get_userdata_type = function(userdata)
-    if type(userdata) ~= "userdata" then
-        return nil
-    end
+	if type(userdata) ~= "userdata" then
+		return nil
+	end
 
-    if Unit_alive(userdata) then
-        return "Unit"
-    end
+	if Unit_alive(userdata) then
+		return "Unit"
+	end
 
-    return "userdata"
+	return "userdata"
 end
 
 mod.find_local_unit = function()
+	local level = 1
 
-    local level = 1
+	while debug.getinfo(level) ~= nil do
+		local i = 1
 
-    while debug.getinfo(level) ~= nil do
-        local i = 1
+		while true do
+			local name, value = debug.getlocal(level, i)
 
-        while true do
-            local name, value = debug.getlocal(level, i)
+			if not name then
+				break
+			end
 
-            if not name then
-                break
-            end
+			if mod.get_userdata_type(value) == "Unit" then
+				return value
+			end
 
-            if mod.get_userdata_type(value) == "Unit" then
-                return value
-            end
+			i = i + 1
+		end
 
-            i = i + 1
-        end
-
-        level = level + 1
-    end
+		level = level + 1
+	end
 end
 
 mod.find_attacking_unit = function()
+	local level = 3
 
-    local level = 3
+	while debug.getinfo(level) ~= nil do
+		local i = 1
 
-    while debug.getinfo(level) ~= nil do
-        local i = 1
+		while true do
+			local name, value = debug.getlocal(level, i)
 
-        while true do
-            local name, value = debug.getlocal(level, i)
+			if not name then
+				break
+			end
 
-            if not name then
-                break
-            end
+			if type(value) == "userdata" and Unit_alive(value) then
+				return value
+			end
 
-            if type(value) == "userdata" and Unit_alive(value) then
-                return value
-            end
+			if type(value) == "table" then
+				local unit = rawget(value, "_unit")
 
-            if type(value) == "table" then
-                local unit = rawget(value, "_unit")
+				if unit and Unit_alive(unit) then
+					return unit
+				end
+			end
 
-                if unit and Unit_alive(unit) then
-                    return unit
-                end
-            end
+			i = i + 1
+		end
 
-            i = i + 1
-        end
+		level = level + 1
+	end
 
-        level = level + 1
-    end
-
-    return nil
+	return nil
 end
 
 mod.find_bt_action_unit = function()
+	for level = 4, 12 do
+		local name, value = debug.getlocal(level, 1)
 
-    for level = 4, 12 do
-        local name, value = debug.getlocal(level, 1)
+		if type(value) == "table" then
+			local unit = rawget(value, "_unit")
 
-        if type(value) == "table" then
-            local unit = rawget(value, "_unit")
+			if unit and Unit_alive(unit) then
+				return unit
+			end
+		end
+	end
 
-            if unit and Unit_alive(unit) then
-                return unit
-            end
-        end
-    end
-
-    return nil
+	return nil
 end
 
+mod.get_time = function()
+	local tm = Managers.time
+	if tm then
+		return tm:time("gameplay")
+	end
+
+	return 0
+end
+mod.ts = function()
+	return string.format("[%.3f]", mod.get_time())
+end
+
+mod.special_attack_animations = {
+
+	----------------------------------------------------------------
+	-- CHAOS HOUND
+	----------------------------------------------------------------
+	chaos_hound = {
+		attack_leap = {
+			attack = "leap_attack",
+			damage_time = 1.05,
+			duration = 2.8,
+		},
+		attack_pounce = {
+			attack = "pounce_attack",
+			damage_time = 1.25,
+			duration = 3.1,
+		},
+		attack_leap_start = {
+			attack = "attack_leap_start",
+			damage_time = 1.05,
+			duration = 2.8,
+		},
+		attack_leap_short = {
+			attack = "attack_leap_short",
+			damage_time = 1.05,
+			duration = 2.8,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS MUTANT
+	----------------------------------------------------------------
+	chaos_mutant = {
+		attack_charge = {
+			attack = "charge_attack",
+			damage_time = 1.35,
+			duration = 3.4,
+		},
+
+		attack_grab = {
+			attack = "grab_attack",
+			damage_time = 1.45,
+			duration = 3.2,
+		},
+
+		attack_throw = {
+			attack = "throw_attack",
+			damage_time = 1.9,
+			duration = 3.6,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS TRAPPER
+	----------------------------------------------------------------
+	chaos_trapper = {
+		attack_netgun = {
+			attack = "netgun_attack",
+			damage_time = 0.95,
+			duration = 2.3,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- RENEGADE SNIPER
+	----------------------------------------------------------------
+	renegade_sniper = {
+		attack_shoot = {
+			attack = "shoot",
+			damage_time = 0.82,
+			duration = 1.9,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS GRENADIER
+	----------------------------------------------------------------
+	chaos_grenadier = {
+		attack_throw_grenade = {
+			attack = "grenade_throw",
+			damage_time = 0.9,
+			duration = 2.2,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- POXBURSTER
+	----------------------------------------------------------------
+	chaos_poxwalker_bomber = {
+		attack_explode = {
+			attack = "suicide_attack",
+			damage_time = 1.5,
+			duration = 2.8,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- MAULER
+	----------------------------------------------------------------
+	chaos_mauler = {
+		attack_01 = {
+			attack = "melee_combo",
+			damage_time = 0.92,
+			duration = 2.4,
+		},
+
+		attack_02 = {
+			attack = "melee_combo",
+			damage_time = 1.1,
+			duration = 2.6,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- RAGER
+	----------------------------------------------------------------
+	chaos_rager = {
+		attack_01 = {
+			attack = "frenzy_combo",
+			damage_time = 0.4,
+			duration = 1.2,
+		},
+
+		attack_02 = {
+			attack = "frenzy_combo",
+			damage_time = 0.55,
+			duration = 1.3,
+		},
+
+		attack_03 = {
+			attack = "frenzy_combo",
+			damage_time = 0.7,
+			duration = 1.5,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS OGRYN EXECUTOR (CRUSHER)
+	----------------------------------------------------------------
+	chaos_ogryn_executor = {
+
+		attack_01 = {
+			attack = "melee_attack_cleave",
+			damage_time = 1.471,
+			duration = 3.103,
+		},
+
+		attack_02 = {
+			attack = "melee_attack_cleave",
+			damage_time = 1.310,
+			duration = 2.873,
+		},
+
+		attack_07 = {
+			attack = "melee_attack_cleave",
+			damage_time = 1.655,
+			duration = 3.678,
+		},
+
+		attack_08 = {
+			attack = "melee_attack_cleave",
+			damage_time = 1.586,
+			duration = 3.310,
+		},
+
+		attack_move_01 = {
+			attack = "moving_melee_attack_cleave",
+			damage_time = 1.531,
+			duration = 2.840,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS OGRYN BULWARK
+	----------------------------------------------------------------
+	chaos_ogryn_bulwark = {
+
+		attack_push = {
+			attack = "melee_attack_push",
+			damage_time = 0.93,
+			duration = 2,
+		},
+
+		attack_01 = {
+			attack = "melee_attack_sweep",
+			damage_time = 1.2,
+			duration = 3,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- CHAOS SPAWN
+	----------------------------------------------------------------
+	chaos_spawn = {
+
+		attack_01 = {
+			attack = "melee_combo",
+			damage_time = 0.84,
+			duration = 2.4,
+		},
+
+		attack_02 = {
+			attack = "melee_combo",
+			damage_time = 1.02,
+			duration = 2.7,
+		},
+
+		attack_grab = {
+			attack = "grab_attack",
+			damage_time = 1.4,
+			duration = 3.5,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- PLAGUE OGRYN
+	----------------------------------------------------------------
+	chaos_plague_ogryn = {
+
+		attack_01 = {
+			attack = "combo_attack",
+			damage_time = 0.96,
+			duration = 2.73,
+		},
+
+		attack_02 = {
+			attack = "combo_attack",
+			damage_time = 1.1,
+			duration = 2.88,
+		},
+
+		attack_03 = {
+			attack = "combo_attack",
+			damage_time = 1.24,
+			duration = 3.01,
+		},
+
+		attack_slam = {
+			attack = "slam_attack",
+			damage_time = 1.5,
+			duration = 3.5,
+		},
+
+		attack_charge = {
+			attack = "charge_attack",
+			damage_time = 2.0,
+			duration = 4.2,
+		},
+	},
+
+	----------------------------------------------------------------
+	-- BEAST OF NURGLE
+	----------------------------------------------------------------
+	chaos_beast_of_nurgle = {
+
+		attack_tongue = {
+			attack = "tongue_grab",
+			damage_time = 1.8,
+			duration = 3.6,
+		},
+
+		attack_eat = {
+			attack = "eat_attack",
+			damage_time = 2.2,
+			duration = 4,
+		},
+	},
+}
 
 mod:hook(Unit, "animation_event", function(func, unit, event, ...)
+	local result = func(unit, event, ...)
 
-    local result = func(unit, event, ...)
+	if not unit or not Unit_alive(unit) then
+		return result
+	end
 
-    if not unit or not Unit_alive(unit) then
-        return result
-    end
+	local entry = mod.enemy_cache[unit]
+	if not entry then
+		return result
+	end
 
-    -- Try to get breed (enemy type)
-    local breed_name = "unknown"
+	-------------------------------------------------
+	-- Get breed
+	-------------------------------------------------
+	local breed_name
 
-    local unit_data_extension = ScriptUnit.has_extension(unit, "unit_data_system")
+	if entry.unit_data_ext then
+		local breed = entry.unit_data_ext:breed()
+		breed_name = breed and breed.name
+	end
 
-    if unit_data_extension then
-        local breed = unit_data_extension:breed()
+	if not breed_name then
+		return result
+	end
 
-        if breed and breed.name then
-            breed_name = breed.name
-        end
-    end
+	-------------------------------------------------
+	-- Lookup attack event
+	-------------------------------------------------
+	local breed_table = mod.special_attack_animations[breed_name]
 
-    mod:echo(string.format(
-        "[ANIM EVENT] %s -> %s",
-        breed_name,
-        tostring(event)
-    ))
+	if not breed_table then
+		return result
+	end
 
-    return result
+	local attack_data = breed_table[event]
+
+	if attack_data then
+		dbg_a = attack_data
+
+		if event then
+			entry.special_attack_event = event
+			entry.special_attack_imminent = true
+
+			local now = mod.get_time()
+
+			if attack_data.damage_time then
+				entry.special_attack_timer = now + attack_data.damage_time
+			else
+				entry.special_attack_timer = now + 1
+			end
+
+			mod:echo(
+				string.format(
+					"%s [ANIMATION ATTACK DETECTED] %s -> %s (damage in %.2fs)",
+					mod.ts(),
+					breed_name,
+					event,
+					attack_data.damage_time
+				)
+			)
+		end
+	end
+
+	return result
 end)
 
 mod.special_attack_events = {
-    -- Trapper / Netgunner
-    ["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
-    ["wwise/events/minions/play_netgunner_run_foley_special"] = true,
-    ["wwise/events/minions/play_netgunner_reload"] = true,
+	-- Trapper / Netgunner
+	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
+	["wwise/events/minions/play_netgunner_run_foley_special"] = true,
+	["wwise/events/minions/play_netgunner_reload"] = true,
 
-    -- Sniper
-    ["wwise/events/weapon/play_special_sniper_flash"] = true,
-    ["wwise/events/weapon/play_combat_weapon_las_sniper"] = true,
-    ["wwise/events/minions/play_netgunner"] = true,
+	-- Sniper
+	["wwise/events/weapon/play_special_sniper_flash"] = true,
+	["wwise/events/weapon/play_combat_weapon_las_sniper"] = true,
+	["wwise/events/minions/play_netgunner"] = true,
 
-    -- Mutant Charger
-    ["wwise/events/minions/play_enemy_mutant_charger"] = true,
-    ["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true, -- spawn/charge cues
+	-- Mutant Charger
+	["wwise/events/minions/play_enemy_mutant_charger"] = true,
+	["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true, -- spawn/charge cues
 
-    -- Chaos Hound / leap
-    ["wwise/events/minions/play_enemy_chaos_hound_vce_leap"] = true,
-    ["wwise/events/minions/play_enemy_chaos_hound"] = true,
+	-- Chaos Hound / leap
+	["wwise/events/minions/play_enemy_chaos_hound_vce_leap"] = true,
+	["wwise/events/minions/play_enemy_chaos_hound"] = true,
 
-    -- Poxwalker Bomber
-    ["wwise/events/minions/play_minion_poxwalker_bomber"] = true,
-    ["wwise/events/minions/play_enemy_combat_poxwalker_bomber"] = true,
+	-- Poxwalker Bomber
+	["wwise/events/minions/play_minion_poxwalker_bomber"] = true,
+	["wwise/events/minions/play_enemy_combat_poxwalker_bomber"] = true,
 
-    -- Plague Ogryn Charge
-    ["wwise/events/minions/play_enemy_plague_ogryn_vce_charge"] = true,
+	-- Plague Ogryn Charge
+	["wwise/events/minions/play_enemy_plague_ogryn_vce_charge"] = true,
 
-    -- Chaos Ogryn special attack vocal (heavy specials)
-    ["wwise/events/minions/play_enemy_chaos_ogryn_armoured_executor_a__special_attack_vce"] = true,
+	-- Chaos Ogryn special attack vocal (heavy specials)
+	["wwise/events/minions/play_enemy_chaos_ogryn_armoured_executor_a__special_attack_vce"] = true,
 
-    -- General rares / specials
-    ["wwise/events/minions/play_traitor_guard_grenadier"] = true,
-    ["wwise/events/minions/play_enemy_daemonhost"] = true,
-    ["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
+	-- General rares / specials
+	["wwise/events/minions/play_traitor_guard_grenadier"] = true,
+	["wwise/events/minions/play_enemy_daemonhost"] = true,
+	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
 }
 
 mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_name, source)
+	if not mod.special_attack_events[event_name] then
+		return
+	end
 
-    if not mod.special_attack_events[event_name] then
-        return
-    end
+	local unit = mod.source_unit_cache[source]
 
-    local unit = mod.source_unit_cache[source]
+	if not unit then
+		unit = mod.find_attacking_unit()
+		if unit then
+			mod.source_unit_cache[source] = unit
+		end
+	end
 
-    if not unit then
-        unit = mod.find_attacking_unit()
-        if unit then
-            mod.source_unit_cache[source] = unit
-        end
-    end
+	if not unit or not Unit_alive(unit) then
+		return
+	end
 
-    if not unit or not Unit_alive(unit) then
-        return
-    end
+	local entry = mod.enemy_cache[unit]
+	if not entry then
+		return
+	end
 
-    local entry = mod.enemy_cache[unit]
-    if not entry then
-        return
-    end
+	-- Only trigger if event not already triggered via animation data (Quicker)
+	if entry.special_attack_imminent ~= true then
+		entry.special_attack_event = event_name
+		entry.special_attack_imminent = true
 
-	entry.special_attack_event = event_name
-    entry.special_attack_imminent = true
-    entry.special_attack_timer = 0.25
+		local now = mod.get_time()
+
+		entry.special_attack_timer = now + 1.5
+
+		mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
+	end
 end)
 
 mod.update_enemy_markers = function(units, num_units, t)
@@ -684,10 +990,6 @@ mod.update_enemy_markers = function(units, num_units, t)
 				mod.enemy_markers[unit] = nil
 				marker_ids[unit] = nil
 				marked_dead[unit] = true
-			end
-			local unit_id = Managers_state.unit_spawner:game_object_id(unit)
-			if unit_id then
-				mod.unit_id_lookup[unit_id] = nil
 			end
 			to_remove[#to_remove + 1] = unit
 		end
@@ -725,37 +1027,34 @@ mod.update_enemy_markers = function(units, num_units, t)
 		for i = 1, num_units do
 			local unit = units[i]
 			if enemy_cache[unit] then
-				
 				-------------------------------------------------------------------
 				-- Special attack detection
 				-------------------------------------------------------------------
 				local entry = enemy_cache[unit]
-				if entry.is_specialist and entry.special_attack_event then
-					local behaviour_ext = entry.behavior_ext
 
-					if entry.special_attack_timer > 0 then
-						entry.special_attack_timer = entry.special_attack_timer - mod.frame_settings.dt
+				if entry.is_specialist and entry.special_attack_imminent then
+					local now = mod.get_time()
 
-						if entry.special_attack_timer <= 0 then
-							entry.special_attack_imminent = false
-						end
+					if entry.special_attack_timer and now >= entry.special_attack_timer then
+						entry.special_attack_imminent = false
+						entry.special_attack_timer = nil
 					end
 				end
 
 				local marker_id = marker_ids[unit]
 				if marker_id then
 					local marker = markers_by_id[marker_id]
-					if entry  then
+					if entry then
 						marker.special_attack_imminent = entry.special_attack_imminent
 						if entry.is_specialist then
-							marker.is_specialist = entry.is_specialist 
+							marker.is_specialist = entry.is_specialist
 						end
 					end
 				end
 
 				-- behaviour stuff
 				local entry = enemy_cache[unit]
-				local behaviour_ext = entry.behavior_ext				
+				local behaviour_ext = entry.behavior_ext
 
 				if behaviour_ext then
 					local perception_component = behaviour_ext._perception_component
@@ -788,7 +1087,7 @@ mod.update_enemy_markers = function(units, num_units, t)
 								if bg_style and bg_style.color then
 									-- Mutate existing color table to avoid allocations (4)
 									local color = bg_style.color
-									--color[1], color[2], color[3], color[4] = 255, 255, 50, 50
+									-- color[1], color[2], color[3], color[4] = 255, 255, 50, 50
 								end
 							end
 						end
@@ -837,10 +1136,6 @@ mod.update_enemy_healthbars = function(units, num_units)
 				healthbar_ids[unit] = nil
 				mod.enemy_healthbars[unit] = nil
 			end
-			local unit_id = Managers_state.unit_spawner:game_object_id(unit)
-			if unit_id then
-				mod.unit_id_lookup[unit_id] = nil
-			end
 			to_remove[#to_remove + 1] = unit
 		end
 	end
@@ -881,8 +1176,7 @@ mod.update_enemy_healthbars = function(units, num_units)
 			end)
 
 			mod.enemy_healthbars[unit] = unit
-			 			::continue_healthbar_loop::
-
+			::continue_healthbar_loop::
 		end
 	end
 end
@@ -916,10 +1210,6 @@ mod.update_enemy_debuffs = function(units, num_units)
 				debuff_ids[unit] = nil
 				marked_dead[unit] = true
 			end
-			local unit_id = Managers_state.unit_spawner:game_object_id(unit)
-if unit_id then
-	mod.unit_id_lookup[unit_id] = nil
-end
 			to_remove[#to_remove + 1] = unit
 		end
 	end
@@ -963,10 +1253,6 @@ mod.update_enemy_utility_debuffs = function(units, num_units)
 				mod.enemy_utility_debuffs[unit] = nil
 				utility_debuff_ids[unit] = nil
 				marked_dead[unit] = true
-			end
-			local unit_id = Managers_state.unit_spawner:game_object_id(unit)
-			if unit_id then
-				mod.unit_id_lookup[unit_id] = nil
 			end
 			to_remove[#to_remove + 1] = unit
 		end
@@ -1258,11 +1544,11 @@ end
 mod.get_breed_tags = function(unit)
 	local entry = mod.enemy_cache[unit]
 
-		local unit_data_extension = (entry and entry.unit_data_ext) or ScriptUnit_has_extension(unit, "unit_data_system")
-		local breed = unit_data_extension and unit_data_extension:breed()
-		if not breed then
-			return
-		end
-		local tags = breed.tags
-		return tags
+	local unit_data_extension = (entry and entry.unit_data_ext) or ScriptUnit_has_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+	if not breed then
+		return
+	end
+	local tags = breed.tags
+	return tags
 end

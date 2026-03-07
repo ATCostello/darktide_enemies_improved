@@ -69,18 +69,31 @@ template.line_of_sight_speed = 15
 template.min_size = { size[1] * scale_fraction, size[2] * scale_fraction }
 template.max_size = { size[1], size[2] }
 
-template.icon_min_size = { icon_size[1] * scale_fraction, icon_size[2] * scale_fraction }
+template.icon_min_size = {
+	icon_size[1] * scale_fraction,
+	icon_size[2] * scale_fraction,
+}
 template.icon_max_size = { icon_size[1], icon_size[2] }
 
-template.background_min_size = { background_size[1] * scale_fraction, background_size[2] * scale_fraction }
+template.background_min_size = {
+	background_size[1] * scale_fraction,
+	background_size[2] * scale_fraction,
+}
 template.background_max_size = { background_size[1], background_size[2] }
 
-template.ping_min_size = { ping_size[1] * scale_fraction, ping_size[2] * scale_fraction }
+template.ping_min_size = {
+	ping_size[1] * scale_fraction,
+	ping_size[2] * scale_fraction,
+}
 template.ping_max_size = { ping_size[1], ping_size[2] }
 
 template.position_offset = { 0, 0, 0.8 }
-template.screen_margins = {down = 0.23148148148148148, left = 0.234375, right = 0.234375, up = 0.23148148148148148}
-
+template.screen_margins = {
+	down = 0.23148148148148148,
+	left = 0.234375,
+	right = 0.234375,
+	up = 0.23148148148148148,
+}
 
 template.evolve_distance = 1
 
@@ -220,16 +233,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = {
-					0,
-					-2,
-					6,
-				},
-				default_offset = {
-					0,
-					-2,
-					6,
-				},
+				offset = { 0, -2, 6 },
+				default_offset = { 0, -2, 6 },
 				font_type = "proxima_nova_bold",
 				font_size = 14,
 				default_font_size = 14,

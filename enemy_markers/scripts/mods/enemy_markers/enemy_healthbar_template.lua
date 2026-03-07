@@ -22,15 +22,9 @@ template.hb_text_show_damage = mod:get("hb_text_show_damage") or false
 
 template.frame_type = mod:get("hb_frame") or "content/ui/materials/frames/masteries/panel_main_lower_frame"
 
-local size = {
-	mod:get("hb_size_width") or 200,
-	mod:get("hb_size_height") or 6,
-}
+local size = { mod:get("hb_size_width") or 200, mod:get("hb_size_height") or 6 }
 
-local min_size = {
-	0,
-	0,
-}
+local min_size = { 0, 0 }
 
 local draw_distance_setting = mod:get("draw_distance") or 25
 
@@ -143,14 +137,8 @@ template.damage_number_settings = {
 	x_offset = (size[1] / 2) - 10,
 	x_offset_between_numbers = 38,
 	y_offset = -50,
-	flashy_font_size_dmg_multiplier = {
-		1,
-		1.5,
-	},
-	flashy_font_size_dmg_scale_range = {
-		50,
-		300,
-	},
+	flashy_font_size_dmg_multiplier = { 1, 1.5 },
+	flashy_font_size_dmg_scale_range = { 50, 300 },
 }
 
 local previous_health = {}
@@ -694,11 +682,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local bar_width = size[1]
 	local bar_height = size[2]
 
-	local bar_offset = {
-		-bar_width * 0.5,
-		0,
-		0,
-	}
+	local bar_offset = { -bar_width * 0.5, 0, 0 }
 
 	return UIWidget.create_definition({
 		-- METAL FRAME (back plate)
@@ -708,133 +692,49 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1] - 6,
-					bar_offset[2],
-					0,
-				},
-				default_offset = {
-					bar_offset[1] - 6,
-					bar_offset[2],
-					0,
-				},
-				size = {
-					bar_width + 12,
-					bar_height + 6,
-				},
-				default_size = {
-					bar_width + 12,
-					bar_height + 6,
-				},
-				color = {
-					200,
-					180,
-					180,
-					180,
-				},
+				offset = { bar_offset[1] - 6, bar_offset[2], 0 },
+				default_offset = { bar_offset[1] - 6, bar_offset[2], 0 },
+				size = { bar_width + 12, bar_height + 6 },
+				default_size = { bar_width + 12, bar_height + 6 },
+				color = { 200, 180, 180, 180 },
 			},
-		},
-
-		-- MAX HEALTH
+		}, -- MAX HEALTH
 		{
 			pass_type = "rect",
 			style_id = "health_max",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					1,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					1,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					0,
-					90,
-					90,
-					90,
-				},
+				offset = { bar_offset[1], bar_offset[2], 1 },
+				default_offset = { bar_offset[1], bar_offset[2], 1 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 0, 90, 90, 90 },
 			},
-		},
-
-		-- GHOST DAMAGE
+		}, -- GHOST DAMAGE
 		{
 			pass_type = "rect",
 			style_id = "ghost_bar",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					2,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					2,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					150,
-					120,
-					40,
-					40,
-				},
+				offset = { bar_offset[1], bar_offset[2], 2 },
+				default_offset = { bar_offset[1], bar_offset[2], 2 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 150, 120, 40, 40 },
 			},
-		},
-
-		-- CURRENT HEALTH (main bar)
+		}, -- CURRENT HEALTH (main bar)
 		{
 			pass_type = "rect",
 			style_id = "current_health",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					3,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					3,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					255,
-					170,
-					30,
-					30,
-				},
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 255, 170, 30, 30 },
 			},
-		},
-
-		-- SHADOW
+		}, -- SHADOW
 		{
 			pass_type = "texture",
 			style_id = "shading1",
@@ -842,34 +742,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value_id = "shading1",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					5,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					5,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					255,
-					80,
-					80,
-					80,
-				},
+				offset = { bar_offset[1], bar_offset[2], 5 },
+				default_offset = { bar_offset[1], bar_offset[2], 5 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 255, 80, 80, 80 },
 			},
-		},
-
-		-- TOP EDGE HIGHLIGHT
+		}, -- TOP EDGE HIGHLIGHT
 		{
 			pass_type = "texture",
 			style_id = "highlight1",
@@ -877,34 +756,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value_id = "highlight1",
 			style = {
 				vertical_alignment = "center",
-				offset = {
-					bar_offset[1],
-					bar_offset[2],
-					6,
-				},
-				default_offset = {
-					bar_offset[1],
-					bar_offset[2],
-					6,
-				},
-				size = {
-					bar_width,
-					bar_height,
-				},
-				default_size = {
-					bar_width,
-					bar_height,
-				},
-				color = {
-					0,
-					255,
-					255,
-					255,
-				},
+				offset = { bar_offset[1], bar_offset[2], 6 },
+				default_offset = { bar_offset[1], bar_offset[2], 6 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 0, 255, 255, 255 },
 			},
-		},
-
-		-- ELITE ICON
+		}, -- ELITE ICON
 		{
 			pass_type = "texture",
 			style_id = "icon_elite",
@@ -920,9 +778,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 				color = { 0, 255, 255, 255 },
 			},
-		},
-
-		-- BOSS ICON
+		}, -- BOSS ICON
 		{
 			pass_type = "texture",
 			style_id = "icon_boss",
@@ -938,9 +794,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 				color = { 0, 255, 100, 255 },
 			},
-		},
-
-		-- header text
+		}, -- header text
 		{
 			pass_type = "text",
 			style_id = "header_text",
@@ -951,16 +805,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "top",
-				offset = {
-					-bar_width * 0.5,
-					-bar_height - 8,
-					6,
-				},
-				default_offset = {
-					-bar_width * 0.5,
-					-bar_height - 8,
-					6,
-				},
+				offset = { -bar_width * 0.5, -bar_height - 8, 6 },
+				default_offset = { -bar_width * 0.5, -bar_height - 8, 6 },
 				font_type = "proxima_nova_bold",
 				font_size = 16,
 				default_font_size = 16,
@@ -969,9 +815,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				size = { (bar_width / 2) - 2, 20 },
 				default_size = { (bar_width / 2) - 2, 20 },
 			},
-		},
-
-		-- Health text
+		}, -- Health text
 		{
 			pass_type = "text",
 			style_id = "health_counter",
@@ -982,16 +826,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = {
-					-bar_width * 0.5,
-					bar_height + 8,
-					6,
-				},
-				default_offset = {
-					-bar_width * 0.5,
-					bar_height + 8,
-					6,
-				},
+				offset = { -bar_width * 0.5, bar_height + 8, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 8, 6 },
 				font_type = "proxima_nova_bold",
 				font_size = 18,
 				default_font_size = 18,
@@ -1002,9 +838,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 				drop_shadow = true,
 			},
-		},
-
-		-- damage numbers
+		}, -- damage numbers
 		{
 			pass_type = "logic",
 			value = template.damage_number_function,
@@ -1013,16 +847,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "right",
 				text_vertical_alignment = "top",
-				offset = {
-					bar_width * 0.5,
-					-bar_height - 20,
-					1,
-				},
-				default_offset = {
-					bar_width * 0.5,
-					-bar_height - 20,
-					1,
-				},
+				offset = { bar_width * 0.5, -bar_height - 20, 1 },
+				default_offset = { bar_width * 0.5, -bar_height - 20, 1 },
 				font_type = "proxima_nova_bold",
 				font_size = 18,
 				default_font_size = 18,
@@ -1207,7 +1033,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Failsafe percent clamp
 	health_percent = health_percent or 0
 	health_percent = math_clamp(health_percent, 0, 1)
-	--mod:echo(health_percent)
+	-- mod:echo(health_percent)
 
 	if bar_logic then
 		bar_logic:update(dt, t, health_percent)
