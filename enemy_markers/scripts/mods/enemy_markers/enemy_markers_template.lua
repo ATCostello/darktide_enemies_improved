@@ -30,6 +30,7 @@ local SHOW_DISTANCE = mod:get("specialist_show_distance") or false
 local SPECIAL_PULSE = mod:get("specialist_special_move_flash") or true
 
 local ScriptUnit_extension = ScriptUnit.extension
+local Unit_alive = Unit.alive
 
 local TRACKED_ENEMY_TYPES = {
 	trapper = true,
@@ -320,7 +321,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local global_scale = (marker.ignore_scale and 1) or marker.scale or 1
 
 	-- marker height
-	if content.breed then
+	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + (0.7 * content.breed.base_height)
 

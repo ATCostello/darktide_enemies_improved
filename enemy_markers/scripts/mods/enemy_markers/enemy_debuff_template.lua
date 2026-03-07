@@ -259,7 +259,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		return
 	end
-
+    
 	-- don't process hordes if disabled
 	local breed_tags = mod.get_breed_tags(unit)
 	if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then

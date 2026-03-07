@@ -80,6 +80,7 @@ local Color_color = Color
 local Vector3 = Vector3
 local Vector3Box = Vector3Box
 local difficulty_manager = Managers.state.difficulty
+local Unit_alive = Unit.alive
 
 local math_clamp = math.clamp
 local math_lerp = math.lerp
@@ -1306,7 +1307,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
 
-	if not in_horde_cluster then
+	if not in_horde_cluster and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height
 

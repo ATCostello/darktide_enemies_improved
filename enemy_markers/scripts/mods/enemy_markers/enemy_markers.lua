@@ -10,6 +10,8 @@ local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hu
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
 local HudElementSmartTagging = require("scripts/ui/hud/elements/smart_tagging/hud_element_smart_tagging")
+local Component = require("scripts/utilities/component")
+local MechanismManager = require("scripts/managers/mechanism/mechanism_manager")
 
 mod.frame_settings = {}
 mod.enemy_cache = {}
@@ -349,8 +351,7 @@ local function _build_horde_clusters(units, num_units)
 	for i = 1, num_units do
 		local unit = units[i]
 		if Unit_alive(unit) then
-			local entry = mod.enemy_cache[unit]
-			local unit_data_extension = entry.unit_data_ext
+			local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
 			local breed = unit_data_extension and unit_data_extension:breed()
 			local tags = breed and breed.tags
 
@@ -412,15 +413,18 @@ local function _build_horde_clusters(units, num_units)
 
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
-				local center = { x = sum_x * inv, y = sum_y * inv, z = base_z }
+				local center = {
+					x = sum_x * inv,
+					y = sum_y * inv,
+					z = base_z,
+				}
 
 				-- Sum health across cluster members
 				local total_current = 0
 				local total_max = 0
 
 				for _, u in ipairs(units_in_cluster) do
-					local entry = enemy_cache[u]
-					local he = entry.health_ext
+					local he = ScriptUnit_has_extension(u, "health_system")
 					if he then
 						total_current = total_current + (he:current_health() or 0)
 						total_max = total_max + (he:max_health() or 0)
@@ -563,6 +567,7 @@ mod.ts = function()
 	return string.format("[%.3f]", mod.get_time())
 end
 
+-- better than audio cues - but only works on local games due to event_names not being known locally :(
 mod.special_attack_animations = {
 
 	----------------------------------------------------------------
@@ -831,6 +836,7 @@ mod.special_attack_animations = {
 	},
 }
 
+-- local games only. rpc_minion_anim_event is the networked version, but only provides event_id, which I cant find out how to get event_name from
 mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 	local result = func(unit, event, ...)
 
@@ -869,8 +875,6 @@ mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 	local attack_data = breed_table[event]
 
 	if attack_data then
-		dbg_a = attack_data
-
 		if event then
 			entry.special_attack_event = event
 			entry.special_attack_imminent = true
@@ -883,7 +887,7 @@ mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 				entry.special_attack_timer = now + 1
 			end
 
-			mod:echo(
+			--[[mod:echo(
 				string.format(
 					"%s [ANIMATION ATTACK DETECTED] %s -> %s (damage in %.2fs)",
 					mod.ts(),
@@ -891,7 +895,7 @@ mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 					event,
 					attack_data.damage_time
 				)
-			)
+			)]]
 		end
 	end
 
@@ -901,8 +905,6 @@ end)
 mod.special_attack_events = {
 	-- Trapper / Netgunner
 	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
-	["wwise/events/minions/play_netgunner_run_foley_special"] = true,
-	["wwise/events/minions/play_netgunner_reload"] = true,
 
 	-- Sniper
 	["wwise/events/weapon/play_special_sniper_flash"] = true,
@@ -965,7 +967,7 @@ mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_
 
 		entry.special_attack_timer = now + 1.5
 
-		mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
+		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
 	end
 end)
 
@@ -1542,13 +1544,21 @@ mod.on_setting_changed = function(setting_id)
 end
 
 mod.get_breed_tags = function(unit)
-	local entry = mod.enemy_cache[unit]
-
-	local unit_data_extension = (entry and entry.unit_data_ext) or ScriptUnit_has_extension(unit, "unit_data_system")
-	local breed = unit_data_extension and unit_data_extension:breed()
-	if not breed then
-		return
+	if not HEALTH_ALIVE[unit] then
+		return nil
 	end
-	local tags = breed.tags
-	return tags
+
+	local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+
+	if not unit_data_extension then
+		return nil
+	end
+
+	local breed = unit_data_extension:breed()
+
+	if breed then
+		return breed.tags
+	end
+
+	return nil
 end
