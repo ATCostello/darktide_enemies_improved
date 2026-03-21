@@ -949,40 +949,35 @@ mod.special_attack_events = {
 }
 
 mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_name, source)
-	if not mod.special_attack_events[event_name] then
-		return
-	end
+	if mod.special_attack_events[event_name] then
+		local unit = mod.source_unit_cache[source]
 
-	local unit = mod.source_unit_cache[source]
+		if not unit then
+			unit = mod.find_attacking_unit()
+			if unit then
+				mod.source_unit_cache[source] = unit
+			end
+		end
 
-	if not unit then
-		unit = mod.find_attacking_unit()
-		if unit then
-			mod.source_unit_cache[source] = unit
+		if unit and Unit_alive(unit) then
+			-- Only trigger if event not already triggered via animation data (Quicker)
+			if entry and entry.special_attack_imminent ~= true then
+				entry.special_attack_event = event_name
+				entry.special_attack_imminent = true
+
+				local now = mod.get_time()
+
+				entry.special_attack_timer = now + 1.5
+
+				--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
+			end
 		end
 	end
-
-	if not unit or not Unit_alive(unit) then
-		return
-	end
-
-	local entry = mod.enemy_cache[unit]
-	if not entry then
-		return
-	end
-
-	-- Only trigger if event not already triggered via animation data (Quicker)
-	if entry.special_attack_imminent ~= true then
-		entry.special_attack_event = event_name
-		entry.special_attack_imminent = true
-
-		local now = mod.get_time()
-
-		entry.special_attack_timer = now + 1.5
-
-		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
-	end
 end)
+
+function string.starts(String, Start)
+	return string.sub(String, 1, string.len(Start)) == Start
+end
 
 mod.remove_dead = function()
 	local units_to_remove = {}
@@ -1033,7 +1028,7 @@ mod.remove_dead = function()
 
 	-- Detect if dead
 	for unit, data in pairs(mod.enemy_cache) do
-		if not Unit.alive(unit) then
+		if not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
 			iterate_types_removal(unit)
 		else
 			local health_extension = ScriptUnit.has_extension(unit, "health_system")
@@ -1226,18 +1221,6 @@ mod.update_enemy_healthbars = function(units, num_units)
 				-- Clustered mode: only the representative unit gets a bar,
 				-- regardless of hb_horde_enable
 				if cluster.rep_unit ~= unit then
-					goto continue_healthbar_loop
-				end
-			else
-				-- Not in a cluster (or clustering disabled): apply hb_horde_enable rules
-				local entry = enemy_cache[unit]
-				local unit_data_extension = entry.unit_data_ext
-				local breed = unit_data_extension and unit_data_extension:breed()
-				local tags = breed and breed.tags
-				local is_horde = tags and (tags.horde or tags.roamer)
-
-				-- If this is a horde unit and per-unit horde bars are disabled, skip
-				if is_horde and not fs.enable.hb_horde then
 					goto continue_healthbar_loop
 				end
 			end
