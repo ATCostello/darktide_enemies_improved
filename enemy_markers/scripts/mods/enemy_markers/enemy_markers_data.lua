@@ -70,7 +70,7 @@ mod.debuff_icons = {
 
 	-- Bleeding
 	bleed = "content/ui/materials/icons/presets/preset_13",
-	zealot_bled_enemies_take_more_damage_effect = "content/ui/materials/icons/presets/preset_13",
+	zealot_bled_enemies_take_more_damage_effect = "content/ui/textures/icons/buffs/hud/zealot/zealot_multi_hits_grant_impact_and_uninterruptible",
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/item_types/upper_bodies",
@@ -328,36 +328,6 @@ local border_colours = {
 	},
 }
 
-local chest_icons = {
-	{
-		text = "Default",
-		value = "content/ui/materials/hud/interactions/icons/default",
-	},
-	{
-		text = "Video",
-		value = "content/ui/materials/icons/system/settings/category_video",
-	},
-	{
-		text = "Loot",
-		value = "content/ui/materials/icons/generic/loot",
-	},
-}
-
-local luggable_icons = {
-	{
-		text = "Exclamation",
-		value = "content/ui/materials/hud/interactions/icons/environment_alert",
-	},
-	{
-		text = "Hands",
-		value = "content/ui/materials/hud/communication_wheel/icons/thanks",
-	},
-	{
-		text = "Fist",
-		value = "content/ui/materials/icons/presets/preset_18",
-	},
-}
-
 local background_colours = {
 	{
 		text = "Black",
@@ -462,12 +432,12 @@ return {
 					{
 						setting_id = "hb_hide_after_no_damage",
 						type = "checkbox",
-						default_value = false,
+						default_value = true,
 					},
 					{
 						setting_id = "hb_show_damage_numbers",
 						type = "checkbox",
-						default_value = false,
+						default_value = true,
 					},
 					{
 						setting_id = "hb_text_show_damage",
@@ -478,7 +448,7 @@ return {
 						setting_id = "hb_damage_number_types",
 						type = "dropdown",
 						options = damage_number_types,
-						default_value = "floating",
+						default_value = "readable",
 					},
 					{
 						setting_id = "hb_show_armour_types",
@@ -494,7 +464,7 @@ return {
 					{
 						setting_id = "hb_size_width",
 						type = "numeric",
-						default_value = 200,
+						default_value = 150,
 						range = {
 							100,
 							400,
@@ -503,7 +473,7 @@ return {
 					{
 						setting_id = "hb_size_height",
 						type = "numeric",
-						default_value = 15,
+						default_value = 10,
 						range = {
 							4,
 							30,

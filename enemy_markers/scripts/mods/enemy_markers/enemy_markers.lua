@@ -22,6 +22,10 @@ mod.enemy_debuffs = {}
 mod.enemy_utility_debuffs = {}
 mod._broadphase_results = {}
 local healthbar_ids = {}
+local debuff_ids = {}
+local utility_debuff_ids = {}
+local marker_ids = {}
+
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
@@ -33,10 +37,10 @@ local _alert_last_t = 0
 local ALERT_UPDATE_INTERVAL = 0.1
 
 local _dead_cleanup_accum = 0
-local DEAD_CLEANUP_INTERVAL = 5
+local DEAD_CLEANUP_INTERVAL = 1
 
-local HORDE_CLUSTER_RADIUS_SQ = 15 ^ 2
-local HORDE_MIN_UNITS_FOR_CLUSTER = 6
+local HORDE_CLUSTER_RADIUS_SQ = 30 ^ 2
+local HORDE_MIN_UNITS_FOR_CLUSTER = 20
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
 local _last_cluster_count = 0
@@ -85,39 +89,54 @@ local DANGEROUS_BT_ACTIONS = {
 -- Add marker templates + preload resources
 -----------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
-	-- Preload views to get textures/icons, to prevent crashing.
-	Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
-	Managers.package:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/inventory_background_view/inventory_background_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load(
-		"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemy_markers", nil, true)
-	Managers.package:load(
-		"packages/ui/views/masteries_overview_view/masteries_overview_view",
-		"enemy_markers",
-		nil,
-		true
-	)
-	Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
+	mod.on_game_state_changed = function(state, state_name)
+		-- ========================
+		-- EXISTING (keep)
+		-- ========================
+		Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
+		Managers.package:load(
+			"packages/ui/views/inventory_weapons_view/inventory_weapons_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load(
+			"packages/ui/views/inventory_background_view/inventory_background_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load(
+			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
+		Managers.package:load(
+			"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load(
+			"packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load(
+			"packages/ui/views/masteries_overview_view/masteries_overview_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+		Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemy_markers", nil, true)
 
-	-- for terminal_header_glow
-	Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemy_markers", nil, true)
+	end
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
@@ -134,7 +153,6 @@ end)
 -----------------------------------------------------------------------
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
-
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- Update enemies/markers for this frame
 	mod.update_enemies(dt, t)
@@ -211,9 +229,11 @@ local function build_frame_settings(mod, dt)
 	fs.enable = fs.enable or {}
 	local enable = fs.enable
 	enable.markers = mod:get("markers_enable")
+	enable.markers_horde = mod:get("marker_horde_enable") or false
+
 	enable.healthbar = mod:get("healthbar_enable")
 	enable.debuff = mod:get("debuff_enable")
-	enable.horde = mod:get("hb_horde_enable") or false
+	enable.hb_horde = mod:get("hb_horde_enable") or false
 	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
 end
 
@@ -276,6 +296,7 @@ mod.scan_enemies = function()
 					unit = unit,
 					seen = true,
 
+					dead = false,
 					-- cache extensions ONCE
 					health_ext = ScriptUnit_has_extension(unit, "health_system"),
 					unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system"),
@@ -293,14 +314,6 @@ mod.scan_enemies = function()
 		end
 	end
 end
-
------------------------------------------------------------------------
--- Marker / unit tracking
------------------------------------------------------------------------
-
-local marker_ids = {}
--- Table to map marker IDs to units
-local marker_to_unit = {}
 
 -----------------------------------------------------------------------
 -- Alerted enemies
@@ -971,50 +984,115 @@ mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_
 	end
 end)
 
+mod.remove_dead = function()
+	local units_to_remove = {}
+
+	dbg_mod = mod
+
+	-- Go through each marker type and clear caches.
+	local function iterate_types_removal(unit)
+		--   MARKERS
+		local marker_id = marker_ids[unit]
+		if marker_id then
+			Managers.event:trigger("remove_world_marker", marker_id)
+			mod.enemy_markers[unit] = nil
+			marker_ids[unit] = nil
+			mod.marked_dead[unit] = true
+			table.insert(units_to_remove, unit)
+		end
+
+		--   HEALTHBARS
+		local hb_id = healthbar_ids[unit]
+		if hb_id then
+			Managers_event:trigger("remove_world_marker", hb_id)
+			healthbar_ids[unit] = nil
+			mod.enemy_healthbars[unit] = nil
+			table.insert(units_to_remove, unit)
+		end
+
+		--   DEBUFFS
+		local debuff_id = debuff_ids[unit]
+		if debuff_id then
+			Managers_event:trigger("remove_world_marker", debuff_id)
+			mod.enemy_debuffs[unit] = nil
+			debuff_ids[unit] = nil
+			mod.marked_dead[unit] = true
+			table.insert(units_to_remove, unit)
+		end
+
+		-- UTILITY DEBUFFS
+		local util_debuff_id = utility_debuff_ids[unit]
+		if util_debuff_id then
+			Managers_event:trigger("remove_world_marker", util_debuff_id)
+			mod.enemy_utility_debuffs[unit] = nil
+			utility_debuff_ids[unit] = nil
+			mod.marked_dead[unit] = true
+			table.insert(units_to_remove, unit)
+		end
+	end
+
+	-- Detect if dead
+	for unit, data in pairs(mod.enemy_cache) do
+		if not Unit.alive(unit) then
+			iterate_types_removal(unit)
+		else
+			local health_extension = ScriptUnit.has_extension(unit, "health_system")
+			if health_extension then
+				local health_percent = health_extension:current_health_percent()
+				if health_percent <= 0 then
+					iterate_types_removal(unit)
+				end
+			end
+		end
+	end
+
+	-- Remove dead enemies from the cache after processing
+	for _, unit in ipairs(units_to_remove) do
+		mod.enemy_cache[unit] = nil
+	end
+end
+
+mod.is_horde = function(unit)
+	if Unit.alive(unit) then
+		local entry = mod.enemy_cache[unit]
+		local unit_data_extension = entry.unit_data_ext
+		local breed = unit_data_extension and unit_data_extension:breed()
+		local tags = breed and breed.tags
+		dbg_tags = tags
+		local is_horde = tags and (tags.horde or tags.roamer) or false
+
+		return is_horde or false
+	else
+		return false
+	end
+end
+
 mod.update_enemy_markers = function(units, num_units, t)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.markers) then
 		return
 	end
 
-	local enemy_cache = mod.enemy_cache
-	local marked_dead = mod.marked_dead
-	local to_remove = {}
+	for unit, data in pairs(mod.enemy_cache) do
+		local continue = true
+		if mod.is_horde(unit) and not fs.enable.markers_horde then
+			continue = false
+		end
 
-	-- First, handle the removal of markers for dead enemies
-	for i = 1, num_units do
-		local unit = units[i]
-		local entry = enemy_cache[unit]
-		if entry and entry.dead then
-			local marker_id = marker_ids[unit]
-			if marker_id then
-				Managers_event:trigger("remove_world_marker", marker_id)
-				mod.enemy_markers[unit] = nil
-				marker_ids[unit] = nil
-				marked_dead[unit] = true
+		if continue then
+			if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
+				Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
+					marker_ids[unit] = marker_id
+				end)
+
+				mod.enemy_markers[unit] = unit
 			end
-			to_remove[#to_remove + 1] = unit
 		end
 	end
 
-	-- Remove dead enemies from the cache after processing
-	for i = 1, #to_remove do
-		enemy_cache[to_remove[i]] = nil
-	end
+	---------------------------------------------------------------------------------------------------------
 
-	-- Second, only add markers for living enemies that are not dead and removed
-	for i = 1, num_units do
-		local unit = units[i]
-		if enemy_cache[unit] and not mod.enemy_markers[unit] and not marked_dead[unit] then
-			Managers_event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
-				marker_ids[unit] = marker_id
-				marker_to_unit[unit] = marker_id
-			end)
-
-			mod.enemy_markers[unit] = unit
-		end
-	end
-
+	local enemy_cache = mod.enemy_cache
 	local now = (Managers_time and Managers_time:time("gameplay")) or t or 0
 	local enemy_markers_alerted = mod.enemy_markers_alerted
 
@@ -1046,7 +1124,7 @@ mod.update_enemy_markers = function(units, num_units, t)
 				local marker_id = marker_ids[unit]
 				if marker_id then
 					local marker = markers_by_id[marker_id]
-					if entry then
+					if entry and marker then
 						marker.special_attack_imminent = entry.special_attack_imminent
 						if entry.is_specialist then
 							marker.is_specialist = entry.is_specialist
@@ -1114,9 +1192,12 @@ mod.update_enemy_healthbars = function(units, num_units)
 	end
 
 	if fs.enable.horde_clusters then
-		if num_units ~= _last_cluster_count then
+		local CLUSTER_UPDATE_INTERVAL = 0.2
+		_cluster_t = (_cluster_t or 0) + fs.dt
+
+		if _cluster_t > CLUSTER_UPDATE_INTERVAL then
+			_cluster_t = 0
 			_build_horde_clusters(units, num_units)
-			_last_cluster_count = num_units
 		end
 	else
 		table_clear(_horde_clusters)
@@ -1125,31 +1206,19 @@ mod.update_enemy_healthbars = function(units, num_units)
 
 	local enemy_cache = mod.enemy_cache
 	local marked_dead = mod.marked_dead
-	local to_remove = {}
-
-	-- Remove dead enemies
-	for i = 1, num_units do
-		local unit = units[i]
-		local entry = enemy_cache[unit]
-		if entry and entry.dead then
-			local hb_id = healthbar_ids[unit]
-			if hb_id then
-				Managers_event:trigger("remove_world_marker", hb_id)
-				healthbar_ids[unit] = nil
-				mod.enemy_healthbars[unit] = nil
-			end
-			to_remove[#to_remove + 1] = unit
-		end
-	end
-
-	for i = 1, #to_remove do
-		enemy_cache[to_remove[i]] = nil
-	end
 
 	-- Add healthbars for living enemies
 	for i = 1, num_units do
 		local unit = units[i]
-		if enemy_cache[unit] and not mod.enemy_healthbars[unit] and not marked_dead[unit] then
+
+		local continue = true
+		if
+			(mod.is_horde(unit) and not fs.enable.hb_horde) and (mod.is_horde(unit) and not fs.enable.horde_clusters)
+		then
+			continue = false
+		end
+
+		if continue and enemy_cache[unit] and not mod.enemy_healthbars[unit] and not marked_dead[unit] then
 			local cluster = fs.enable.horde_clusters and mod.get_horde_cluster_for_unit(unit) or nil
 
 			-- If this unit is part of a horde cluster, only give a healthbar to the representative
@@ -1168,7 +1237,7 @@ mod.update_enemy_healthbars = function(units, num_units)
 				local is_horde = tags and (tags.horde or tags.roamer)
 
 				-- If this is a horde unit and per-unit horde bars are disabled, skip
-				if is_horde and not fs.enable.horde then
+				if is_horde and not fs.enable.hb_horde then
 					goto continue_healthbar_loop
 				end
 			end
@@ -1187,9 +1256,6 @@ end
 -- Enemy debuffs
 -----------------------------------------------------------------------
 
-local debuff_ids = {}
-local utility_debuff_ids = {}
-
 mod.update_enemy_debuffs = function(units, num_units)
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.debuff) then
@@ -1198,27 +1264,6 @@ mod.update_enemy_debuffs = function(units, num_units)
 
 	local enemy_cache = mod.enemy_cache
 	local marked_dead = mod.marked_dead
-	local to_remove = {}
-
-	-- First, handle the removal of debuffs for dead enemies
-	for i = 1, num_units do
-		local unit = units[i]
-		local entry = enemy_cache[unit]
-		if entry and entry.dead then
-			local debuff_id = debuff_ids[unit]
-			if debuff_id then
-				Managers_event:trigger("remove_world_marker", debuff_id)
-				mod.enemy_debuffs[unit] = nil
-				debuff_ids[unit] = nil
-				marked_dead[unit] = true
-			end
-			to_remove[#to_remove + 1] = unit
-		end
-	end
-
-	for i = 1, #to_remove do
-		enemy_cache[to_remove[i]] = nil
-	end
 
 	-- Second, only add debuffs for living enemies that are not dead and removed
 	for i = 1, num_units do
@@ -1226,7 +1271,6 @@ mod.update_enemy_debuffs = function(units, num_units)
 		if enemy_cache[unit] and not mod.enemy_debuffs[unit] and not marked_dead[unit] then
 			Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
 				debuff_ids[unit] = debuff_id
-				marker_to_unit[unit] = debuff_id
 			end)
 
 			mod.enemy_debuffs[unit] = unit
@@ -1242,27 +1286,6 @@ mod.update_enemy_utility_debuffs = function(units, num_units)
 
 	local enemy_cache = mod.enemy_cache
 	local marked_dead = mod.marked_dead
-	local to_remove = {}
-
-	-- Remove on death
-	for i = 1, num_units do
-		local unit = units[i]
-		local entry = enemy_cache[unit]
-		if entry and entry.dead then
-			local id = utility_debuff_ids[unit]
-			if id then
-				Managers_event:trigger("remove_world_marker", id)
-				mod.enemy_utility_debuffs[unit] = nil
-				utility_debuff_ids[unit] = nil
-				marked_dead[unit] = true
-			end
-			to_remove[#to_remove + 1] = unit
-		end
-	end
-
-	for i = 1, #to_remove do
-		enemy_cache[to_remove[i]] = nil
-	end
 
 	-- Add for living enemies
 	for i = 1, num_units do
@@ -1310,7 +1333,7 @@ mod.clear_caches = function()
 end
 
 -----------------------------------------------------------------------
--- Marker Distance / Overlap Fading
+-- Marker Distance
 -----------------------------------------------------------------------
 
 mod.apply_marker_fade = function()
@@ -1373,23 +1396,6 @@ mod.apply_marker_fade = function()
 
 				fade = math.max(fade, MIN_ALPHA)
 
-				--------------------------------------------------
-				-- OPTIONAL: simple stacking fade (same screen region)
-				--------------------------------------------------
-				local widget = marker.widget
-				if widget and widget.offset then
-					local sx = math.floor(widget.offset[1] / 50)
-					local sy = math.floor(widget.offset[2] / 50)
-
-					local key = sx .. ":" .. sy
-					screen_positions[key] = (screen_positions[key] or 0) + 1
-
-					local stack_count = screen_positions[key]
-					if stack_count > 1 then
-						fade = fade - (stack_count - 1) * STACKING_FADE_STRENGTH
-					end
-				end
-
 				marker.alpha_multiplier = math.clamp(fade, MIN_ALPHA, 1)
 
 				local final_alpha = math.clamp(fade, MIN_ALPHA, 1)
@@ -1398,7 +1404,6 @@ mod.apply_marker_fade = function()
 				if widget and widget.style then
 					for _, style in pairs(widget.style) do
 						if style.color then
-							-- Mutate existing table (no allocations)
 							local base_alpha = 255
 							style.color[1] = base_alpha * final_alpha
 						end
@@ -1445,22 +1450,6 @@ mod.update_enemies = function(dt, t)
 
 	local to_process = math_min(count, MAX_ENEMIES_PER_FRAME)
 
-	-- SINGLE PASS death detection
-	for i = 1, to_process do
-		local unit = temp[i]
-		local entry = mod.enemy_cache[unit]
-
-		if entry then
-			local dead = false
-
-			if not Unit_alive(unit) then
-				dead = true
-			end
-
-			entry.dead = dead
-		end
-	end
-
 	-- select a rotating window of units into first to_process entries
 	if to_process < count then
 		local idx = _last_enemy_index
@@ -1491,6 +1480,8 @@ mod.update_enemies = function(dt, t)
 		mod.update_enemy_debuffs(temp, to_process)
 		mod.update_enemy_utility_debuffs(temp, to_process)
 	end
+
+	mod.remove_dead()
 
 	-- Apply distance / stacking fade to all active markers
 	mod.apply_marker_fade()
@@ -1539,6 +1530,7 @@ end
 
 mod.on_setting_changed = function(setting_id)
 	mod.clear_caches()
+
 	_last_draw_distance_key = nil
 	_last_draw_distance_value = 50
 end

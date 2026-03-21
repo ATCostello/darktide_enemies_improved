@@ -52,6 +52,7 @@ local Application_time_since_launch = Application.time_since_launch
 template.name = "enemy_markers"
 template.unit_node = "root_point"
 template.min_distance = 0
+template.position_offset = { 0, 0, 0.8 }
 
 template.size = size
 template.icon_size = icon_size
@@ -88,7 +89,6 @@ template.ping_min_size = {
 }
 template.ping_max_size = { ping_size[1], ping_size[2] }
 
-template.position_offset = { 0, 0, 0.8 }
 template.screen_margins = {
 	down = 0.23148148148148148,
 	left = 0.234375,
@@ -102,7 +102,7 @@ template.scale_settings = {
 	scale_from = 0.4,
 	scale_to = 1,
 	distance_max = 25,
-	distance_min = 0.5,
+	distance_min = 5,
 }
 
 template.fade_settings = {
@@ -297,8 +297,7 @@ end
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local content = widget.content
 	local distance = content.distance or 0
-	local data = marker.data
-
+	local data = marker.data	
 	local unit = marker.unit
 
 	local evolve_distance = template.evolve_distance
@@ -316,9 +315,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		scale_progress = math_max(scale_progress - dt * scale_speed, 0)
 	end
-
-	marker.ignore_scale = false
-	local global_scale = (marker.ignore_scale and 1) or marker.scale or 1
 
 	-- marker height
 	if content.breed and Unit_alive(unit) then
@@ -353,8 +349,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local sx = default_size[1] + (max_size[1] - default_size[1]) * scale_progress
 	local sy = default_size[2] + (max_size[2] - default_size[2]) * scale_progress
-	ring_size[1] = sx * global_scale
-	ring_size[2] = sy * global_scale
+	ring_size[1] = sx * marker.scale
+	ring_size[2] = sy * marker.scale
 
 	-- ping scaling + pulsing
 	local ping_min_size = template.ping_min_size
@@ -362,15 +358,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local ping_style = style.ping
 	local ping_size_local = ping_style.size
 
-	local ping_speed = 7
+	local ping_speed = 2
 	local ping_anim_progress = 0.5 + math_sin(Application_time_since_launch() * ping_speed) * 0.5
 	local ping_pulse_size_increase = ping_anim_progress * 15
 
 	local p_sx = ping_min_size[1] + (ping_max_size[1] - ping_min_size[1]) * scale_progress + ping_pulse_size_increase
 	local p_sy = ping_min_size[2] + (ping_max_size[2] - ping_min_size[2]) * scale_progress + ping_pulse_size_increase
 
-	ping_size_local[1] = p_sx * global_scale
-	ping_size_local[2] = p_sy * global_scale
+	ping_size_local[1] = p_sx * marker.scale
+	ping_size_local[2] = p_sy * marker.scale
 
 	local ping_pivot = ping_style.pivot
 	ping_pivot[1] = ping_size_local[1] * 0.5
@@ -387,13 +383,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local i_sx = icon_min_size[1] + (icon_max_size[1] - icon_min_size[1]) * scale_progress
 	local i_sy = icon_min_size[2] + (icon_max_size[2] - icon_min_size[2]) * scale_progress
-	icon_style_size[1] = i_sx * global_scale
-	icon_style_size[2] = i_sy * global_scale
+	icon_style_size[1] = i_sx * marker.scale
+	icon_style_size[2] = i_sy * marker.scale
 
 	local b_sx = background_min_size[1] + (background_max_size[1] - background_min_size[1]) * scale_progress
 	local b_sy = background_min_size[2] + (background_max_size[2] - background_min_size[2]) * scale_progress
-	bg_style_size[1] = b_sx * global_scale
-	bg_style_size[2] = b_sy * global_scale
+	bg_style_size[1] = b_sx * marker.scale
+	bg_style_size[2] = b_sy * marker.scale
 
 	local animating = (scale_progress ~= content.scale_progress)
 
@@ -405,7 +401,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if SPECIAL_PULSE and marker.special_attack_imminent then
 		content.special_attack_imminent = true
-		local pulse = math.abs(math.sin(mod.pulse_t * 5))
+		local pulse = math.abs(math.sin(mod.pulse_t * 2))
 
 		local flash = math.min(255, 150 + pulse * 100)
 		local size_scale = 1 + pulse * 0.5
@@ -420,11 +416,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.color[3] = g
 		style.background.color[4] = b
 
-		style.arrow.size[1] = arrow_size[1] * size_scale
-		style.arrow.size[2] = arrow_size[2] * size_scale
+		style.arrow.size[1] = arrow_size[1] * size_scale * marker.scale
+		style.arrow.size[2] = arrow_size[2] * size_scale * marker.scale
 
-		style.background.size[1] = background_size[1] * size_scale
-		style.background.size[2] = background_size[2] * size_scale
+		style.background.size[1] = background_size[1] * size_scale * marker.scale
+		style.background.size[2] = background_size[2] * size_scale * marker.scale
 	else
 		content.special_attack_imminent = false
 		style.background.color[2] = 255
@@ -435,11 +431,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.arrow.color[3] = 255
 		style.arrow.color[4] = 255
 
-		style.arrow.size[1] = arrow_size[1]
-		style.arrow.size[2] = arrow_size[2]
+		style.arrow.size[1] = arrow_size[1] * marker.scale
+		style.arrow.size[2] = arrow_size[2] * marker.scale
 
-		style.background.size[1] = background_size[1]
-		style.background.size[2] = background_size[2]
+		style.background.size[1] = background_size[1] * marker.scale
+		style.background.size[2] = background_size[2] * marker.scale
 	end
 
 	local angle = content.angle or 0

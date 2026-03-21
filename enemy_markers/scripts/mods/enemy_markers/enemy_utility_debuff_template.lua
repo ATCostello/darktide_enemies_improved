@@ -17,19 +17,20 @@ local names_fade = mod:get("debuff_names_fade") == true
 local enable_horde = mod:get("debuff_horde_enable") or false
 
 local NAME_FADE_IN = 0.15
-local NAME_VISIBLE = 1.0
-local NAME_FADE_OUT = 0.4
+local NAME_VISIBLE = 2.0
+local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local size = {
 	hb_size_width,
 	hb_size_height,
 }
+local base_y = hb_size_height + 28
 
 template.size = size
 template.name = "enemy_utility_debuff"
 template.unit_node = "root_point"
-template.position_offset = { 0, 0, 0.8 }
+template.position_offset = { 0, 0, 0.5 }
 template.max_visible_rows = max_visible_rows_setting
 
 template.check_line_of_sight = true
@@ -114,9 +115,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 	local base_y = bar_height + 8
 	local row_step = bar_height + 8
-	local icon_x = bar_width * 0.5 - 50
-	local name_x = bar_width * 0.5 - 100
-	local stack_x = bar_width * 0.5 + 20
+	local icon_x = bar_width - 5
+	local name_x = bar_width
+	local stack_x = bar_width
 
 	for i = 1, max_rows do
 		local icon_bg_id = "util_icon_background_" .. i
@@ -155,7 +156,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				4,
 			},
-			color = { 20, 0, 0, 0 },
+			color = nil,
+			color = Color.terminal_frame(255, true),
 			size = { 30, 30 },
 			default_size = { 30, 30 },
 		}
@@ -216,8 +218,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				6,
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 18,
-			default_font_size = 18,
+			font_size = 16,
+			default_font_size = 16,
 
 			text_color = { 0, 255, 255, 255 },
 			size = { bar_width * 0.25, 20 },
@@ -253,8 +255,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				7,
 			},
 			font_type = "proxima_nova_bold",
-			font_size = 18,
-			default_font_size = 18,
+			font_size = 16,
+			default_font_size = 16,
 
 			text_color = { 0, 255, 255, 255 },
 			size = { 260, 22 },
@@ -403,7 +405,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
-		local y_base = bar_height + 8 + ((index - 1) * row_height)
+		local y_base = base_y + ((index - 1) * row_height)
 
 		local state = state_table[name]
 		if not state then

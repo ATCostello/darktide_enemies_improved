@@ -33,19 +33,20 @@ template.size = size
 template.min_size = min_size
 template.name = "enemy_healthbar"
 template.unit_node = "root_point"
-template.position_offset = { 0, 0, 0.8 }
+template.position_offset = { 0, 0, 0.5 }
 
 template.check_line_of_sight = true
 template.max_distance = draw_distance_setting
 template.screen_clamp = false
+
 template.bar_settings = {
-	alpha_fade_delay = 2.6,
+	alpha_fade_delay = 1,
 	alpha_fade_duration = 0.6,
 	alpha_fade_min_value = 50,
 	animate_on_health_increase = true,
-	bar_spacing = 2,
+	bar_spacing = 0,
 	duration_health = 1,
-	duration_health_ghost = 2.5,
+	duration_health_ghost = 1,
 	health_animation_threshold = 0.1,
 }
 
@@ -79,7 +80,6 @@ local Managers_player = Managers.player
 local Color_color = Color
 local Vector3 = Vector3
 local Vector3Box = Vector3Box
-local difficulty_manager = Managers.state.difficulty
 local Unit_alive = Unit.alive
 
 local math_clamp = math.clamp
@@ -692,6 +692,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = "frame",
 			value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
 			style = {
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1] - 6, bar_offset[2], 0 },
 				default_offset = { bar_offset[1] - 6, bar_offset[2], 0 },
@@ -704,18 +705,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "rect",
 			style_id = "health_max",
 			style = {
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1], bar_offset[2], 1 },
 				default_offset = { bar_offset[1], bar_offset[2], 1 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 0, 90, 90, 90 },
+				color = { 200, 0, 0, 0 },
 			},
 		}, -- GHOST DAMAGE
 		{
 			pass_type = "rect",
 			style_id = "ghost_bar",
 			style = {
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1], bar_offset[2], 2 },
 				default_offset = { bar_offset[1], bar_offset[2], 2 },
@@ -728,6 +731,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "rect",
 			style_id = "current_health",
 			style = {
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1], bar_offset[2], 3 },
 				default_offset = { bar_offset[1], bar_offset[2], 3 },
@@ -742,6 +746,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/frames/inner_shadow_medium",
 			value_id = "shading1",
 			style = {
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1], bar_offset[2], 5 },
 				default_offset = { bar_offset[1], bar_offset[2], 5 },
@@ -777,8 +782,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				size = { 32, 32 },
 				default_size = { 32, 32 },
 
-				color = { 0, 255, 255, 255 },
+				color = { 0, 200, 200, 0 },
 			},
+			visibility_function = function(content)
+				dbg_content = content
+				return content.is_clamped and content.show_distance
+			end,
 		}, -- BOSS ICON
 		{
 			pass_type = "texture",
@@ -793,8 +802,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				size = { 32, 32 },
 				default_size = { 32, 32 },
 
-				color = { 0, 255, 100, 255 },
+				color = { 0, 200, 200, 0 },
 			},
+			visibility_function = function(content)
+				return content.is_clamped and content.show_distance
+			end,
 		}, -- header text
 		{
 			pass_type = "text",
@@ -830,8 +842,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5, bar_height + 8, 6 },
 				default_offset = { -bar_width * 0.5, bar_height + 8, 6 },
 				font_type = "proxima_nova_bold",
-				font_size = 18,
-				default_font_size = 18,
+				font_size = 16,
+				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
 				size = { bar_width, 20 },
@@ -893,10 +905,6 @@ template.on_enter = function(widget, marker, template)
 		local tags = breed.tags or {}
 		if tags.horde or tags.roamer then
 			content._breed_type = "horde"
-		elseif tags.elite then
-			content._breed_type = "elite"
-		elseif tags.special then
-			content._breed_type = "special"
 		elseif tags.monster then
 			content._breed_type = "monster"
 		elseif tags.captain then
@@ -905,6 +913,10 @@ template.on_enter = function(widget, marker, template)
 			content._breed_type = "disabler"
 		elseif tags.witch then
 			content._breed_type = "witch"
+		elseif tags.elite then
+			content._breed_type = "elite"
+		elseif tags.special then
+			content._breed_type = "special"
 		else
 			content._breed_type = "enemy"
 		end
@@ -1034,7 +1046,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Failsafe percent clamp
 	health_percent = health_percent or 0
 	health_percent = math_clamp(health_percent, 0, 1)
-	-- mod:echo(health_percent)
 
 	if bar_logic then
 		bar_logic:update(dt, t, health_percent)
@@ -1066,9 +1077,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- DAMAGE NUMBERS LOGIC
 	-------------------------------------------------------------------
-	local max_health_setting = (content.breed and content.breed.name and difficulty_manager)
-			and difficulty_manager:get_minion_max_health(content.breed.name)
-		or health_max
+	local max_health_setting = health_max
+	if Unit_alive(unit) then
+		max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
+				and Managers.state.difficulty:get_minion_max_health(content.breed.name)
+			or health_max
+	end
 
 	local total_damage_taken
 	local player_camera = parent._parent and parent._parent:player_camera()
@@ -1236,40 +1250,35 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
-	if health_fraction then
-		health_fraction = 0
-		local scale = marker.scale or 1
+	if health_fraction and health_ghost_fraction then
+		local bar_settings = template.bar_settings
+		local spacing = bar_settings.bar_spacing
+		local bar_width = template.size[1]
+		local default_width_offset = -bar_width * 0.5
 
-		local max_style = style.health_max
+		local health_max_style = style.health_max
 		local current_health_style = style.current_health
-		local ghost_style = style.ghost_bar
-		local frame_style = style.frame
+		local ghost_bar_style = style.ghost_bar
 
-		local base_width = max_style.default_size[1]
-		local total_width = base_width * scale
-		local left_edge = -total_width * 0.5
+		local health_width = bar_width * health_fraction
 
-		-- Background
-		max_style.size[1] = total_width
-		max_style.offset[1] = left_edge
+		local scale = marker.scale or 1
+		local scaled_bar_width = bar_width * scale
+		local scaled_health_width = scaled_bar_width * health_fraction
 
-		-- Frame
-		frame_style.size[1] = total_width + 12
-		frame_style.offset[1] = left_edge - 6
+		current_health_style.size[1] = scaled_health_width
+		current_health_style.default_size[1] = scaled_health_width
 
-		-- Main bar
-		local health_width = total_width * health_fraction
-		current_health_style.size[1] = health_width
-		current_health_style.offset[1] = left_edge
+		current_health_style.offset[1] = -scaled_bar_width * 0.5
 
-		-- Ghost
-		if health_ghost_fraction then
-			local ghost_width = math.max(total_width * health_ghost_fraction - health_width, 0)
-			ghost_style.size[1] = ghost_width
-			ghost_style.offset[1] = left_edge + health_width
-		end
-		dbg_style = style
+		local scaled_ghost_width = math.max(scaled_bar_width * health_ghost_fraction - scaled_health_width, 0)
+
+		ghost_bar_style.size[1] = scaled_ghost_width
+		ghost_bar_style.default_size[1] = scaled_ghost_width
+
+		ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
 	end
+
 	-- set frame background
 	content.frame = template.frame_type
 
@@ -1280,11 +1289,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	style.icon_boss.color[1] = 0
 
 	if breed_type == "elite" or breed_type == "ogryn" then
-		style.icon_elite.color[1] = 0
+		style.icon_elite.color[1] = 255
 	end
 
 	if breed_type == "monster" then
-		style.icon_boss.color[1] = 0
+		style.icon_boss.color[1] = 255
 		style.frame.color = { 200, 200, 60, 200 }
 	end
 
@@ -1307,7 +1316,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
 
-	if not in_horde_cluster and Unit_alive(unit) then
+	if in_horde_cluster == false and content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height
 
