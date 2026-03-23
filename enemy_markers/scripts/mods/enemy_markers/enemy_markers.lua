@@ -14,13 +14,15 @@ local Component = require("scripts/utilities/component")
 local MechanismManager = require("scripts/managers/mechanism/mechanism_manager")
 
 mod.frame_settings = {}
+mod._broadphase_results = {}
+
 mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_markers_alerted = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
 mod.enemy_utility_debuffs = {}
-mod._broadphase_results = {}
+
 local healthbar_ids = {}
 local debuff_ids = {}
 local utility_debuff_ids = {}
@@ -29,7 +31,7 @@ local marker_ids = {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 300
+local MAX_ENEMIES_PER_FRAME = 500
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
@@ -86,13 +88,11 @@ local DANGEROUS_BT_ACTIONS = {
 }
 
 -----------------------------------------------------------------------
--- Add marker templates + preload resources
+-- preload resources + reset caches on game state change
 -----------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
 	mod.on_game_state_changed = function(state, state_name)
-		-- ========================
-		-- EXISTING (keep)
-		-- ========================
+		-- ensure packages are loaded
 		Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
 		Managers.package:load(
 			"packages/ui/views/inventory_weapons_view/inventory_weapons_view",
@@ -136,6 +136,16 @@ mod.on_game_state_changed = function(state, state_name)
 
 		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemy_markers", nil, true)
 		Managers.package:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemy_markers", nil, true)
+
+		Managers.package:load(
+			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
+			"enemy_markers",
+			nil,
+			true
+		)
+
+		-- empty caches
+		mod.clear_caches()
 	end
 end
 
@@ -237,6 +247,123 @@ local function build_frame_settings(mod, dt)
 	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
 end
 
+--test outlines
+mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
+	settings.MinionOutlineExtension.enemies_improved = {
+		material_layers = nil,
+		visibility_check = nil,
+		color = nil,
+
+		priority = 3,
+		material_layers = {
+			"minion_outline_combat_ability",
+			"minion_outline_combat_ability_reversed_depth",
+		},
+		color = {
+			0.3,
+			0.1,
+			0,
+		},
+		visibility_check = function()
+			return true
+		end,
+	}
+
+	settings.MinionOutlineExtension.enemies_improved_alert = {
+		material_layers = nil,
+		visibility_check = nil,
+		color = nil,
+
+		priority = 1,
+		material_layers = {
+			"minion_outline_combat_ability",
+			"minion_outline_combat_ability_reversed_depth",
+		},
+		color = {
+			1,
+			0,
+			0,
+		},
+		visibility_check = function()
+			return true
+		end,
+	}
+end)
+
+mod.enable_enemy_outlines = function(unit)
+	if Unit.alive(unit) then
+		local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+		if has_outline_system then
+			local outline_system = Managers.state.extension:system("outline_system")
+			-- Force outline visible
+			--outline_system:add_outline(unit, "enemies_improved")
+		end
+	end
+end
+
+mod.disable_enemy_outlines = function(unit)
+	if Unit.alive(unit) then
+		local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+		if has_outline_system then
+			local outline_system = Managers.state.extension:system("outline_system")
+			-- Force outline visible
+			outline_system:remove_outline(unit, "enemies_improved")
+		end
+	end
+end
+
+mod.pulse_enemy_outline = function(units, num_units)
+	local enemy_cache = mod.enemy_cache
+	local fs = mod.frame_settings
+
+	for i = 1, num_units do
+		local unit = units[i]
+		if enemy_cache[unit] then
+			local entry = enemy_cache[unit]
+			local update_interval = 0.4
+			t = (t or 0) + fs.dt
+
+			if entry.special_attack_imminent and t > update_interval then
+				t = 0
+
+				mod.pulse_t = (mod.pulse_t or 0) + fs.dt
+
+				local pulse = math.abs(math.sin(mod.pulse_t * 2)) -- bounces up and down between 0 and 1
+
+				if pulse > 0.5 and not entry.alert_outline then
+					local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+					if has_outline_system then
+						local outline_system = Managers.state.extension:system("outline_system")
+						-- Force outline visible
+						outline_system:add_outline(unit, "enemies_improved_alert")
+						entry.alert_outline = true
+					end
+				elseif entry.alert_outline then
+					local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+					if has_outline_system then
+						local outline_system = Managers.state.extension:system("outline_system")
+						-- Force outline visible
+						outline_system:remove_outline(unit, "enemies_improved_alert")
+						entry.alert_outline = false
+					end
+				end
+			elseif not entry.special_attack_imminent and entry.alert_outline then
+				local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+				if has_outline_system then
+					local outline_system = Managers.state.extension:system("outline_system")
+					-- Force outline visible
+					outline_system:remove_outline(unit, "enemies_improved_alert")
+					entry.alert_outline = false
+				end
+			end
+		end
+	end
+end
 -----------------------------------------------------------------------
 -- Enemy scanning
 -----------------------------------------------------------------------
@@ -307,6 +434,7 @@ mod.scan_enemies = function()
 					special_attack_event = nil,
 					special_attack_imminent = false,
 					special_attack_timer = 0,
+					alert_outline = false,
 				}
 			else
 				entry.seen = true
@@ -895,9 +1023,9 @@ mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 			local now = mod.get_time()
 
 			if attack_data.damage_time then
-				entry.special_attack_timer = now + attack_data.damage_time
+				entry.special_attack_timer = now + 1.5
 			else
-				entry.special_attack_timer = now + 1
+				entry.special_attack_timer = now + 1.5
 			end
 
 			--[[mod:echo(
@@ -960,7 +1088,6 @@ mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_
 		end
 
 		if unit and Unit_alive(unit) then
-			-- Only trigger if event not already triggered via animation data (Quicker)
 			if entry and entry.special_attack_imminent ~= true then
 				entry.special_attack_event = event_name
 				entry.special_attack_imminent = true
@@ -990,9 +1117,9 @@ mod.remove_dead = function()
 		local marker_id = marker_ids[unit]
 		if marker_id then
 			Managers.event:trigger("remove_world_marker", marker_id)
-			mod.enemy_markers[unit] = nil
-			marker_ids[unit] = nil
-			mod.marked_dead[unit] = true
+			--mod.enemy_markers[unit] = nil
+			--marker_ids[unit] = nil
+			--mod.marked_dead[unit] = true
 			table.insert(units_to_remove, unit)
 		end
 
@@ -1000,8 +1127,8 @@ mod.remove_dead = function()
 		local hb_id = healthbar_ids[unit]
 		if hb_id then
 			Managers_event:trigger("remove_world_marker", hb_id)
-			healthbar_ids[unit] = nil
-			mod.enemy_healthbars[unit] = nil
+			--healthbar_ids[unit] = nil
+			--mod.enemy_healthbars[unit] = nil
 			table.insert(units_to_remove, unit)
 		end
 
@@ -1009,9 +1136,9 @@ mod.remove_dead = function()
 		local debuff_id = debuff_ids[unit]
 		if debuff_id then
 			Managers_event:trigger("remove_world_marker", debuff_id)
-			mod.enemy_debuffs[unit] = nil
-			debuff_ids[unit] = nil
-			mod.marked_dead[unit] = true
+			--mod.enemy_debuffs[unit] = nil
+			--debuff_ids[unit] = nil
+			--mod.marked_dead[unit] = true
 			table.insert(units_to_remove, unit)
 		end
 
@@ -1019,9 +1146,9 @@ mod.remove_dead = function()
 		local util_debuff_id = utility_debuff_ids[unit]
 		if util_debuff_id then
 			Managers_event:trigger("remove_world_marker", util_debuff_id)
-			mod.enemy_utility_debuffs[unit] = nil
-			utility_debuff_ids[unit] = nil
-			mod.marked_dead[unit] = true
+			--mod.enemy_utility_debuffs[unit] = nil
+			--utility_debuff_ids[unit] = nil
+			--mod.marked_dead[unit] = true
 			table.insert(units_to_remove, unit)
 		end
 	end
@@ -1072,6 +1199,10 @@ mod.update_enemy_markers = function(units, num_units, t)
 		local continue = true
 		if mod.is_horde(unit) and not fs.enable.markers_horde then
 			continue = false
+		end
+
+		if not mod.is_horde(unit) then
+			mod.enable_enemy_outlines(unit)
 		end
 
 		if continue then
@@ -1293,24 +1424,22 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_debuffs)
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
+	table_clear(mod.enemy_utility_debuffs)
+	table_clear(mod.enemy_markers_alerted)
+
 	if healthbar_ids then
 		table_clear(healthbar_ids)
 	end
 	if marker_ids then
 		table_clear(marker_ids)
 	end
-	table_clear(mod.enemy_markers_alerted)
 	if debuff_ids then
 		table_clear(debuff_ids)
 	end
-	table_clear(mod.enemy_utility_debuffs)
 	if utility_debuff_ids then
 		table_clear(utility_debuff_ids)
 	end
-	-- also compact temp unit list
 	table_clear(_enemy_units_temp)
-
-	-- clear horde cluster state
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 end
@@ -1464,21 +1593,12 @@ mod.update_enemies = function(dt, t)
 		mod.update_enemy_utility_debuffs(temp, to_process)
 	end
 
+	mod.pulse_enemy_outline(temp, to_process)
+
 	mod.remove_dead()
 
 	-- Apply distance / stacking fade to all active markers
-	mod.apply_marker_fade()
-
-	-- Periodic cleanup of marked_dead entries for units no longer in cache
-	_dead_cleanup_accum = _dead_cleanup_accum + (fs.dt or 0)
-	if _dead_cleanup_accum > DEAD_CLEANUP_INTERVAL then
-		_dead_cleanup_accum = 0
-		for unit, _ in pairs(mod.marked_dead) do
-			if not mod.enemy_cache[unit] then
-				mod.marked_dead[unit] = nil
-			end
-		end
-	end
+	--mod.apply_marker_fade()
 end
 
 -----------------------------------------------------------------------

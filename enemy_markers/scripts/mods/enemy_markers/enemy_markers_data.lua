@@ -73,17 +73,17 @@ mod.debuff_icons = {
 	zealot_bled_enemies_take_more_damage_effect = "content/ui/textures/icons/buffs/hud/zealot/zealot_multi_hits_grant_impact_and_uninterruptible",
 
 	-- Rending / armor shred
-	rending_debuff = "content/ui/materials/icons/item_types/upper_bodies",
-	increase_damage_taken = "content/ui/materials/icons/item_types/upper_bodies",
-	increase_impact_received_while_staggered = "content/ui/materials/icons/item_types/upper_bodies",
-	increase_damage_received_while_staggered = "content/ui/materials/icons/item_types/upper_bodies",
-	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/item_types/upper_bodies",
-	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/item_types/upper_bodies",
-	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/item_types/upper_bodies",
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/item_types/upper_bodies",
-	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/item_types/upper_bodies",
-	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/item_types/upper_bodies",
-	veteran_improved_tag_debuff = "content/ui/materials/icons/item_types/upper_bodies",
+	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	increase_damage_taken = "content/ui/materials/icons/weapons/actions/special_attack",
+	increase_impact_received_while_staggered = "content/ui/materials/icons/weapons/actions/special_attack",
+	increase_damage_received_while_staggered = "content/ui/materials/icons/weapons/actions/special_attack",
+	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
+	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/weapons/actions/special_attack",
+	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/weapons/actions/special_attack",
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
+	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
+	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/weapons/actions/special_attack",
+	veteran_improved_tag_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
 
 	-- Electricity / shock / chain lightning
 	electricity = "content/ui/materials/icons/presets/preset_11",
@@ -366,10 +366,10 @@ return {
 					{
 						setting_id = "draw_distance",
 						type = "numeric",
-						default_value = 25,
+						default_value = 30,
 						range = {
-							10,
-							100,
+							30,
+							200,
 						},
 					},
 					{

@@ -598,7 +598,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				local armor_type_text = Localize(armor_type_loc_string)
 				local armor_type_position = Vector3(
 					x_position,
-					y_position + damage_number_settings.has_taken_damage_timer_y_offset * 1.25,
+					y_position + 10 + damage_number_settings.has_taken_damage_timer_y_offset * 1.25,
 					z_position
 				)
 
@@ -707,8 +707,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 1 },
-				default_offset = { bar_offset[1], bar_offset[2], 1 },
+				offset = { bar_offset[1], bar_offset[2], 0 },
+				default_offset = { bar_offset[1], bar_offset[2], 0 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 200, 0, 0, 0 },
@@ -720,11 +720,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 2 },
-				default_offset = { bar_offset[1], bar_offset[2], 2 },
+				offset = { bar_offset[1], bar_offset[2], 0 },
+				default_offset = { bar_offset[1], bar_offset[2], 0 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 150, 120, 40, 40 },
+				color = { 100, 120, 40, 40 },
 			},
 		}, -- CURRENT HEALTH (main bar)
 		{
@@ -733,8 +733,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 3 },
-				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				offset = { bar_offset[1], bar_offset[2], 1 },
+				default_offset = { bar_offset[1], bar_offset[2], 1 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 255, 170, 30, 30 },
@@ -748,8 +748,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 5 },
-				default_offset = { bar_offset[1], bar_offset[2], 5 },
+				offset = { bar_offset[1], bar_offset[2], 0 },
+				default_offset = { bar_offset[1], bar_offset[2], 0 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 255, 80, 80, 80 },
@@ -762,8 +762,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value_id = "highlight1",
 			style = {
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 6 },
-				default_offset = { bar_offset[1], bar_offset[2], 6 },
+				offset = { bar_offset[1], bar_offset[2], 0 },
+				default_offset = { bar_offset[1], bar_offset[2], 0 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 0, 255, 255, 255 },
@@ -772,21 +772,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "texture",
 			style_id = "icon_elite",
-			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_heresy",
+			value = "content/ui/materials/icons/circumstances/maelstrom_01",
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
 				offset = { -bar_width * 0.5 - 16, 0, 6 },
 				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
 
-				size = { 32, 32 },
-				default_size = { 32, 32 },
+				size = { 28, 28 },
+				default_size = { 28, 28 },
 
 				color = { 0, 200, 200, 0 },
 			},
 			visibility_function = function(content)
-				dbg_content = content
-				return content.is_clamped and content.show_distance
+				return content.icon_elite
 			end,
 		}, -- BOSS ICON
 		{
@@ -805,7 +804,83 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 0, 200, 200, 0 },
 			},
 			visibility_function = function(content)
-				return content.is_clamped and content.show_distance
+				return content.icon_boss
+			end,
+		},
+		{ -- Ranged elites
+			pass_type = "texture",
+			style_id = "icon_elite_ranged",
+			value = "content/ui/materials/icons/circumstances/assault_01",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 16, 0, 6 },
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
+
+				size = { 28, 28 },
+				default_size = { 28, 28 },
+
+				color = { 0, 200, 200, 0 },
+			},
+			visibility_function = function(content)
+				return content.icon_elite_ranged
+			end,
+		},
+		{ -- specialists
+			pass_type = "texture",
+			style_id = "icon_special",
+			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 16, 0, 6 },
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
+
+				size = { 28, 28 },
+				default_size = { 28, 28 },
+
+				color = { 0, 200, 200, 0 },
+			},
+			visibility_function = function(content)
+				return content.icon_special
+			end,
+		},
+		{ -- disablers
+			pass_type = "texture",
+			style_id = "icon_disabler",
+			value = "content/ui/materials/icons/generic/exclamation_mark",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 16, 0, 6 },
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
+
+				size = { 28, 28 },
+				default_size = { 28, 28 },
+
+				color = { 0, 200, 200, 0 },
+			},
+			visibility_function = function(content)
+				return content.icon_disabler
+			end,
+		},
+		{ -- snipers
+			pass_type = "texture",
+			style_id = "icon_sniper",
+			value = "content/ui/materials/icons/weapons/actions/ads",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 16, 0, 6 },
+				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
+
+				size = { 28, 28 },
+				default_size = { 28, 28 },
+
+				color = { 0, 200, 200, 0 },
+			},
+			visibility_function = function(content)
+				return content.icon_sniper
 			end,
 		}, -- header text
 		{
@@ -846,8 +921,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { bar_width, 20 },
-				default_size = { bar_width, 20 },
+				size = { bar_width * 2, 20 },
+				default_size = { bar_width * 2, 20 },
 
 				drop_shadow = true,
 			},
@@ -901,6 +976,8 @@ template.on_enter = function(widget, marker, template)
 	local bar_settings = template.bar_settings
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
 
+	-- Tags are ordered from priority (Top to bottom)
+	-- so first match is what will be returned.
 	if breed then
 		local tags = breed.tags or {}
 		if tags.horde or tags.roamer then
@@ -913,6 +990,10 @@ template.on_enter = function(widget, marker, template)
 			content._breed_type = "disabler"
 		elseif tags.witch then
 			content._breed_type = "witch"
+		elseif tags.special and tags.sniper then
+			content._breed_type = "sniper"
+		elseif tags.elite and tags.far or tags.special and tags.far then
+			content._breed_type = "far"
 		elseif tags.elite then
 			content._breed_type = "elite"
 		elseif tags.special then
@@ -1045,7 +1126,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Failsafe percent clamp
 	health_percent = health_percent or 0
-	health_percent = math_clamp(health_percent, 0, 1)
+	--health_percent = math_clamp(health_percent, 0, 1)
 
 	if bar_logic then
 		bar_logic:update(dt, t, health_percent)
@@ -1078,11 +1159,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- DAMAGE NUMBERS LOGIC
 	-------------------------------------------------------------------
 	local max_health_setting = health_max
-	if Unit_alive(unit) then
-		max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
-				and Managers.state.difficulty:get_minion_max_health(content.breed.name)
-			or health_max
-	end
+	max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
+			and Managers.state.difficulty:get_minion_max_health(content.breed.name)
+		or health_max
 
 	local total_damage_taken
 	local player_camera = parent._parent and parent._parent:player_camera()
@@ -1285,16 +1364,32 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Icon logic / colors
 	-------------------------------------------------------------------
-	style.icon_elite.color[1] = 0
-	style.icon_boss.color[1] = 0
 
-	if breed_type == "elite" or breed_type == "ogryn" then
-		style.icon_elite.color[1] = 255
+	-- default to hidden
+	content.icon_special = false
+	content.icon_disabler = false
+	content.icon_sniper = false
+	content.icon_elite = false
+	content.icon_elite_ranged = false
+	content.icon_boss = false
+
+	if breed_type == "far" then
+		content.icon_elite_ranged = true
 	end
-
-	if breed_type == "monster" then
-		style.icon_boss.color[1] = 255
-		style.frame.color = { 200, 200, 60, 200 }
+	if breed_type == "elite" then
+		content.icon_elite = true
+	end
+	if breed_type == "special" then
+		content.icon_special = true
+	end
+	if breed_type == "disabler" then
+		content.icon_disabler = true
+	end
+	if breed_type == "sniper" then
+		content.icon_sniper = true
+	end
+	if breed_type == "monster" or breed_type == "captain" then
+		content.icon_boss = true
 	end
 
 	local bar_color = BREED_COLORS[breed_type] or BREED_COLORS.horde

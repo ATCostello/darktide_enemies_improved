@@ -61,7 +61,7 @@ template.ping_size = ping_size
 template.alerted = false
 
 template.check_line_of_sight = CHECK_LOS
-template.screen_clamp = true
+template.screen_clamp = false
 template.max_distance = MAX_DISTANCE_SETTING
 
 template.data = {}
