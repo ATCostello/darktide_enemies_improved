@@ -232,6 +232,7 @@ end
 
 --test outlines
 mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
+
 	settings.MinionOutlineExtension.enemies_improved = {
 		material_layers = nil,
 		visibility_check = nil,
@@ -279,8 +280,7 @@ mod.enable_enemy_outlines = function(unit)
 
 		if has_outline_system then
 			local outline_system = Managers.state.extension:system("outline_system")
-			-- Force outline visible
-			--outline_system:add_outline(unit, "enemies_improved")
+			outline_system:add_outline(unit, "enemies_improved")
 		end
 	end
 end
@@ -1105,7 +1105,7 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	if (fs.enable.outlines_horde and entry.is_horde) or (not fs.enable.outlines_horde and not entry.is_horde) then
+	if (fs.enable.outlines_horde and entry.is_horde) or (fs.enable.outlines and not entry.is_horde) then
 		mod.enable_enemy_outlines(unit)
 	end
 end

@@ -15,6 +15,7 @@ local draw_distance_setting = mod:get("draw_distance") or 25
 local show_names = mod:get("debuff_names") == true
 local names_fade = mod:get("debuff_names_fade") == true
 local enable_horde = mod:get("debuff_horde_enable") or false
+local show_on_body = mod:get("debuff_show_on_body") or false
 
 local NAME_FADE_IN = 0.15
 local NAME_VISIBLE = 2.0
@@ -27,8 +28,15 @@ local Unit_alive = Unit.alive
 
 template.size = size
 template.name = "enemy_debuff"
-template.unit_node = "root_point"
-template.position_offset = { 0, 0, 0.5 }
+
+if show_on_body then
+	template.unit_node = "root_point"
+	template.position_offset = { 0, 0, 0 }
+else
+	template.unit_node = "root_point"
+	template.position_offset = { 0, 0, 0.5 }
+end
+
 template.max_visible_rows = max_visible_rows_setting
 
 template.check_line_of_sight = true
@@ -228,6 +236,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
 			offset = { name_x, row_offset_y, 7 },
+			default_offset = { name_x, row_offset_y, 7 },
+
 			font_type = "proxima_nova_bold",
 			font_size = 16,
 			default_font_size = 16,
@@ -456,8 +466,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height
-
+		if not show_on_body then
+			root_position.z = root_position.z + content.breed.base_height
+		else
+			root_position.z = root_position.z + content.breed.base_height / 1.5
+		end
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)
 		else

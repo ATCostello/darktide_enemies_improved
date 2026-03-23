@@ -227,6 +227,14 @@ mod.debuff_colours = {
 	broker_punk_rage_improved_shout_debuff = { 255, 255, 120, 40 },
 }
 
+mod.BREED_COLORS = {
+	horde = { 200, 255, 0, 0 },
+	elite = { 200, 0, 255, 255 },
+	ogryn = { 200, 0, 255, 255 },
+	disabler = { 200, 200, 255, 0 },
+	monster = { 200, 255, 255, 0 },
+}
+
 local hb_frames = {
 	{
 		text = "content/ui/materials/frames/masteries/panel_main_lower_frame",
@@ -494,6 +502,11 @@ return {
 					},
 					{
 						setting_id = "debuff_names_fade",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
+						setting_id = "debuff_show_on_body",
 						type = "checkbox",
 						default_value = true,
 					},

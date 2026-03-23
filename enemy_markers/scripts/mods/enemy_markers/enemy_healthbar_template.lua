@@ -145,14 +145,6 @@ local previous_health = {}
 local last_damaged_time = {}
 local peak_cluster_max_by_rep = {}
 
-local BREED_COLORS = {
-	horde = { 200, 255, 0, 0 },
-	elite = { 200, 0, 255, 255 },
-	ogryn = { 200, 0, 255, 255 },
-	disabler = { 200, 200, 255, 0 },
-	monster = { 200, 255, 255, 0 },
-}
-
 local armor_type_string_lookup = {
 	armored = "loc_weapon_stats_display_armored",
 	berserker = "loc_weapon_stats_display_berzerker",
@@ -1445,7 +1437,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.icon_boss = true
 	end
 
-	local bar_color = BREED_COLORS[breed_type] or BREED_COLORS.horde
+	local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
 
 	style.current_health.color[2] = bar_color[2]
 	style.current_health.color[3] = bar_color[3]
