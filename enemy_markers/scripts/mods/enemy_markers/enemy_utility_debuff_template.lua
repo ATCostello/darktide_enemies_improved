@@ -25,7 +25,8 @@ local size = {
 	hb_size_width,
 	hb_size_height,
 }
-local base_y = hb_size_height + 28
+local base_y = hb_size_height + 48
+local Unit_alive = Unit.alive
 
 template.size = size
 template.name = "enemy_utility_debuff"
@@ -160,6 +161,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			color = Color.terminal_frame(255, true),
 			size = { 30, 30 },
 			default_size = { 30, 30 },
+			default_alpha = 255,
 		}
 
 		-- ICON
@@ -185,10 +187,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
-			size = { 20, 20 },
-			default_size = { 20, 20 },
+			size = { 24, 24 },
+			default_size = { 24, 24 },
 
 			color = { 255, 255, 255, 255 },
+			default_alpha = 255,
 		}
 
 		-- STACK COUNTER
@@ -221,13 +224,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 16,
 			default_font_size = 16,
 
-			text_color = { 0, 255, 255, 255 },
+			text_color = { 255, 255, 255, 255 },
 			size = { bar_width * 0.25, 20 },
 			default_size = { bar_width * 0.25, 20 },
 
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
 			shadow_color = { 200, 0, 0, 0 },
+			default_alpha = 255,
 		}
 
 		-- DEBUFF NAME
@@ -258,7 +262,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 16,
 			default_font_size = 16,
 
-			text_color = { 0, 255, 255, 255 },
+			text_color = { 255, 255, 255, 255 },
 			size = { 260, 22 },
 			default_size = { 260, 22 },
 
@@ -268,6 +272,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
 			shadow_color = { 200, 0, 0, 0 },
+			default_alpha = 255,
 		}
 	end
 
@@ -485,15 +490,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
-	local root_position = Unit.world_position(unit, 1)
-
-	if not marker.world_position then
-		root_position.z = root_position.z + content.breed.base_height
-		marker.world_position = Vector3Box(root_position)
-	else
+	if content.breed and Unit_alive(unit) then
+		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height
 
-		marker.world_position:store(root_position)
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
 	end
 
 	-------------------------------------------------------------------

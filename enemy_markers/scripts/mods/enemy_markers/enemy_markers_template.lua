@@ -52,7 +52,7 @@ local Application_time_since_launch = Application.time_since_launch
 template.name = "enemy_markers"
 template.unit_node = "root_point"
 template.min_distance = 0
-template.position_offset = { 0, 0, 0.8 }
+template.position_offset = { 0, 0, 0 }
 
 template.size = size
 template.icon_size = icon_size
@@ -61,7 +61,7 @@ template.ping_size = ping_size
 template.alerted = false
 
 template.check_line_of_sight = CHECK_LOS
-template.screen_clamp = false
+template.screen_clamp = true
 template.max_distance = MAX_DISTANCE_SETTING
 
 template.data = {}
@@ -136,9 +136,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { 0, 0, 1 },
 
 				color = { 200, 255, 255, 255 },
+				default_alpha = 200,
 			},
 			visibility_function = function(content, style)
-				return not content.is_clamped and content.background ~= nil
+				return (content.special_attack_imminent and content.is_clamped) or (not content.is_clamped and content.background ~= nil)
 			end,
 		},
 		{
@@ -156,6 +157,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { 0, 0, 5 },
 
 				color = { 0, 255, 255, 255 },
+				default_alpha = 0,
 			},
 			visibility_function = function(content, style)
 				return content.ring == nil
@@ -176,6 +178,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { 0, 0, 0 },
 
 				color = { 255, 255, 255, 255 },
+				default_alpha = 255,
 			},
 			visibility_function = function(content, style)
 				return content.tagged
@@ -196,6 +199,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { 0, 0, 3 },
 
 				color = { 0, 200, 175, 0 },
+				default_alpha = 0,
 			},
 			visibility_function = function(content, style)
 				return content.icon == nil
@@ -216,9 +220,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { 0, 0, 2 },
 
 				color = { 255, 255, 255, 255 },
+				default_alpha = 255,
 			},
 			visibility_function = function(content, style)
-				return content.special_attack_imminent
+				return content.special_attack_imminent and content.is_clamped
 			end,
 			change_function = function(content, style)
 				style.angle = content.angle
@@ -243,6 +248,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_text_color = { 220, 220, 220, 220 },
 				size = { 100, 32 },
 				default_size = { 100, 32 },
+				default_alpha = 255,
 
 				drop_shadow = true,
 			},
@@ -277,6 +283,9 @@ end
 
 template.on_enter = function(widget, marker, template)
 	local content = widget.content
+
+	marker.draw = false -- force hidden until ready...
+
 	content.spawn_progress_timer = 0
 
 	local unit = marker.unit
@@ -297,7 +306,7 @@ end
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	local content = widget.content
 	local distance = content.distance or 0
-	local data = marker.data	
+	local data = marker.data
 	local unit = marker.unit
 
 	local evolve_distance = template.evolve_distance
@@ -319,7 +328,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- marker height
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + (0.7 * content.breed.base_height)
+		root_position.z = root_position.z + content.breed.base_height
 
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)
@@ -401,6 +410,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if SPECIAL_PULSE and marker.special_attack_imminent then
 		content.special_attack_imminent = true
+		--content.is_clamped = true
+
 		local pulse = math.abs(math.sin(mod.pulse_t * 2))
 
 		local flash = math.min(255, 150 + pulse * 100)
@@ -416,13 +427,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.color[3] = g
 		style.background.color[4] = b
 
-		style.arrow.size[1] = arrow_size[1] * size_scale * marker.scale
-		style.arrow.size[2] = arrow_size[2] * size_scale * marker.scale
+		--style.arrow.size[1] = arrow_size[1] * size_scale/2 * marker.scale
+		style.arrow.size[2] = arrow_size[2] * size_scale / 2 * marker.scale
 
 		style.background.size[1] = background_size[1] * size_scale * marker.scale
 		style.background.size[2] = background_size[2] * size_scale * marker.scale
 	else
+		--content.is_clamped = false
 		content.special_attack_imminent = false
+
 		style.background.color[2] = 255
 		style.background.color[3] = 255
 		style.background.color[4] = 255
@@ -437,9 +450,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.size[1] = background_size[1] * marker.scale
 		style.background.size[2] = background_size[2] * marker.scale
 	end
-
-	local angle = content.angle or 0
-	local dist = style.arrow.size[2] * 0.7
 
 	local text_offset = style.distance_text.offset
 	text_offset[1] = 0

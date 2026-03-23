@@ -10,7 +10,6 @@ local template = {}
 -----------------------------------------------------------------------
 -- Cached mod settings
 -----------------------------------------------------------------------
-
 template.show_damage_numbers = mod:get("hb_show_damage_numbers") or false
 template.show_armor_types = mod:get("hb_show_armour_types") or false
 template.hide_after_no_damage = mod:get("hb_hide_after_no_damage") or false
@@ -126,7 +125,7 @@ template.damage_number_settings = {
 	duration = 3,
 	expand_bonus_scale = 30,
 	expand_duration = 0.2,
-	fade_delay = 2,
+	fade_delay = 0.5,
 	first_hit_size_scale = 1.2,
 	has_taken_damage_timer_remove_after_time = 5,
 	has_taken_damage_timer_y_offset = 34,
@@ -531,6 +530,9 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 
 	local damage_number_settings = template.damage_number_settings
 	local scale = RESOLUTION_LOOKUP.scale
+	if ui_content.scale then
+		scale = ui_content.scale
+	end
 	local default_font_size = damage_number_settings.default_font_size * scale
 	local dps_font_size = damage_number_settings.dps_font_size * scale
 	local hundreds_font_size = damage_number_settings.hundreds_font_size * scale
@@ -593,25 +595,41 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				armor_type = breed.hitzone_armor_override[hit_zone_name]
 			end
 
-			if template.show_armor_types and template.damage_number_type == damage_number_types.readable then
+			if template.show_armor_types then
 				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
 				local armor_type_text = Localize(armor_type_loc_string)
-				local armor_type_position = Vector3(
-					x_position,
-					y_position + 10 + damage_number_settings.has_taken_damage_timer_y_offset * 1.25,
-					z_position
-				)
 
-				UIRenderer.draw_text(
-					ui_renderer,
-					armor_type_text,
-					dps_font_size,
-					font_type,
-					armor_type_position,
-					size,
-					ui_style.text_color,
-					{}
-				)
+				if template.damage_number_type == damage_number_types.readable then
+					local armor_type_position = Vector3(x_position, y_position, z_position)
+
+					--[[UIRenderer.draw_text(
+						ui_renderer,
+						armor_type_text,
+						dps_font_size,
+						font_type,
+						armor_type_position,
+						size,
+						ui_style.text_color,
+						{},
+						"armour_type1"
+					)]]
+					ui_content.armour_type = armor_type_text
+				else
+					local armor_type_position = Vector3(x_position, y_position, z_position)
+
+					--[[UIRenderer.draw_text(
+						ui_renderer,
+						armor_type_text,
+						dps_font_size,
+						font_type,
+						armor_type_position,
+						size,
+						ui_style.text_color,
+						{},
+						"armour_type1"
+					)]]
+					ui_content.armour_type = armor_type_text
+				end
 			end
 		end
 	end
@@ -685,6 +703,17 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 	local bar_offset = { -bar_width * 0.5, 0, 0 }
 
+	local icon_style = {
+		vertical_alignment = "center",
+		horizontal_alignment = "center",
+		offset = { -bar_width * 0.5 - 24, 0, 6 },
+		default_offset = { -bar_width * 0.5 - 24, 0, 6 },
+		size = { 28, 28 },
+		default_size = { 28, 28 },
+		color = { 255, 150, 255, 150 },
+		default_alpha = 255,
+	}
+
 	return UIWidget.create_definition({
 		-- METAL FRAME (back plate)
 		{
@@ -699,6 +728,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				size = { bar_width + 12, bar_height + 6 },
 				default_size = { bar_width + 12, bar_height + 6 },
 				color = { 200, 180, 180, 180 },
+				default_alpha = 200,
 			},
 		}, -- MAX HEALTH
 		{
@@ -707,11 +737,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 0 },
-				default_offset = { bar_offset[1], bar_offset[2], 0 },
+				offset = { bar_offset[1], bar_offset[2], 1 },
+				default_offset = { bar_offset[1], bar_offset[2], 1 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 200, 0, 0, 0 },
+				default_alpha = 200,
 			},
 		}, -- GHOST DAMAGE
 		{
@@ -720,11 +751,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 0 },
-				default_offset = { bar_offset[1], bar_offset[2], 0 },
+				offset = { bar_offset[1], bar_offset[2], 2 },
+				default_offset = { bar_offset[1], bar_offset[2], 2 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 100, 120, 40, 40 },
+				default_alpha = 100,
 			},
 		}, -- CURRENT HEALTH (main bar)
 		{
@@ -733,11 +765,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 1 },
-				default_offset = { bar_offset[1], bar_offset[2], 1 },
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 255, 170, 30, 30 },
+				default_alpha = 255,
 			},
 		}, -- SHADOW
 		{
@@ -748,42 +781,81 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 0 },
-				default_offset = { bar_offset[1], bar_offset[2], 0 },
+				offset = { bar_offset[1], bar_offset[2], 4 },
+				default_offset = { bar_offset[1], bar_offset[2], 4 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 255, 80, 80, 80 },
+				color = { 150, 80, 80, 80 },
+				default_alpha = 150,
 			},
 		}, -- TOP EDGE HIGHLIGHT
 		{
 			pass_type = "texture",
 			style_id = "highlight1",
-			value = "content/ui/materials/frames/frame_glow_01",
+			value = "content/ui/materials/backgrounds/terminal_basic",
 			value_id = "highlight1",
 			style = {
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 0 },
-				default_offset = { bar_offset[1], bar_offset[2], 0 },
+				offset = { bar_offset[1], bar_offset[2], 5 },
+				default_offset = { bar_offset[1], bar_offset[2], 5 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 0, 255, 255, 255 },
+				color = Color.terminal_background_gradient(100, true),
+				default_alpha = 100,
 			},
-		}, -- ELITE ICON
+		},
+		-- ICON BACKGROUND
+		{
+			pass_type = "texture",
+			style_id = "icon_background",
+			value = "content/ui/materials/frames/talents/talent_icon_container",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 24, 0, 0 },
+				default_offset = { -bar_width * 0.5 - 24, 0, 0 },
+
+				size = { 42, 42 },
+				default_size = { 42, 42 },
+
+				color = Color.terminal_grid_background(255, true),
+				default_alpha = 255,
+
+				material_values = {
+					frame = "content/ui/textures/frames/horde/hex_frame_horde",
+					icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
+					intensity = 0,
+					saturation = 1,
+				},
+			},
+		},
+		{
+			pass_type = "texture",
+			style_id = "icon_background1",
+			value = "content/ui/materials/base/ui_default_base",
+			style = {
+				vertical_alignment = "center",
+				horizontal_alignment = "center",
+				offset = { -bar_width * 0.5 - 24, 0, 8 },
+				default_offset = { -bar_width * 0.5 - 24, 0, 8 },
+
+				size = { 42, 42 },
+				default_size = { 42, 42 },
+
+				color = { 100, 255, 255, 80 },
+				default_alpha = 100,
+				scale_to_material = true,
+				material_values = {
+					texture_map = "content/ui/textures/frames/horde/hex_frame_horde_glow",
+				},
+			},
+		},
+		-- ELITE ICON
 		{
 			pass_type = "texture",
 			style_id = "icon_elite",
 			value = "content/ui/materials/icons/circumstances/maelstrom_01",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 28, 28 },
-				default_size = { 28, 28 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_elite
 			end,
@@ -792,17 +864,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_boss",
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 32, 32 },
-				default_size = { 32, 32 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_boss
 			end,
@@ -811,17 +873,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_elite_ranged",
 			value = "content/ui/materials/icons/circumstances/assault_01",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 28, 28 },
-				default_size = { 28, 28 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_elite_ranged
 			end,
@@ -830,17 +882,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_special",
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 28, 28 },
-				default_size = { 28, 28 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_special
 			end,
@@ -849,17 +891,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_disabler",
 			value = "content/ui/materials/icons/generic/exclamation_mark",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 28, 28 },
-				default_size = { 28, 28 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_disabler
 			end,
@@ -868,17 +900,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_sniper",
 			value = "content/ui/materials/icons/weapons/actions/ads",
-			style = {
-				vertical_alignment = "center",
-				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 16, 0, 6 },
-				default_offset = { -bar_width * 0.5 - 16, 0, 6 },
-
-				size = { 28, 28 },
-				default_size = { 28, 28 },
-
-				color = { 0, 200, 200, 0 },
-			},
+			style = icon_style,
 			visibility_function = function(content)
 				return content.icon_sniper
 			end,
@@ -902,6 +924,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_text_color = { 220, 220, 220, 220 },
 				size = { (bar_width / 2) - 2, 20 },
 				default_size = { (bar_width / 2) - 2, 20 },
+				default_alpha = 255,
+				drop_shadow = true,
 			},
 		}, -- Health text
 		{
@@ -925,27 +949,53 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_size = { bar_width * 2, 20 },
 
 				drop_shadow = true,
+				default_alpha = 255,
 			},
-		}, -- damage numbers
+		},
+		{ -- armour types
+			pass_type = "text",
+			style_id = "armour_type",
+			value = "",
+			value_id = "armour_type",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				text_horizontal_alignment = "left",
+				text_vertical_alignment = "bottom",
+				offset = { -bar_width * 0.5, bar_height + 24, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 24, 6 },
+				font_type = "proxima_nova_bold",
+				font_size = 16,
+				default_font_size = 16,
+				text_color = { 220, 220, 220, 220 },
+				default_text_color = { 220, 220, 220, 220 },
+				size = { bar_width * 2, 20 },
+				default_size = { bar_width * 2, 20 },
+
+				drop_shadow = true,
+				default_alpha = 255,
+			},
+		},
+		-- damage numbers
 		{
 			pass_type = "logic",
 			value = template.damage_number_function,
 			style = {
-				horizontal_alignment = "right",
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				text_horizontal_alignment = "right",
-				text_vertical_alignment = "top",
-				offset = { bar_width * 0.5, -bar_height - 20, 1 },
-				default_offset = { bar_width * 0.5, -bar_height - 20, 1 },
+				text_horizontal_alignment = "left",
+				text_vertical_alignment = "bottom",
+				offset = { -bar_width * 0.5, bar_height + 100, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 100, 6 },
 				font_type = "proxima_nova_bold",
-				font_size = 18,
-				default_font_size = 18,
+				font_size = 16,
+				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { bar_width, 20 },
-				default_size = { bar_width, 20 },
-
+				size = { bar_width * 2, 20 },
+				default_size = { bar_width * 2, 20 },
 				drop_shadow = true,
+				default_alpha = 200,
 			},
 		},
 	}, scenegraph_id)
@@ -957,6 +1007,8 @@ end
 
 template.on_enter = function(widget, marker, template)
 	local content = widget.content
+
+	marker.draw = false -- force hidden until ready...
 
 	content.damage_taken = 0
 	content.damage_numbers = {}
@@ -1342,6 +1394,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local health_width = bar_width * health_fraction
 
 		local scale = marker.scale or 1
+		content.scale = scale
 		local scaled_bar_width = bar_width * scale
 		local scaled_health_width = scaled_bar_width * health_fraction
 
@@ -1393,10 +1446,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local bar_color = BREED_COLORS[breed_type] or BREED_COLORS.horde
-	style.current_health.color = bar_color
+
+	style.current_health.color[2] = bar_color[2]
+	style.current_health.color[3] = bar_color[3]
+	style.current_health.color[4] = bar_color[4]
 
 	local ghost_color = style.ghost_bar.color
-	ghost_color[1] = bar_color[1]
+
 	ghost_color[2] = bar_color[2] * 0.5
 	ghost_color[3] = bar_color[3] * 0.5
 	ghost_color[4] = bar_color[4] * 0.5
@@ -1461,17 +1517,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local draw = marker.draw
 
+	dbg_style = style
+	dbg_content = content
 	if draw then
 		local scale = marker.scale
 
 		local header_style = style.header_text
 		local health_counter = style.health_counter
+		local armour_type = style.armour_type
 
 		if header_style then
 			header_style.font_size = header_style.default_font_size * scale
 		end
 		if health_counter then
 			health_counter.font_size = health_counter.default_font_size * scale
+		end
+
+		if armour_type then
+			armour_type.font_size = armour_type.default_font_size * scale
 		end
 	end
 end

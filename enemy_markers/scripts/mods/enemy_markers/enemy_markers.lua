@@ -18,15 +18,9 @@ mod._broadphase_results = {}
 
 mod.enemy_cache = {}
 mod.enemy_markers = {}
-mod.enemy_markers_alerted = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
 mod.enemy_utility_debuffs = {}
-
-local healthbar_ids = {}
-local debuff_ids = {}
-local utility_debuff_ids = {}
-local marker_ids = {}
 
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
@@ -35,17 +29,10 @@ local MAX_ENEMIES_PER_FRAME = 500
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
-local _alert_last_t = 0
-local ALERT_UPDATE_INTERVAL = 0.1
-
-local _dead_cleanup_accum = 0
-local DEAD_CLEANUP_INTERVAL = 1
-
 local HORDE_CLUSTER_RADIUS_SQ = 30 ^ 2
 local HORDE_MIN_UNITS_FOR_CLUSTER = 20
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
-local _last_cluster_count = 0
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -76,16 +63,6 @@ local pairs = pairs
 local DIST_FADE_START = 10 -- meters where fade begins
 local DIST_FADE_END = 50 -- full fade at draw distance
 local MIN_ALPHA = 0.1 -- never fully invisible
-local STACKING_FADE_STRENGTH = 0.1 -- extra fade per overlapping marker (optional)
-
-local DANGEROUS_BT_ACTIONS = {
-	bt_mutant_charge = true,
-	bt_trapper_net = true,
-	bt_sniper_shoot = true,
-	bt_hound_leap = true,
-	bt_poxwalker_vomit = true,
-	bt_bomber_throw = true,
-}
 
 -----------------------------------------------------------------------
 -- preload resources + reset caches on game state change
@@ -164,9 +141,18 @@ end)
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
-	-- Update enemies/markers for this frame
-	mod.update_enemies(dt, t)
+	-- throttle updates...
+	local update_interval = 0.05 -- 1 is 1 second... do the maths ;)
+	update_time = (update_time or 0) + dt
 
+	if update_time > update_interval then
+		update_time = 0
+
+		-- Update enemies/markers for this frame
+		mod.update_enemies(dt, t)
+	end
+
+	-- Hide default health bars (all damage_indicator variants except our custom one)
 	local markers = self._markers
 	if not markers or #markers == 0 then
 		return
@@ -174,7 +160,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 	mod.markers = self._markers_by_type
 
-	-- Hide default health bars (all damage_indicator variants except our custom one)
 	for i = 1, #markers do
 		local marker = markers[i]
 		local template = marker and marker.template
@@ -187,14 +172,14 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			end
 		end
 	end
+
+	-- Apply distance / stacking fade to all active markers
+	mod.apply_marker_fade()
 end)
 
 -----------------------------------------------------------------------
 -- Frame settings builder
 -----------------------------------------------------------------------
-
-local _last_draw_distance_key
-local _last_draw_distance_value = 50
 
 local function build_frame_settings(mod, dt)
 	local fs = mod.frame_settings
@@ -217,34 +202,32 @@ local function build_frame_settings(mod, dt)
 
 	fs.is_ads = is_ads
 
-	-- LOS stuff
-	local los_enabled = mod:get("los_fade_enable") == true
-	local los_opacity = (mod:get("los_opacity") or 100) / 100
-	local ads_los_opacity = (mod:get("ads_los_opacity") or 100) / 100
-
-	fs.los_enabled = los_enabled
-	fs.los_opacity = los_opacity
-	fs.ads_los_opacity = ads_los_opacity
-	fs.ads_blend = math_lerp(fs.ads_blend or 0, is_ads and 1 or 0, 0.25)
-
-	-- Draw distance stuff
-	local draw_distance_key = mod:get("draw_distance")
-	if draw_distance_key ~= _last_draw_distance_key then
-		_last_draw_distance_key = draw_distance_key
-		_last_draw_distance_value = mod:get(draw_distance_key) or 50
-	end
-	fs.draw_distance = _last_draw_distance_value
+	-- Draw distance
+	fs.draw_distance = mod:get("draw_distance")
 
 	-- Feature toggles
 	fs.enable = fs.enable or {}
 	local enable = fs.enable
+
+	-- GENERAL
+	enable.outlines = mod:get("outlines_enable")
+
+	-- MARKERS
 	enable.markers = mod:get("markers_enable")
 	enable.markers_horde = mod:get("marker_horde_enable") or false
 
+	-- HEALTHBARS
 	enable.healthbar = mod:get("healthbar_enable")
-	enable.debuff = mod:get("debuff_enable")
 	enable.hb_horde = mod:get("hb_horde_enable") or false
 	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
+
+	-- SPECIAL ATTACKS
+	enable.marker_specials = mod:get("marker_specials_enable")
+	enable.outline_specials = mod:get("outline_specials_enable")
+	enable.outline_specials_flash = mod:get("outline_specials_flash")
+
+	-- DEBUFFS
+	enable.debuff = mod:get("debuff_enable")
 end
 
 --test outlines
@@ -314,56 +297,47 @@ mod.disable_enemy_outlines = function(unit)
 	end
 end
 
-mod.pulse_enemy_outline = function(units, num_units)
-	local enemy_cache = mod.enemy_cache
+mod.pulse_enemy_outline = function(entry)
+	local unit = entry.unit
 	local fs = mod.frame_settings
 
-	for i = 1, num_units do
-		local unit = units[i]
-		if enemy_cache[unit] then
-			local entry = enemy_cache[unit]
-			local update_interval = 0.4
-			t = (t or 0) + fs.dt
+	local update_interval = 0.05
+	entry.t = (entry.t or 0) + fs.dt
 
-			if entry.special_attack_imminent and t > update_interval then
-				t = 0
+	if entry.special_attack_imminent and entry.t > update_interval then
+		entry.t = 0
 
-				mod.pulse_t = (mod.pulse_t or 0) + fs.dt
+		if not entry.alert_outline then
+			local has_outline_system = Managers.state.extension:has_system("outline_system")
 
-				local pulse = math.abs(math.sin(mod.pulse_t * 2)) -- bounces up and down between 0 and 1
-
-				if pulse > 0.5 and not entry.alert_outline then
-					local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-					if has_outline_system then
-						local outline_system = Managers.state.extension:system("outline_system")
-						-- Force outline visible
-						outline_system:add_outline(unit, "enemies_improved_alert")
-						entry.alert_outline = true
-					end
-				elseif entry.alert_outline then
-					local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-					if has_outline_system then
-						local outline_system = Managers.state.extension:system("outline_system")
-						-- Force outline visible
-						outline_system:remove_outline(unit, "enemies_improved_alert")
-						entry.alert_outline = false
-					end
-				end
-			elseif not entry.special_attack_imminent and entry.alert_outline then
-				local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-				if has_outline_system then
-					local outline_system = Managers.state.extension:system("outline_system")
-					-- Force outline visible
-					outline_system:remove_outline(unit, "enemies_improved_alert")
-					entry.alert_outline = false
-				end
+			if has_outline_system then
+				local outline_system = Managers.state.extension:system("outline_system")
+				-- Force outline visible
+				outline_system:add_outline(unit, "enemies_improved_alert")
+				entry.alert_outline = true
 			end
+		elseif entry.alert_outline and fs.enable.outline_specials_flash then
+			local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+			if has_outline_system then
+				local outline_system = Managers.state.extension:system("outline_system")
+				-- Force outline visible
+				outline_system:remove_outline(unit, "enemies_improved_alert")
+				entry.alert_outline = false
+			end
+		end
+	elseif not entry.special_attack_imminent and entry.alert_outline then
+		local has_outline_system = Managers.state.extension:has_system("outline_system")
+
+		if has_outline_system then
+			local outline_system = Managers.state.extension:system("outline_system")
+			-- Force outline visible
+			outline_system:remove_outline(unit, "enemies_improved_alert")
+			entry.alert_outline = false
 		end
 	end
 end
+
 -----------------------------------------------------------------------
 -- Enemy scanning
 -----------------------------------------------------------------------
@@ -424,13 +398,15 @@ mod.scan_enemies = function()
 					seen = true,
 
 					dead = false,
-					-- cache extensions ONCE
+
+					-- cache extensions
 					health_ext = ScriptUnit_has_extension(unit, "health_system"),
 					unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system"),
 					behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 
 					-- specialist tracking
 					is_specialist = mod.is_specialist_unit(unit),
+					is_horde = mod.is_horde(unit),
 					special_attack_event = nil,
 					special_attack_imminent = false,
 					special_attack_timer = 0,
@@ -440,40 +416,6 @@ mod.scan_enemies = function()
 				entry.seen = true
 			end
 		end
-	end
-end
-
------------------------------------------------------------------------
--- Alerted enemies
------------------------------------------------------------------------
-
-local ALERTED_MODES = {
-	alerted = 5,
-	directional_alerted = 3,
-	hesitate = 4,
-	instant_aggro = 1,
-	moving_alerted = 2,
-}
-
-local function get_unit_id(unit)
-	if unit then
-		return Managers_state.unit_spawner:game_object_id(unit)
-	else
-		return 0
-	end
-end
-
-local function add_unit_to_alerted(unit)
-	local id = get_unit_id(unit)
-	if id and id ~= 0 and not mod.enemy_markers_alerted[id] then
-		mod.enemy_markers_alerted[id] = true
-	end
-end
-
-local function remove_unit_from_alerted(unit)
-	local id = get_unit_id(unit)
-	if id and id ~= 0 and mod.enemy_markers_alerted[id] then
-		mod.enemy_markers_alerted[id] = nil
 	end
 end
 
@@ -600,101 +542,6 @@ end
 -----------------------------------------------------------------------
 -- Enemy markers
 -----------------------------------------------------------------------
-mod:hook(WwiseWorld, "make_manual_source", function(func, wwise_world, unit)
-	local source = func(wwise_world, unit)
-
-	if unit and Unit_alive(unit) then
-		mod.source_unit_cache[source] = unit
-	end
-
-	return source
-end)
-
-mod.get_userdata_type = function(userdata)
-	if type(userdata) ~= "userdata" then
-		return nil
-	end
-
-	if Unit_alive(userdata) then
-		return "Unit"
-	end
-
-	return "userdata"
-end
-
-mod.find_local_unit = function()
-	local level = 1
-
-	while debug.getinfo(level) ~= nil do
-		local i = 1
-
-		while true do
-			local name, value = debug.getlocal(level, i)
-
-			if not name then
-				break
-			end
-
-			if mod.get_userdata_type(value) == "Unit" then
-				return value
-			end
-
-			i = i + 1
-		end
-
-		level = level + 1
-	end
-end
-
-mod.find_attacking_unit = function()
-	local level = 3
-
-	while debug.getinfo(level) ~= nil do
-		local i = 1
-
-		while true do
-			local name, value = debug.getlocal(level, i)
-
-			if not name then
-				break
-			end
-
-			if type(value) == "userdata" and Unit_alive(value) then
-				return value
-			end
-
-			if type(value) == "table" then
-				local unit = rawget(value, "_unit")
-
-				if unit and Unit_alive(unit) then
-					return unit
-				end
-			end
-
-			i = i + 1
-		end
-
-		level = level + 1
-	end
-
-	return nil
-end
-
-mod.find_bt_action_unit = function()
-	for level = 4, 12 do
-		local name, value = debug.getlocal(level, 1)
-
-		if type(value) == "table" then
-			local unit = rawget(value, "_unit")
-
-			if unit and Unit_alive(unit) then
-				return unit
-			end
-		end
-	end
-
-	return nil
-end
 
 mod.get_time = function()
 	local tm = Managers.time
@@ -704,6 +551,7 @@ mod.get_time = function()
 
 	return 0
 end
+
 mod.ts = function()
 	return string.format("[%.3f]", mod.get_time())
 end
@@ -978,7 +826,7 @@ mod.special_attack_animations = {
 }
 
 -- local games only. rpc_minion_anim_event is the networked version, but only provides event_id, which I cant find out how to get event_name from
-mod:hook(Unit, "animation_event", function(func, unit, event, ...)
+--[[mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 	local result = func(unit, event, ...)
 
 	if not unit or not Unit_alive(unit) then
@@ -1028,41 +876,37 @@ mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 				entry.special_attack_timer = now + 1.5
 			end
 
-			--[[mod:echo(
-				string.format(
-					"%s [ANIMATION ATTACK DETECTED] %s -> %s (damage in %.2fs)",
-					mod.ts(),
-					breed_name,
-					event,
-					attack_data.damage_time
-				)
-			)]]
 		end
 	end
 
 	return result
-end)
+end)]]
 
 mod.special_attack_events = {
 	-- Trapper / Netgunner
 	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
+	--["wwise/events/minions/play_netgunner_run_foley_special"] = true,
 
 	-- Sniper
 	["wwise/events/weapon/play_special_sniper_flash"] = true,
 	["wwise/events/weapon/play_combat_weapon_las_sniper"] = true,
-	["wwise/events/minions/play_netgunner"] = true,
+	["wwise/events/weapon/play_weapon_longlas_minion"] = true,
 
 	-- Mutant Charger
 	["wwise/events/minions/play_enemy_mutant_charger"] = true,
-	["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true, -- spawn/charge cues
+	["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true,
 
 	-- Chaos Hound / leap
 	["wwise/events/minions/play_enemy_chaos_hound_vce_leap"] = true,
 	["wwise/events/minions/play_enemy_chaos_hound"] = true,
+	["wwise/events/minions/play_chaos_hound_armoured_vce_leap"] = true,
 
 	-- Poxwalker Bomber
+	["wwise/events/minions/play_minion_special_poxwalker_bomber_spawn"] = true,
+	["wwise/events/minions/play_explosion_bomber"] = true,
 	["wwise/events/minions/play_minion_poxwalker_bomber"] = true,
 	["wwise/events/minions/play_enemy_combat_poxwalker_bomber"] = true,
+	["wwise/events/minions/play_minion_poxwalker_bomber_footstep_boots_heavy"] = true,
 
 	-- Plague Ogryn Charge
 	["wwise/events/minions/play_enemy_plague_ogryn_vce_charge"] = true,
@@ -1070,37 +914,107 @@ mod.special_attack_events = {
 	-- Chaos Ogryn special attack vocal (heavy specials)
 	["wwise/events/minions/play_enemy_chaos_ogryn_armoured_executor_a__special_attack_vce"] = true,
 
+	-- renegade executor
+	["wwise/events/minions/play_enemy_traitor_executor__special_attack_vce"] = true,
+
 	-- General rares / specials
 	["wwise/events/minions/play_traitor_guard_grenadier"] = true,
 	["wwise/events/minions/play_enemy_daemonhost"] = true,
 	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
 }
 
-mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_name, source)
-	if mod.special_attack_events[event_name] then
-		local unit = mod.source_unit_cache[source]
+local function extract_locals(level_base)
+	local level = level_base
+	local res = {}
+	local return_value = nil
 
-		if not unit then
-			unit = mod.find_attacking_unit()
-			if unit then
-				mod.source_unit_cache[source] = unit
+	while debug.getinfo(level) ~= nil do
+		local v = 1
+
+		while true do
+			local name, value = debug.getlocal(level, v)
+
+			if not name then
+				break
+			end
+
+			res[name] = value
+
+			-- check for specifics...
+			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
+			if value and type(value) == "userdata" and name and name == "unit" then
+				return_value = value
+			end
+			v = v + 1
+		end
+
+		level = level + 1
+	end
+
+	dbg_locals = res
+
+	return return_value
+end
+
+mod.handle_special_attacks = function(event_name, source_unit)
+	if mod.special_attack_events[event_name] then
+		local unit = nil
+
+		-- Try to get uni from sourceunit
+		if type(source_unit) == "userdata" and Unit.alive(source_unit) then
+			unit = source_unit
+		else
+			local flow_unit = Application.flow_callback_context_unit()
+			if flow_unit and type(flow_unit) == "userdata" and Unit.alive(flow_unit) then
+				unit = flow_unit
 			end
 		end
 
+		-- If not, try to get from local debugs
+		if
+			event_name
+				== ("wwise/events/minions/play_weapon_netgunner_wind_up" or "wwise/events/weapon/play_special_sniper_flash")
+			and not unit
+		then
+			local name, value = debug.getlocal(8, 1)
+			unit = value._unit
+		end
+
+		-- if not, try to get from all locals
+		if not unit then
+			unit = extract_locals(1)
+		end
+
+		extract_locals(1)
+
+		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), unit, event_name))
+
 		if unit and Unit_alive(unit) then
-			if entry and entry.special_attack_imminent ~= true then
+			entry = mod.enemy_cache[unit]
+
+			if entry then
 				entry.special_attack_event = event_name
 				entry.special_attack_imminent = true
 
 				local now = mod.get_time()
 
 				entry.special_attack_timer = now + 1.5
-
-				--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), source, event_name))
 			end
 		end
 	end
+end
+
+mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_name, source)
+	mod.handle_special_attacks(event_name, source)
 end)
+
+mod:hook_safe(
+	WwiseWorld,
+	"trigger_resource_external_event",
+	function(_wwise_world, event_name, source, path, format, source_id)
+		mod.handle_special_attacks(event_name, source)
+	end
+)
 
 function string.starts(String, Start)
 	return string.sub(String, 1, string.len(Start)) == Start
@@ -1113,49 +1027,42 @@ mod.remove_dead = function()
 
 	-- Go through each marker type and clear caches.
 	local function iterate_types_removal(unit)
-		--   MARKERS
-		local marker_id = marker_ids[unit]
-		if marker_id then
-			Managers.event:trigger("remove_world_marker", marker_id)
-			--mod.enemy_markers[unit] = nil
-			--marker_ids[unit] = nil
-			--mod.marked_dead[unit] = true
-			table.insert(units_to_remove, unit)
+		local found_unit_marker = mod.enemy_markers[unit]
+			or mod.enemy_healthbars[unit]
+			or mod.enemy_debuffs[unit]
+			or mod.enemy_utility_debuffs[unit]
+			or nil
+
+		-- try to find unit match from marker list..
+		for _, markers in pairs(mod.markers) do
+			for i = 1, #markers do
+				local marker = markers[i]
+				if marker and marker.unit == unit then
+					if _ == "enemy_markers" then
+						Managers.event:trigger("remove_world_marker", marker.id)
+						found_unit_marker = marker.id
+					elseif _ == "enemy_healthbars" then
+						Managers.event:trigger("remove_world_marker", marker.id)
+						found_unit_marker = marker.id
+					elseif _ == "enemy_debuff" then
+						Managers.event:trigger("remove_world_marker", marker.id)
+						found_unit_marker = marker.id
+					elseif _ == "enemy_utility_debuff" then
+						Managers.event:trigger("remove_world_marker", marker.id)
+						found_unit_marker = marker.id
+					end
+				end
+			end
 		end
 
-		--   HEALTHBARS
-		local hb_id = healthbar_ids[unit]
-		if hb_id then
-			Managers_event:trigger("remove_world_marker", hb_id)
-			--healthbar_ids[unit] = nil
-			--mod.enemy_healthbars[unit] = nil
-			table.insert(units_to_remove, unit)
-		end
-
-		--   DEBUFFS
-		local debuff_id = debuff_ids[unit]
-		if debuff_id then
-			Managers_event:trigger("remove_world_marker", debuff_id)
-			--mod.enemy_debuffs[unit] = nil
-			--debuff_ids[unit] = nil
-			--mod.marked_dead[unit] = true
-			table.insert(units_to_remove, unit)
-		end
-
-		-- UTILITY DEBUFFS
-		local util_debuff_id = utility_debuff_ids[unit]
-		if util_debuff_id then
-			Managers_event:trigger("remove_world_marker", util_debuff_id)
-			--mod.enemy_utility_debuffs[unit] = nil
-			--utility_debuff_ids[unit] = nil
-			--mod.marked_dead[unit] = true
+		if found_unit_marker then
 			table.insert(units_to_remove, unit)
 		end
 	end
 
 	-- Detect if dead
 	for unit, data in pairs(mod.enemy_cache) do
-		if not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
+		if not HEALTH_ALIVE[unit] or not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
 			iterate_types_removal(unit)
 		else
 			local health_extension = ScriptUnit.has_extension(unit, "health_system")
@@ -1170,17 +1077,18 @@ mod.remove_dead = function()
 
 	-- Remove dead enemies from the cache after processing
 	for _, unit in ipairs(units_to_remove) do
+		mod.marked_dead[unit] = true
+		mod.enemy_healthbars[unit] = nil
+		mod.enemy_debuffs[unit] = nil
+		mod.enemy_utility_debuffs[unit] = nil
+		mod.enemy_markers[unit] = nil
 		mod.enemy_cache[unit] = nil
 	end
 end
 
 mod.is_horde = function(unit)
 	if Unit.alive(unit) then
-		local entry = mod.enemy_cache[unit]
-		local unit_data_extension = entry.unit_data_ext
-		local breed = unit_data_extension and unit_data_extension:breed()
-		local tags = breed and breed.tags
-		dbg_tags = tags
+		local tags = mod.get_breed_tags(unit)
 		local is_horde = tags and (tags.horde or tags.roamer) or false
 
 		return is_horde or false
@@ -1189,180 +1097,110 @@ mod.is_horde = function(unit)
 	end
 end
 
-mod.update_enemy_markers = function(units, num_units, t)
+mod.update_enemy_outlines = function(entry)
+	local unit = entry.unit
+
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.markers) then
+	if not (fs.enable and fs.enable.outlines) then
 		return
 	end
 
-	for unit, data in pairs(mod.enemy_cache) do
-		local continue = true
-		if mod.is_horde(unit) and not fs.enable.markers_horde then
-			continue = false
-		end
-
-		if not mod.is_horde(unit) then
-			mod.enable_enemy_outlines(unit)
-		end
-
-		if continue then
-			if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
-				Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
-					marker_ids[unit] = marker_id
-				end)
-
-				mod.enemy_markers[unit] = unit
-			end
-		end
+	if (fs.enable.outlines_horde and entry.is_horde) or (not fs.enable.outlines_horde and not entry.is_horde) then
+		mod.enable_enemy_outlines(unit)
 	end
+end
 
-	---------------------------------------------------------------------------------------------------------
-
-	local enemy_cache = mod.enemy_cache
-	local now = (Managers_time and Managers_time:time("gameplay")) or t or 0
-	local enemy_markers_alerted = mod.enemy_markers_alerted
-
+-------------------------------------------------------------------
+-- Special attack detection
+-------------------------------------------------------------------
+mod.update_special_attack_detection = function(entry)
+	local unit = entry.unit
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	local markers_by_id = world_markers and world_markers._markers_by_id
 
-	if now - _alert_last_t > ALERT_UPDATE_INTERVAL then
-		_alert_last_t = now
+	-- remove special_attack_imminent if over the timer...
+	if entry.is_specialist and entry.special_attack_imminent then
+		local now = mod.get_time()
 
-		for i = 1, num_units do
-			local unit = units[i]
-			if enemy_cache[unit] then
-				-------------------------------------------------------------------
-				-- Special attack detection
-				-------------------------------------------------------------------
-				local entry = enemy_cache[unit]
+		if entry.special_attack_timer and now >= entry.special_attack_timer then
+			entry.special_attack_imminent = false
+			entry.special_attack_timer = nil
+		end
 
-				if entry.is_specialist and entry.special_attack_imminent then
-					local now = mod.get_time()
-
-					if entry.special_attack_timer and now >= entry.special_attack_timer then
-						entry.special_attack_imminent = false
-						entry.special_attack_timer = nil
-					end
-				end
-
-				local marker_id = marker_ids[unit]
-				if marker_id then
-					local marker = markers_by_id[marker_id]
-					if entry and marker then
-						marker.special_attack_imminent = entry.special_attack_imminent
-						if entry.is_specialist then
+		-- update marker status...
+		for _, markers in pairs(mod.markers) do
+			for i = 1, #markers do
+				local marker = markers[i]
+				if marker.unit == unit then
+					if _ == "enemy_markers" then
+						if entry and marker then
+							marker.special_attack_imminent = entry.special_attack_imminent
 							marker.is_specialist = entry.is_specialist
 						end
 					end
 				end
-
-				-- behaviour stuff
-				local entry = enemy_cache[unit]
-				local behaviour_ext = entry.behavior_ext
-
-				if behaviour_ext then
-					local perception_component = behaviour_ext._perception_component
-
-					local target_unit = perception_component and perception_component.target_unit
-					if target_unit then
-						add_unit_to_alerted(unit)
-					else
-						remove_unit_from_alerted(unit)
-					end
-				else
-					remove_unit_from_alerted(unit)
-				end
 			end
 		end
 	end
+end
 
-	if next(enemy_markers_alerted) then
-		if markers_by_id then
-			for i = 1, num_units do
-				local unit = units[i]
-				if enemy_cache[unit] then
-					local unit_id = get_unit_id(unit)
-					if enemy_markers_alerted[unit_id] then
-						local marker_id = marker_ids[unit]
-						if marker_id then
-							local marker = markers_by_id[marker_id]
-							if marker and marker.widget and marker.widget.style then
-								local bg_style = marker.widget.style.background
-								if bg_style and bg_style.color then
-									-- Mutate existing color table to avoid allocations (4)
-									local color = bg_style.color
-									-- color[1], color[2], color[3], color[4] = 255, 255, 50, 50
-								end
-							end
-						end
-					end
-				end
-			end
-		end
+-------------------------------------------------------------------
+-- Enemy Markers
+-------------------------------------------------------------------
+mod.update_enemy_markers = function(entry, t)
+	local unit = entry.unit
+
+	local fs = mod.frame_settings
+	if not (fs.enable and fs.enable.markers) then
+		return
 	end
 
-	-- Special Attack sounds can be grabbed from breed -> sounds -> events -> vce_special_attack
-	-- this could be used to "flash" the markers when an enemy is about to do a special attack! could be cooool
+	-- skip horde markers if not enabled
+	if entry.is_horde and not fs.enable.markers_horde then
+		return
+	end
+
+	-- add enemy markers if doesn't already exist
+	if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
+		Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
+			mod.enemy_markers[unit] = marker_id
+		end)
+	end
 end
 
 -----------------------------------------------------------------------
 -- Enemy healthbars
 -----------------------------------------------------------------------
 
-mod.update_enemy_healthbars = function(units, num_units)
+mod.update_enemy_healthbars = function(entry)
+	local unit = entry.unit
+
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.healthbar) then
 		return
 	end
 
-	if fs.enable.horde_clusters then
-		local CLUSTER_UPDATE_INTERVAL = 0.2
-		_cluster_t = (_cluster_t or 0) + fs.dt
-
-		if _cluster_t > CLUSTER_UPDATE_INTERVAL then
-			_cluster_t = 0
-			_build_horde_clusters(units, num_units)
-		end
-	else
-		table_clear(_horde_clusters)
-		table_clear(_horde_cluster_by_unit)
+	-- skip horde if not enabled
+	if (mod.is_horde(unit) and not fs.enable.hb_horde) and (mod.is_horde(unit) and not fs.enable.horde_clusters) then
+		return
 	end
 
-	local enemy_cache = mod.enemy_cache
-	local marked_dead = mod.marked_dead
+	if not mod.enemy_healthbars[unit] and not mod.marked_dead[unit] then
+		local cluster = fs.enable.horde_clusters and mod.get_horde_cluster_for_unit(unit) or nil
 
-	-- Add healthbars for living enemies
-	for i = 1, num_units do
-		local unit = units[i]
-
-		local continue = true
-		if
-			(mod.is_horde(unit) and not fs.enable.hb_horde) and (mod.is_horde(unit) and not fs.enable.horde_clusters)
-		then
-			continue = false
-		end
-
-		if continue and enemy_cache[unit] and not mod.enemy_healthbars[unit] and not marked_dead[unit] then
-			local cluster = fs.enable.horde_clusters and mod.get_horde_cluster_for_unit(unit) or nil
-
-			-- If this unit is part of a horde cluster, only give a healthbar to the representative
-			if cluster then
-				-- Clustered mode: only the representative unit gets a bar,
-				-- regardless of hb_horde_enable
-				if cluster.rep_unit ~= unit then
-					goto continue_healthbar_loop
-				end
+		-- If this unit is part of a horde cluster, only give a healthbar to the representative
+		if cluster then
+			if cluster.rep_unit ~= unit then
+				goto continue_healthbar_loop
 			end
-
-			Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
-				healthbar_ids[unit] = marker_id
-			end)
-
-			mod.enemy_healthbars[unit] = unit
-			::continue_healthbar_loop::
 		end
+
+		Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
+			mod.enemy_healthbars[unit] = marker_id
+		end)
+		::continue_healthbar_loop::
 	end
 end
 
@@ -1370,47 +1208,34 @@ end
 -- Enemy debuffs
 -----------------------------------------------------------------------
 
-mod.update_enemy_debuffs = function(units, num_units)
+mod.update_enemy_debuffs = function(entry)
+	local unit = entry.unit
+
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.debuff) then
 		return
 	end
 
-	local enemy_cache = mod.enemy_cache
-	local marked_dead = mod.marked_dead
-
-	-- Second, only add debuffs for living enemies that are not dead and removed
-	for i = 1, num_units do
-		local unit = units[i]
-		if enemy_cache[unit] and not mod.enemy_debuffs[unit] and not marked_dead[unit] then
-			Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
-				debuff_ids[unit] = debuff_id
-			end)
-
-			mod.enemy_debuffs[unit] = unit
-		end
+	-- only add debuffs for living enemies that are not dead and removed
+	if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
+		Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
+			mod.enemy_debuffs[unit] = debuff_id
+		end)
 	end
 end
 
-mod.update_enemy_utility_debuffs = function(units, num_units)
+mod.update_enemy_utility_debuffs = function(entry)
+	local unit = entry.unit
+
 	local fs = mod.frame_settings
 	if not (fs.enable and fs.enable.debuff) then
 		return
 	end
 
-	local enemy_cache = mod.enemy_cache
-	local marked_dead = mod.marked_dead
-
-	-- Add for living enemies
-	for i = 1, num_units do
-		local unit = units[i]
-		if enemy_cache[unit] and not mod.enemy_utility_debuffs[unit] and not marked_dead[unit] then
-			Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
-				utility_debuff_ids[unit] = marker_id
-			end)
-
-			mod.enemy_utility_debuffs[unit] = unit
-		end
+	if not mod.enemy_utility_debuffs[unit] and not mod.marked_dead[unit] then
+		Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
+			mod.enemy_utility_debuffs[unit] = marker_id
+		end)
 	end
 end
 
@@ -1425,20 +1250,7 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
 	table_clear(mod.enemy_utility_debuffs)
-	table_clear(mod.enemy_markers_alerted)
 
-	if healthbar_ids then
-		table_clear(healthbar_ids)
-	end
-	if marker_ids then
-		table_clear(marker_ids)
-	end
-	if debuff_ids then
-		table_clear(debuff_ids)
-	end
-	if utility_debuff_ids then
-		table_clear(utility_debuff_ids)
-	end
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
@@ -1513,11 +1325,19 @@ mod.apply_marker_fade = function()
 				local final_alpha = math.clamp(fade, MIN_ALPHA, 1)
 
 				local widget = marker.widget
+
 				if widget and widget.style then
 					for _, style in pairs(widget.style) do
+						local base_alpha = 255
+
+						if style.default_alpha then
+							base_alpha = style.default_alpha
+						end
 						if style.color then
-							local base_alpha = 255
 							style.color[1] = base_alpha * final_alpha
+						end
+						if style.text_color then
+							style.text_color[1] = base_alpha * final_alpha
 						end
 					end
 				end
@@ -1526,6 +1346,22 @@ mod.apply_marker_fade = function()
 	end
 end
 
+mod.update_horde_clusters = function(temp, to_process)
+	local fs = mod.frame_settings
+
+	if fs.enable.horde_clusters then
+		local CLUSTER_UPDATE_INTERVAL = 0.05
+		_cluster_t = (_cluster_t or 0) + fs.dt
+
+		if _cluster_t > CLUSTER_UPDATE_INTERVAL then
+			_cluster_t = 0
+			_build_horde_clusters(temp, to_process)
+		end
+	else
+		table_clear(_horde_clusters)
+		table_clear(_horde_cluster_by_unit)
+	end
+end
 -----------------------------------------------------------------------
 -- Main update orchestration
 -----------------------------------------------------------------------
@@ -1580,25 +1416,43 @@ mod.update_enemies = function(dt, t)
 		temp[i] = nil
 	end
 
-	if enable.markers then
-		mod.update_enemy_markers(temp, to_process, t)
+	-- update horde clusters...
+	if enable.healthbar and enable.horde_clusters then
+		mod.update_horde_clusters(temp, to_process)
 	end
 
-	if enable.healthbar then
-		mod.update_enemy_healthbars(temp, to_process)
-	end
+	-- go through enemy_cache and perform updates...
+	for i = 1, to_process do
+		local unit = temp[i]
+		if mod.enemy_cache[unit] then
+			local entry = mod.enemy_cache[unit]
 
-	if enable.debuff then
-		mod.update_enemy_debuffs(temp, to_process)
-		mod.update_enemy_utility_debuffs(temp, to_process)
-	end
+			if enable.markers then
+				mod.update_enemy_markers(entry, t)
+			end
 
-	mod.pulse_enemy_outline(temp, to_process)
+			if enable.outlines then
+				mod.update_enemy_outlines(entry)
+			end
+
+			if enable.healthbar then
+				mod.update_enemy_healthbars(entry)
+			end
+
+			if enable.debuff then
+				mod.update_enemy_debuffs(entry)
+				mod.update_enemy_utility_debuffs(entry)
+			end
+
+			mod.update_special_attack_detection(entry)
+
+			if enable.outline_specials then
+				mod.pulse_enemy_outline(entry)
+			end
+		end
+	end
 
 	mod.remove_dead()
-
-	-- Apply distance / stacking fade to all active markers
-	--mod.apply_marker_fade()
 end
 
 -----------------------------------------------------------------------
@@ -1633,9 +1487,6 @@ end
 
 mod.on_setting_changed = function(setting_id)
 	mod.clear_caches()
-
-	_last_draw_distance_key = nil
-	_last_draw_distance_value = 50
 end
 
 mod.get_breed_tags = function(unit)

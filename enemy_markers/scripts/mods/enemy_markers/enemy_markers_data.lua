@@ -350,20 +350,6 @@ return {
 				type = "group",
 				sub_widgets = {
 					{
-						setting_id = "los_fade_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "los_opacity",
-						type = "numeric",
-						default_value = 50,
-						range = {
-							0,
-							100,
-						},
-					},
-					{
 						setting_id = "draw_distance",
 						type = "numeric",
 						default_value = 30,
@@ -373,19 +359,30 @@ return {
 						},
 					},
 					{
-						setting_id = "ads_los_opacity",
-						type = "numeric",
-						default_value = 25,
-						range = {
-							0,
-							100,
-						},
+						setting_id = "outlines_enable",
+						type = "checkbox",
+						default_value = true,
+					},
+				},
+			},
+			{
+				setting_id = "special_attack_settings",
+				type = "group",
+				sub_widgets = {
+					{
+						setting_id = "marker_specials_enable",
+						type = "checkbox",
+						default_value = true,
 					},
 					{
-						setting_id = "marker_background_colour",
-						type = "dropdown",
-						options = background_colours,
-						default_value = "Black",
+						setting_id = "outline_specials_enable",
+						type = "checkbox",
+						default_value = true,
+					},
+					{
+						setting_id = "outline_specials_flash",
+						type = "checkbox",
+						default_value = true,
 					},
 				},
 			},
@@ -448,12 +445,12 @@ return {
 						setting_id = "hb_damage_number_types",
 						type = "dropdown",
 						options = damage_number_types,
-						default_value = "readable",
+						default_value = "flashy",
 					},
 					{
 						setting_id = "hb_show_armour_types",
 						type = "checkbox",
-						default_value = false,
+						default_value = true,
 					},
 					{
 						setting_id = "hb_frame",
