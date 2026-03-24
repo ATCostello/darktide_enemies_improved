@@ -228,11 +228,16 @@ mod.debuff_colours = {
 }
 
 mod.BREED_COLORS = {
-	horde = { 200, 255, 0, 0 },
-	elite = { 200, 0, 255, 255 },
-	ogryn = { 200, 0, 255, 255 },
-	disabler = { 200, 200, 255, 0 },
-	monster = { 200, 255, 255, 0 },
+	horde = { 200, 220, 40, 40 },
+	elite = { 200, 40, 140, 255 },
+	captain = { 200, 255, 120, 0 },
+	disabler = { 200, 255, 255, 0 },
+	monster = { 200, 180, 0, 255 },
+	witch = { 200, 120, 0, 255 },
+	sniper = { 200, 0, 255, 180 },
+	far = { 200, 0, 200, 120 },
+	special = { 200, 0, 255, 0 },
+	enemy = { 200, 160, 160, 160 },
 }
 
 local hb_frames = {
@@ -286,64 +291,6 @@ local damage_number_types = {
 	{
 		text = "flashy",
 		value = "flashy",
-	},
-}
-
-local lookup_border_color = function(colour_string)
-	local border_colours = {
-		["Gold"] = {
-			255,
-			232,
-			188,
-			109,
-		},
-		["Silver"] = {
-			255,
-			187,
-			198,
-			201,
-		},
-		["Steel"] = {
-			255,
-			161,
-			166,
-			169,
-		},
-	}
-	return border_colours[colour_string]
-end
-
-local apply_color_to_text = function(text, r, g, b)
-	return "{#color(" .. r .. "," .. g .. "," .. b .. ")}" .. text .. "{#reset()}"
-end
-
-local Gold = lookup_border_color("Gold")
-local Silver = lookup_border_color("Silver")
-local Steel = lookup_border_color("Steel")
-
-local border_colours = {
-	{
-		text = apply_color_to_text(mod:localize("Gold"), Gold[2], Gold[3], Gold[4]),
-		value = "Gold",
-	},
-	{
-		text = apply_color_to_text(mod:localize("Silver"), Silver[2], Silver[3], Silver[4]),
-		value = "Silver",
-	},
-	{
-		text = apply_color_to_text(mod:localize("Steel"), Steel[2], Steel[3], Steel[4]),
-		value = "Steel",
-	},
-}
-
-local background_colours = {
-	{
-		text = "Black",
-		value = "Black",
-	},
-	{
-		text = "Terminal",
-		value = "Terminal",
 	},
 }
 
@@ -435,7 +382,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "markers_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 		},
 		{
 			setting_id = "markers_horde_enable",
@@ -473,12 +420,12 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_horde_clusters_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 		},
 		{
 			setting_id = "hb_hide_after_no_damage",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 		},
 		{
 			setting_id = "hb_show_damage_numbers",
@@ -608,6 +555,41 @@ mod.group_settings_widgets = {
 			},
 			{
 				setting_id = "outline_type_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+			},
+		},
+	},
+
+	{ setting_id = "healthbar_type_enable", type = "checkbox", default_value = true },
+	{
+		setting_id = "healthbar_type_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "healthbar_type_colour_R",
+				type = "numeric",
+				default_value = 150,
+				range = {
+					0,
+					255,
+				},
+			},
+			{
+				setting_id = "healthbar_type_colour_G",
+				type = "numeric",
+				default_value = 75,
+				range = {
+					0,
+					255,
+				},
+			},
+			{
+				setting_id = "healthbar_type_colour_B",
 				type = "numeric",
 				default_value = 0,
 				range = {

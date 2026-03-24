@@ -126,6 +126,13 @@ mod.on_game_state_changed = function(state, state_name)
 	end
 end
 
+mod.on_all_mods_loaded = function()
+	mod.clear_caches()
+
+	mod.init_healthbar_colour_defaults()
+	mod.update_breed_colors()
+end
+
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	-- add new marker templates to templates table
 	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
@@ -1551,6 +1558,34 @@ local enemy_type_settings = {
 	["healthbar_type_colour_B"] = 0,
 }
 
+mod.init_healthbar_colour_defaults = function()
+	for breed, color in pairs(mod.BREED_COLORS) do
+		local r = color[2]
+		local g = color[3]
+		local b = color[4]
+
+		-- only set if not already saved
+		if mod:get("healthbar_" .. breed .. "_colour_R") == nil then
+			mod:set("healthbar_" .. breed .. "_colour_R", r)
+			mod:set("healthbar_" .. breed .. "_colour_G", g)
+			mod:set("healthbar_" .. breed .. "_colour_B", b)
+		end
+	end
+end
+
+mod.update_breed_colors = function()
+	for breed, default_color in pairs(mod.BREED_COLORS) do
+		local r = mod:get("healthbar_" .. breed .. "_colour_R")
+		local g = mod:get("healthbar_" .. breed .. "_colour_G")
+		local b = mod:get("healthbar_" .. breed .. "_colour_B")
+		local a = default_color[1] or 255
+
+		if r and g and b then
+			mod.BREED_COLORS[breed] = { a, r, g, b }
+		end
+	end
+end
+
 mod.on_setting_changed = function(setting_id)
 	-- Set the enemy type widgets when a group is selected
 	for setting_name, default_value in pairs(enemy_type_settings) do
@@ -1587,6 +1622,9 @@ mod.on_setting_changed = function(setting_id)
 	-- rebuild outlines
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	apply_enemy_outlines(outline_settings)
+
+	-- update breed colors from settings
+	mod.update_breed_colors()
 
 	-- clear all caches to reload data with new values
 	mod.clear_caches()
