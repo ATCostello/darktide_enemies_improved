@@ -702,7 +702,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		default_offset = { -bar_width * 0.5 - 24, 0, 6 },
 		size = { 28, 28 },
 		default_size = { 28, 28 },
-		color = { 255, 150, 255, 150 },
+		color = { 200, 255, 200, 0 },
 		default_alpha = 255,
 	}
 
@@ -784,7 +784,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "texture",
 			style_id = "highlight1",
-			value = "content/ui/materials/backgrounds/terminal_basic",
+			value = "content/ui/materials/scrollbars/scrollbar_metal_highlight",
 			value_id = "highlight1",
 			style = {
 				vertical_alignment = "center",
@@ -792,7 +792,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { bar_offset[1], bar_offset[2], 5 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = Color.terminal_background_gradient(100, true),
+				color = { 100, 255, 255, 255 },
 				default_alpha = 100,
 			},
 		},
@@ -807,17 +807,17 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5 - 24, 0, 0 },
 				default_offset = { -bar_width * 0.5 - 24, 0, 0 },
 
-				size = { 42, 42 },
-				default_size = { 42, 42 },
+				size = { 50, 50 },
+				default_size = { 50, 50 },
 
-				color = Color.terminal_grid_background(255, true),
-				default_alpha = 255,
+				color = { 200, 15, 15, 15 },
+				default_alpha = 200,
 
 				material_values = {
 					frame = "content/ui/textures/frames/horde/hex_frame_horde",
 					icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
 					intensity = 0,
-					saturation = 1,
+					saturation = 0.65,
 				},
 			},
 			visibility_function = function(content)
@@ -834,18 +834,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5 - 24, 0, 8 },
 				default_offset = { -bar_width * 0.5 - 24, 0, 8 },
 
-				size = { 42, 42 },
-				default_size = { 42, 42 },
+				size = { 50, 50 },
+				default_size = { 50, 50 },
 
-				color = { 100, 255, 255, 80 },
+				color = { 100, 255, 180, 80 },
 				default_alpha = 100,
+				blend_mode = "add",
 				scale_to_material = true,
+
 				material_values = {
 					texture_map = "content/ui/textures/frames/horde/hex_frame_horde_glow",
 				},
 			},
 			visibility_function = function(content)
-				return content.icon_enabled
+				return content.icon_elite or content.icon_special
 			end,
 		},
 		-- ELITE ICON

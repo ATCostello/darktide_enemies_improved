@@ -131,6 +131,8 @@ mod.on_all_mods_loaded = function()
 
 	mod.init_healthbar_colour_defaults()
 	mod.update_breed_colors()
+	local outline_settings = require("scripts/settings/outline/outline_settings")
+	mod.apply_enemy_outlines(outline_settings)
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
@@ -1467,6 +1469,56 @@ local SPECIALIST_TAGS = {
 	elite = true,
 }
 
+mod.get_breed_tags = function(unit)
+	if not HEALTH_ALIVE[unit] then
+		return nil
+	end
+
+	local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+
+	if not unit_data_extension then
+		return nil
+	end
+
+	local breed = unit_data_extension:breed()
+
+	if breed then
+		return breed.tags
+	end
+
+	return nil
+end
+
+-- Tags are ordered from priority (Top to bottom)
+-- so first match is what will be returned.
+-- breed points to the breed tags list, get from mod.get_breed_tags(unit)
+mod.find_breed_category = function(breed)
+	if breed then
+		local tags = breed.tags or {}
+		if tags.horde or tags.roamer then
+			return "horde"
+		elseif tags.monster then
+			return "monster"
+		elseif tags.captain then
+			return "captain"
+		elseif tags.disabler then
+			return "disabler"
+		elseif tags.witch then
+			return "witch"
+		elseif tags.special and tags.sniper then
+			return "sniper"
+		elseif tags.elite and tags.far or tags.special and tags.far then
+			return "far"
+		elseif tags.elite then
+			return "elite"
+		elseif tags.special then
+			return "special"
+		else
+			return "enemy"
+		end
+	end
+end
+
 mod.is_specialist_unit = function(unit)
 	local tags = mod.get_breed_tags(unit)
 
@@ -1484,21 +1536,56 @@ mod.is_specialist_unit = function(unit)
 end
 
 -- OUTLINES
-local function apply_enemy_outlines(settings)
+mod.default_outline_enabled = {
+	horde = false,
+	monster = false,
+	captain = false,
+	disabler = true,
+	witch = true,
+	sniper = true,
+	far = false,
+	elite = false,
+	special = false,
+	enemy = false,
+}
+
+mod.apply_enemy_outlines = function(settings)
 	for _, entry in ipairs(mod.breed_types) do
 		local breed = entry.value
 
-		-- skip placeholder
 		if breed ~= "SELECTANENEMYTYPE" then
-			local enabled = mod:get("outline_" .. breed .. "_enable")
+			local key = "outline_" .. breed .. "_enable"
+			local enabled = mod:get(key)
+
+			-- set default from above table if not expicitly set yet.
 			if enabled == nil then
-				enabled = true
+				enabled = mod.default_outline_enabled[breed]
+
+				if enabled == nil then
+					enabled = true
+				end
+
+				mod:set(key, enabled)
 			end
 
 			if enabled then
-				local r = (mod:get("outline_" .. breed .. "_colour_R") or 255) / 255
-				local g = (mod:get("outline_" .. breed .. "_colour_G") or 100) / 255
-				local b = (mod:get("outline_" .. breed .. "_colour_B") or 0) / 255
+				local r = (mod:get("outline_" .. breed .. "_colour_R"))
+				local g = (mod:get("outline_" .. breed .. "_colour_G"))
+				local b = (mod:get("outline_" .. breed .. "_colour_B"))
+
+				if not r then
+					r = 50
+				end
+				if not g then
+					g = 10
+				end
+				if not b then
+					b = 0
+				end
+
+				r = r / 255
+				g = g / 255
+				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
 					priority = 2,
@@ -1519,9 +1606,23 @@ local function apply_enemy_outlines(settings)
 	end
 
 	-- SPECIAL ATTACK OUTLINE
-	local sr = (mod:get("outline_specials_colour_R") or 255) / 255
-	local sg = (mod:get("outline_specials_colour_G") or 0) / 255
-	local sb = (mod:get("outline_specials_colour_B") or 0) / 255
+	local sr = (mod:get("outline_specials_colour_R"))
+	local sg = (mod:get("outline_specials_colour_G"))
+	local sb = (mod:get("outline_specials_colour_B"))
+
+	if not sr then
+		sr = 255
+	end
+	if not sg then
+		sg = 0
+	end
+	if not sb then
+		sb = 0
+	end
+
+	sr = sr / 255
+	sg = sg / 255
+	sb = sb / 255
 
 	settings.MinionOutlineExtension.enemies_improved_alert = {
 		priority = 1,
@@ -1537,7 +1638,7 @@ local function apply_enemy_outlines(settings)
 end
 
 mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
-	apply_enemy_outlines(settings)
+	mod.apply_enemy_outlines(settings)
 end)
 
 -----------------------------------------------------------------------
@@ -1548,8 +1649,8 @@ end)
 -- REQUIRES "_type_" AS THAT IS WHERE THE SPECIFIC ENEMY GROUP NAME IS PLACED...
 local enemy_type_settings = {
 	["outline_type_enable"] = true,
-	["outline_type_colour_R"] = 150,
-	["outline_type_colour_G"] = 75,
+	["outline_type_colour_R"] = 50,
+	["outline_type_colour_G"] = 10,
 	["outline_type_colour_B"] = 0,
 
 	["healthbar_type_enable"] = true,
@@ -1621,61 +1722,11 @@ mod.on_setting_changed = function(setting_id)
 
 	-- rebuild outlines
 	local outline_settings = require("scripts/settings/outline/outline_settings")
-	apply_enemy_outlines(outline_settings)
+	mod.apply_enemy_outlines(outline_settings)
 
 	-- update breed colors from settings
 	mod.update_breed_colors()
 
 	-- clear all caches to reload data with new values
 	mod.clear_caches()
-end
-
-mod.get_breed_tags = function(unit)
-	if not HEALTH_ALIVE[unit] then
-		return nil
-	end
-
-	local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
-
-	if not unit_data_extension then
-		return nil
-	end
-
-	local breed = unit_data_extension:breed()
-
-	if breed then
-		return breed.tags
-	end
-
-	return nil
-end
-
--- Tags are ordered from priority (Top to bottom)
--- so first match is what will be returned.
--- breed points to the breed tags list, get from mod.get_breed_tags(unit)
-mod.find_breed_category = function(breed)
-	if breed then
-		local tags = breed.tags or {}
-		if tags.horde or tags.roamer then
-			return "horde"
-		elseif tags.monster then
-			return "monster"
-		elseif tags.captain then
-			return "captain"
-		elseif tags.disabler then
-			return "disabler"
-		elseif tags.witch then
-			return "witch"
-		elseif tags.special and tags.sniper then
-			return "sniper"
-		elseif tags.elite and tags.far or tags.special and tags.far then
-			return "far"
-		elseif tags.elite then
-			return "elite"
-		elseif tags.special then
-			return "special"
-		else
-			return "enemy"
-		end
-	end
 end

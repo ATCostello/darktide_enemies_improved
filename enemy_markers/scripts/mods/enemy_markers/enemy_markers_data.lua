@@ -228,16 +228,16 @@ mod.debuff_colours = {
 }
 
 mod.BREED_COLORS = {
-	horde = { 200, 220, 40, 40 },
-	elite = { 200, 40, 140, 255 },
-	captain = { 200, 255, 120, 0 },
-	disabler = { 200, 255, 255, 0 },
-	monster = { 200, 180, 0, 255 },
-	witch = { 200, 120, 0, 255 },
-	sniper = { 200, 0, 255, 180 },
-	far = { 200, 0, 200, 120 },
-	special = { 200, 0, 255, 0 },
-	enemy = { 200, 160, 160, 160 },
+	horde = { 255, 150, 60, 60 },
+	elite = { 255, 0, 120, 255 },
+	captain = { 255, 255, 140, 0 },
+	disabler = { 255, 255, 255, 0 },
+	monster = { 255, 180, 0, 255 },
+	witch = { 255, 255, 0, 180 },
+	sniper = { 255, 255, 0, 0 },
+	far = { 255, 0, 255, 120 },
+	special = { 255, 255, 0, 255 },
+	enemy = { 255, 200, 200, 200 },
 }
 
 local hb_frames = {
@@ -410,7 +410,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_show_enemy_type",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 		},
 		{
 			setting_id = "hb_horde_enable",
@@ -466,10 +466,10 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_height",
 			type = "numeric",
-			default_value = 10,
+			default_value = 6,
 			range = {
 				4,
-				30,
+				25,
 			},
 		},
 	},
@@ -538,7 +538,7 @@ mod.group_settings_widgets = {
 			{
 				setting_id = "outline_type_colour_R",
 				type = "numeric",
-				default_value = 150,
+				default_value = 50,
 				range = {
 					0,
 					255,
@@ -547,7 +547,7 @@ mod.group_settings_widgets = {
 			{
 				setting_id = "outline_type_colour_G",
 				type = "numeric",
-				default_value = 75,
+				default_value = 10,
 				range = {
 					0,
 					255,
