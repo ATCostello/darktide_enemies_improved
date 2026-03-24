@@ -820,6 +820,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					saturation = 1,
 				},
 			},
+			visibility_function = function(content)
+				return content.icon_enabled
+			end,
 		},
 		{
 			pass_type = "texture",
@@ -841,6 +844,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					texture_map = "content/ui/textures/frames/horde/hex_frame_horde_glow",
 				},
 			},
+			visibility_function = function(content)
+				return content.icon_enabled
+			end,
 		},
 		-- ELITE ICON
 		{
@@ -1020,32 +1026,7 @@ template.on_enter = function(widget, marker, template)
 	local bar_settings = template.bar_settings
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
 
-	-- Tags are ordered from priority (Top to bottom)
-	-- so first match is what will be returned.
-	if breed then
-		local tags = breed.tags or {}
-		if tags.horde or tags.roamer then
-			content._breed_type = "horde"
-		elseif tags.monster then
-			content._breed_type = "monster"
-		elseif tags.captain then
-			content._breed_type = "captain"
-		elseif tags.disabler then
-			content._breed_type = "disabler"
-		elseif tags.witch then
-			content._breed_type = "witch"
-		elseif tags.special and tags.sniper then
-			content._breed_type = "sniper"
-		elseif tags.elite and tags.far or tags.special and tags.far then
-			content._breed_type = "far"
-		elseif tags.elite then
-			content._breed_type = "elite"
-		elseif tags.special then
-			content._breed_type = "special"
-		else
-			content._breed_type = "enemy"
-		end
-	end
+	content._breed_type = mod.find_breed_category(breed)
 end
 
 -----------------------------------------------------------------------
@@ -1418,41 +1399,46 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.icon_elite_ranged = false
 	content.icon_boss = false
 
-	if breed_type == "far" then
-		content.icon_elite_ranged = true
-	end
-	if breed_type == "elite" then
-		content.icon_elite = true
-	end
-	if breed_type == "special" then
-		content.icon_special = true
-	end
-	if breed_type == "disabler" then
-		content.icon_disabler = true
-	end
-	if breed_type == "sniper" then
-		content.icon_sniper = true
-	end
-	if breed_type == "monster" or breed_type == "captain" then
-		content.icon_boss = true
-	end
+	content.icon_enabled = false
 
-	local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
+	if mod.frame_settings.enable.healthbar_type_icon then
+		content.icon_enabled = true
+		if breed_type == "far" then
+			content.icon_elite_ranged = true
+		end
+		if breed_type == "elite" then
+			content.icon_elite = true
+		end
+		if breed_type == "special" then
+			content.icon_special = true
+		end
+		if breed_type == "disabler" then
+			content.icon_disabler = true
+		end
+		if breed_type == "sniper" then
+			content.icon_sniper = true
+		end
+		if breed_type == "monster" or breed_type == "captain" then
+			content.icon_boss = true
+		end
 
-	style.current_health.color[2] = bar_color[2]
-	style.current_health.color[3] = bar_color[3]
-	style.current_health.color[4] = bar_color[4]
+		local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
 
-	local ghost_color = style.ghost_bar.color
+		style.current_health.color[2] = bar_color[2]
+		style.current_health.color[3] = bar_color[3]
+		style.current_health.color[4] = bar_color[4]
 
-	ghost_color[2] = bar_color[2] * 0.5
-	ghost_color[3] = bar_color[3] * 0.5
-	ghost_color[4] = bar_color[4] * 0.5
+		local ghost_color = style.ghost_bar.color
 
-	local icon_offset_y = 0
+		ghost_color[2] = bar_color[2] * 0.5
+		ghost_color[3] = bar_color[3] * 0.5
+		ghost_color[4] = bar_color[4] * 0.5
 
-	if style.icon_elite.color[1] > 0 then
-		style.icon_elite.offset[2] = icon_offset_y
+		local icon_offset_y = 0
+
+		if style.icon_elite.color[1] > 0 then
+			style.icon_elite.offset[2] = icon_offset_y
+		end
 	end
 
 	-------------------------------------------------------------------

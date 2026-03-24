@@ -142,7 +142,7 @@ end)
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- throttle updates...
-	local update_interval = 0.05 -- 1 is 1 second... do the maths ;)
+	local update_interval = 0.03 -- 1 is 1 second... do the maths ;)
 	update_time = (update_time or 0) + dt
 
 	if update_time > update_interval then
@@ -220,6 +220,7 @@ local function build_frame_settings(mod, dt)
 	enable.healthbar = mod:get("healthbar_enable")
 	enable.hb_horde = mod:get("hb_horde_enable") or false
 	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
+	enable.healthbar_type_icon = mod:get("healthbar_type_icon_enable") or false
 
 	-- SPECIAL ATTACKS
 	enable.marker_specials = mod:get("marker_specials_enable")
@@ -230,58 +231,48 @@ local function build_frame_settings(mod, dt)
 	enable.debuff = mod:get("debuff_enable")
 end
 
---test outlines
-mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
+mod.enable_enemy_outlines = function(unit, entry)
+	if not Unit.alive(unit) then
+		return
+	end
 
-	settings.MinionOutlineExtension.enemies_improved = {
-		material_layers = nil,
-		visibility_check = nil,
-		color = nil,
+	local has_outline_system = Managers.state.extension:has_system("outline_system")
+	if not has_outline_system then
+		return
+	end
 
-		priority = 3,
-		material_layers = {
-			"minion_outline_combat_ability",
-			"minion_outline_combat_ability_reversed_depth",
-		},
-		color = {
-			0.3,
-			0.1,
-			0,
-		},
-		visibility_check = function()
-			return true
-		end,
-	}
+	local outline_system = Managers.state.extension:system("outline_system")
 
-	settings.MinionOutlineExtension.enemies_improved_alert = {
-		material_layers = nil,
-		visibility_check = nil,
-		color = nil,
+	-- get breed category
+	local breed_name
+	if entry and entry.unit_data_ext then
+		local breed = entry.unit_data_ext:breed()
+		breed_name = mod.find_breed_category(breed)
+	end
 
-		priority = 1,
-		material_layers = {
-			"minion_outline_combat_ability",
-			"minion_outline_combat_ability_reversed_depth",
-		},
-		color = {
-			1,
-			0,
-			0,
-		},
-		visibility_check = function()
-			return true
-		end,
-	}
-end)
+	if not breed_name then
+		breed_name = "enemy"
+	end
 
-mod.enable_enemy_outlines = function(unit)
-	if Unit.alive(unit) then
-		local has_outline_system = Managers.state.extension:has_system("outline_system")
+	local new_outline = "enemies_" .. breed_name
 
-		if has_outline_system then
-			local outline_system = Managers.state.extension:system("outline_system")
-			outline_system:add_outline(unit, "enemies_improved")
+	-- Do not enable outline if breed isn't allowed...
+	local enabled = mod:get("outline_" .. breed_name .. "_enable")
+	if enabled == false then
+		return
+	end
+
+	-- only update if changed
+	if entry.outline_name ~= new_outline then
+		-- remove old
+		if entry.outline_name then
+			outline_system:remove_outline(unit, entry.outline_name)
 		end
+
+		-- add new
+		outline_system:add_outline(unit, new_outline)
+
+		entry.outline_name = new_outline
 	end
 end
 
@@ -410,7 +401,10 @@ mod.scan_enemies = function()
 					special_attack_event = nil,
 					special_attack_imminent = false,
 					special_attack_timer = 0,
+
+					-- outlines
 					alert_outline = false,
+					outline_name = nil,
 				}
 			else
 				entry.seen = true
@@ -1106,7 +1100,7 @@ mod.update_enemy_outlines = function(entry)
 	end
 
 	if (fs.enable.outlines_horde and entry.is_horde) or (fs.enable.outlines and not entry.is_horde) then
-		mod.enable_enemy_outlines(unit)
+		mod.enable_enemy_outlines(unit, entry)
 	end
 end
 
@@ -1481,11 +1475,120 @@ mod.is_specialist_unit = function(unit)
 
 	return false
 end
+
+-- OUTLINES
+local function apply_enemy_outlines(settings)
+	for _, entry in ipairs(mod.breed_types) do
+		local breed = entry.value
+
+		-- skip placeholder
+		if breed ~= "SELECTANENEMYTYPE" then
+			local enabled = mod:get("outline_" .. breed .. "_enable")
+			if enabled == nil then
+				enabled = true
+			end
+
+			if enabled then
+				local r = (mod:get("outline_" .. breed .. "_colour_R") or 255) / 255
+				local g = (mod:get("outline_" .. breed .. "_colour_G") or 100) / 255
+				local b = (mod:get("outline_" .. breed .. "_colour_B") or 0) / 255
+
+				settings.MinionOutlineExtension["enemies_" .. breed] = {
+					priority = 2,
+					material_layers = {
+						"minion_outline_combat_ability",
+						"minion_outline_combat_ability_reversed_depth",
+					},
+					color = { r, g, b },
+					visibility_check = function()
+						return true
+					end,
+				}
+			else
+				-- remove if disabled
+				settings.MinionOutlineExtension["enemies_" .. breed] = nil
+			end
+		end
+	end
+
+	-- SPECIAL ATTACK OUTLINE
+	local sr = (mod:get("outline_specials_colour_R") or 255) / 255
+	local sg = (mod:get("outline_specials_colour_G") or 0) / 255
+	local sb = (mod:get("outline_specials_colour_B") or 0) / 255
+
+	settings.MinionOutlineExtension.enemies_improved_alert = {
+		priority = 1,
+		material_layers = {
+			"minion_outline_combat_ability",
+			"minion_outline_combat_ability_reversed_depth",
+		},
+		color = { sr, sg, sb },
+		visibility_check = function()
+			return true
+		end,
+	}
+end
+
+mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
+	apply_enemy_outlines(settings)
+end)
+
 -----------------------------------------------------------------------
 -- Settings changed
 -----------------------------------------------------------------------
 
+-- list of settings to monitor PER enemy type, needs to be updated if more types are added...
+-- REQUIRES "_type_" AS THAT IS WHERE THE SPECIFIC ENEMY GROUP NAME IS PLACED...
+local enemy_type_settings = {
+	["outline_type_enable"] = true,
+	["outline_type_colour_R"] = 150,
+	["outline_type_colour_G"] = 75,
+	["outline_type_colour_B"] = 0,
+
+	["healthbar_type_enable"] = true,
+	["healthbar_type_colour_R"] = 255,
+	["healthbar_type_colour_G"] = 0,
+	["healthbar_type_colour_B"] = 0,
+}
+
 mod.on_setting_changed = function(setting_id)
+	-- Set the enemy type widgets when a group is selected
+	for setting_name, default_value in pairs(enemy_type_settings) do
+		local selected_enemy_type = mod:get("enemy_group")
+		if not selected_enemy_type then
+			return
+		end
+
+		local type_value = mod:get(setting_name)
+		local enemy_type = setting_name:gsub("_type_", "_" .. selected_enemy_type .. "_")
+		local enemy_type_value = mod:get(enemy_type)
+
+		if enemy_type_value == nil then
+			enemy_type_value = default_value
+		end
+
+		-- STORE VALUES WHEN CHANGED
+		if setting_id == setting_name then
+			if enemy_type_value ~= type_value then
+				mod:error("set " .. tostring(enemy_type) .. " to " .. tostring(type_value))
+				mod:set(enemy_type, type_value)
+			end
+		end
+
+		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
+		if setting_id == "enemy_group" then
+			if type_value ~= enemy_type_value then
+				mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
+				mod:set(setting_name, enemy_type_value)
+			end
+		end
+	end
+
+	-- rebuild outlines
+	local outline_settings = require("scripts/settings/outline/outline_settings")
+	apply_enemy_outlines(outline_settings)
+
+	-- clear all caches to reload data with new values
 	mod.clear_caches()
 end
 
@@ -1507,4 +1610,34 @@ mod.get_breed_tags = function(unit)
 	end
 
 	return nil
+end
+
+-- Tags are ordered from priority (Top to bottom)
+-- so first match is what will be returned.
+-- breed points to the breed tags list, get from mod.get_breed_tags(unit)
+mod.find_breed_category = function(breed)
+	if breed then
+		local tags = breed.tags or {}
+		if tags.horde or tags.roamer then
+			return "horde"
+		elseif tags.monster then
+			return "monster"
+		elseif tags.captain then
+			return "captain"
+		elseif tags.disabler then
+			return "disabler"
+		elseif tags.witch then
+			return "witch"
+		elseif tags.special and tags.sniper then
+			return "sniper"
+		elseif tags.elite and tags.far or tags.special and tags.far then
+			return "far"
+		elseif tags.elite then
+			return "elite"
+		elseif tags.special then
+			return "special"
+		else
+			return "enemy"
+		end
+	end
 end

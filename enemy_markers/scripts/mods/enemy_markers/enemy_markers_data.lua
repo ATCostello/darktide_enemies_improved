@@ -347,176 +347,289 @@ local background_colours = {
 	},
 }
 
-return {
-	name = mod:localize("mod_name"),
-	description = mod:localize("mod_description"),
-	is_togglable = false,
-	options = {
-		widgets = {
-			{
-				setting_id = "general_settings",
-				type = "group",
-				sub_widgets = {
-					{
-						setting_id = "draw_distance",
-						type = "numeric",
-						default_value = 30,
-						range = {
-							30,
-							200,
-						},
-					},
-					{
-						setting_id = "outlines_enable",
-						type = "checkbox",
-						default_value = true,
+mod.settings_widgets = {}
+
+-- GENERAL SETTINGS
+table.insert(mod.settings_widgets, {
+	setting_id = "general_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "draw_distance",
+			type = "numeric",
+			default_value = 30,
+			range = {
+				30,
+				200,
+			},
+		},
+		{
+			setting_id = "outlines_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+	},
+})
+
+-- SPECIAL ATTACKS
+table.insert(mod.settings_widgets, {
+	setting_id = "special_attack_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "marker_specials_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "outline_specials_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "outline_specials_flash",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "outline_specials_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_specials_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
 					},
 				},
-			},
-			{
-				setting_id = "special_attack_settings",
-				type = "group",
-				sub_widgets = {
-					{
-						setting_id = "marker_specials_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "outline_specials_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "outline_specials_flash",
-						type = "checkbox",
-						default_value = true,
+				{
+					setting_id = "outline_specials_colour_G",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
 					},
 				},
-			},
-			{
-				setting_id = "markers_settings",
-				type = "group",
-				sub_widgets = {
-					{
-						setting_id = "markers_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "markers_horde_enable",
-						type = "checkbox",
-						default_value = false,
-					},
-				},
-			},
-			{
-				setting_id = "healthbar_settings",
-				type = "group",
-				sub_widgets = {
-					{
-						setting_id = "healthbar_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_show_enemy_type",
-						type = "checkbox",
-						default_value = false,
-					},
-					{
-						setting_id = "hb_horde_enable",
-						type = "checkbox",
-						default_value = false,
-					},
-					{
-						setting_id = "hb_horde_clusters_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_hide_after_no_damage",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_show_damage_numbers",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_text_show_damage",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_damage_number_types",
-						type = "dropdown",
-						options = damage_number_types,
-						default_value = "flashy",
-					},
-					{
-						setting_id = "hb_show_armour_types",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "hb_frame",
-						type = "dropdown",
-						options = hb_frames,
-						default_value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
-					},
-					{
-						setting_id = "hb_size_width",
-						type = "numeric",
-						default_value = 150,
-						range = {
-							100,
-							400,
-						},
-					},
-					{
-						setting_id = "hb_size_height",
-						type = "numeric",
-						default_value = 10,
-						range = {
-							4,
-							30,
-						},
-					},
-				},
-			},
-			{
-				setting_id = "debuff_settings",
-				type = "group",
-				sub_widgets = {
-					{
-						setting_id = "debuff_enable",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "debuff_names",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "debuff_names_fade",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "debuff_show_on_body",
-						type = "checkbox",
-						default_value = true,
-					},
-					{
-						setting_id = "debuff_horde_enable",
-						type = "checkbox",
-						default_value = false,
+				{
+					setting_id = "outline_specials_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
 					},
 				},
 			},
 		},
+	},
+})
+
+-- MARKERS
+table.insert(mod.settings_widgets, {
+	setting_id = "markers_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "markers_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "markers_horde_enable",
+			type = "checkbox",
+			default_value = false,
+		},
+	},
+})
+
+-- HEALTHBAR
+table.insert(mod.settings_widgets, {
+	setting_id = "healthbar_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "healthbar_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "healthbar_type_icon_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_show_enemy_type",
+			type = "checkbox",
+			default_value = false,
+		},
+		{
+			setting_id = "hb_horde_enable",
+			type = "checkbox",
+			default_value = false,
+		},
+		{
+			setting_id = "hb_horde_clusters_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_hide_after_no_damage",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_show_damage_numbers",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_text_show_damage",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_damage_number_types",
+			type = "dropdown",
+			options = damage_number_types,
+			default_value = "flashy",
+		},
+		{
+			setting_id = "hb_show_armour_types",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "hb_frame",
+			type = "dropdown",
+			options = hb_frames,
+			default_value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
+		},
+		{
+			setting_id = "hb_size_width",
+			type = "numeric",
+			default_value = 150,
+			range = {
+				100,
+				400,
+			},
+		},
+		{
+			setting_id = "hb_size_height",
+			type = "numeric",
+			default_value = 10,
+			range = {
+				4,
+				30,
+			},
+		},
+	},
+})
+
+-- DEBUFFS
+table.insert(mod.settings_widgets, {
+	setting_id = "debuff_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "debuff_enable",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "debuff_names",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "debuff_names_fade",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "debuff_show_on_body",
+			type = "checkbox",
+			default_value = true,
+		},
+		{
+			setting_id = "debuff_horde_enable",
+			type = "checkbox",
+			default_value = false,
+		},
+	},
+})
+
+-- PER-ENEMY TYPE SELECTOR LOGIC
+mod.breed_types = {
+	{ text = "SELECT AN ENEMY TYPE", value = "SELECTANENEMYTYPE" },
+	{ text = "horde", value = "horde" },
+	{ text = "monster", value = "monster" },
+	{ text = "captain", value = "captain" },
+	{ text = "disabler", value = "disabler" },
+	{ text = "witch", value = "witch" },
+	{ text = "sniper", value = "sniper" },
+	{ text = "far", value = "far" },
+	{ text = "elite", value = "elite" },
+	{ text = "special", value = "special" },
+	{ text = "enemy", value = "enemy" },
+}
+
+mod.group_settings_widgets = {
+	{
+		setting_id = "enemy_group",
+		type = "dropdown",
+		options = mod.breed_types,
+		default_value = "SELECTANENEMYTYPE",
+	},
+	{ setting_id = "outline_type_enable", type = "checkbox", default_value = true },
+	{
+		setting_id = "outline_type_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "outline_type_colour_R",
+				type = "numeric",
+				default_value = 150,
+				range = {
+					0,
+					255,
+				},
+			},
+			{
+				setting_id = "outline_type_colour_G",
+				type = "numeric",
+				default_value = 75,
+				range = {
+					0,
+					255,
+				},
+			},
+			{
+				setting_id = "outline_type_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+			},
+		},
+	},
+}
+
+table.insert(mod.settings_widgets, {
+	setting_id = "group_settings",
+	type = "group",
+	sub_widgets = mod.group_settings_widgets,
+})
+
+return {
+	name = mod:localize("mod_name"),
+	description = mod:localize("mod_description"),
+	is_togglable = true,
+	options = {
+		widgets = mod.settings_widgets,
 	},
 }
