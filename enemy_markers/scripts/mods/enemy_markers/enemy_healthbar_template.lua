@@ -7,25 +7,11 @@ local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 
------------------------------------------------------------------------
--- Cached mod settings
------------------------------------------------------------------------
-template.show_damage_numbers = mod:get("hb_show_damage_numbers") or false
-template.show_armor_types = mod:get("hb_show_armour_types") or false
-template.hide_after_no_damage = mod:get("hb_hide_after_no_damage") or false
-template.horde_enable = mod:get("hb_horde_enable") or false
-template.horde_clusters_enable = mod:get("hb_horde_clusters_enable") or false
-
-template.hb_show_enemy_type = mod:get("hb_show_enemy_type") or false
-template.hb_text_show_damage = mod:get("hb_text_show_damage") or false
-
-template.frame_type = mod:get("hb_frame") or "content/ui/materials/frames/masteries/panel_main_lower_frame"
-
-local size = { mod:get("hb_size_width") or 200, mod:get("hb_size_height") or 6 }
+local size = { mod.frame_settings.hb_size_width, mod.frame_settings.hb_size_height }
 
 local min_size = { 0, 0 }
 
-local draw_distance_setting = mod:get("draw_distance") or 25
+local draw_distance_setting = mod.frame_settings.draw_distance or 25
 
 template.size = size
 
@@ -101,7 +87,7 @@ template.show_dps = true
 template.skip_damage_from_others = false
 
 do
-	local hb_damage_number_type = mod:get("hb_damage_number_types")
+	local hb_damage_number_type = mod.frame_settings.hb_damage_number_type
 	if hb_damage_number_type == "readable" then
 		template.damage_number_type = damage_number_types.readable
 	elseif hb_damage_number_type == "floating" then
@@ -587,7 +573,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				armor_type = breed.hitzone_armor_override[hit_zone_name]
 			end
 
-			if template.show_armor_types then
+			if mod.frame_settings.show_armor_types then
 				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
 				local armor_type_text = Localize(armor_type_loc_string)
 
@@ -626,7 +612,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 		end
 	end
 
-	if template.show_damage_numbers and num_damage_numbers > 0 then
+	if mod.frame_settings.show_damage_numbers and num_damage_numbers > 0 then
 		if template.damage_number_type == damage_number_types.readable then
 			_readable_damage_number_function(
 				ui_content,
@@ -915,15 +901,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "top",
-				offset = { -bar_width * 0.5, -bar_height - 8, 6 },
-				default_offset = { -bar_width * 0.5, -bar_height - 8, 6 },
+				offset = { -bar_width * 0.5, -bar_height - 8 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, -bar_height - 8 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { (bar_width / 2) - 2, 20 },
-				default_size = { (bar_width / 2) - 2, 20 },
+				size = { (bar_width / 2) - 2 * mod.text_scale, 20 },
+				default_size = { (bar_width / 2) - 2 * mod.text_scale, 20 },
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -938,15 +924,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 12, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 12, 6 },
+				offset = { -bar_width * 0.5, bar_height + 12 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 12 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { bar_width * 2, 20 },
-				default_size = { bar_width * 2, 20 },
+				size = { bar_width * 2 * mod.text_scale, 20 },
+				default_size = { bar_width * 2 * mod.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -962,15 +948,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 28, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 28, 6 },
+				offset = { -bar_width * 0.5, bar_height + 28 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 28 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 180, 180, 180 },
 				default_text_color = { 220, 180, 180, 180 },
-				size = { bar_width * 2, 20 },
-				default_size = { bar_width * 2, 20 },
+				size = { bar_width * 2 * mod.text_scale, 20 },
+				default_size = { bar_width * 2 * mod.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -1018,7 +1004,7 @@ template.on_enter = function(widget, marker, template)
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
 
-	if template.hb_show_enemy_type and breed then
+	if mod.frame_settings.hb_show_enemy_type and breed then
 		content.header_text = breed.name
 	end
 
@@ -1071,7 +1057,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local breed_type = content._breed_type or "enemy"
 
-	if template.hb_show_enemy_type then
+	if mod.frame_settings.hb_show_enemy_type then
 		content.header_text = tostring(breed_type)
 	end
 
@@ -1081,7 +1067,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
 
-	if cluster and template.horde_clusters_enable then
+	if cluster and mod.frame_settings.horde_clusters_enable then
 		in_horde_cluster = true
 
 		-- Only the cluster representative should ever have a bar marker, because
@@ -1338,7 +1324,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content._last_damage_value = latest_damage_number and latest_damage_number.value
 
 		if
-			template.hb_text_show_damage
+			mod.frame_settings.hb_text_show_damage
 			and latest_damage_number
 			and (t - (content.last_damage_taken_time or 0)) <= 3
 		then
@@ -1387,7 +1373,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- set frame background
-	content.frame = template.frame_type
+	content.frame = mod.frame_settings.frame_type
 
 	-------------------------------------------------------------------
 	-- Icon logic / colors
@@ -1403,7 +1389,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	content.icon_enabled = false
 
-	if mod.frame_settings.enable.healthbar_type_icon then
+	if mod.frame_settings.healthbar_type_icon_enable then
 		content.icon_enabled = true
 		if breed_type == "far" then
 			content.icon_elite_ranged = true
@@ -1424,23 +1410,27 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.icon_boss = true
 		end
 
-		local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
-
-		style.current_health.color[2] = bar_color[2]
-		style.current_health.color[3] = bar_color[3]
-		style.current_health.color[4] = bar_color[4]
-
-		local ghost_color = style.ghost_bar.color
-
-		ghost_color[2] = bar_color[2] * 0.5
-		ghost_color[3] = bar_color[3] * 0.5
-		ghost_color[4] = bar_color[4] * 0.5
-
-		local icon_offset_y = 0
-
-		if style.icon_elite.color[1] > 0 then
-			style.icon_elite.offset[2] = icon_offset_y
+		if breed_type == "horde" then
+			content.icon_enabled = false
 		end
+	end
+
+	local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
+
+	style.current_health.color[2] = bar_color[2]
+	style.current_health.color[3] = bar_color[3]
+	style.current_health.color[4] = bar_color[4]
+
+	local ghost_color = style.ghost_bar.color
+
+	ghost_color[2] = bar_color[2] * 0.5
+	ghost_color[3] = bar_color[3] * 0.5
+	ghost_color[4] = bar_color[4] * 0.5
+
+	local icon_offset_y = 0
+
+	if style.icon_elite.color[1] > 0 then
+		style.icon_elite.offset[2] = icon_offset_y
 	end
 
 	-------------------------------------------------------------------
@@ -1483,11 +1473,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- only hide non-clustered horde units when horde disabled
-	if breed_type == "horde" and not template.horde_enable and not in_horde_cluster then
+	if breed_type == "horde" and not mod.frame_settings.horde_enable and not in_horde_cluster then
 		marker.draw = false
 	end
 
-	if template.hide_after_no_damage and time_since_last_damage > 5 then
+	if mod.frame_settings.hide_after_no_damage and time_since_last_damage > 5 then
 		marker.draw = false
 	end
 
@@ -1500,6 +1490,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	dbg_style = style
 	dbg_content = content
 	if draw then
+		marker.scale = marker.scale * mod.text_scale
 		local scale = marker.scale
 
 		local header_style = style.header_text

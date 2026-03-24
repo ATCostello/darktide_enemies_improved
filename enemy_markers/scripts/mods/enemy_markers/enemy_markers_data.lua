@@ -74,16 +74,16 @@ mod.debuff_icons = {
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	increase_damage_taken = "content/ui/materials/icons/weapons/actions/special_attack",
-	increase_impact_received_while_staggered = "content/ui/materials/icons/weapons/actions/special_attack",
-	increase_damage_received_while_staggered = "content/ui/materials/icons/weapons/actions/special_attack",
-	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
-	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/weapons/actions/special_attack",
-	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/weapons/actions/special_attack",
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
-	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
-	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/weapons/actions/special_attack",
-	veteran_improved_tag_debuff = "content/ui/materials/icons/weapons/actions/special_attack",
+	increase_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	increase_damage_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	veteran_improved_tag_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 
 	-- Electricity / shock / chain lightning
 	electricity = "content/ui/materials/icons/presets/preset_11",
@@ -207,17 +207,17 @@ mod.debuff_colours = {
 	toxin_damage_debuff_monster = { 255, 80, 255, 80 },
 
 	-- Rending / “take more damage” (purple)
-	rending_debuff = { 255, 150, 20, 250 },
-	increase_damage_taken = { 255, 200, 40, 255 },
-	increase_impact_received_while_staggered = { 255, 200, 40, 255 },
-	increase_damage_received_while_staggered = { 255, 200, 40, 255 },
-	ogryn_recieve_damage_taken_increase_debuff = { 255, 200, 40, 255 },
-	ogryn_taunt_increased_damage_taken_buff = { 255, 200, 40, 255 },
-	ogryn_staggering_damage_taken_increase = { 255, 200, 40, 255 },
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 200, 40, 255 },
-	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 200, 40, 255 },
-	adamant_staggering_increases_damage_taken = { 255, 200, 40, 255 },
-	veteran_improved_tag_debuff = { 255, 200, 40, 255 },
+	rending_debuff = { 255, 185, 85, 255 },
+	increase_damage_taken = { 255, 185, 85, 255 },
+	increase_impact_received_while_staggered = { 255, 185, 85, 255 },
+	increase_damage_received_while_staggered = { 255, 185, 85, 255 },
+	ogryn_recieve_damage_taken_increase_debuff = { 255, 185, 85, 255 },
+	ogryn_taunt_increased_damage_taken_buff = { 255, 185, 85, 255 },
+	ogryn_staggering_damage_taken_increase = { 255, 185, 85, 255 },
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 185, 85, 255 },
+	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 185, 85, 255 },
+	adamant_staggering_increases_damage_taken = { 255, 185, 85, 255 },
+	veteran_improved_tag_debuff = { 255, 185, 85, 255 },
 
 	-- Arbite generic “enemy debuff”
 	adamant_drone_enemy_debuff = { 255, 180, 180, 255 },
@@ -339,6 +339,7 @@ local fonts = {
 		value = "mono_tide_bold",
 	},
 }
+
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
 	setting_id = "general_settings",
@@ -371,8 +372,8 @@ table.insert(mod.settings_widgets, {
 			decimals_number = 2,
 			step_size_value = 0.1,
 			range = {
-				2,
-				0.8,
+				0.5,
+				1.5,
 			},
 		},
 	},
@@ -517,7 +518,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_width",
 			type = "numeric",
-			default_value = 150,
+			default_value = 220,
 			range = {
 				100,
 				400,

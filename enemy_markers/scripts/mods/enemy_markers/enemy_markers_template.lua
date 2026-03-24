@@ -16,10 +16,9 @@ local icon_size = { max_size_value / 2, max_size_value / 2 }
 local background_size = { max_size_value, max_size_value }
 local scale_fraction = 0.75
 
-local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or false
+local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or true
 local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
-local MAX_DISTANCE_SETTING = mod:get("draw_distance") or 25
-local enable_horde = mod:get("marker_horde_enable") or false
+local MAX_DISTANCE_SETTING = mod.frame_settings.draw_distance
 
 -----------------------------------------------------------------------
 -- Specialist Tracking Settings
@@ -139,7 +138,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content, style)
-				return (content.special_attack_imminent and content.is_clamped) or (not content.is_clamped and content.background ~= nil)
+				return (content.special_attack_imminent and content.is_clamped)
+					or (not content.is_clamped and content.background ~= nil)
 			end,
 		},
 		{
@@ -328,7 +328,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- marker height
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height + 0.5
+
+		if mod.frame_settings.healthbar_enable then
+			root_position.z = root_position.z + content.breed.base_height + 0.1
+		else
+			root_position.z = root_position.z + content.breed.base_height + 0.5
+		end
 
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)

@@ -1,11 +1,63 @@
 local mod = get_mod("enemy_markers")
+mod.text_scale = mod:get("text_scale") or 1
+mod.font_type = mod:get("font_type")
+mod.frame_settings = {}
+
+mod.build_frame_settings = function(dt)
+	local fs = mod.frame_settings
+
+	fs.dt = dt or 0
+
+	-- Draw distance
+	fs.draw_distance = mod:get("draw_distance")
+
+	-- GENERAL
+	fs.outlines_enable = mod:get("outlines_enable")
+	fs.text_scale = mod:get("text_scale")
+	fs.font_type = mod:get("font_type")
+
+	-- MARKERS
+	fs.markers_enable = mod:get("markers_enable")
+	fs.marker_horde_enable = mod:get("marker_horde_enable")
+
+	-- HEALTHBARS
+	fs.healthbar_enable = mod:get("healthbar_enable")
+	fs.healthbar_type_icon_enable = mod:get("healthbar_type_icon_enable")
+	fs.show_damage_numbers = mod:get("hb_show_damage_numbers")
+	fs.show_armor_types = mod:get("hb_show_armour_types")
+	fs.hide_after_no_damage = mod:get("hb_hide_after_no_damage")
+	fs.horde_enable = mod:get("hb_horde_enable")
+	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
+	fs.hb_show_enemy_type = mod:get("hb_show_enemy_type")
+	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
+	fs.frame_type = mod:get("hb_frame")
+	fs.hb_size_width = mod:get("hb_size_width")
+	fs.hb_size_height = mod:get("hb_size_height")
+	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
+
+	-- SPECIAL ATTACKS
+	fs.marker_specials_enable = mod:get("marker_specials_enable")
+	fs.outline_specials_enable = mod:get("outline_specials_enable")
+	fs.outline_specials_flash = mod:get("outline_specials_flash")
+
+	-- DEBUFFS
+	fs.debuff_enable = mod:get("debuff_enable")
+	fs.debuff_names = mod:get("debuff_names")
+	fs.debuff_names_fade = mod:get("debuff_names_fade")
+	fs.debuff_horde_enable = mod:get("debuff_horde_enable")
+	fs.debuff_show_on_body = mod:get("debuff_show_on_body")
+end
+
+mod.build_frame_settings()
 
 mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localization")
+
 local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
 local EnemyUtilityDebuffTemplate =
 	mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
+
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
@@ -13,10 +65,7 @@ local HudElementSmartTagging = require("scripts/ui/hud/elements/smart_tagging/hu
 local Component = require("scripts/utilities/component")
 local MechanismManager = require("scripts/managers/mechanism/mechanism_manager")
 
-mod.frame_settings = {}
 mod._broadphase_results = {}
-
-mod.font_type = mod:get("font_type")
 
 mod.enemy_cache = {}
 mod.enemy_markers = {}
@@ -65,6 +114,10 @@ local pairs = pairs
 local DIST_FADE_START = 10 -- meters where fade begins
 local DIST_FADE_END = 50 -- full fade at draw distance
 local MIN_ALPHA = 0.1 -- never fully invisible
+
+-----------------------------------------------------------------------
+-- Frame settings builder
+-----------------------------------------------------------------------
 
 -----------------------------------------------------------------------
 -- preload resources + reset caches on game state change
@@ -143,9 +196,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
 	self._marker_templates[EnemyUtilityDebuffTemplate.name] = EnemyUtilityDebuffTemplate
-
-	-- clear caches on markers init
-	mod.clear_caches()
 end)
 
 -----------------------------------------------------------------------
@@ -153,7 +203,7 @@ end)
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- throttle updates...
-	local update_interval = 0.03 -- 1 is 1 second... do the maths ;)
+	local update_interval = 0.1 -- 1 is 1 second... do the maths ;)
 	update_time = (update_time or 0) + dt
 
 	if update_time > update_interval then
@@ -187,60 +237,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- Apply distance / stacking fade to all active markers
 	mod.apply_marker_fade()
 end)
-
------------------------------------------------------------------------
--- Frame settings builder
------------------------------------------------------------------------
-
-local function build_frame_settings(mod, dt)
-	local fs = mod.frame_settings
-
-	fs.dt = dt or 0
-
-	-- ADS detection
-	local is_ads = false
-	local player = Managers_player:local_player(1)
-	if player then
-		local unit = player.player_unit
-		if unit and Unit_alive(unit) then
-			local ude = ScriptUnit_extension(unit, "unit_data_system")
-			if ude then
-				local af = ude:read_component("alternate_fire")
-				is_ads = af and af.is_active or false
-			end
-		end
-	end
-
-	fs.is_ads = is_ads
-
-	-- Draw distance
-	fs.draw_distance = mod:get("draw_distance")
-
-	-- Feature toggles
-	fs.enable = fs.enable or {}
-	local enable = fs.enable
-
-	-- GENERAL
-	enable.outlines = mod:get("outlines_enable")
-
-	-- MARKERS
-	enable.markers = mod:get("markers_enable")
-	enable.markers_horde = mod:get("marker_horde_enable") or false
-
-	-- HEALTHBARS
-	enable.healthbar = mod:get("healthbar_enable")
-	enable.hb_horde = mod:get("hb_horde_enable") or false
-	enable.horde_clusters = mod:get("hb_horde_clusters_enable") or false
-	enable.healthbar_type_icon = mod:get("healthbar_type_icon_enable") or false
-
-	-- SPECIAL ATTACKS
-	enable.marker_specials = mod:get("marker_specials_enable")
-	enable.outline_specials = mod:get("outline_specials_enable")
-	enable.outline_specials_flash = mod:get("outline_specials_flash")
-
-	-- DEBUFFS
-	enable.debuff = mod:get("debuff_enable")
-end
 
 mod.enable_enemy_outlines = function(unit, entry)
 	if not Unit.alive(unit) then
@@ -318,7 +314,7 @@ mod.pulse_enemy_outline = function(entry)
 				outline_system:add_outline(unit, "enemies_improved_alert")
 				entry.alert_outline = true
 			end
-		elseif entry.alert_outline and fs.enable.outline_specials_flash then
+		elseif entry.alert_outline and fs.outline_specials_flash then
 			local has_outline_system = Managers.state.extension:has_system("outline_system")
 
 			if has_outline_system then
@@ -1106,11 +1102,11 @@ mod.update_enemy_outlines = function(entry)
 	local unit = entry.unit
 
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.outlines) then
+	if not fs.outlines_enable then
 		return
 	end
 
-	if (fs.enable.outlines_horde and entry.is_horde) or (fs.enable.outlines and not entry.is_horde) then
+	if fs.outlines_enable then
 		mod.enable_enemy_outlines(unit, entry)
 	end
 end
@@ -1158,12 +1154,12 @@ mod.update_enemy_markers = function(entry, t)
 	local unit = entry.unit
 
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.markers) then
+	if not fs.markers_enable then
 		return
 	end
 
 	-- skip horde markers if not enabled
-	if entry.is_horde and not fs.enable.markers_horde then
+	if entry.is_horde and not fs.marker_horde_enable then
 		return
 	end
 
@@ -1181,19 +1177,19 @@ end
 
 mod.update_enemy_healthbars = function(entry)
 	local unit = entry.unit
-
+	--mod:echo("update healthbars")
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.healthbar) then
+	if not fs.healthbar_enable then
 		return
 	end
 
 	-- skip horde if not enabled
-	if (mod.is_horde(unit) and not fs.enable.hb_horde) and (mod.is_horde(unit) and not fs.enable.horde_clusters) then
+	if (mod.is_horde(unit) and not fs.horde_enable) and (mod.is_horde(unit) and not fs.horde_clusters_enable) then
 		return
 	end
 
 	if not mod.enemy_healthbars[unit] and not mod.marked_dead[unit] then
-		local cluster = fs.enable.horde_clusters and mod.get_horde_cluster_for_unit(unit) or nil
+		local cluster = fs.horde_clusters_enable and mod.get_horde_cluster_for_unit(unit) or nil
 
 		-- If this unit is part of a horde cluster, only give a healthbar to the representative
 		if cluster then
@@ -1217,7 +1213,7 @@ mod.update_enemy_debuffs = function(entry)
 	local unit = entry.unit
 
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.debuff) then
+	if not fs.debuff_enable then
 		return
 	end
 
@@ -1233,7 +1229,7 @@ mod.update_enemy_utility_debuffs = function(entry)
 	local unit = entry.unit
 
 	local fs = mod.frame_settings
-	if not (fs.enable and fs.enable.debuff) then
+	if not fs.debuff_enable then
 		return
 	end
 
@@ -1252,9 +1248,10 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
+	table_clear(mod.enemy_utility_debuffs)
+
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
-	table_clear(mod.enemy_utility_debuffs)
 
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)
@@ -1354,7 +1351,7 @@ end
 mod.update_horde_clusters = function(temp, to_process)
 	local fs = mod.frame_settings
 
-	if fs.enable.horde_clusters then
+	if fs.horde_clusters_enable then
 		local CLUSTER_UPDATE_INTERVAL = 0.05
 		_cluster_t = (_cluster_t or 0) + fs.dt
 
@@ -1372,13 +1369,8 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	build_frame_settings(mod, dt or 0)
+	mod.build_frame_settings(dt or 0)
 	local fs = mod.frame_settings
-	local enable = fs.enable
-
-	if not (enable.markers or enable.healthbar or enable.debuff) then
-		return
-	end
 
 	mod.scan_enemies()
 
@@ -1422,7 +1414,7 @@ mod.update_enemies = function(dt, t)
 	end
 
 	-- update horde clusters...
-	if enable.healthbar and enable.horde_clusters then
+	if fs.healthbar_enable and fs.horde_clusters_enable then
 		mod.update_horde_clusters(temp, to_process)
 	end
 
@@ -1432,26 +1424,26 @@ mod.update_enemies = function(dt, t)
 		if mod.enemy_cache[unit] then
 			local entry = mod.enemy_cache[unit]
 
-			if enable.markers then
+			if fs.markers_enable then
 				mod.update_enemy_markers(entry, t)
 			end
 
-			if enable.outlines then
+			if fs.outlines_enable then
 				mod.update_enemy_outlines(entry)
 			end
 
-			if enable.healthbar then
+			if fs.healthbar_enable then
 				mod.update_enemy_healthbars(entry)
 			end
 
-			if enable.debuff then
+			if fs.debuff_enable then
 				mod.update_enemy_debuffs(entry)
 				mod.update_enemy_utility_debuffs(entry)
 			end
 
 			mod.update_special_attack_detection(entry)
 
-			if enable.outline_specials then
+			if fs.outline_specials_enable then
 				mod.pulse_enemy_outline(entry)
 			end
 		end
@@ -1733,4 +1725,5 @@ mod.on_setting_changed = function(setting_id)
 	mod.clear_caches()
 
 	mod.font_type = mod:get("font_type")
+	mod.text_scale = mod:get("text_scale")
 end

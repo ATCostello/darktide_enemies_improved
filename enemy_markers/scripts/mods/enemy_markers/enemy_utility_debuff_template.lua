@@ -8,15 +8,10 @@ local template = {}
 -- Cached settings
 -----------------------------------------------------------------------
 
-local hb_size_width = mod:get("hb_size_width")
-local hb_size_height = mod:get("hb_size_height")
+local hb_size_width = mod.frame_settings.hb_size_width
+local hb_size_height = mod.frame_settings.hb_size_height
 local max_visible_rows_setting = 5
-local draw_distance_setting = mod:get("draw_distance")
-local show_names = mod:get("debuff_names")
-local names_fade = mod:get("debuff_names_fade")
-local enable_horde = mod:get("debuff_horde_enable")
-local show_on_body = mod:get("debuff_show_on_body")
-local show_armour_types = mod:get("hb_show_armour_types")
+local draw_distance_setting = mod.frame_settings.draw_distance
 
 local NAME_FADE_IN = 0.15
 local NAME_VISIBLE = 4.0
@@ -28,20 +23,20 @@ local size = {
 	hb_size_height,
 }
 
-local base_y = (show_armour_types and hb_size_height + 52) or (hb_size_height + 32)
+local base_y = (mod.frame_settings.show_armor_types and hb_size_height + 52) or (hb_size_height + 32)
 
-local row_step = hb_size_height + 24
-local base_offset = -hb_size_width * 0.5
-local icon_x = hb_size_width - 5
+local row_step = hb_size_height + (24 * mod.text_scale)
+local base_offset = (-hb_size_width * 0.5) * mod.text_scale
+local icon_x = (hb_size_width - (5 * mod.text_scale))
 local name_x = hb_size_width
-local stack_x = hb_size_width + 40
+local stack_x = hb_size_width + (60 * mod.text_scale)
 
 local Unit_alive = Unit.alive
 
 template.size = size
 template.name = "enemy_utility_debuff"
 
-if show_on_body then
+if mod.frame_settings.debuff_show_on_body then
 	template.unit_node = "root_point"
 	template.position_offset = { 0, 0, 0 }
 else
@@ -164,9 +159,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			color = { 0, 15, 15, 15 },
 			default_alpha = 0,
 
-			size = { 30, 30 },
+			size = { 30 * mod.text_scale, 30 * mod.text_scale },
 
-			default_size = { 30, 30 },
+			default_size = { 30 * mod.text_scale, 30 * mod.text_scale },
 
 			material_values = {
 				frame = "content/ui/textures/frames/horde/hex_frame_horde",
@@ -199,8 +194,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
-			size = { 24, 24 },
-			default_size = { 24, 24 },
+			size = { 24 * mod.text_scale, 24 * mod.text_scale },
+			default_size = { 24 * mod.text_scale, 24 * mod.text_scale },
 
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
@@ -237,8 +232,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			default_font_size = 16,
 
 			text_color = { 255, 255, 255, 255 },
-			size = { bar_width * 0.25, 20 },
-			default_size = { bar_width * 0.25, 20 },
+			size = { bar_width * 0.25 * mod.text_scale, 20 },
+			default_size = { bar_width * 0.25 * mod.text_scale, 20 },
 
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
@@ -252,7 +247,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = name_text_id,
 			value_id = name_text_id,
 			visibility_function = function(content, style)
-				if not show_names then
+				if not mod.frame_settings.debuff_names then
 					return false
 				end
 				local v = content[name_text_id]
@@ -267,12 +262,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			text_vertical_alignment = "center",
 
 			offset = {
-				name_x - 40 + base_offset,
+				name_x - 40 * mod.text_scale + base_offset,
 				row_offset_y,
 				7,
 			},
 			default_offset = {
-				name_x - 40 + base_offset,
+				name_x - 40 * mod.text_scale + base_offset,
 				row_offset_y,
 				7,
 			},
@@ -282,8 +277,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			default_font_size = 16,
 
 			text_color = { 255, 255, 255, 255 },
-			size = { name_x, 22 },
-			default_size = { name_x, 22 },
+			size = { name_x * mod.text_scale, 22 },
+			default_size = { name_x * mod.text_scale, 22 },
 
 			truncated = true,
 			max_lines = 1,
@@ -319,7 +314,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- don't process hordes if disabled
 	local breed_tags = mod.get_breed_tags(unit)
-	if enable_horde == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
+	if mod.frame_settings.debuff_horde_enable == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
 		marker.draw = false
 
 		return
@@ -440,7 +435,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				prev_stacks = stacks,
 				y = y_base,
 				name_time = 0,
-				name_visible = show_names,
+				name_visible = mod.frame_settings.debuff_names,
 			}
 			state_table[name] = state
 		end
@@ -483,9 +478,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		state.icon_scale = math_lerp(state.icon_scale, 0, icon_lerp_t)
 
 		-- Update name pop timer if enabled
-		if show_names and state.name_visible then
+		if mod.frame_settings.debuff_names and state.name_visible then
 			state.name_time = state.name_time + dt
-			if state.name_time >= NAME_TOTAL and names_fade == true then
+			if state.name_time >= NAME_TOTAL and mod.frame_settings.debuff_names_fade == true then
 				state.name_visible = false
 			end
 		end
@@ -511,7 +506,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		if not show_on_body then
+		if not mod.frame_settings.debuff_show_on_body then
 			root_position.z = root_position.z + content.breed.base_height + 0.5
 		else
 			root_position.z = root_position.z + content.breed.base_height / 1.5
@@ -553,7 +548,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 
 				content[stack_text_id] = stack_str
-				if show_names then
+				if mod.frame_settings.debuff_names then
 					if state.name_visible and name_text_style then
 						local loc = localized_cache[name]
 						if not loc then
@@ -615,6 +610,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- apply scaling
 				if marker.draw then
+					marker.scale = marker.scale * mod.text_scale
 					local scale = marker.scale
 					icon_style.size[1] = icon_style.default_size[1] * scale
 					icon_style.size[2] = icon_style.default_size[2] * scale
