@@ -8,17 +8,18 @@ local template = {}
 -- Cached settings
 -----------------------------------------------------------------------
 
-local hb_size_width = mod:get("hb_size_width") or 200
-local hb_size_height = mod:get("hb_size_height") or 6
-local max_visible_rows_setting = mod:get("max_visible_rows") or 5
-local draw_distance_setting = mod:get("draw_distance") or 25
-local show_names = mod:get("debuff_names") == true
-local names_fade = mod:get("debuff_names_fade") == true
-local enable_horde = mod:get("debuff_horde_enable") or false
-local show_on_body = mod:get("debuff_show_on_body") or false
+local hb_size_width = mod:get("hb_size_width")
+local hb_size_height = mod:get("hb_size_height")
+local max_visible_rows_setting = 5
+local draw_distance_setting = mod:get("draw_distance")
+local show_names = mod:get("debuff_names")
+local names_fade = mod:get("debuff_names_fade")
+local enable_horde = mod:get("debuff_horde_enable")
+local show_on_body = mod:get("debuff_show_on_body")
+local show_armour_types = mod:get("hb_show_armour_types")
 
 local NAME_FADE_IN = 0.15
-local NAME_VISIBLE = 2.0
+local NAME_VISIBLE = 4.0
 local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
@@ -26,7 +27,15 @@ local size = {
 	hb_size_width,
 	hb_size_height,
 }
-local base_y = hb_size_height + 48
+
+local base_y = (show_armour_types and hb_size_height + 52) or (hb_size_height + 32)
+
+local row_step = hb_size_height + 24
+local base_offset = -hb_size_width * 0.5
+local icon_x = hb_size_width - 5
+local name_x = hb_size_width
+local stack_x = hb_size_width + 40
+
 local Unit_alive = Unit.alive
 
 template.size = size
@@ -37,7 +46,7 @@ if show_on_body then
 	template.position_offset = { 0, 0, 0 }
 else
 	template.unit_node = "root_point"
-	template.position_offset = { 0, 0, 0.5 }
+	template.position_offset = { 0, 0, 0 }
 end
 
 template.max_visible_rows = max_visible_rows_setting
@@ -122,11 +131,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local content = {}
 	local style = {}
 
-	local row_step = bar_height + 8
-	local icon_x = bar_width - 5
-	local name_x = bar_width
-	local stack_x = bar_width
-
 	for i = 1, max_rows do
 		local icon_bg_id = "util_icon_background_" .. i
 		local icon_id = "util_icon_" .. i
@@ -154,21 +158,22 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			scale_to_material = true,
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
-			offset = {
-				icon_x,
-				row_offset_y,
-				4,
-			},
-			default_offset = {
-				icon_x,
-				row_offset_y,
-				4,
-			},
-			color = nil,
-			color = Color.terminal_frame(255, true),
+			offset = { icon_x + base_offset, row_offset_y, 4 },
+			default_offset = { icon_x + base_offset, row_offset_y, 4 },
+
+			color = { 0, 15, 15, 15 },
+			default_alpha = 0,
+
 			size = { 30, 30 },
+
 			default_size = { 30, 30 },
-			default_alpha = 255,
+
+			material_values = {
+				frame = "content/ui/textures/frames/horde/hex_frame_horde",
+				icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
+				intensity = 0,
+				saturation = 0.65,
+			},
 		}
 
 		-- ICON
@@ -185,12 +190,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
 			offset = {
-				icon_x,
+				icon_x + base_offset,
 				row_offset_y,
 				6,
 			},
 			default_offset = {
-				icon_x,
+				icon_x + base_offset,
 				row_offset_y,
 				6,
 			},
@@ -218,16 +223,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			text_horizontal_alignment = "left",
 			text_vertical_alignment = "center",
 			offset = {
-				stack_x,
+				stack_x + base_offset,
 				row_offset_y,
 				6,
 			},
 			default_offset = {
-				stack_x,
+				stack_x + base_offset,
 				row_offset_y,
 				6,
 			},
-			font_type = "proxima_nova_bold",
+			font_type = mod.font_type,
 			font_size = 16,
 			default_font_size = 16,
 
@@ -260,23 +265,25 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
+
 			offset = {
-				name_x,
+				name_x - 40 + base_offset,
 				row_offset_y,
 				7,
 			},
 			default_offset = {
-				name_x,
+				name_x - 40 + base_offset,
 				row_offset_y,
 				7,
 			},
-			font_type = "proxima_nova_bold",
+
+			font_type = mod.font_type,
 			font_size = 16,
 			default_font_size = 16,
 
 			text_color = { 255, 255, 255, 255 },
-			size = { 260, 22 },
-			default_size = { 260, 22 },
+			size = { name_x, 22 },
+			default_size = { name_x, 22 },
 
 			truncated = true,
 			max_lines = 1,
@@ -505,7 +512,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 		if not show_on_body then
-			root_position.z = root_position.z + content.breed.base_height
+			root_position.z = root_position.z + content.breed.base_height + 0.5
 		else
 			root_position.z = root_position.z + content.breed.base_height / 1.5
 		end
@@ -519,12 +526,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- DRAW ROWS
 	-------------------------------------------------------------------
-	local template_size_1 = template.size[1]
-
-	local base_icon_x = template_size_1 * 0.5 - 45
-	local base_stack_x = template_size_1 * 0.5 + 20
-	local base_name_x = template_size_1 * 0.5 - 70
-
 	for i = 1, max_rows do
 		local icon_id = "util_icon_" .. i
 		local stack_text_id = "stack_counter_" .. i
@@ -542,25 +543,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local state = state_table[name]
 
 			if state then
-				-- Horizontal slide on appear
-				local alpha_factor = state.alpha / 255
-				local appear_offset = 15 * (alpha_factor - 1)
-
-				local icon_offset_x = base_icon_x + appear_offset
-				local stack_offset_x = base_stack_x + appear_offset
-				local name_offset_x = base_name_x + appear_offset
-
-				icon_style.offset[1] = icon_offset_x
-				icon_style.offset[2] = state.y
-
-				stack_text_style.offset[1] = stack_offset_x
-				stack_text_style.offset[2] = state.y
-
-				if name_text_style then
-					name_text_style.offset[1] = name_offset_x
-					name_text_style.offset[2] = state.y
-				end
-
 				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
 					or "content/ui/materials/icons/generic/danger"
 
@@ -627,52 +609,28 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				c[3] = colour[3] or colour[2] or 255
 				c[4] = colour[4] or colour[3] or 255
 
-				-- Glow effect
-				if stacks >= glow_threshold then
-					c[1] = (c[1] + 40 < 255) and (c[1] + 40) or 255
-					c[2] = (c[2] + 40 < 255) and (c[2] + 40) or 255
-					c[3] = (c[3] + 40 < 255) and (c[3] + 40) or 255
-				end
-
-				-- Background moves with icon
-				local bg_style = style["util_icon_background_" .. i]
-				if bg_style then
-					bg_style.offset[1] = icon_offset_x
-					bg_style.offset[2] = state.y
-				end
-
 				if not marker.is_inside_frustum then
 					marker.draw = false
 				end
 
-				-- change text scale
-				local draw = marker.draw
-
-				if draw then
+				-- apply scaling
+				if marker.draw then
 					local scale = marker.scale
+					icon_style.size[1] = icon_style.default_size[1] * scale
+					icon_style.size[2] = icon_style.default_size[2] * scale
 
-					local stack_counter = style["stack_counter_" .. i]
+					stack_text_style.font_size = stack_text_style.default_font_size * scale
+					name_text_style.font_size = name_text_style.default_font_size * scale
 
-					if stack_counter then
-						stack_counter.font_size = stack_counter.default_font_size * scale
-					end
+					icon_style.offset[1] = icon_style.default_offset[1] * scale
+					icon_style.offset[2] = icon_style.default_offset[2] * scale
 
-					local debuff_name = style["util_name_" .. i]
+					stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
+					stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
 
-					if debuff_name then
-						debuff_name.font_size = debuff_name.default_font_size * scale
-					end
+					name_text_style.offset[1] = name_text_style.default_offset[1] * scale
+					name_text_style.offset[2] = name_text_style.default_offset[2] * scale
 				end
-
-				-- Stack pulse
-				local scale = 1
-				stack_text_style.font_size = stack_text_style.font_size * scale
-				stack_text_style.text_color[1] = state.alpha
-
-				-- Icon pulse
-				--local icon_scale = marker.scale + state.icon_scale
-				--icon_style.size[1] = icon_style.size[1] * icon_scale
-				--icon_style.size[2] = icon_style.size[2] * icon_scale
 			end
 		else
 			content[icon_id] = nil

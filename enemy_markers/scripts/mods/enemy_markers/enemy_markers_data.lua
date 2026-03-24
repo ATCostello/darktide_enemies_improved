@@ -296,6 +296,49 @@ local damage_number_types = {
 
 mod.settings_widgets = {}
 
+local fonts = {
+	{
+		text = "proxima_nova_medium",
+		value = "proxima_nova_medium",
+	},
+	{
+		text = "proxima_nova_bold",
+		value = "proxima_nova_bold",
+	},
+	{
+		text = "proxima_nova_bold_masked",
+		value = "proxima_nova_bold_masked",
+	},
+	{
+		text = "itc_novarese_medium",
+		value = "itc_novarese_medium",
+	},
+	{
+		text = "itc_novarese_bold",
+		value = "itc_novarese_bold",
+	},
+	{
+		text = "machine_medium",
+		value = "machine_medium",
+	},
+
+	{
+		text = "arial",
+		value = "arial",
+	},
+	{
+		text = "mono_tide_medium",
+		value = "mono_tide_medium",
+	},
+	{
+		text = "mono_tide_regular",
+		value = "mono_tide_regular",
+	},
+	{
+		text = "mono_tide_bold",
+		value = "mono_tide_bold",
+	},
+}
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
 	setting_id = "general_settings",
@@ -314,6 +357,23 @@ table.insert(mod.settings_widgets, {
 			setting_id = "outlines_enable",
 			type = "checkbox",
 			default_value = true,
+		},
+		{
+			setting_id = "font_type",
+			type = "dropdown",
+			options = fonts,
+			default_value = "mono_tide_bold",
+		},
+		{
+			setting_id = "text_scale",
+			type = "numeric",
+			default_value = 1,
+			decimals_number = 2,
+			step_size_value = 0.1,
+			range = {
+				2,
+				0.8,
+			},
 		},
 	},
 })
@@ -493,12 +553,12 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_names_fade",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 		},
 		{
 			setting_id = "debuff_show_on_body",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 		},
 		{
 			setting_id = "debuff_horde_enable",
@@ -510,7 +570,7 @@ table.insert(mod.settings_widgets, {
 
 -- PER-ENEMY TYPE SELECTOR LOGIC
 mod.breed_types = {
-	{ text = "SELECT AN ENEMY TYPE", value = "SELECTANENEMYTYPE" },
+	{ text = "SELECT AN ENEMY TYPE", value = "select" },
 	{ text = "horde", value = "horde" },
 	{ text = "monster", value = "monster" },
 	{ text = "captain", value = "captain" },
@@ -528,9 +588,14 @@ mod.group_settings_widgets = {
 		setting_id = "enemy_group",
 		type = "dropdown",
 		options = mod.breed_types,
-		default_value = "SELECTANENEMYTYPE",
+		default_value = "select",
+		tooltip = "enemy_group_tooltip",
 	},
-	{ setting_id = "outline_type_enable", type = "checkbox", default_value = true },
+	{
+		setting_id = "outline_type_enable",
+		type = "checkbox",
+		default_value = true,
+	},
 	{
 		setting_id = "outline_type_colour",
 		type = "group",
@@ -564,8 +629,11 @@ mod.group_settings_widgets = {
 			},
 		},
 	},
-
-	{ setting_id = "healthbar_type_enable", type = "checkbox", default_value = true },
+	{
+		setting_id = "healthbar_type_enable",
+		type = "checkbox",
+		default_value = true,
+	},
 	{
 		setting_id = "healthbar_type_colour",
 		type = "group",

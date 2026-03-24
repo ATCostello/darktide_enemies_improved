@@ -32,7 +32,7 @@ template.size = size
 template.min_size = min_size
 template.name = "enemy_healthbar"
 template.unit_node = "root_point"
-template.position_offset = { 0, 0, 0.5 }
+template.position_offset = { 0, 0, 0 }
 
 template.check_line_of_sight = true
 template.max_distance = draw_distance_setting
@@ -528,7 +528,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 	local default_font_size = damage_number_settings.default_font_size * scale
 	local dps_font_size = damage_number_settings.dps_font_size * scale
 	local hundreds_font_size = damage_number_settings.hundreds_font_size * scale
-	local font_type = ui_style.font_type
+	local font_type = mod.font_type
 
 	_init_damage_colors()
 
@@ -917,7 +917,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_vertical_alignment = "top",
 				offset = { -bar_width * 0.5, -bar_height - 8, 6 },
 				default_offset = { -bar_width * 0.5, -bar_height - 8, 6 },
-				font_type = "proxima_nova_bold",
+				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
@@ -938,9 +938,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 8, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 8, 6 },
-				font_type = "proxima_nova_bold",
+				offset = { -bar_width * 0.5, bar_height + 12, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 12, 6 },
+				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
@@ -962,13 +962,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 24, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 24, 6 },
-				font_type = "proxima_nova_bold",
+				offset = { -bar_width * 0.5, bar_height + 28, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 28, 6 },
+				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
-				text_color = { 220, 220, 220, 220 },
-				default_text_color = { 220, 220, 220, 220 },
+				text_color = { 220, 180, 180, 180 },
+				default_text_color = { 220, 180, 180, 180 },
 				size = { bar_width * 2, 20 },
 				default_size = { bar_width * 2, 20 },
 
@@ -987,7 +987,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_vertical_alignment = "bottom",
 				offset = { -bar_width * 0.5, bar_height + 100, 6 },
 				default_offset = { -bar_width * 0.5, bar_height + 100, 6 },
-				font_type = "proxima_nova_bold",
+				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
@@ -1449,7 +1449,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if in_horde_cluster == false and content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height
+		root_position.z = root_position.z + content.breed.base_height + 0.5
 
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)

@@ -16,6 +16,8 @@ local MechanismManager = require("scripts/managers/mechanism/mechanism_manager")
 mod.frame_settings = {}
 mod._broadphase_results = {}
 
+mod.font_type = mod:get("font_type")
+
 mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_healthbars = {}
@@ -1553,7 +1555,7 @@ mod.apply_enemy_outlines = function(settings)
 	for _, entry in ipairs(mod.breed_types) do
 		local breed = entry.value
 
-		if breed ~= "SELECTANENEMYTYPE" then
+		if breed ~= "select" then
 			local key = "outline_" .. breed .. "_enable"
 			local enabled = mod:get(key)
 
@@ -1706,7 +1708,7 @@ mod.on_setting_changed = function(setting_id)
 		-- STORE VALUES WHEN CHANGED
 		if setting_id == setting_name then
 			if enemy_type_value ~= type_value then
-				mod:error("set " .. tostring(enemy_type) .. " to " .. tostring(type_value))
+				--mod:error("set " .. tostring(enemy_type) .. " to " .. tostring(type_value))
 				mod:set(enemy_type, type_value)
 			end
 		end
@@ -1714,7 +1716,7 @@ mod.on_setting_changed = function(setting_id)
 		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
 		if setting_id == "enemy_group" then
 			if type_value ~= enemy_type_value then
-				mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
+				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
 				mod:set(setting_name, enemy_type_value)
 			end
 		end
@@ -1729,4 +1731,6 @@ mod.on_setting_changed = function(setting_id)
 
 	-- clear all caches to reload data with new values
 	mod.clear_caches()
+
+	mod.font_type = mod:get("font_type")
 end

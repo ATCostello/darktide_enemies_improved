@@ -241,7 +241,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				text_vertical_alignment = "bottom",
 				offset = { 0, -2, 6 },
 				default_offset = { 0, -2, 6 },
-				font_type = "proxima_nova_bold",
+				font_type = mod.font_type,
 				font_size = 14,
 				default_font_size = 14,
 				text_color = { 220, 220, 220, 220 },
@@ -328,7 +328,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- marker height
 	if content.breed and Unit_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height
+		root_position.z = root_position.z + content.breed.base_height + 0.5
 
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)
