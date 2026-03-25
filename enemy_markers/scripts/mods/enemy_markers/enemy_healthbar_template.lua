@@ -86,18 +86,7 @@ local damage_number_types = table.enum("readable", "floating", "flashy")
 template.show_dps = true
 template.skip_damage_from_others = false
 
-do
-	local hb_damage_number_type = mod.frame_settings.hb_damage_number_type
-	if hb_damage_number_type == "readable" then
-		template.damage_number_type = damage_number_types.readable
-	elseif hb_damage_number_type == "floating" then
-		template.damage_number_type = damage_number_types.floating
-	elseif hb_damage_number_type == "flashy" then
-		template.damage_number_type = damage_number_types.flashy
-	else
-		template.damage_number_type = damage_number_types.readable
-	end
-end
+local hb_damage_number_type = mod.frame_settings.hb_damage_number_type
 
 template.damage_number_settings = {
 	add_numbers_together_timer = 3,
@@ -546,7 +535,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 			local dps_y_offset = damage_number_settings.dps_y_offset
 			local damage_has_started_position
 
-			if template.damage_number_type == damage_number_types.readable then
+			if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
 				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
 			else
 				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
@@ -577,7 +566,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
 				local armor_type_text = Localize(armor_type_loc_string)
 
-				if template.damage_number_type == damage_number_types.readable then
+				if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
 					local armor_type_position = Vector3(x_position, y_position, z_position)
 
 					--[[UIRenderer.draw_text(
@@ -613,7 +602,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 	end
 
 	if mod.frame_settings.show_damage_numbers and num_damage_numbers > 0 then
-		if template.damage_number_type == damage_number_types.readable then
+		if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
 			_readable_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -630,7 +619,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				hundreds_font_size,
 				font_type
 			)
-		elseif template.damage_number_type == damage_number_types.floating then
+		elseif mod.frame_settings.hb_damage_number_type == damage_number_types.floating then
 			_floating_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -647,7 +636,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				hundreds_font_size,
 				font_type
 			)
-		elseif template.damage_number_type == damage_number_types.flashy then
+		elseif mod.frame_settings.hb_damage_number_type == damage_number_types.flashy then
 			_flashy_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -697,7 +686,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "texture",
 			style_id = "frame",
-			value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
+			value = mod.frame_settings.frame_type,
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
@@ -1242,7 +1231,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local was_critical = health_extension and health_extension:was_hit_by_critical_hit_this_render_frame()
 
 			if latest_damage_number then
-				local add_numbers_together_timer = template.damage_number_type == damage_number_types.flashy
+				local add_numbers_together_timer = mod.frame_settings.hb_damage_number_type
+							== damage_number_types.flashy
 						and damage_number_settings.add_numbers_together_timer_flashy
 					or damage_number_settings.add_numbers_together_timer
 
@@ -1323,18 +1313,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content._last_health_max = health_max
 		content._last_damage_value = latest_damage_number and latest_damage_number.value
 
-		if
-			mod.frame_settings.hb_text_show_damage
-			and latest_damage_number
-			and (t - (content.last_damage_taken_time or 0)) <= 3
-		then
-			content.health_counter = string_format(
-				"%d / %d ({#color(255, 255, 50)}-%d)",
-				health_current,
-				health_max,
-				latest_damage_number.value
-			)
-		else
+		if mod.frame_settings.hb_text_show_damage then
+			if latest_damage_number and (t - (content.last_damage_taken_time or 0)) <= 3 then
+				content.health_counter = string_format(
+					"%d / %d ({#color(255, 255, 50)}-%d)",
+					health_current,
+					health_max,
+					latest_damage_number.value
+				)
+			end
+		elseif mod.frame_settings.hb_text_show_health then
 			content.health_counter = string_format("%d / %d", health_current, health_max)
 		end
 	end

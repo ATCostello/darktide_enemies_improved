@@ -254,28 +254,28 @@ local hb_frames = {
 		value = "content/ui/materials/bars/heavy/frame_top",
 	},
 	{
-		text = "content/ui/materials/bars/heavy/frame_effect_smoke",
-		value = "content/ui/materials/bars/heavy/frame_effect_smoke",
-	},
-	{
-		text = "content/ui/materials/bars/heavy/frame_effect_electric",
-		value = "content/ui/materials/bars/heavy/frame_effect_electric",
-	},
-	{
 		text = "content/ui/materials/frames/masteries/panel_main_top_frame",
 		value = "content/ui/materials/frames/masteries/panel_main_top_frame",
 	},
 	{
-		text = "content/ui/materials/effects/masteries/panel_main_lower_frame_candles",
-		value = "content/ui/materials/effects/masteries/panel_main_lower_frame_candles",
-	},
-	{
-		text = "content/ui/materials/dividers/skull_center_02",
-		value = "content/ui/materials/dividers/skull_center_02",
-	},
-	{
 		text = "content/ui/materials/bars/simple/frame",
 		value = "content/ui/materials/bars/simple/frame",
+	},
+	{
+		text = "content/ui/materials/bars/contracts_progress_overall_fill",
+		value = "content/ui/materials/bars/contracts_progress_overall_fill",
+	},
+	{
+		text = "content/ui/materials/frames/talents/talent_icon_container",
+		value = "content/ui/materials/frames/talents/talent_icon_container",
+	},
+	{
+		text = "content/ui/materials/frames/difficulty_stepper_frame",
+		value = "content/ui/materials/frames/difficulty_stepper_frame",
+	},
+	{
+		text = "content/ui/materials/bars/heavy/frame_effect_electric",
+		value = "content/ui/materials/bars/heavy/frame_effect_electric",
 	},
 }
 
@@ -353,28 +353,32 @@ table.insert(mod.settings_widgets, {
 				30,
 				200,
 			},
+			tooltip = "draw_distance_tooltip",
 		},
 		{
 			setting_id = "outlines_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "outlines_enable_tooltip",
 		},
 		{
 			setting_id = "font_type",
 			type = "dropdown",
 			options = fonts,
 			default_value = "mono_tide_bold",
+			tooltip = "font_type_tooltip",
 		},
 		{
 			setting_id = "text_scale",
 			type = "numeric",
-			default_value = 1,
+			default_value = 1.15,
 			decimals_number = 2,
 			step_size_value = 0.1,
 			range = {
 				0.5,
 				1.5,
 			},
+			tooltip = "text_scale_tooltip",
 		},
 	},
 })
@@ -388,49 +392,49 @@ table.insert(mod.settings_widgets, {
 			setting_id = "marker_specials_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "marker_specials_enable_tooltip",
 		},
 		{
 			setting_id = "outline_specials_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "outline_specials_enable_tooltip",
 		},
 		{
 			setting_id = "outline_specials_flash",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "outline_specials_flash_tooltip",
 		},
 		{
-			setting_id = "outline_specials_colour",
-			type = "group",
-			sub_widgets = {
-				{
-					setting_id = "outline_specials_colour_R",
-					type = "numeric",
-					default_value = 255,
-					range = {
-						0,
-						255,
-					},
-				},
-				{
-					setting_id = "outline_specials_colour_G",
-					type = "numeric",
-					default_value = 0,
-					range = {
-						0,
-						255,
-					},
-				},
-				{
-					setting_id = "outline_specials_colour_B",
-					type = "numeric",
-					default_value = 0,
-					range = {
-						0,
-						255,
-					},
-				},
+			setting_id = "outline_specials_colour_R",
+			type = "numeric",
+			default_value = 255,
+			range = {
+				0,
+				255,
 			},
+			tooltip = "outline_specials_colour_tooltip",
+		},
+		{
+			setting_id = "outline_specials_colour_G",
+			type = "numeric",
+			default_value = 0,
+			range = {
+				0,
+				255,
+			},
+			tooltip = "outline_specials_colour_tooltip",
+		},
+		{
+			setting_id = "outline_specials_colour_B",
+			type = "numeric",
+			default_value = 0,
+			range = {
+				0,
+				255,
+			},
+			tooltip = "outline_specials_colour_tooltip",
 		},
 	},
 })
@@ -444,11 +448,13 @@ table.insert(mod.settings_widgets, {
 			setting_id = "markers_enable",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "markers_enable_tooltip",
 		},
 		{
 			setting_id = "markers_horde_enable",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "markers_horde_enable_tooltip",
 		},
 	},
 })
@@ -462,58 +468,75 @@ table.insert(mod.settings_widgets, {
 			setting_id = "healthbar_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "healthbar_enable_tooltip",
 		},
 		{
 			setting_id = "healthbar_type_icon_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
 		{
 			setting_id = "hb_show_enemy_type",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "hb_show_enemy_type_tooltip",
 		},
 		{
 			setting_id = "hb_horde_enable",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "hb_horde_enable_tooltip",
 		},
 		{
 			setting_id = "hb_horde_clusters_enable",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "hb_horde_clusters_enable_tooltip",
 		},
 		{
 			setting_id = "hb_hide_after_no_damage",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "hb_hide_after_no_damage_tooltip",
+		},
+		{
+			setting_id = "hb_text_show_health",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_text_show_health_tooltip",
+		},
+		{
+			setting_id = "hb_text_show_damage",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_show_damage_tooltip",
 		},
 		{
 			setting_id = "hb_show_damage_numbers",
 			type = "checkbox",
 			default_value = true,
-		},
-		{
-			setting_id = "hb_text_show_damage",
-			type = "checkbox",
-			default_value = true,
+			tooltip = "hb_show_damage_numbers_tooltip",
 		},
 		{
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "flashy",
+			default_value = "floating",
+			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{
 			setting_id = "hb_show_armour_types",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "hb_show_armour_types_tooltip",
 		},
 		{
 			setting_id = "hb_frame",
 			type = "dropdown",
 			options = hb_frames,
 			default_value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
+			tooltip = "hb_frame_tooltip",
 		},
 		{
 			setting_id = "hb_size_width",
@@ -523,6 +546,7 @@ table.insert(mod.settings_widgets, {
 				100,
 				400,
 			},
+			tooltip = "hb_size_width_tooltip",
 		},
 		{
 			setting_id = "hb_size_height",
@@ -532,6 +556,7 @@ table.insert(mod.settings_widgets, {
 				4,
 				25,
 			},
+			tooltip = "hb_size_height_tooltip",
 		},
 	},
 })
@@ -545,26 +570,31 @@ table.insert(mod.settings_widgets, {
 			setting_id = "debuff_enable",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "debuff_enable_tooltip",
 		},
 		{
 			setting_id = "debuff_names",
 			type = "checkbox",
 			default_value = true,
+			tooltip = "debuff_names_tooltip",
 		},
 		{
 			setting_id = "debuff_names_fade",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "debuff_names_fade_tooltip",
 		},
 		{
 			setting_id = "debuff_show_on_body",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "debuff_show_on_body_tooltip",
 		},
 		{
 			setting_id = "debuff_horde_enable",
 			type = "checkbox",
 			default_value = false,
+			tooltip = "debuff_horde_enable_tooltip",
 		},
 	},
 })
@@ -596,77 +626,76 @@ mod.group_settings_widgets = {
 		setting_id = "outline_type_enable",
 		type = "checkbox",
 		default_value = true,
+		tooltip = "outline_type_enable_tooltip",
+	},
+
+	{
+		setting_id = "outline_type_colour_R",
+		type = "numeric",
+		default_value = 50,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "outline_type_colour_tooltip",
 	},
 	{
-		setting_id = "outline_type_colour",
-		type = "group",
-		sub_widgets = {
-			{
-				setting_id = "outline_type_colour_R",
-				type = "numeric",
-				default_value = 50,
-				range = {
-					0,
-					255,
-				},
-			},
-			{
-				setting_id = "outline_type_colour_G",
-				type = "numeric",
-				default_value = 10,
-				range = {
-					0,
-					255,
-				},
-			},
-			{
-				setting_id = "outline_type_colour_B",
-				type = "numeric",
-				default_value = 0,
-				range = {
-					0,
-					255,
-				},
-			},
+		setting_id = "outline_type_colour_G",
+		type = "numeric",
+		default_value = 10,
+		range = {
+			0,
+			255,
 		},
+		tooltip = "outline_type_colour_tooltip",
 	},
+	{
+		setting_id = "outline_type_colour_B",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "outline_type_colour_tooltip",
+	},
+
 	{
 		setting_id = "healthbar_type_enable",
 		type = "checkbox",
 		default_value = true,
+		tooltip = "healthbar_type_enable_tooltip",
+	},
+
+	{
+		setting_id = "healthbar_type_colour_R",
+		type = "numeric",
+		default_value = 150,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "healthbar_type_colour_tooltip",
 	},
 	{
-		setting_id = "healthbar_type_colour",
-		type = "group",
-		sub_widgets = {
-			{
-				setting_id = "healthbar_type_colour_R",
-				type = "numeric",
-				default_value = 150,
-				range = {
-					0,
-					255,
-				},
-			},
-			{
-				setting_id = "healthbar_type_colour_G",
-				type = "numeric",
-				default_value = 75,
-				range = {
-					0,
-					255,
-				},
-			},
-			{
-				setting_id = "healthbar_type_colour_B",
-				type = "numeric",
-				default_value = 0,
-				range = {
-					0,
-					255,
-				},
-			},
+		setting_id = "healthbar_type_colour_G",
+		type = "numeric",
+		default_value = 75,
+		range = {
+			0,
+			255,
 		},
+		tooltip = "healthbar_type_colour_tooltip",
+	},
+	{
+		setting_id = "healthbar_type_colour_B",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "healthbar_type_colour_tooltip",
 	},
 }
 

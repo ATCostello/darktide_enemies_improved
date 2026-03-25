@@ -1,4 +1,5 @@
 local mod = get_mod("enemy_markers")
+
 mod.text_scale = mod:get("text_scale") or 1
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
@@ -29,6 +30,7 @@ mod.build_frame_settings = function(dt)
 	fs.horde_enable = mod:get("hb_horde_enable")
 	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
 	fs.hb_show_enemy_type = mod:get("hb_show_enemy_type")
+	fs.hb_text_show_health = mod:get("hb_text_show_health")
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
 	fs.hb_size_width = mod:get("hb_size_width")
@@ -1245,6 +1247,9 @@ end
 -----------------------------------------------------------------------
 
 mod.clear_caches = function()
+	table_clear(mod._broadphase_results)
+	table_clear(mod.source_unit_cache)
+
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
