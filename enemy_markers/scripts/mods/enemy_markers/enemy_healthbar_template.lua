@@ -799,7 +799,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				return content.icon_enabled
 			end,
 		},
-		{
+		{ -- icon glow
 			pass_type = "texture",
 			style_id = "icon_background1",
 			value = "content/ui/materials/base/ui_default_base",
@@ -812,8 +812,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				size = { 50, 50 },
 				default_size = { 50, 50 },
 
-				color = { 100, 255, 180, 80 },
-				default_alpha = 100,
+				color = { 255, 255, 180, 80 },
+				default_alpha = 255,
 				blend_mode = "add",
 				scale_to_material = true,
 
@@ -822,26 +822,44 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.icon_elite or content.icon_special
+				return content.icon_enabled
 			end,
 		},
 		-- ELITE ICON
 		{
 			pass_type = "texture",
 			style_id = "icon_elite",
-			value = "content/ui/materials/icons/circumstances/maelstrom_01",
+			value = "content/ui/materials/hud/interactions/icons/enemy_priority",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_elite
+				return content.icon_enabled and content.icon_elite
 			end,
 		}, -- BOSS ICON
 		{
 			pass_type = "texture",
 			style_id = "icon_boss",
+			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_damnation",
+			style = icon_style,
+			visibility_function = function(content)
+				return content.icon_enabled and content.icon_boss
+			end,
+		},
+		{ -- DAEMONHOST ICON
+			pass_type = "texture",
+			style_id = "icon_witch",
+			value = "content/ui/materials/hud/icons/speaker",
+			style = icon_style,
+			visibility_function = function(content)
+				return content.icon_enabled and content.icon_witch
+			end,
+		},
+		{ -- CAPTAIN ICON
+			pass_type = "texture",
+			style_id = "icon_captain",
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_boss
+				return content.icon_enabled and content.icon_captain
 			end,
 		},
 		{ -- Ranged elites
@@ -850,7 +868,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/circumstances/assault_01",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_elite_ranged
+				return content.icon_enabled and content.icon_elite_ranged
 			end,
 		},
 		{ -- specialists
@@ -859,7 +877,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_special
+				return content.icon_enabled and content.icon_special
 			end,
 		},
 		{ -- disablers
@@ -868,7 +886,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/generic/exclamation_mark",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_disabler
+				return content.icon_enabled and content.icon_disabler
 			end,
 		},
 		{ -- snipers
@@ -877,7 +895,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/weapons/actions/ads",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_sniper
+				return content.icon_enabled and content.icon_sniper
 			end,
 		}, -- header text
 		{
@@ -1003,7 +1021,7 @@ template.on_enter = function(widget, marker, template)
 	local bar_settings = template.bar_settings
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
 
-	content._breed_type = mod.find_breed_category(breed)
+	content._breed_type = mod.find_breed_category(unit)
 end
 
 -----------------------------------------------------------------------
@@ -1374,36 +1392,87 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.icon_elite = false
 	content.icon_elite_ranged = false
 	content.icon_boss = false
-
+	content.icon_witch = false
+	content.icon_captain = false
 	content.icon_enabled = false
 
-	if mod.frame_settings.healthbar_type_icon_enable then
-		content.icon_enabled = true
-		if breed_type == "far" then
-			content.icon_elite_ranged = true
-		end
-		if breed_type == "elite" then
-			content.icon_elite = true
-		end
-		if breed_type == "special" then
-			content.icon_special = true
-		end
-		if breed_type == "disabler" then
-			content.icon_disabler = true
-		end
-		if breed_type == "sniper" then
-			content.icon_sniper = true
-		end
-		if breed_type == "monster" or breed_type == "captain" or breed_type == "witch" then
-			content.icon_boss = true
+	-- get values from data store
+	local icon_color = mod.ICON_COLOURS[breed_type]
+	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
+	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale
+	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
+	local icon_glow_colour = mod.ICON_COLOURS["glow"]
+	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
+
+	dbg_breed_settings = mod.ICON_SETTINGS
+
+	-- apply values to relevant icon
+	local function apply_icon_settings(content_icon, style_icon)
+		content_icon = icon_enabled
+		content.icon_enabled = content_icon
+
+		-- set colours and glow
+		if icon_glow_intensity == 0 then
+			style.icon_background1.default_alpha = 0
+			style.icon_background1.color[1] = 0
+		else
+			style.icon_background1.default_alpha = icon_glow_intensity * 2.5
+			style.icon_background1.color[1] = icon_glow_intensity * 2.5
 		end
 
+		style.icon_background1.color[2] = icon_glow_colour[2]
+		style.icon_background1.color[3] = icon_glow_colour[3]
+		style.icon_background1.color[4] = icon_glow_colour[4]
+
+		style_icon.color[2] = icon_color[2]
+		style_icon.color[3] = icon_color[3]
+		style_icon.color[4] = icon_color[4]
+
+		-- apply full scale:
+
+		style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale
+		style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale
+		style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale
+		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale
+		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
+		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+
+		return content_icon, style_icon
+	end
+
+	-- do stuff per breed type
+	if mod.frame_settings.healthbar_type_icon_enable then
+		if breed_type == "far" then
+			content.icon_elite_ranged, style.icon_elite_ranged =
+				apply_icon_settings(content.icon_elite_ranged, style.icon_elite_ranged)
+		end
+		if breed_type == "elite" then
+			content.icon_elite, style.icon_elite = apply_icon_settings(content.icon_elite, style.icon_elite)
+		end
+		if breed_type == "special" then
+			content.icon_special, style.icon_special = apply_icon_settings(content.icon_special, style.icon_special)
+		end
+		if breed_type == "disabler" then
+			content.icon_disabler, style.icon_disabler = apply_icon_settings(content.icon_disabler, style.icon_disabler)
+		end
+		if breed_type == "sniper" then
+			content.icon_sniper, style.icon_sniper = apply_icon_settings(content.icon_sniper, style.icon_sniper)
+		end
+		if breed_type == "captain" then
+			content.icon_captain, style.icon_captain = apply_icon_settings(content.icon_captain, style.icon_captain)
+		end
+		if breed_type == "witch" then
+			content.icon_witch, style.icon_witch = apply_icon_settings(content.icon_witch, style.icon_witch)
+		end
+		if breed_type == "monster" then
+			content.icon_boss, style.icon_boss = apply_icon_settings(content.icon_boss, style.icon_boss)
+		end
 		if breed_type == "horde" then
 			content.icon_enabled = false
 		end
 	end
 
-	local bar_color = mod.BREED_COLORS[breed_type] or mod.BREED_COLORS.horde
+	local bar_color = mod.BREED_COLOURS[breed_type] or mod.BREED_COLOURS.horde
 
 	style.current_health.color[2] = bar_color[2]
 	style.current_health.color[3] = bar_color[3]

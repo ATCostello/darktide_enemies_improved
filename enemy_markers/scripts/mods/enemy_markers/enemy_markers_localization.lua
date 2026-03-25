@@ -246,17 +246,17 @@ table.insert(localisations_to_add, {
 	outline_specials_enable_tooltip = {
 		en = "Applies an outline effect when a special attack is detected, to help distinguish a 'special attack' enemy from a crowd.",
 	},
-	outline_specials_flash = {
-		en = "Enable flash for outline (Global)",
+	specials_flash = {
+		en = "Enable flashing for special attacks (Global)",
 	},
-	outline_specials_flash_tooltip = {
-		en = "Applies a flashing effect to the special attack outlines. \n\nDisable for a solid colour outline.",
+	specials_flash_tooltip = {
+		en = "Applies a flashing effect to the special attack indicators. \n\nDisable for a solid colour instead.",
 	},
 	outline_specials_colour = {
-		en = "Colour for special attack outline (Global)",
+		en = "Colour for special attacks (Global)",
 	},
 	outline_specials_colour_tooltip = {
-		en = "Adjust the colour of the special attack outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of special attacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
 	},
 	outline_specials_colour_R = {
 		en = "Special Attack Colour: Red",
@@ -426,6 +426,15 @@ table.insert(localisations_to_add, {
 	},
 	enemy_group_tooltip = {
 		en = "Select an enemy type/class here to adjust their specific settings below.\n\nEnemy types can be seen on the healthbar with the 'Display enemy type' toggle enabled.",
+	},
+	reset_type_to_default_message = {
+		en = "Reset settings for type '_type_' to default.",
+	},
+	reset_type_to_default = {
+		en = "{#color(" .. colours.subtitle .. ")}Warning:{#reset()}Reset to defaults",
+	},
+	reset_type_to_default_tooltip = {
+		en = "Reset all enemy type specific settings to their default values.\n\nNote: This only affects the enemy type selected above.",
 	},
 
 	-- outlines

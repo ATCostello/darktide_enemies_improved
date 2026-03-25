@@ -227,7 +227,7 @@ mod.debuff_colours = {
 	broker_punk_rage_improved_shout_debuff = { 255, 255, 120, 40 },
 }
 
-mod.BREED_COLORS = {
+mod.BREED_COLOURS = {
 	horde = { 255, 150, 60, 60 },
 	elite = { 255, 0, 120, 255 },
 	captain = { 255, 255, 140, 0 },
@@ -239,6 +239,112 @@ mod.BREED_COLORS = {
 	special = { 255, 255, 0, 255 },
 	enemy = { 255, 200, 200, 200 },
 }
+
+mod.ICON_COLOURS = {
+	horde = { 255, 150, 60, 60 },
+	elite = { 255, 0, 120, 255 },
+	captain = { 255, 255, 140, 0 },
+	disabler = { 255, 255, 255, 0 },
+	witch = { 255, 255, 0, 180 },
+	monster = { 255, 180, 0, 255 },
+	sniper = { 255, 255, 0, 0 },
+	far = { 255, 0, 255, 120 },
+	special = { 255, 255, 0, 255 },
+	enemy = { 255, 200, 200, 200 },
+	glow = { 255, 200, 170, 80 },
+	glow_default = { 255, 200, 170, 80 },
+}
+
+mod.ICON_SETTINGS = {
+	horde = {
+		enabled = false,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	elite = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 50,
+		default_glow_intensity = 50,
+	},
+	captain = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 100,
+		default_glow_intensity = 100,
+	},
+	disabler = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1.2,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	witch = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1.2,
+		glow_intensity = 100,
+		default_glow_intensity = 100,
+	},
+	monster = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 100,
+		default_glow_intensity = 100,
+	},
+	sniper = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	far = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 0.8,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	special = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	enemy = {
+		enabled = false,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+}
+
+mod.OUTLINE_COLOURS = {
+	horde = { 255, 50, 10, 0 },
+	elite = { 255, 50, 10, 0 },
+	captain = { 255, 50, 10, 0 },
+	disabler = { 255, 150, 50, 0 },
+	witch = { 255, 50, 10, 0 },
+	monster = { 255, 50, 10, 0 },
+	sniper = { 255, 50, 10, 0 },
+	far = { 255, 50, 10, 0 },
+	special = { 255, 50, 10, 0 },
+	enemy = { 255, 50, 10, 0 },
+}
+
+mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
+mod.ICON_SETTINGS_DEFAULT = table.clone(mod.ICON_SETTINGS)
+mod.OUTLINE_COLOURS_DEFAULT = table.clone(mod.OUTLINE_COLOURS)
 
 local hb_frames = {
 	{
@@ -395,16 +501,22 @@ table.insert(mod.settings_widgets, {
 			tooltip = "marker_specials_enable_tooltip",
 		},
 		{
+			setting_id = "healthbar_specials_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "healthbar_specials_enable_tooltip",
+		},
+		{
 			setting_id = "outline_specials_enable",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "outline_specials_enable_tooltip",
 		},
 		{
-			setting_id = "outline_specials_flash",
+			setting_id = "specials_flash",
 			type = "checkbox",
 			default_value = true,
-			tooltip = "outline_specials_flash_tooltip",
+			tooltip = "specials_flash_tooltip",
 		},
 		{
 			setting_id = "outline_specials_colour_R",
@@ -622,6 +734,15 @@ mod.group_settings_widgets = {
 		default_value = "select",
 		tooltip = "enemy_group_tooltip",
 	},
+
+	{
+		setting_id = "reset_type_to_default",
+		type = "checkbox",
+		default_value = false,
+		tooltip = "reset_type_to_default_tooltip",
+	},
+
+	-- outline
 	{
 		setting_id = "outline_type_enable",
 		type = "checkbox",
@@ -660,13 +781,13 @@ mod.group_settings_widgets = {
 		tooltip = "outline_type_colour_tooltip",
 	},
 
+	-- healthbar
 	{
 		setting_id = "healthbar_type_enable",
 		type = "checkbox",
 		default_value = true,
 		tooltip = "healthbar_type_enable_tooltip",
 	},
-
 	{
 		setting_id = "healthbar_type_colour_R",
 		type = "numeric",
@@ -696,6 +817,66 @@ mod.group_settings_widgets = {
 			255,
 		},
 		tooltip = "healthbar_type_colour_tooltip",
+	},
+
+	-- healthbar icon
+	{
+		setting_id = "healthbar_icon_type_enable",
+		type = "checkbox",
+		default_value = true,
+		tooltip = "healthbar_icon_type_enable_tooltip",
+	},
+	{
+		setting_id = "healthbar_icon_type_scale",
+		type = "numeric",
+		default_value = 1,
+		range = {
+			0.6,
+			2,
+		},
+		decimals_number = 2,
+		step_size_value = 0.1,
+		tooltip = "healthbar_icon_type_scale_tooltip",
+	},
+	{
+		setting_id = "healthbar_icon_type_glow_intensity",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			0,
+			100,
+		},
+		tooltip = "healthbar_icon_type_glow_intensity_tooltip",
+	},
+	{
+		setting_id = "healthbar_icon_type_colour_R",
+		type = "numeric",
+		default_value = 200,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "healthbar_icon_type_colour_tooltip",
+	},
+	{
+		setting_id = "healthbar_icon_type_colour_G",
+		type = "numeric",
+		default_value = 150,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "healthbar_icon_type_colour_tooltip",
+	},
+	{
+		setting_id = "healthbar_icon_type_colour_B",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			0,
+			255,
+		},
+		tooltip = "healthbar_icon_type_colour_tooltip",
 	},
 }
 

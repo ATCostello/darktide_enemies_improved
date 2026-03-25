@@ -39,8 +39,9 @@ mod.build_frame_settings = function(dt)
 
 	-- SPECIAL ATTACKS
 	fs.marker_specials_enable = mod:get("marker_specials_enable")
+	fs.healthbar_specials_enable = mod:get("healthbar_specials_enable")
 	fs.outline_specials_enable = mod:get("outline_specials_enable")
-	fs.outline_specials_flash = mod:get("outline_specials_flash")
+	fs.specials_flash = mod:get("specials_flash")
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")
@@ -177,7 +178,7 @@ mod.on_game_state_changed = function(state, state_name)
 			nil,
 			true
 		)
-
+		Managers.package:load("packages/ui/views/expedition_view/expedition_view", "enemy_markers", nil, true)
 		-- empty caches
 		mod.clear_caches()
 	end
@@ -186,8 +187,10 @@ end
 mod.on_all_mods_loaded = function()
 	mod.clear_caches()
 
-	mod.init_healthbar_colour_defaults()
-	mod.update_breed_colors()
+	mod.init_healthbar_defaults()
+	mod.update_breed_colours()
+	mod.update_breed_icons()
+
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
 end
@@ -253,11 +256,7 @@ mod.enable_enemy_outlines = function(unit, entry)
 	local outline_system = Managers.state.extension:system("outline_system")
 
 	-- get breed category
-	local breed_name
-	if entry and entry.unit_data_ext then
-		local breed = entry.unit_data_ext:breed()
-		breed_name = mod.find_breed_category(breed)
-	end
+	local breed_name = entry.breed_type
 
 	if not breed_name then
 		breed_name = "enemy"
@@ -301,12 +300,7 @@ mod.pulse_enemy_outline = function(entry)
 	local unit = entry.unit
 	local fs = mod.frame_settings
 
-	local update_interval = 0.05
-	entry.t = (entry.t or 0) + fs.dt
-
-	if entry.special_attack_imminent and entry.t > update_interval then
-		entry.t = 0
-
+	if entry.special_attack_imminent then
 		if not entry.alert_outline then
 			local has_outline_system = Managers.state.extension:has_system("outline_system")
 
@@ -316,7 +310,7 @@ mod.pulse_enemy_outline = function(entry)
 				outline_system:add_outline(unit, "enemies_improved_alert")
 				entry.alert_outline = true
 			end
-		elseif entry.alert_outline and fs.outline_specials_flash then
+		elseif entry.alert_outline and fs.specials_flash then
 			local has_outline_system = Managers.state.extension:has_system("outline_system")
 
 			if has_outline_system then
@@ -335,6 +329,61 @@ mod.pulse_enemy_outline = function(entry)
 			outline_system:remove_outline(unit, "enemies_improved_alert")
 			entry.alert_outline = false
 		end
+	end
+end
+
+mod.pulse_enemy_healthbar = function(entry)
+	local unit = entry.unit
+	local fs = mod.frame_settings
+
+	if entry.special_attack_imminent then
+		-- get breed category
+		local breed_type = entry.breed_type
+
+		if not breed_type then
+			breed_type = "enemy"
+		end
+
+		-- get settings
+		local breed_settings = mod.ICON_SETTINGS[breed_type]
+		local glow_colour = mod.ICON_COLOURS["glow"]
+		local glow_colour_default = mod.ICON_COLOURS["glow_default"]
+
+		-- get special colour
+		local sr = (mod:get("outline_specials_colour_R"))
+		local sg = (mod:get("outline_specials_colour_G"))
+		local sb = (mod:get("outline_specials_colour_B"))
+
+		if not sr then
+			sr = 255
+		end
+		if not sg then
+			sg = 0
+		end
+		if not sb then
+			sb = 0
+		end
+
+		if breed_settings then
+			if not entry.alert_healthbar then
+				breed_settings.glow_intensity = 100
+
+				glow_colour[2] = sr
+				glow_colour[3] = sg
+				glow_colour[4] = sb
+
+				entry.alert_healthbar = true
+			elseif entry.alert_healthbar and fs.specials_flash then
+				breed_settings.glow_intensity = 0
+				entry.alert_healthbar = false
+				glow_colour = glow_colour_default
+			end
+		end
+	elseif entry.alert_healthbar then
+		entry.alert_healthbar = false
+	else
+		mod.ICON_SETTINGS[entry.breed_type].glow_intensity = mod.ICON_SETTINGS[entry.breed_type].default_glow_intensity
+		glow_colour = glow_colour_default
 	end
 end
 
@@ -404,9 +453,11 @@ mod.scan_enemies = function()
 					unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system"),
 					behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 
-					-- specialist tracking
-					is_specialist = mod.is_specialist_unit(unit),
 					is_horde = mod.is_horde(unit),
+
+					breed = ScriptUnit_has_extension(unit, "unit_data_system"):breed(),
+					breed_type = mod.find_breed_category(unit),
+
 					special_attack_event = nil,
 					special_attack_imminent = false,
 					special_attack_timer = 0,
@@ -414,6 +465,8 @@ mod.scan_enemies = function()
 					-- outlines
 					alert_outline = false,
 					outline_name = nil,
+
+					alert_healthbar = false,
 				}
 			else
 				entry.seen = true
@@ -890,13 +943,17 @@ mod.special_attack_events = {
 	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
 	--["wwise/events/minions/play_netgunner_run_foley_special"] = true,
 
+	-- Daemonhost
+	["wwise/events/minions/play_enemy_daemonhost_alert_scream"] = true,
+	["wwise/events/minions/play_enemy_daemonhost_alert_scream_short"] = true,
+	["wwise/events/minions/play_enemy_daemonhost_struggle_vce"] = true,
+
 	-- Sniper
 	["wwise/events/weapon/play_special_sniper_flash"] = true,
 	["wwise/events/weapon/play_combat_weapon_las_sniper"] = true,
 	["wwise/events/weapon/play_weapon_longlas_minion"] = true,
 
 	-- Mutant Charger
-	["wwise/events/minions/play_enemy_mutant_charger"] = true,
 	["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true,
 
 	-- Chaos Hound / leap
@@ -922,7 +979,6 @@ mod.special_attack_events = {
 
 	-- General rares / specials
 	["wwise/events/minions/play_traitor_guard_grenadier"] = true,
-	["wwise/events/minions/play_enemy_daemonhost"] = true,
 	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
 }
 
@@ -1124,7 +1180,7 @@ mod.update_special_attack_detection = function(entry)
 	local markers_by_id = world_markers and world_markers._markers_by_id
 
 	-- remove special_attack_imminent if over the timer...
-	if entry.is_specialist and entry.special_attack_imminent then
+	if entry.special_attack_imminent then
 		local now = mod.get_time()
 
 		if entry.special_attack_timer and now >= entry.special_attack_timer then
@@ -1140,7 +1196,6 @@ mod.update_special_attack_detection = function(entry)
 					if _ == "enemy_markers" then
 						if entry and marker then
 							marker.special_attack_imminent = entry.special_attack_imminent
-							marker.is_specialist = entry.is_specialist
 						end
 					end
 				end
@@ -1186,7 +1241,7 @@ mod.update_enemy_healthbars = function(entry)
 	end
 
 	-- skip horde if not enabled
-	if (mod.is_horde(unit) and not fs.horde_enable) and (mod.is_horde(unit) and not fs.horde_clusters_enable) then
+	if (entry.is_horde and not fs.horde_enable) and (entry.is_horde and not fs.horde_clusters_enable) then
 		return
 	end
 
@@ -1451,6 +1506,9 @@ mod.update_enemies = function(dt, t)
 			if fs.outline_specials_enable then
 				mod.pulse_enemy_outline(entry)
 			end
+			if fs.healthbar_specials_enable then
+				mod.pulse_enemy_healthbar(entry)
+			end
 		end
 	end
 
@@ -1491,9 +1549,9 @@ end
 -- Tags are ordered from priority (Top to bottom)
 -- so first match is what will be returned.
 -- breed points to the breed tags list, get from mod.get_breed_tags(unit)
-mod.find_breed_category = function(breed)
-	if breed then
-		local tags = breed.tags or {}
+mod.find_breed_category = function(unit)
+	if unit then
+		local tags = mod.get_breed_tags(unit) or {}
 		if tags.horde or tags.roamer then
 			return "horde"
 		elseif tags.captain then
@@ -1516,22 +1574,6 @@ mod.find_breed_category = function(breed)
 			return "enemy"
 		end
 	end
-end
-
-mod.is_specialist_unit = function(unit)
-	local tags = mod.get_breed_tags(unit)
-
-	if not tags then
-		return false
-	end
-
-	for tag, enabled in pairs(SPECIALIST_TAGS) do
-		if enabled and tags[tag] then
-			return true
-		end
-	end
-
-	return false
 end
 
 -- OUTLINES
@@ -1567,11 +1609,21 @@ mod.apply_enemy_outlines = function(settings)
 				mod:set(key, enabled)
 			end
 
-			if enabled then
-				local r = (mod:get("outline_" .. breed .. "_colour_R"))
-				local g = (mod:get("outline_" .. breed .. "_colour_G"))
-				local b = (mod:get("outline_" .. breed .. "_colour_B"))
+			local r = mod:get("outline_" .. breed .. "_colour_R")
+			local g = mod:get("outline_" .. breed .. "_colour_G")
+			local b = mod:get("outline_" .. breed .. "_colour_B")
 
+			-- initialise to defaults if nil values...
+			if r == nil or g == nil or b == nil then
+				r = mod.OUTLINE_COLOURS_DEFAULT[breed][2]
+				mod:set("outline_" .. breed .. "_colour_R", r)
+				g = mod.OUTLINE_COLOURS_DEFAULT[breed][3]
+				mod:set("outline_" .. breed .. "_colour_G", g)
+				b = mod.OUTLINE_COLOURS_DEFAULT[breed][4]
+				mod:set("outline_" .. breed .. "_colour_B", b)
+			end
+
+			if enabled then
 				if not r then
 					r = 50
 				end
@@ -1656,10 +1708,36 @@ local enemy_type_settings = {
 	["healthbar_type_colour_R"] = 255,
 	["healthbar_type_colour_G"] = 0,
 	["healthbar_type_colour_B"] = 0,
+
+	["healthbar_icon_type_enable"] = true,
+	["healthbar_icon_type_scale"] = 1,
+	["healthbar_icon_type_glow_intensity"] = 1,
+	["healthbar_icon_type_colour_R"] = 200,
+	["healthbar_icon_type_colour_G"] = 150,
+	["healthbar_icon_type_colour_B"] = 0,
+
+	["reset_type_to_default"] = false,
 }
 
-mod.init_healthbar_colour_defaults = function()
-	for breed, color in pairs(mod.BREED_COLORS) do
+mod.reset_type_to_default = function(enemy_type)
+	-- reset all options to nil so that the defaults will be loaded...
+	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
+	mod:set("healthbar_icon_" .. enemy_type .. "_enable", nil)
+	mod:set("healthbar_icon_" .. enemy_type .. "_scale", nil)
+	mod:set("healthbar_icon_" .. enemy_type .. "_glow_intensity", nil)
+	mod:set("healthbar_icon_" .. enemy_type .. "_colour_R", nil)
+
+	mod:set("outline_" .. enemy_type .. "_enable", nil)
+	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
+
+	mod:notify(mod:localize("reset_type_to_default_message"))
+
+	mod.init_healthbar_defaults()
+end
+
+mod.init_healthbar_defaults = function()
+	-- bar colours
+	for breed, color in pairs(mod.BREED_COLOURS_DEFAULT) do
 		local r = color[2]
 		local g = color[3]
 		local b = color[4]
@@ -1671,30 +1749,86 @@ mod.init_healthbar_colour_defaults = function()
 			mod:set("healthbar_" .. breed .. "_colour_B", b)
 		end
 	end
+
+	-- icon settings
+	for breed, settings in pairs(mod.ICON_SETTINGS_DEFAULT) do
+		if mod:get("healthbar_icon_" .. breed .. "_enable") == nil then
+			mod:set("healthbar_icon_" .. breed .. "_enable", settings.enabled)
+		end
+		if mod:get("healthbar_icon_" .. breed .. "_scale") == nil then
+			mod:set("healthbar_icon_" .. breed .. "_scale", settings.scale)
+		end
+		if mod:get("healthbar_icon_" .. breed .. "_glow_intensity") == nil then
+			mod:set("healthbar_icon_" .. breed .. "_glow_intensity", settings.glow_intensity)
+		end
+	end
+
+	-- icon colours
+	for breed, color in pairs(mod.ICON_COLOURS_DEFAULT) do
+		local r = color[2]
+		local g = color[3]
+		local b = color[4]
+
+		-- only set if not already saved
+		if mod:get("healthbar_icon_" .. breed .. "_colour_R") == nil then
+			mod:set("healthbar_icon_" .. breed .. "_colour_R", r)
+			mod:set("healthbar_icon_" .. breed .. "_colour_G", g)
+			mod:set("healthbar_icon_" .. breed .. "_colour_B", b)
+		end
+	end
 end
 
-mod.update_breed_colors = function()
-	for breed, default_color in pairs(mod.BREED_COLORS) do
+mod.update_breed_colours = function()
+	for breed, default_color in pairs(mod.BREED_COLOURS) do
 		local r = mod:get("healthbar_" .. breed .. "_colour_R")
 		local g = mod:get("healthbar_" .. breed .. "_colour_G")
 		local b = mod:get("healthbar_" .. breed .. "_colour_B")
 		local a = default_color[1] or 255
 
 		if r and g and b then
-			mod.BREED_COLORS[breed] = { a, r, g, b }
+			mod.BREED_COLOURS[breed] = { a, r, g, b }
 		end
 	end
 end
 
-mod.on_setting_changed = function(setting_id)
+mod.update_breed_icons = function()
+	-- settings
+	for breed, settings in pairs(mod.ICON_SETTINGS) do
+		local enabled = mod:get("healthbar_icon_" .. breed .. "_enable")
+		local scale = mod:get("healthbar_icon_" .. breed .. "_scale")
+		local glow_intensity = mod:get("healthbar_icon_" .. breed .. "_glow_intensity")
+
+		mod.ICON_SETTINGS[breed].enabled = enabled
+		mod.ICON_SETTINGS[breed].scale = scale
+		mod.ICON_SETTINGS[breed].glow_intensity = glow_intensity
+		mod.ICON_SETTINGS[breed].default_glow_intensity = glow_intensity
+	end
+	-- colours
+	for breed, default_color in pairs(mod.ICON_COLOURS) do
+		local r = mod:get("healthbar_icon_" .. breed .. "_colour_R")
+		local g = mod:get("healthbar_icon_" .. breed .. "_colour_G")
+		local b = mod:get("healthbar_icon_" .. breed .. "_colour_B")
+		local a = default_color[1] or 255
+
+		if r and g and b then
+			mod.ICON_COLOURS[breed] = { a, r, g, b }
+		end
+	end
+end
+
+mod.update_settings_values = function(setting_id)
+	local selected_enemy_type = mod:get("enemy_group")
+	if not selected_enemy_type then
+		return
+	end
+
+	local reset_string = "reset_type_to_default"
+	local reset_setting_id = reset_string:gsub("_type_", "_" .. selected_enemy_type .. "_")
+
 	-- Set the enemy type widgets when a group is selected
 	for setting_name, default_value in pairs(enemy_type_settings) do
-		local selected_enemy_type = mod:get("enemy_group")
-		if not selected_enemy_type then
-			return
-		end
-
 		local type_value = mod:get(setting_name)
+
 		local enemy_type = setting_name:gsub("_type_", "_" .. selected_enemy_type .. "_")
 		local enemy_type_value = mod:get(enemy_type)
 
@@ -1711,24 +1845,49 @@ mod.on_setting_changed = function(setting_id)
 		end
 
 		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
-		if setting_id == "enemy_group" then
+		if setting_id == "enemy_group" or mod:get(reset_setting_id) == true or setting_id == nil then
 			if type_value ~= enemy_type_value then
 				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
 				mod:set(setting_name, enemy_type_value)
 			end
 		end
 	end
+end
+
+mod.on_setting_changed = function(setting_id)
+	local selected_enemy_type = mod:get("enemy_group")
+	if not selected_enemy_type then
+		return
+	end
+
+	mod.update_settings_values(setting_id)
+
+	local reset_string = "reset_type_to_default"
+	local reset_setting_id = reset_string:gsub("_type_", "_" .. selected_enemy_type .. "_")
+
+	-- HANDLE RESET TO DEFAULT LOGIC...
+	if mod:get(reset_setting_id) == true then
+		mod.reset_type_to_default(mod:get("enemy_group"))
+		mod.update_settings_values(reset_setting_id)
+	end
 
 	-- rebuild outlines
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
 
-	-- update breed colors from settings
-	mod.update_breed_colors()
+	-- update breed settings
+	mod.update_breed_colours()
+	mod.update_breed_icons()
 
 	-- clear all caches to reload data with new values
 	mod.clear_caches()
 
 	mod.font_type = mod:get("font_type")
 	mod.text_scale = mod:get("text_scale")
+
+	if mod:get(reset_setting_id) == true then
+		mod:set(reset_setting_id, false)
+	end
+
+	mod.update_settings_values()
 end

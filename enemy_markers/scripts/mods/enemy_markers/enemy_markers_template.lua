@@ -467,7 +467,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	widget.visible = true
 
 	-- Distance text for specialists
-	if SHOW_DISTANCE and marker.is_specialist then
+	if SHOW_DISTANCE then
 		content.show_distance = true
 		content.distance_text = string.format("%dm", math.floor(distance))
 	else
