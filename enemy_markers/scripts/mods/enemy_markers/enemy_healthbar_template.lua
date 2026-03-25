@@ -692,8 +692,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				offset = { bar_offset[1] - 6, bar_offset[2], 0 },
 				default_offset = { bar_offset[1] - 6, bar_offset[2], 0 },
-				size = { bar_width + 12, bar_height + 6 },
-				default_size = { bar_width + 12, bar_height + 6 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
 				color = { 200, 180, 180, 180 },
 				default_alpha = 200,
 			},
@@ -1355,29 +1355,35 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local spacing = bar_settings.bar_spacing
 		local bar_width = template.size[1]
 		local default_width_offset = -bar_width * 0.5
+		local scale = marker.scale or 1
+		content.scale = scale
 
 		local health_max_style = style.health_max
+		health_max_style.size[1] = health_max_style.default_size[1] * scale
+		health_max_style.size[2] = health_max_style.default_size[2] * scale
+
+		local frame = style.frame
+		frame.size[1] = (frame.default_size[1] + (12 * mod.frame_settings.hb_padding_scale)) * scale
+		frame.size[2] = (frame.default_size[2] + (6 * mod.frame_settings.hb_padding_scale)) * scale
+		
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
 
-		local health_width = bar_width * health_fraction
+		local scaled_bar_width = current_health_style.default_size[1] * scale
 
-		local scale = marker.scale or 1
-		content.scale = scale
-		local scaled_bar_width = bar_width * scale
 		local scaled_health_width = scaled_bar_width * health_fraction
 
 		current_health_style.size[1] = scaled_health_width
-		current_health_style.default_size[1] = scaled_health_width
+		--current_health_style.default_size[1] = scaled_health_width
 
-		current_health_style.offset[1] = -scaled_bar_width * 0.5
+		--current_health_style.offset[1] = -scaled_bar_width * 0.5
 
 		local scaled_ghost_width = math.max(scaled_bar_width * health_ghost_fraction - scaled_health_width, 0)
 
 		ghost_bar_style.size[1] = scaled_ghost_width
-		ghost_bar_style.default_size[1] = scaled_ghost_width
+		--ghost_bar_style.default_size[1] = scaled_ghost_width
 
-		ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
+		--ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
 	end
 
 	-- set frame background

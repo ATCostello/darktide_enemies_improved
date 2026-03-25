@@ -311,6 +311,12 @@ table.insert(localisations_to_add, {
 	healthbar_type_icon_enable_tooltip = {
 		en = "Toggles a class-based icon next to the healthbar as an option to track enemy types from afar.",
 	},
+	hb_padding_scale = {
+		en = "Scale for the decorative frame around the healthbar (Global)",
+	},
+	hb_padding_scale_tooltip = {
+		en = "A global scale for the decorative frame element around the enemies current health.\n\n1 = Default\n2 = 2x size ",
+	},
 	hb_show_enemy_type = {
 		en = "Display enemy type?",
 	},

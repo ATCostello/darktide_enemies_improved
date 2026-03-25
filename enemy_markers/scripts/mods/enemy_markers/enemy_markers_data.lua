@@ -332,7 +332,7 @@ mod.OUTLINE_COLOURS = {
 	horde = { 255, 50, 10, 0 },
 	elite = { 255, 50, 10, 0 },
 	captain = { 255, 50, 10, 0 },
-	disabler = { 255, 150, 50, 0 },
+	disabler = { 255, 50, 10, 0 },
 	witch = { 255, 50, 10, 0 },
 	monster = { 255, 50, 10, 0 },
 	sniper = { 255, 50, 10, 0 },
@@ -649,6 +649,18 @@ table.insert(mod.settings_widgets, {
 			options = hb_frames,
 			default_value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
 			tooltip = "hb_frame_tooltip",
+		},
+		{
+			setting_id = "hb_padding_scale",
+			type = "numeric",
+			default_value = 1.4,
+			range = {
+				0.5,
+				3,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "hb_padding_scale_tooltip",
 		},
 		{
 			setting_id = "hb_size_width",

@@ -33,6 +33,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_text_show_health = mod:get("hb_text_show_health")
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
+	fs.hb_padding_scale = mod:get("hb_padding_scale")
 	fs.hb_size_width = mod:get("hb_size_width")
 	fs.hb_size_height = mod:get("hb_size_height")
 	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
@@ -1670,8 +1671,8 @@ mod.apply_enemy_outlines = function(settings)
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
 					priority = 2,
 					material_layers = {
-						"minion_outline_combat_ability",
-						"minion_outline_combat_ability_reversed_depth",
+						"minion_outline",
+						"minion_outline_reversed_depth",
 					},
 					color = { r, g, b },
 					visibility_check = function()
@@ -1707,8 +1708,8 @@ mod.apply_enemy_outlines = function(settings)
 	settings.MinionOutlineExtension.enemies_improved_alert = {
 		priority = 1,
 		material_layers = {
-			"minion_outline_combat_ability",
-			"minion_outline_combat_ability_reversed_depth",
+			"minion_outline",
+			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
 		visibility_check = function()
