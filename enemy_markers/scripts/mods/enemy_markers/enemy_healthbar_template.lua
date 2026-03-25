@@ -915,8 +915,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { (bar_width / 2) - 2 * mod.text_scale, 20 },
-				default_size = { (bar_width / 2) - 2 * mod.text_scale, 20 },
+				size = { bar_width - 2 * mod.text_scale, 20 },
+				default_size = { bar_width - 2 * mod.text_scale, 20 },
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -1012,7 +1012,7 @@ template.on_enter = function(widget, marker, template)
 	local breed = unit_data_extension and unit_data_extension:breed()
 
 	if mod.frame_settings.hb_show_enemy_type and breed then
-		content.header_text = breed.name
+		content.header_text = mod:localize(breed.name)
 	end
 
 	content.breed = breed
@@ -1022,6 +1022,8 @@ template.on_enter = function(widget, marker, template)
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
 
 	content._breed_type = mod.find_breed_category(unit)
+
+	content.special_attack_imminent = false
 end
 
 -----------------------------------------------------------------------
@@ -1065,7 +1067,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed_type = content._breed_type or "enemy"
 
 	if mod.frame_settings.hb_show_enemy_type then
-		content.header_text = tostring(breed_type)
+		content.header_text = mod:localize(breed_type)
 	end
 
 	-------------------------------------------------------------------
@@ -1412,18 +1414,67 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.icon_enabled = content_icon
 
 		-- set colours and glow
-		if icon_glow_intensity == 0 then
-			style.icon_background1.default_alpha = 0
-			style.icon_background1.color[1] = 0
-		else
-			style.icon_background1.default_alpha = icon_glow_intensity * 2.5
-			style.icon_background1.color[1] = icon_glow_intensity * 2.5
+		if style.icon_background1.color and not marker.special_attack_imminent then
+			if icon_glow_intensity == 0 then
+				style.icon_background1.default_alpha = 0
+				style.icon_background1.color[1] = 0
+			else
+				style.icon_background1.default_alpha = icon_glow_intensity * 2.5
+				style.icon_background1.color[1] = icon_glow_intensity * 2.5
+			end
+
+			style.icon_background1.color[2] = icon_glow_colour[2]
+			style.icon_background1.color[3] = icon_glow_colour[3]
+			style.icon_background1.color[4] = icon_glow_colour[4]
 		end
 
-		style.icon_background1.color[2] = icon_glow_colour[2]
-		style.icon_background1.color[3] = icon_glow_colour[3]
-		style.icon_background1.color[4] = icon_glow_colour[4]
+		local update_interval = 0.1
+		attack_update_time = (attack_update_time or 0) + dt
 
+		if attack_update_time > update_interval then
+			if mod.frame_settings.healthbar_specials_enable and marker.special_attack_imminent then
+				-- get special colour
+				local sr = mod:get("outline_specials_colour_R")
+				local sg = mod:get("outline_specials_colour_G")
+				local sb = mod:get("outline_specials_colour_B")
+
+				if not sr then
+					sr = 255
+				end
+				if not sg then
+					sg = 0
+				end
+				if not sb then
+					sb = 0
+				end
+
+				if not content.alert_healthbar then
+					----- TURN ON
+					-- set alert glow intensity
+					style.icon_background1.default_alpha = 255
+					style.icon_background1.color[1] = 255
+
+					-- set alert glow colour
+					style.icon_background1.color[2] = sr
+					style.icon_background1.color[3] = sg
+					style.icon_background1.color[4] = sb
+					content.alert_healthbar = true
+				elseif content.alert_healthbar and mod.frame_settings.specials_flash then
+					----- TURN OFF
+					-- set alert glow intensity
+					style.icon_background1.default_alpha = 0
+					style.icon_background1.color[1] = 0
+
+					content.alert_healthbar = false
+				end
+			else
+				if content.alert_healthbar then
+					content.alert_healthbar = false
+				end
+			end
+
+			attack_update_time = 0
+		end
 		style_icon.color[2] = icon_color[2]
 		style_icon.color[3] = icon_color[3]
 		style_icon.color[4] = icon_color[4]
@@ -1458,7 +1509,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if breed_type == "sniper" then
 			content.icon_sniper, style.icon_sniper = apply_icon_settings(content.icon_sniper, style.icon_sniper)
 		end
-		if breed_type == "captain" then
+		if breed_type == "captain" or breed_type == "cultist_captain" then
 			content.icon_captain, style.icon_captain = apply_icon_settings(content.icon_captain, style.icon_captain)
 		end
 		if breed_type == "witch" then

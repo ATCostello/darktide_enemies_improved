@@ -243,6 +243,15 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	mod.apply_marker_fade()
 end)
 
+mod.get_marker_by_id = function(id)
+	local ui_manager = Managers.ui
+	local hud = ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local markers_by_id = world_markers and world_markers._markers_by_id
+
+	return markers_by_id[id]
+end
+
 mod.enable_enemy_outlines = function(unit, entry)
 	if not Unit.alive(unit) then
 		return
@@ -336,7 +345,12 @@ mod.pulse_enemy_healthbar = function(entry)
 	local unit = entry.unit
 	local fs = mod.frame_settings
 
-	if entry.special_attack_imminent then
+	if
+		entry
+		and entry.healthbar
+		and entry.healthbar.widget.style.icon_background1
+		and entry.healthbar.widget.style.icon_background1.color
+	then
 		-- get breed category
 		local breed_type = entry.breed_type
 
@@ -349,41 +363,51 @@ mod.pulse_enemy_healthbar = function(entry)
 		local glow_colour = mod.ICON_COLOURS["glow"]
 		local glow_colour_default = mod.ICON_COLOURS["glow_default"]
 
-		-- get special colour
-		local sr = (mod:get("outline_specials_colour_R"))
-		local sg = (mod:get("outline_specials_colour_G"))
-		local sb = (mod:get("outline_specials_colour_B"))
+		if entry.special_attack_imminent then
+			-- get special colour
+			local sr = (mod:get("outline_specials_colour_R"))
+			local sg = (mod:get("outline_specials_colour_G"))
+			local sb = (mod:get("outline_specials_colour_B"))
 
-		if not sr then
-			sr = 255
-		end
-		if not sg then
-			sg = 0
-		end
-		if not sb then
-			sb = 0
-		end
+			if not sr then
+				sr = 255
+			end
+			if not sg then
+				sg = 0
+			end
+			if not sb then
+				sb = 0
+			end
 
-		if breed_settings then
 			if not entry.alert_healthbar then
-				breed_settings.glow_intensity = 100
+				----- TURN ON
+				entry.healthbar.widget.style.icon_background1.default_alpha = 255
 
-				glow_colour[2] = sr
-				glow_colour[3] = sg
-				glow_colour[4] = sb
+				-- set alert glow intensity
+				entry.healthbar.widget.style.icon_background1.default_alpha = 255
+				entry.healthbar.widget.style.icon_background1.color[1] = 255
+
+				-- set alert glow colour
+				entry.healthbar.widget.style.icon_background1.color[2] = sr
+				entry.healthbar.widget.style.icon_background1.color[3] = sg
+				entry.healthbar.widget.style.icon_background1.color[4] = sb
 
 				entry.alert_healthbar = true
 			elseif entry.alert_healthbar and fs.specials_flash then
-				breed_settings.glow_intensity = 0
+				----- TURN OFF
+				-- set alert glow intensity
+				entry.healthbar.widget.style.icon_background1.default_alpha = 0
+				entry.healthbar.widget.style.icon_background1.color[1] = 0
+
 				entry.alert_healthbar = false
-				glow_colour = glow_colour_default
 			end
+		else
+			if entry.alert_healthbar then
+				entry.alert_healthbar = false
+			end
+			entry.healthbar.widget.style.icon_background1.default_alpha = breed_settings.glow_intensity * 2.5
+			entry.healthbar.widget.style.icon_background1.color = glow_colour_default
 		end
-	elseif entry.alert_healthbar then
-		entry.alert_healthbar = false
-	else
-		mod.ICON_SETTINGS[entry.breed_type].glow_intensity = mod.ICON_SETTINGS[entry.breed_type].default_glow_intensity
-		glow_colour = glow_colour_default
 	end
 end
 
@@ -1100,7 +1124,7 @@ mod.remove_dead = function()
 					if _ == "enemy_markers" then
 						Managers.event:trigger("remove_world_marker", marker.id)
 						found_unit_marker = marker.id
-					elseif _ == "enemy_healthbars" then
+					elseif _ == "enemy_healthbar" then
 						Managers.event:trigger("remove_world_marker", marker.id)
 						found_unit_marker = marker.id
 					elseif _ == "enemy_debuff" then
@@ -1193,7 +1217,7 @@ mod.update_special_attack_detection = function(entry)
 			for i = 1, #markers do
 				local marker = markers[i]
 				if marker.unit == unit then
-					if _ == "enemy_markers" then
+					if _ == "enemy_markers" or _ == "enemy_healthbar" then
 						if entry and marker then
 							marker.special_attack_imminent = entry.special_attack_imminent
 						end
@@ -1223,6 +1247,7 @@ mod.update_enemy_markers = function(entry, t)
 	-- add enemy markers if doesn't already exist
 	if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
 		Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
+			entry.marker = mod.get_marker_by_id(marker_id)
 			mod.enemy_markers[unit] = marker_id
 		end)
 	end
@@ -1256,6 +1281,7 @@ mod.update_enemy_healthbars = function(entry)
 		end
 
 		Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
+			entry.healthbar = mod.get_marker_by_id(marker_id)
 			mod.enemy_healthbars[unit] = marker_id
 		end)
 		::continue_healthbar_loop::
@@ -1277,6 +1303,7 @@ mod.update_enemy_debuffs = function(entry)
 	-- only add debuffs for living enemies that are not dead and removed
 	if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
+			entry.dot_debuffs = mod.get_marker_by_id(marker_id)
 			mod.enemy_debuffs[unit] = debuff_id
 		end)
 	end
@@ -1292,6 +1319,7 @@ mod.update_enemy_utility_debuffs = function(entry)
 
 	if not mod.enemy_utility_debuffs[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
+			entry.utility_debuffs = mod.get_marker_by_id(marker_id)
 			mod.enemy_utility_debuffs[unit] = marker_id
 		end)
 	end
@@ -1483,6 +1511,7 @@ mod.update_enemies = function(dt, t)
 		local unit = temp[i]
 		if mod.enemy_cache[unit] then
 			local entry = mod.enemy_cache[unit]
+			dbg_entry = entry
 
 			if fs.markers_enable then
 				mod.update_enemy_markers(entry, t)
@@ -1507,7 +1536,7 @@ mod.update_enemies = function(dt, t)
 				mod.pulse_enemy_outline(entry)
 			end
 			if fs.healthbar_specials_enable then
-				mod.pulse_enemy_healthbar(entry)
+				--mod.pulse_enemy_healthbar(entry)
 			end
 		end
 	end
@@ -1554,7 +1583,7 @@ mod.find_breed_category = function(unit)
 		local tags = mod.get_breed_tags(unit) or {}
 		if tags.horde or tags.roamer then
 			return "horde"
-		elseif tags.captain then
+		elseif tags.captain or tags.cultist_captain then
 			return "captain"
 		elseif tags.witch then
 			return "witch"
@@ -1730,7 +1759,8 @@ mod.reset_type_to_default = function(enemy_type)
 	mod:set("outline_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
 
-	mod:notify(mod:localize("reset_type_to_default_message"))
+	local reset_message = mod:localize("reset_type_to_default_message")
+	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
 end

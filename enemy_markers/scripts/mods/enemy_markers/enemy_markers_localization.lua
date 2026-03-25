@@ -154,25 +154,25 @@ table.insert(localisations_to_add, {
 		en = "SELECT AN ENEMY TYPE",
 	},
 	monster = {
-		en = "monster",
+		en = "miniboss",
 	},
 	captain = {
-		en = "captain",
+		en = "boss",
 	},
 	disabler = {
 		en = "disabler",
 	},
 	witch = {
-		en = "witch",
+		en = "daemonhost",
 	},
 	sniper = {
 		en = "sniper",
 	},
 	far = {
-		en = "far",
+		en = "ranged elite",
 	},
 	elite = {
-		en = "elite",
+		en = "melee elite",
 	},
 	special = {
 		en = "special",
@@ -181,7 +181,7 @@ table.insert(localisations_to_add, {
 		en = "horde",
 	},
 	enemy = {
-		en = "enemy",
+		en = "ritualist",
 	},
 })
 
@@ -235,16 +235,22 @@ table.insert(localisations_to_add, {
 		en = "{#color(" .. colours.title .. ")}Special Attacks{#reset()}",
 	},
 	marker_specials_enable = {
-		en = "Enable marker 'ping' on special attack (Global)",
+		en = "Toggle overhead markers special attack indicators (Global)",
 	},
 	marker_specials_enable_tooltip = {
 		en = "Affects only 'Enemy Overhead Markers'. \nApplies a pulsating effect when a special attack is detected, to help you get out of the way!",
 	},
 	outline_specials_enable = {
-		en = "Enable enemy outline on special attack (Global)",
+		en = "Toggle enemy outline special attack indicators (Global)",
 	},
 	outline_specials_enable_tooltip = {
 		en = "Applies an outline effect when a special attack is detected, to help distinguish a 'special attack' enemy from a crowd.",
+	},
+	healthbar_specials_enable = {
+		en = "Toggle healthbar special attack indicators (Global)",
+	},
+	healthbar_specials_enable_tooltip = {
+		en = "Toggle special attack indicators on the healthbar. \nApplies a pulsating effect when a special attack is detected, to help you get out of the way!",
 	},
 	specials_flash = {
 		en = "Enable flashing for special attacks (Global)",
@@ -431,7 +437,7 @@ table.insert(localisations_to_add, {
 		en = "Reset settings for type '_type_' to default.",
 	},
 	reset_type_to_default = {
-		en = "{#color(" .. colours.subtitle .. ")}Warning:{#reset()}Reset to defaults",
+		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
 	},
 	reset_type_to_default_tooltip = {
 		en = "Reset all enemy type specific settings to their default values.\n\nNote: This only affects the enemy type selected above.",
@@ -483,6 +489,37 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_type_colour_B = {
 		en = "Healthbar Colour: Blue",
+	},
+
+	healthbar_icon_type_enable = {
+		en = "Enable enemy type icons?",
+	},
+	healthbar_icon_type_enable_tooltip = {
+		en = "Toggle icon indicators for your selected enemy type/class.",
+	},
+	healthbar_icon_type_scale = {
+		en = "Type icon scale",
+	},
+	healthbar_icon_type_scale_tooltip = {
+		en = "Set the scale of the enemy type icons. 1 being 1x scale.",
+	},
+	healthbar_icon_type_glow_intensity = {
+		en = "Type icon glow intensity",
+	},
+	healthbar_icon_type_glow_intensity_tooltip = {
+		en = "Set the intensity of the glow.\n\n0 = Off\n100 = Max intensity",
+	},
+	healthbar_icon_type_colour_R = {
+		en = "Type Icon Colour: Red",
+	},
+	healthbar_icon_type_colour_G = {
+		en = "Type Icon Colour: Green",
+	},
+	healthbar_icon_type_colour_B = {
+		en = "Type Icon Colour: Blue",
+	},
+	healthbar_icon_type_colour_tooltip = {
+		en = "Adjust the colour of the enemy type specific icon.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
 	},
 })
 
