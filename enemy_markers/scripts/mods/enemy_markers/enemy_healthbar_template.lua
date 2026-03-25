@@ -1394,7 +1394,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if breed_type == "sniper" then
 			content.icon_sniper = true
 		end
-		if breed_type == "monster" or breed_type == "captain" then
+		if breed_type == "monster" or breed_type == "captain" or breed_type == "witch" then
 			content.icon_boss = true
 		end
 

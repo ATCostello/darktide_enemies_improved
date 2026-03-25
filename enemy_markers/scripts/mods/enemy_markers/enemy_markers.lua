@@ -1496,14 +1496,14 @@ mod.find_breed_category = function(breed)
 		local tags = breed.tags or {}
 		if tags.horde or tags.roamer then
 			return "horde"
-		elseif tags.monster then
-			return "monster"
 		elseif tags.captain then
 			return "captain"
-		elseif tags.disabler then
-			return "disabler"
 		elseif tags.witch then
 			return "witch"
+		elseif tags.monster then
+			return "monster"
+		elseif tags.disabler then
+			return "disabler"
 		elseif tags.special and tags.sniper then
 			return "sniper"
 		elseif tags.elite and tags.far or tags.special and tags.far then

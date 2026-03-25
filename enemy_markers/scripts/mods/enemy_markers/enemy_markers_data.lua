@@ -232,8 +232,8 @@ mod.BREED_COLORS = {
 	elite = { 255, 0, 120, 255 },
 	captain = { 255, 255, 140, 0 },
 	disabler = { 255, 255, 255, 0 },
-	monster = { 255, 180, 0, 255 },
 	witch = { 255, 255, 0, 180 },
+	monster = { 255, 180, 0, 255 },
 	sniper = { 255, 255, 0, 0 },
 	far = { 255, 0, 255, 120 },
 	special = { 255, 255, 0, 255 },
@@ -587,7 +587,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_show_on_body",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "debuff_show_on_body_tooltip",
 		},
 		{
