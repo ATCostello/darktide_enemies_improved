@@ -250,7 +250,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	-- Apply distance / stacking fade to all active markers
-	mod.apply_marker_fade()
+	mod.apply_marker_fade(self)
 end)
 
 mod.get_marker_by_id = function(id)
@@ -1428,11 +1428,19 @@ mod.clear_caches = function()
 end
 
 -----------------------------------------------------------------------
--- Marker Distance
+-- Marker Distance * Fade
 -----------------------------------------------------------------------
+mod.world_to_screen = function(self, world_markers, world_pos)
+	local camera = self:_get_camera()
 
-mod.apply_marker_fade = function()
-	-- throttle fade updates
+	if not camera then
+		return nil
+	end
+
+	return Camera.world_to_screen(camera, world_pos)
+end
+
+mod.apply_marker_fade = function(self)
 	mod._fade_t = (mod._fade_t or 0) + (mod.frame_settings.dt or 0)
 
 	if mod._fade_t < 0.05 then
@@ -1444,8 +1452,6 @@ mod.apply_marker_fade = function()
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
-	local DIST_FADE_START_SQ = DIST_FADE_START * DIST_FADE_START
-	local DIST_FADE_END_SQ = DIST_FADE_END * DIST_FADE_END
 
 	if not world_markers then
 		return
@@ -1466,73 +1472,156 @@ mod.apply_marker_fade = function()
 		return
 	end
 
+	local camera = world_markers:_get_camera()
+	if not camera then
+		return
+	end
+
+	local cam_pos = Camera.world_position(camera)
+	local cam_rot = Camera.world_rotation(camera)
+	local cam_forward = Quaternion.forward(cam_rot)
+
 	local player_pos = Unit.world_position(player_unit, 1)
 
-	-- Optional stacking tracking
-	local screen_positions = {}
+	local DIST_FADE_START_SQ = DIST_FADE_START * DIST_FADE_START
+	local DIST_FADE_END_SQ = DIST_FADE_END * DIST_FADE_END
+
+	--------------------------------------------------
+	-- DEPTH STACKING SETTINGS
+	--------------------------------------------------
+	local STACK_FADE_FACTOR = 0.9 -- how much stacking reduces marker visibility
+	local DEPTH_THRESHOLD = 0.1 -- how far behind to start stacking
+	local MAX_STACK_DIST_SQ = 25 -- how close 2 units need to be to stack
+	local MAX_DEPTH_STACK = 25 -- how far behind stacking still applies
+	local ALIGNMENT_NEAR = 0.96 -- how aligned they need to be when close
+	local ALIGNMENT_FAR = 0.96 -- how aligned they need to be when far
+
+	local marker_list = {}
 
 	for marker_id in pairs(mod.active_markers) do
 		local marker = markers_by_id[marker_id]
+
 		if marker and marker.unit and Unit_alive(marker.unit) then
 			if
-				marker.template
-				and (
-					marker.template.name == EnemyMarkersTemplate.name
-					or marker.template.name == EnemyHealthbarTemplate.name
-					or marker.template.name == EnemyDebuffTemplate.name
-					or marker.template.name == EnemyUtilityDebuffTemplate.name
-				)
+				marker.type == "enemy_healthbar"
+				or marker.type == "enemy_markers"
+				or marker.type == "enemy_debuff"
+				or marker.type == "enemy_utility_debuff"
 			then
-				--------------------------------------------------
-				-- DISTANCE FADE
-				--------------------------------------------------
-				local unit_pos = Unit.world_position(marker.unit, 1)
+				local pos = Unit.world_position(marker.unit, 1)
 
-				local dx = unit_pos.x - player_pos.x
-				local dy = unit_pos.y - player_pos.y
-				local dz = unit_pos.z - player_pos.z
+				local dx = pos.x - player_pos.x
+				local dy = pos.y - player_pos.y
+				local dz = pos.z - player_pos.z
 
 				local dist_sq = dx * dx + dy * dy + dz * dz
 
-				local fade = 1
+				-- depth relative to camera
+				local to_marker_x = pos.x - cam_pos.x
+				local to_marker_y = pos.y - cam_pos.y
+				local to_marker_z = pos.z - cam_pos.z
 
-				if dist_sq > DIST_FADE_START_SQ then
-					local t = math.clamp((dist_sq - DIST_FADE_START_SQ) / (DIST_FADE_END_SQ - DIST_FADE_START_SQ), 0, 1)
-					fade = 1 - t
-				end
+				local depth = to_marker_x * cam_forward.x + to_marker_y * cam_forward.y + to_marker_z * cam_forward.z
 
-				fade = math.max(fade, MIN_ALPHA)
+				marker_list[#marker_list + 1] = {
+					marker = marker,
+					pos = pos,
+					dist_sq = dist_sq,
+					depth = depth,
+				}
+			end
+		end
+	end
 
-				marker.alpha_multiplier = math.clamp(fade, MIN_ALPHA, 1)
+	table.sort(marker_list, function(a, b)
+		return a.depth < b.depth
+	end)
 
-				local final_alpha = math.clamp(fade, MIN_ALPHA, 1)
+	for i = 1, #marker_list do
+		local data = marker_list[i]
+		local marker = data.marker
 
-				-- skip if alpha unchanged
-				if math.abs((marker._last_alpha or 1) - final_alpha) < 0.02 then
-					goto continue_marker
-				end
+		local fade = 1
 
-				marker._last_alpha = final_alpha
+		if data.dist_sq > DIST_FADE_START_SQ then
+			local t = math.clamp((data.dist_sq - DIST_FADE_START_SQ) / (DIST_FADE_END_SQ - DIST_FADE_START_SQ), 0, 1)
+			fade = 1 - t
+		end
 
-				local widget = marker.widget
+		fade = math.max(fade, MIN_ALPHA)
 
-				if widget and widget.style then
-					local style = widget.style
+		local depth_fade = 1
 
-					if style.text and style.text.text_color then
-						style.text.text_color[1] = 255 * final_alpha
-					end
+		for j = 1, i - 1 do
+			local front = marker_list[j]
 
-					if style.icon and style.icon.color then
-						style.icon.color[1] = 255 * final_alpha
-					end
+			local dx = front.pos.x - data.pos.x
+			local dy = front.pos.y - data.pos.y
+			local dz = front.pos.z - data.pos.z
+			local dist_sq_between = dx * dx + dy * dy + dz * dz
 
-					if style.icon_background1 and style.icon_background1.color then
-						style.icon_background1.color[1] = 255 * final_alpha
+			if dist_sq_between < MAX_STACK_DIST_SQ then
+				local to_front_x = front.pos.x - cam_pos.x
+				local to_front_y = front.pos.y - cam_pos.y
+				local to_front_z = front.pos.z - cam_pos.z
+
+				local to_data_x = data.pos.x - cam_pos.x
+				local to_data_y = data.pos.y - cam_pos.y
+				local to_data_z = data.pos.z - cam_pos.z
+
+				local front_len = math.sqrt(to_front_x ^ 2 + to_front_y ^ 2 + to_front_z ^ 2)
+				local data_len = math.sqrt(to_data_x ^ 2 + to_data_y ^ 2 + to_data_z ^ 2)
+
+				if front_len > 0 and data_len > 0 then
+					to_front_x = to_front_x / front_len
+					to_front_y = to_front_y / front_len
+					to_front_z = to_front_z / front_len
+
+					to_data_x = to_data_x / data_len
+					to_data_y = to_data_y / data_len
+					to_data_z = to_data_z / data_len
+
+					local alignment = to_front_x * to_data_x + to_front_y * to_data_y + (to_front_z * to_data_z) * 0.5
+
+					local depth_delta = data.depth - front.depth
+
+					if depth_delta > DEPTH_THRESHOLD and depth_delta < MAX_DEPTH_STACK then
+						local t = math.clamp(depth_delta / MAX_DEPTH_STACK, 0, 1)
+
+						local required_alignment = ALIGNMENT_NEAR + (ALIGNMENT_FAR - ALIGNMENT_NEAR) * t
+
+						if alignment > required_alignment then
+							local scaled_factor = 1 - (1 - STACK_FADE_FACTOR) * (1 - t)
+							depth_fade = depth_fade * scaled_factor
+						end
 					end
 				end
 			end
 		end
+
+		local final_alpha = math.clamp(fade * depth_fade, MIN_ALPHA, 1)
+
+		if math.abs((marker._last_alpha or 1) - final_alpha) < 0.02 then
+			goto continue_marker
+		end
+
+		marker._last_alpha = final_alpha
+		marker.alpha_multiplier = final_alpha
+
+		local widget = marker.widget
+
+		if widget and widget.style then
+			for _, style_data in pairs(widget.style) do
+				if style_data.default_alpha and style_data.color then
+					style_data.color[1] = style_data.default_alpha * final_alpha
+				end
+
+				if style_data.default_alpha and style_data.text_color then
+					style_data.text_color[1] = style_data.default_alpha * final_alpha
+				end
+			end
+		end
+
 		::continue_marker::
 	end
 end
@@ -1560,7 +1649,7 @@ end
 mod.update_enemies = function(dt, t)
 	mod.build_frame_settings(dt or 0)
 	local fs = mod.frame_settings
-
+	dbg_mod = mod
 	for _, entry in pairs(mod.enemy_cache) do
 		entry.pos = nil
 	end
