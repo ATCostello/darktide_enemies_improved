@@ -11,8 +11,6 @@ local size = { mod.frame_settings.hb_size_width, mod.frame_settings.hb_size_heig
 
 local min_size = { 0, 0 }
 
-local draw_distance_setting = mod.frame_settings.draw_distance or 25
-
 template.size = size
 
 template.min_size = min_size
@@ -20,8 +18,8 @@ template.name = "enemy_healthbar"
 template.unit_node = "root_point"
 template.position_offset = { 0, 0, 0 }
 
-template.check_line_of_sight = true
-template.max_distance = draw_distance_setting
+template.check_line_of_sight = mod.frame_settings.check_line_of_sight
+template.max_distance = mod.frame_settings.draw_distance
 template.screen_clamp = false
 
 template.bar_settings = {
@@ -1040,6 +1038,23 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	local line_of_sight_progress = content.line_of_sight_progress or 0
+
+	if template.check_line_of_sight then
+		if marker.raycast_initialized then
+			local raycast_result = marker.raycast_result
+			local line_of_sight_speed = 8
+
+			if raycast_result then
+				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+			else
+				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+			end
+		end
+	elseif not template.check_line_of_sight then
+		line_of_sight_progress = 1
+	end
+
 	-------------------------------------------------------------------
 	-- Health / alive
 	-------------------------------------------------------------------
@@ -1365,7 +1380,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local frame = style.frame
 		frame.size[1] = (frame.default_size[1] + (12 * mod.frame_settings.hb_padding_scale)) * scale
 		frame.size[2] = (frame.default_size[2] + (6 * mod.frame_settings.hb_padding_scale)) * scale
-		
+
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
 
@@ -1411,8 +1426,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
-
-	dbg_breed_settings = mod.ICON_SETTINGS
 
 	-- apply values to relevant icon
 	local function apply_icon_settings(content_icon, style_icon)
@@ -1567,21 +1580,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
-	if marker.raycast_initialized then
-		local raycast_result = marker.raycast_result
-		local line_of_sight_speed = 3
-		local line_of_sight_progress = content.line_of_sight_progress or 0
-
-		if raycast_result then
-			line_of_sight_progress = math_max(line_of_sight_progress - dt * line_of_sight_speed, 0)
-		else
-			line_of_sight_progress = math_min(line_of_sight_progress + dt * line_of_sight_speed, 1)
-		end
-
-		content.line_of_sight_progress = line_of_sight_progress
-		widget.alpha_multiplier = line_of_sight_progress
-	end
-
 	if not HEALTH_ALIVE[unit] and (not marker.health_fraction or marker.health_fraction == 0) then
 		marker.remove = true
 	end
@@ -1601,8 +1599,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local draw = marker.draw
 
-	dbg_style = style
-	dbg_content = content
+	content.line_of_sight_progress = line_of_sight_progress
+	widget.alpha_multiplier = line_of_sight_progress or 1
+
 	if draw then
 		marker.scale = marker.scale * mod.text_scale
 		local scale = marker.scale

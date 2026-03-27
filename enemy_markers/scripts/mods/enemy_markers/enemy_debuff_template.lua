@@ -41,7 +41,7 @@ end
 
 template.max_visible_rows = max_visible_rows_setting
 
-template.check_line_of_sight = true
+template.check_line_of_sight = mod.frame_settings.check_line_of_sight
 template.max_distance = draw_distance_setting
 template.screen_clamp = false
 template.bar_settings = {

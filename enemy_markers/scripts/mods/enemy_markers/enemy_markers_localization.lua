@@ -1,6 +1,5 @@
 local mod = get_mod("enemy_markers")
-
-mod.version = 1.0
+mod.version = "1.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -12,12 +11,16 @@ local colours = {
 -- base localisations
 mod.localisation = {
 	mod_name = {
-		en = "{#color(255,0,0)}E{#color(248,0,14)}n{#color(240,0,29)}e{#color(233,0,43)}m{#color(225,0,57)}i{#color(218,0,71)}e{#color(210,0,86)}s {#color(203,0,100)}I{#color(195,0,114)}m{#color(188,0,129)}p{#color(180,0,143)}r{#color(173,0,157)}o{#color(165,0,171)}v{#color(158,0,186)}e{#color(150,0,200)}d{#reset()}",
+		en = "{#color("
+			.. colours.title
+			.. ")} {#color(255,0,0)}E{#color(248,0,14)}n{#color(240,0,29)}e{#color(233,0,43)}m{#color(225,0,57)}i{#color(218,0,71)}e{#color(210,0,86)}s {#color(203,0,100)}I{#color(195,0,114)}m{#color(188,0,129)}p{#color(180,0,143)}r{#color(173,0,157)}o{#color(165,0,171)}v{#color(158,0,186)}e{#color(150,0,200)}d{#reset()}",
 	},
 	mod_description = {
 		en = "{#color("
 			.. colours.text
-			.. ")}Healthbars, Debuffs, Outlines, Markers and more, all in a single, highly-customisable package.{#reset()}\n\n"
+			.. ")}"
+			.. "Healthbars, debuffs, outlines, markers, special attack alerts and more, to improve the enemies throughout Darktide."
+			.. "{#reset()}\n\n"
 			.. "{#color("
 			.. colours.subtitle
 			.. ")}Author: "

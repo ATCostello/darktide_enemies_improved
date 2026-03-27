@@ -16,6 +16,7 @@ mod.build_frame_settings = function(dt)
 	fs.outlines_enable = mod:get("outlines_enable")
 	fs.text_scale = mod:get("text_scale")
 	fs.font_type = mod:get("font_type")
+	fs.check_line_of_sight = mod:get("check_line_of_sight")
 
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
@@ -209,7 +210,7 @@ end)
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- throttle updates...
-	local update_interval = 0.1 -- 1 is 1 second... do the maths ;)
+	local update_interval = 0.5
 	update_time = (update_time or 0) + dt
 
 	if update_time > update_interval then
@@ -446,7 +447,7 @@ mod.scan_enemies = function()
 	local broadphase = broadphase_system.broadphase
 	local from_pos = Unit.world_position(player_unit, 1)
 	local enemy_side_names = side:relation_side_names("enemy")
-	local range = mod.frame_settings.draw_distance or 50
+	local range = mod.frame_settings.draw_distance
 
 	local results = mod._broadphase_results
 	table_clear(results)
@@ -1035,8 +1036,6 @@ local function extract_locals(level_base)
 		level = level + 1
 	end
 
-	dbg_locals = res
-
 	return return_value
 end
 
@@ -1069,7 +1068,7 @@ mod.handle_special_attacks = function(event_name, source_unit)
 			unit = extract_locals(1)
 		end
 
-		extract_locals(1)
+		--extract_locals(1)
 
 		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), unit, event_name))
 
@@ -1106,8 +1105,6 @@ end
 
 mod.remove_dead = function()
 	local units_to_remove = {}
-
-	dbg_mod = mod
 
 	-- Go through each marker type and clear caches.
 	local function iterate_types_removal(unit)
@@ -1512,7 +1509,6 @@ mod.update_enemies = function(dt, t)
 		local unit = temp[i]
 		if mod.enemy_cache[unit] then
 			local entry = mod.enemy_cache[unit]
-			dbg_entry = entry
 
 			if fs.markers_enable then
 				mod.update_enemy_markers(entry, t)

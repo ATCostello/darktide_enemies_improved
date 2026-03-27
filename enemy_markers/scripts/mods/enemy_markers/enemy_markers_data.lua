@@ -462,6 +462,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "draw_distance_tooltip",
 		},
 		{
+			setting_id = "check_line_of_sight",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "check_line_of_sight_tooltip",
+		},
+		{
 			setting_id = "outlines_enable",
 			type = "checkbox",
 			default_value = true,

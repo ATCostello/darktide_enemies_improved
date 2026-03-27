@@ -59,7 +59,7 @@ template.ping_size = ping_size
 
 template.alerted = false
 
-template.check_line_of_sight = CHECK_LOS
+template.check_line_of_sight = mod.frame_settings.check_line_of_sight
 template.screen_clamp = true
 template.max_distance = MAX_DISTANCE_SETTING
 
