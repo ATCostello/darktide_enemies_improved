@@ -520,7 +520,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					if state.name_visible and name_text_style then
 						local loc = localized_cache[name]
 						if not loc then
-							loc = mod:localize(name)
+							loc = mod:localize(name) or ""
 							localized_cache[name] = loc
 						end
 

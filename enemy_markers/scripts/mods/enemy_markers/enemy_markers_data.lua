@@ -402,49 +402,7 @@ local damage_number_types = {
 
 mod.settings_widgets = {}
 
-local fonts = {
-	{
-		text = "proxima_nova_medium",
-		value = "proxima_nova_medium",
-	},
-	{
-		text = "proxima_nova_bold",
-		value = "proxima_nova_bold",
-	},
-	{
-		text = "proxima_nova_bold_masked",
-		value = "proxima_nova_bold_masked",
-	},
-	{
-		text = "itc_novarese_medium",
-		value = "itc_novarese_medium",
-	},
-	{
-		text = "itc_novarese_bold",
-		value = "itc_novarese_bold",
-	},
-	{
-		text = "machine_medium",
-		value = "machine_medium",
-	},
-
-	{
-		text = "arial",
-		value = "arial",
-	},
-	{
-		text = "mono_tide_medium",
-		value = "mono_tide_medium",
-	},
-	{
-		text = "mono_tide_regular",
-		value = "mono_tide_regular",
-	},
-	{
-		text = "mono_tide_bold",
-		value = "mono_tide_bold",
-	},
-}
+local fonts = mod._get_font_options()
 
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
@@ -525,34 +483,40 @@ table.insert(mod.settings_widgets, {
 			tooltip = "specials_flash_tooltip",
 		},
 		{
-			setting_id = "outline_specials_colour_R",
-			type = "numeric",
-			default_value = 255,
-			range = {
-				0,
-				255,
+			setting_id = "outline_specials_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_specials_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_specials_colour_tooltip",
+				},
+				{
+					setting_id = "outline_specials_colour_G",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_specials_colour_tooltip",
+				},
+				{
+					setting_id = "outline_specials_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_specials_colour_tooltip",
+				},
 			},
-			tooltip = "outline_specials_colour_tooltip",
-		},
-		{
-			setting_id = "outline_specials_colour_G",
-			type = "numeric",
-			default_value = 0,
-			range = {
-				0,
-				255,
-			},
-			tooltip = "outline_specials_colour_tooltip",
-		},
-		{
-			setting_id = "outline_specials_colour_B",
-			type = "numeric",
-			default_value = 0,
-			range = {
-				0,
-				255,
-			},
-			tooltip = "outline_specials_colour_tooltip",
 		},
 	},
 })
@@ -769,34 +733,40 @@ mod.group_settings_widgets = {
 	},
 
 	{
-		setting_id = "outline_type_colour_R",
-		type = "numeric",
-		default_value = 50,
-		range = {
-			0,
-			255,
+		setting_id = "outline_type_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "outline_type_colour_R",
+				type = "numeric",
+				default_value = 50,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_type_colour_tooltip",
+			},
+			{
+				setting_id = "outline_type_colour_G",
+				type = "numeric",
+				default_value = 10,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_type_colour_tooltip",
+			},
+			{
+				setting_id = "outline_type_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_type_colour_tooltip",
+			},
 		},
-		tooltip = "outline_type_colour_tooltip",
-	},
-	{
-		setting_id = "outline_type_colour_G",
-		type = "numeric",
-		default_value = 10,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "outline_type_colour_tooltip",
-	},
-	{
-		setting_id = "outline_type_colour_B",
-		type = "numeric",
-		default_value = 0,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "outline_type_colour_tooltip",
 	},
 
 	-- healthbar
@@ -807,34 +777,40 @@ mod.group_settings_widgets = {
 		tooltip = "healthbar_type_enable_tooltip",
 	},
 	{
-		setting_id = "healthbar_type_colour_R",
-		type = "numeric",
-		default_value = 150,
-		range = {
-			0,
-			255,
+		setting_id = "healthbar_type_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "healthbar_type_colour_R",
+				type = "numeric",
+				default_value = 150,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_type_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_type_colour_G",
+				type = "numeric",
+				default_value = 75,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_type_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_type_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_type_colour_tooltip",
+			},
 		},
-		tooltip = "healthbar_type_colour_tooltip",
-	},
-	{
-		setting_id = "healthbar_type_colour_G",
-		type = "numeric",
-		default_value = 75,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "healthbar_type_colour_tooltip",
-	},
-	{
-		setting_id = "healthbar_type_colour_B",
-		type = "numeric",
-		default_value = 0,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "healthbar_type_colour_tooltip",
 	},
 
 	-- healthbar icon
@@ -867,34 +843,40 @@ mod.group_settings_widgets = {
 		tooltip = "healthbar_icon_type_glow_intensity_tooltip",
 	},
 	{
-		setting_id = "healthbar_icon_type_colour_R",
-		type = "numeric",
-		default_value = 200,
-		range = {
-			0,
-			255,
+		setting_id = "healthbar_icon_type_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "healthbar_icon_type_colour_R",
+				type = "numeric",
+				default_value = 200,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_icon_type_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_icon_type_colour_G",
+				type = "numeric",
+				default_value = 150,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_icon_type_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_icon_type_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_icon_type_colour_tooltip",
+			},
 		},
-		tooltip = "healthbar_icon_type_colour_tooltip",
-	},
-	{
-		setting_id = "healthbar_icon_type_colour_G",
-		type = "numeric",
-		default_value = 150,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "healthbar_icon_type_colour_tooltip",
-	},
-	{
-		setting_id = "healthbar_icon_type_colour_B",
-		type = "numeric",
-		default_value = 0,
-		range = {
-			0,
-			255,
-		},
-		tooltip = "healthbar_icon_type_colour_tooltip",
 	},
 }
 

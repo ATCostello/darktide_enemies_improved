@@ -1010,7 +1010,7 @@ template.on_enter = function(widget, marker, template)
 	local breed = unit_data_extension and unit_data_extension:breed()
 
 	if mod.frame_settings.hb_show_enemy_type and breed then
-		content.header_text = mod:localize(breed.name)
+		content.header_text = mod:localize(breed.name) or ""
 	end
 
 	content.breed = breed
@@ -1082,7 +1082,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed_type = content._breed_type or "enemy"
 
 	if mod.frame_settings.hb_show_enemy_type then
-		content.header_text = mod:localize(breed_type)
+		content.header_text = mod:localize(breed_type) or ""
 	end
 
 	-------------------------------------------------------------------

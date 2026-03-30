@@ -1227,6 +1227,11 @@ mod.update_enemy_outlines = function(entry)
 			mod.enable_enemy_outlines(unit, entry)
 			entry._outline_applied = true
 		end
+	else
+		if entry._outline_applied then
+			mod.disable_enemy_outlines(unit)
+			entry._outline_applied = false
+		end
 	end
 end
 
@@ -1647,7 +1652,6 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	mod.build_frame_settings(dt or 0)
 	local fs = mod.frame_settings
 	dbg_mod = mod
 	for _, entry in pairs(mod.enemy_cache) do
@@ -1983,7 +1987,7 @@ mod.reset_type_to_default = function(enemy_type)
 	mod:set("outline_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
 
-	local reset_message = mod:localize("reset_type_to_default_message")
+	local reset_message = mod:localize("reset_type_to_default_message") or ""
 	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
@@ -2108,6 +2112,76 @@ mod.update_settings_values = function(setting_id)
 	end
 end
 
+mod.update_dmf_settings_colours = function(setting_id)
+	-- Only trigger for color settings
+	if
+		string.find(setting_id, "_colour_R")
+		or string.find(setting_id, "_colour_G")
+		or string.find(setting_id, "_colour_B")
+	then
+		local dmf = get_mod("DMF")
+		local mod_name = mod:get_name()
+
+		-- extract base key (e.g. "marker_colour")
+		local base_key = string.gsub(setting_id, "_R$", "")
+		base_key = string.gsub(base_key, "_G$", "")
+		base_key = string.gsub(base_key, "_B$", "")
+
+		local old_title = mod:localize(base_key)
+		local new_title = nil
+
+		-- Recompute localization table (your function)
+		local updated_localization = mod.apply_colours()
+
+		-- GET CURRENT UPDATED VALUE FROM UPDATED_LOCALIZATION
+		for id, data in pairs(updated_localization) do
+			if id == base_key then
+				local lang = Managers.localization:language()
+				local text = data[lang] or data.en
+
+				new_title = text
+			end
+		end
+
+		if not new_title then
+			return
+		end
+
+		-- OVERRIDE CURRENT DISPLAYED TEXT VALUES ON THE SETTINGS PAGES IN DMF
+		for i, mod_data in ipairs(dmf.options_widgets_data) do
+			if mod_data[1] and mod_data[1].mod_name == mod_name then
+				for j = 1, #mod_data do
+					if mod_data[j].setting_id == base_key then
+						mod_data[j].title = new_title
+						break
+					end
+				end
+			end
+		end
+
+		local view = Managers.ui:view_instance("dmf_options_view")
+
+		if view and view._settings_category_widgets and view._settings_category_widgets[mod:localize("mod_name")] then
+			for _, data in ipairs(view._settings_category_widgets[mod:localize("mod_name")]) do
+				local widget = data.widget
+				if not widget then
+					break
+				end
+
+				local clean = string.gsub(new_title, "{#.-}", "")
+				local clean2 = string.gsub(widget.content.text, "{#.-}", "")
+
+				if clean == clean2 then
+					if widget.content.entry then
+						widget.content.entry.display_name = new_title
+					end
+					widget.content.text = new_title
+					break
+				end
+			end
+		end
+	end
+end
 mod.on_setting_changed = function(setting_id)
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
@@ -2144,4 +2218,8 @@ mod.on_setting_changed = function(setting_id)
 	end
 
 	mod.update_settings_values()
+
+	mod.update_dmf_settings_colours(setting_id)
+
+	mod.build_frame_settings()
 end

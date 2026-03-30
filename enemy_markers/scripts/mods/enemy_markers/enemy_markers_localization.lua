@@ -8,6 +8,50 @@ local colours = {
 	text = "169,191,153",
 }
 
+-- Always use an updated font list.
+-- Thanks to GideonAriphael on Nexusmods for recommendation
+mod._get_font_options = function()
+	local FontDefinitions = require("scripts/managers/ui/ui_fonts_definitions")
+	local fonts = FontDefinitions.fonts or {}
+	local options = {}
+	local i = 1
+
+	for font_name, _ in pairs(fonts) do
+		options[i] = { text = font_name, value = font_name }
+		i = i + 1
+	end
+
+	-- Sort alphabetically by the underlying font name for consistency
+	table.sort(options, function(a, b)
+		return a.value < b.value
+	end)
+
+	return options
+end
+
+-- function to apply font face to localisation text
+local apply_font_to_text = function(text, font_name)
+	return string.format("{#font(%s)}%s{#reset()}", font_name, text)
+end
+
+local insert_fonts = function(localisation_table)
+	local fonts_data = mod._get_font_options()
+
+	for _, data in pairs(fonts_data) do
+		-- Convert snake_case to Title Case for display (e.g. proxima_nova_bold -> Proxima Nova Bold)
+		local readable = data.text:gsub("_", " "):gsub("(%a)([%w]*)", function(first, rest)
+			return first:upper() .. rest
+		end)
+
+		local text = string.format("%s", readable)
+
+		local new_localised_readable_text = {
+			en = apply_font_to_text(text, data.value),
+		}
+		localisation_table[data.value] = new_localised_readable_text
+	end
+end
+
 -- base localisations
 mod.localisation = {
 	mod_name = {
@@ -265,7 +309,7 @@ table.insert(localisations_to_add, {
 		en = "Colour for special attacks (Global)",
 	},
 	outline_specials_colour_tooltip = {
-		en = "Adjust the colour of special attacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour to apply to all indicators for special attacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
 	},
 	outline_specials_colour_R = {
 		en = "Special Attack Colour: Red",
@@ -518,6 +562,9 @@ table.insert(localisations_to_add, {
 	healthbar_icon_type_glow_intensity_tooltip = {
 		en = "Set the intensity of the glow.\n\n0 = Off\n100 = Max intensity",
 	},
+	healthbar_icon_type_colour = {
+		en = "Healthbar Icon Colour",
+	},
 	healthbar_icon_type_colour_R = {
 		en = "Type Icon Colour: Red",
 	},
@@ -532,50 +579,6 @@ table.insert(localisations_to_add, {
 	},
 })
 
--- fonts
-table.insert(localisations_to_add, {
-
-	proxima_nova_medium = {
-		en = "Proxima Nova Medium",
-	},
-
-	proxima_nova_bold = {
-		en = "Proxima Nova Bold",
-	},
-
-	proxima_nova_bold_masked = {
-		en = "Proxima Nova Bold Masked",
-	},
-
-	itc_novarese_medium = {
-		en = "Itc Novarese Medium",
-	},
-
-	itc_novarese_bold = {
-		en = "Itc Novarese Bold",
-	},
-
-	machine_medium = {
-		en = "Machine Medium",
-	},
-
-	arial = {
-		en = "Arial",
-	},
-
-	mono_tide_medium = {
-		en = "Mono Tide Medium",
-	},
-
-	mono_tide_regular = {
-		en = "Mono Tide Regular",
-	},
-
-	mono_tide_bold = {
-		en = "Mono Tide Bold",
-	},
-})
-
 -- add localisations to main map
 for i = 1, #localisations_to_add do
 	if localisations_to_add[i] then
@@ -585,6 +588,84 @@ for i = 1, #localisations_to_add do
 			end
 		end
 	end
+end
+
+local apply_color_to_text = function(text, r, g, b)
+	return "{#color(" .. r .. "," .. g .. "," .. b .. ")}" .. text .. "{#reset()}"
+end
+
+local apply_colours = function()
+	for key, values in pairs(mod.localisation) do
+		-- apply rgb colours
+		if
+			string.find(key, "colour")
+			and not string.find(key, "colour_R")
+			and not string.find(key, "colour_G")
+			and not string.find(key, "colour_B")
+		then
+			local r = mod:get(key .. "_R")
+			local g = mod:get(key .. "_G")
+			local b = mod:get(key .. "_B")
+
+			if r ~= nil and g ~= nil and b ~= nil then
+				for language, text in pairs(values) do
+					local clean = string.gsub(text, "{#.-}", "")
+					clean = string.gsub(clean, "{#reset%(%)%}", "")
+					text = apply_color_to_text(clean, r, g, b)
+
+					mod.localisation[key][language] = text
+				end
+			end
+		end
+
+		-- apply border colours
+		if key == "Gold" or key == "Silver" or key == "Steel" or key == "Tarnished" then
+			for language, text in pairs(values) do
+				local argb = mod.lookup_border_color(key)
+
+				if argb ~= nil then
+					local temp = apply_color_to_text(key, argb[2], argb[3], argb[4])
+
+					if mod.localisation[temp] == nil then
+						mod.localisation[temp] = {}
+						mod.localisation[temp][language] = temp
+					else
+						mod.localisation[temp][language] = temp
+					end
+				end
+			end
+		end
+
+		-- adjust tooltip text opacity
+		if string.find(key, "_tooltip") then
+			for language, text in pairs(values) do
+				local rgb = { 144, 155, 136 }
+
+				if rgb ~= nil then
+					local text = apply_color_to_text(text, rgb[1], rgb[2], rgb[3])
+
+					if mod.localisation[key] == nil then
+						mod.localisation[key] = {}
+						mod.localisation[key][language] = text
+					else
+						mod.localisation[key][language] = text
+					end
+				end
+			end
+		end
+	end
+
+	return mod.localisation
+end
+
+-- Insert font localisation
+insert_fonts(mod.localisation)
+
+apply_colours()
+
+mod.apply_colours = function()
+	apply_colours()
+	return mod.localisation
 end
 
 return mod.localisation
