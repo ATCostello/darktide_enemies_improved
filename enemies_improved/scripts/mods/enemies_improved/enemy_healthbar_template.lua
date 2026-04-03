@@ -1,4 +1,4 @@
-local mod = get_mod("enemy_markers")
+local mod = get_mod("enemies_improved")
 
 local HudHealthBarLogic = require("scripts/ui/hud/elements/hud_health_bar_logic")
 local UIHudSettings = require("scripts/settings/ui/ui_hud_settings")

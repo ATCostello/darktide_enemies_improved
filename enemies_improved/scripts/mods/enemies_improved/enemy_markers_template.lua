@@ -1,4 +1,4 @@
-local mod = get_mod("enemy_markers")
+local mod = get_mod("enemies_improved")
 
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}

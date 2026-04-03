@@ -1,4 +1,4 @@
-local mod = get_mod("enemy_markers")
+local mod = get_mod("enemies_improved")
 mod.version = "1.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
@@ -371,7 +371,7 @@ table.insert(localisations_to_add, {
 		en = "Toggles a text-based indicator near the healthbar to show the type or class of the enemy.",
 	},
 	hb_horde_enable = {
-		en = "Enable healthbars on horde enemies?",
+		en = "Enable individual healthbars on horde enemies?",
 	},
 	hb_horde_enable_tooltip = {
 		en = "Toggles individual healthbars for horde enemies.",

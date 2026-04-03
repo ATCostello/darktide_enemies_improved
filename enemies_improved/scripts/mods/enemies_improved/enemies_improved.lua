@@ -1,5 +1,5 @@
-local mod = get_mod("enemy_markers")
-mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_localization")
+local mod = get_mod("enemies_improved")
+mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
 mod.text_scale = mod:get("text_scale") or 1
 mod.font_type = mod:get("font_type")
@@ -56,11 +56,11 @@ end
 
 mod.build_frame_settings()
 
-local EnemyMarkersTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_markers_template")
-local EnemyHealthbarTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_healthbar_template")
-local EnemyDebuffTemplate = mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_debuff_template")
+local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_markers_template")
+local EnemyHealthbarTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_healthbar_template")
+local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_debuff_template")
 local EnemyUtilityDebuffTemplate =
-	mod:io_dofile("enemy_markers/scripts/mods/enemy_markers/enemy_utility_debuff_template")
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_utility_debuff_template")
 
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -131,57 +131,57 @@ local MIN_ALPHA = 0.1 -- never fully invisible
 mod.on_game_state_changed = function(state, state_name)
 	mod.on_game_state_changed = function(state, state_name)
 		-- ensure packages are loaded
-		Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemies_improved", nil, true)
 		Managers.package:load(
 			"packages/ui/views/inventory_weapons_view/inventory_weapons_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
 		Managers.package:load(
 			"packages/ui/views/inventory_background_view/inventory_background_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
 		Managers.package:load(
 			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
-		Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemies_improved", nil, true)
 		Managers.package:load(
 			"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
 		Managers.package:load(
 			"packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
 		Managers.package:load(
 			"packages/ui/views/masteries_overview_view/masteries_overview_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
-		Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemy_markers", nil, true)
-		Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemies_improved", nil, true)
+		Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemies_improved", nil, true)
 
-		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemy_markers", nil, true)
-		Managers.package:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemies_improved", nil, true)
+		Managers.package:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemies_improved", nil, true)
 
 		Managers.package:load(
 			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-			"enemy_markers",
+			"enemies_improved",
 			nil,
 			true
 		)
-		Managers.package:load("packages/ui/views/expedition_view/expedition_view", "enemy_markers", nil, true)
+		Managers.package:load("packages/ui/views/expedition_view/expedition_view", "enemies_improved", nil, true)
 		-- empty caches
 		mod.clear_caches()
 	end
@@ -1635,13 +1635,7 @@ mod.update_horde_clusters = function(temp, to_process)
 	local fs = mod.frame_settings
 
 	if fs.horde_clusters_enable then
-		local CLUSTER_UPDATE_INTERVAL = 0.05
-		_cluster_t = (_cluster_t or 0) + fs.dt
-
-		if _cluster_t > CLUSTER_UPDATE_INTERVAL then
-			_cluster_t = 0
-			_build_horde_clusters(temp, to_process)
-		end
+		_build_horde_clusters(temp, to_process)
 	else
 		table_clear(_horde_clusters)
 		table_clear(_horde_cluster_by_unit)
@@ -1700,7 +1694,7 @@ mod.update_enemies = function(dt, t)
 	end
 
 	-- update horde clusters...
-	if fs.healthbar_enable and fs.horde_clusters_enable then
+	if fs.horde_clusters_enable then
 		mod.update_horde_clusters(temp, to_process)
 	end
 

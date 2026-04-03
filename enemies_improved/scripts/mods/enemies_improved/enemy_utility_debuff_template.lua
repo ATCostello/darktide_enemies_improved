@@ -1,4 +1,4 @@
-local mod = get_mod("enemy_markers")
+local mod = get_mod("enemies_improved")
 
 local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -7,6 +7,7 @@ local template = {}
 -----------------------------------------------------------------------
 -- Cached settings
 -----------------------------------------------------------------------
+
 local hb_size_width = mod.frame_settings.hb_size_width
 local hb_size_height = mod.frame_settings.hb_size_height
 local max_visible_rows_setting = 5
@@ -17,8 +18,12 @@ local NAME_VISIBLE = 4.0
 local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
-local size = { hb_size_width, hb_size_height }
-local base_y = (mod.frame_settings.hb_show_enemy_type and -hb_size_height - 40) or (-hb_size_height - 16)
+local size = {
+	hb_size_width,
+	hb_size_height,
+}
+
+local base_y = (mod.frame_settings.show_armor_types and hb_size_height + 52) or (hb_size_height + 32)
 
 local row_step = hb_size_height + (24 * mod.text_scale)
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
@@ -29,7 +34,7 @@ local stack_x = hb_size_width + (60 * mod.text_scale)
 local Unit_alive = Unit.alive
 
 template.size = size
-template.name = "enemy_debuff"
+template.name = "enemy_utility_debuff"
 
 if mod.frame_settings.debuff_show_on_body then
 	template.unit_node = "root_point"
@@ -41,7 +46,7 @@ end
 
 template.max_visible_rows = max_visible_rows_setting
 
-template.check_line_of_sight = mod.frame_settings.check_line_of_sight
+template.check_line_of_sight = true
 template.max_distance = draw_distance_setting
 template.screen_clamp = false
 template.bar_settings = {
@@ -92,7 +97,7 @@ local dot_lookup = {}
 
 local function rebuild_dot_lookup()
 	table.clear(dot_lookup)
-	local list = mod.dot_debuffs
+	local list = mod.utility_debuffs
 	if not list then
 		return
 	end
@@ -122,14 +127,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local style = {}
 
 	for i = 1, max_rows do
-		local icon_bg_id = "debuff_icon_background_" .. i
-		local icon_id = "debuff_icon_" .. i
+		local icon_bg_id = "util_icon_background_" .. i
+		local icon_id = "util_icon_" .. i
 		local stack_text_id = "stack_counter_" .. i
-		local name_text_id = "debuff_name_" .. i
+		local name_text_id = "util_name_" .. i
 
-		local row_offset_y = base_y - ((i - 1) * row_step)
+		local row_offset_y = base_y + ((i - 1) * row_step)
 
-		content[icon_bg_id] = "content/ui/materials/frames/talents/talent_icon_container"
+		content[icon_bg_id] = "content/ui/materials/effects/terminal_header_glow"
 		content[icon_id] = ""
 		content[stack_text_id] = ""
 		content[name_text_id] = ""
@@ -177,15 +182,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		}
 
 		style[icon_id] = {
-			scale_to_material = true,
-
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
-			offset = { icon_x + base_offset, row_offset_y, 6 },
-			default_offset = { icon_x + base_offset, row_offset_y, 6 },
-
-			size = { 30 * mod.text_scale, 30 * mod.text_scale },
-			default_size = { 30 * mod.text_scale, 30 * mod.text_scale },
+			offset = {
+				icon_x + base_offset,
+				row_offset_y,
+				6,
+			},
+			default_offset = {
+				icon_x + base_offset,
+				row_offset_y,
+				6,
+			},
+			size = { 24 * mod.text_scale, 24 * mod.text_scale },
+			default_size = { 24 * mod.text_scale, 24 * mod.text_scale },
 
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
@@ -207,8 +217,16 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "left",
 			text_vertical_alignment = "center",
-			offset = { stack_x + base_offset, row_offset_y, 6 },
-			default_offset = { stack_x + base_offset, row_offset_y, 6 },
+			offset = {
+				stack_x + base_offset,
+				row_offset_y,
+				6,
+			},
+			default_offset = {
+				stack_x + base_offset,
+				row_offset_y,
+				6,
+			},
 			font_type = mod.font_type,
 			font_size = 16,
 			default_font_size = 16,
@@ -242,12 +260,21 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
-			offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 },
-			default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 },
+
+			offset = {
+				name_x - 40 * mod.text_scale + base_offset,
+				row_offset_y,
+				7,
+			},
+			default_offset = {
+				name_x - 40 * mod.text_scale + base_offset,
+				row_offset_y,
+				7,
+			},
 
 			font_type = mod.font_type,
-			font_size = 14,
-			default_font_size = 14,
+			font_size = 16,
+			default_font_size = 16,
 
 			text_color = { 255, 255, 255, 255 },
 			size = { name_x * mod.text_scale, 22 },
@@ -334,7 +361,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
-			active[active_count] = { name = name, stacks = stacks }
+			active[active_count] = {
+				name = name,
+				stacks = stacks,
+			}
 		end
 	end
 
@@ -348,7 +378,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local stacks = 1
 
 				active_count = active_count + 1
-				active[active_count] = { name = name, stacks = stacks }
+				active[active_count] = {
+					name = name,
+					stacks = stacks,
+				}
 			end
 		end
 	end
@@ -391,7 +424,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
-		local y_base = base_y - ((index - 1) * row_height)
+		local y_base = base_y + ((index - 1) * row_height)
 
 		local state = state_table[name]
 		if not state then
@@ -478,7 +511,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			root_position.z = root_position.z + content.breed.base_height / 1.5
 		end
-
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)
 		else
@@ -490,9 +522,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- DRAW ROWS
 	-------------------------------------------------------------------
 	for i = 1, max_rows do
-		local icon_id = "debuff_icon_" .. i
+		local icon_id = "util_icon_" .. i
 		local stack_text_id = "stack_counter_" .. i
-		local name_text_id = "debuff_name_" .. i
+		local name_text_id = "util_name_" .. i
 
 		local icon_style = style[icon_id]
 		local stack_text_style = style[stack_text_id]
@@ -520,7 +552,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					if state.name_visible and name_text_style then
 						local loc = localized_cache[name]
 						if not loc then
-							loc = mod:localize(name) or ""
+							loc = mod:localize(name)
 							localized_cache[name] = loc
 						end
 
@@ -579,7 +611,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- apply scaling
 				if marker.draw then
 					marker.scale = marker.scale * mod.text_scale
-
 					local scale = marker.scale
 					icon_style.size[1] = icon_style.default_size[1] * scale
 					icon_style.size[2] = icon_style.default_size[2] * scale

@@ -1,4 +1,4 @@
-local mod = get_mod("enemy_markers")
+local mod = get_mod("enemies_improved")
 
 mod.dot_debuffs = {
 	-- DoT (Show above health bar as cool icons with stacks)
