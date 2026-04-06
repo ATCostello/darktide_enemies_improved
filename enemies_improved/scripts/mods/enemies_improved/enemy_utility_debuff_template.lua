@@ -31,8 +31,6 @@ local icon_x = (hb_size_width - (5 * mod.text_scale))
 local name_x = hb_size_width
 local stack_x = hb_size_width + (60 * mod.text_scale)
 
-local Unit_alive = Unit.alive
-
 template.size = size
 template.name = "enemy_utility_debuff"
 
@@ -46,7 +44,7 @@ end
 
 template.max_visible_rows = max_visible_rows_setting
 
-template.check_line_of_sight = true
+template.check_line_of_sight = mod.frame_settings.check_line_of_sight
 template.max_distance = draw_distance_setting
 template.screen_clamp = false
 template.bar_settings = {
@@ -134,7 +132,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 		local row_offset_y = base_y + ((i - 1) * row_step)
 
-		content[icon_bg_id] = "content/ui/materials/effects/terminal_header_glow"
+		content[icon_bg_id] = "content/ui/materials/frames/talents/talent_icon_container"
 		content[icon_id] = ""
 		content[stack_text_id] = ""
 		content[name_text_id] = ""
@@ -182,6 +180,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		}
 
 		style[icon_id] = {
+			scale_to_material = true,
 			horizontal_alignment = "right",
 			vertical_alignment = "center",
 			offset = {
@@ -194,8 +193,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
-			size = { 24 * mod.text_scale, 24 * mod.text_scale },
-			default_size = { 24 * mod.text_scale, 24 * mod.text_scale },
+			size = { 30 * mod.text_scale, 30 * mod.text_scale },
+			default_size = { 30 * mod.text_scale, 30 * mod.text_scale },
 
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
@@ -231,7 +230,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 16,
 			default_font_size = 16,
 
-			text_color = { 255, 255, 255, 255 },
+			text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
 			size = { bar_width * 0.25 * mod.text_scale, 20 },
 			default_size = { bar_width * 0.25 * mod.text_scale, 20 },
 
@@ -260,7 +259,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			vertical_alignment = "center",
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
-
 			offset = {
 				name_x - 40 * mod.text_scale + base_offset,
 				row_offset_y,
@@ -273,10 +271,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 
 			font_type = mod.font_type,
-			font_size = 16,
-			default_font_size = 16,
+			font_size = 14,
+			default_font_size = 14,
 
-			text_color = { 255, 255, 255, 255 },
+			text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
 			size = { name_x * mod.text_scale, 22 },
 			default_size = { name_x * mod.text_scale, 22 },
 
@@ -298,6 +296,21 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	}
 end
 
+template.on_enter = function(widget, marker, template)
+	local content = widget.content
+	local style = widget.style
+	local unit = marker.unit
+	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+	local buff_extension = ScriptUnit_extension(unit, "buff_system")
+
+	content.breed_tags = mod.get_breed_tags(unit)
+	content.unit_data_extension = unit_data_extension
+	content.breed = breed
+	content.debuffs = buff_extension:buffs()
+	content.keywords = buff_extension and buff_extension:keywords()
+end
+
 -----------------------------------------------------------------------
 -- Update function
 -----------------------------------------------------------------------
@@ -313,29 +326,21 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- don't process hordes if disabled
-	local breed_tags = mod.get_breed_tags(unit)
-	if mod.frame_settings.debuff_horde_enable == false and (breed_tags and (breed_tags.horde or breed_tags.roamer)) then
+	if
+		mod.frame_settings.debuff_horde_enable == false
+		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
+	then
 		marker.draw = false
-
 		return
 	end
 
 	-------------------------------------------------------------------
 	-- Breed / type
 	-------------------------------------------------------------------
-	local unit_data_extension = content.unit_data_extension or ScriptUnit_has_extension(unit, "unit_data_system")
-	content.unit_data_extension = unit_data_extension
-	local breed = content.breed or (unit_data_extension and unit_data_extension:breed())
-	content.breed = breed
-
-	local buff_extension = ScriptUnit_extension(unit, "buff_system")
-	if not buff_extension then
-		marker.draw = false
-		return
-	end
-
-	local debuffs = buff_extension:buffs()
-	local keywords = buff_extension and buff_extension:keywords()
+	local unit_data_extension = content.unit_data_extension
+	local breed = content.breed
+	local debuffs = content.debuffs
+	local keywords = content.keywords
 
 	if not debuffs or #debuffs == 0 then
 		marker.draw = false
@@ -504,7 +509,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
-	if content.breed and Unit_alive(unit) then
+	if content.breed and mod.detect_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 		if not mod.frame_settings.debuff_show_on_body then
 			root_position.z = root_position.z + content.breed.base_height + 0.5
@@ -552,7 +557,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					if state.name_visible and name_text_style then
 						local loc = localized_cache[name]
 						if not loc then
-							loc = mod:localize(name)
+							loc = mod:localize(name) or ""
 							localized_cache[name] = loc
 						end
 

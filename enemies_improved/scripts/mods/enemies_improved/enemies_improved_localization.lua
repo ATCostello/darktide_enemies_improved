@@ -256,6 +256,12 @@ table.insert(localisations_to_add, {
 	draw_distance_tooltip = {
 		en = "The distance (in Metres) from the player to draw enemy information.\nThis setting is global and will effect all enemy types.",
 	},
+	check_line_of_sight = {
+		en = "Check for line of sight?",
+	},
+	check_line_of_sight_tooltip = {
+		en = "Require line of sight checks for enemies?",
+	},
 	outlines_enable = {
 		en = "Enable Outlines (Global)",
 	},
@@ -346,6 +352,9 @@ table.insert(localisations_to_add, {
 	healthbar_settings = {
 		en = "{#color(" .. colours.title .. ")}Healthbars{#reset()}",
 	},
+	healthbar_text_settings = {
+		en = "{#color(" .. colours.title .. ")}Healthbar Text Options{#reset()}",
+	},
 	healthbar_enable = {
 		en = "Enable Healthbars? (Global)",
 	},
@@ -364,11 +373,74 @@ table.insert(localisations_to_add, {
 	hb_padding_scale_tooltip = {
 		en = "A global scale for the decorative frame element around the enemies current health.\n\n1 = Default\n2 = 2x size ",
 	},
-	hb_show_enemy_type = {
-		en = "Display enemy type?",
+	hb_text_top_left_01 = {
+		en = "Above Healthbar Text option",
 	},
-	hb_show_enemy_type_tooltip = {
-		en = "Toggles a text-based indicator near the healthbar to show the type or class of the enemy.",
+	hb_text_top_left_01_tooltip = {
+		en = "Pick a text option to display in the text slot above the healthbar.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Type: {#reset()}Displays the class/category of this enemy. e.g. Elite, Specialist etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Name: {#reset()}Displays the name of the enemy. e.g. Crusher, Poxwalker etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Armour Type: {#reset()}Display the previously hit armour zone type e.g. Carapace, Flak etc.",
+	},
+	hb_text_bottom_left_01 = {
+		en = "Below Healthbar Text option 1",
+	},
+	hb_text_bottom_left_01_tooltip = {
+		en = "Pick a text option to display in the text slot below the healthbar.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Type: {#reset()}Displays the class/category of this enemy. e.g. Elite, Specialist etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Name: {#reset()}Displays the name of the enemy. e.g. Crusher, Poxwalker etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Armour Type: {#reset()}Display the previously hit armour zone type e.g. Carapace, Flak etc.",
+	},
+	hb_text_bottom_left_02 = {
+		en = "Below Healthbar Text option 2",
+	},
+	hb_text_bottom_left_02_tooltip = {
+		en = "Pick a text option to display in the second text slot below the healthbar.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Type: {#reset()}Displays the class/category of this enemy. e.g. Elite, Specialist etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Enemy Name: {#reset()}Displays the name of the enemy. e.g. Crusher, Poxwalker etc.\n"
+			.. "{#color("
+			.. colours.subtitle
+			.. ")}"
+			.. "Armour Type: {#reset()}Display the previously hit armour zone type e.g. Carapace, Flak etc.",
+	},
+	enemy_type = {
+		en = "Enemy Type",
+	},
+	enemy_name = {
+		en = "Name",
+	},
+	armour_type = {
+		en = "Armour Type",
+	},
+	health = {
+		en = "Current Health",
+	},
+	nothing = {
+		en = "Don't Show",
 	},
 	hb_horde_enable = {
 		en = "Enable individual healthbars on horde enemies?",

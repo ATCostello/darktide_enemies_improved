@@ -29,7 +29,6 @@ local SHOW_DISTANCE = mod:get("specialist_show_distance") or false
 local SPECIAL_PULSE = mod:get("specialist_special_move_flash") or true
 
 local ScriptUnit_extension = ScriptUnit.extension
-local Unit_alive = Unit.alive
 
 local TRACKED_ENEMY_TYPES = {
 	trapper = true,
@@ -326,7 +325,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- marker height
-	if content.breed and Unit_alive(unit) then
+	if content.breed and mod.detect_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
 
 		if mod.frame_settings.healthbar_enable then

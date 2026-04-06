@@ -400,6 +400,29 @@ local damage_number_types = {
 	},
 }
 
+local enemy_type_options = {
+	{
+		text = "enemy_type",
+		value = "enemy_type",
+	},
+	{
+		text = "enemy_name",
+		value = "enemy_name",
+	},
+	{
+		text = "armour_type",
+		value = "armour_type",
+	},
+	{
+		text = "health",
+		value = "health",
+	},
+	{
+		text = "nothing",
+		value = "nothing",
+	},
+}
+
 mod.settings_widgets = {}
 
 local fonts = mod._get_font_options()
@@ -420,11 +443,29 @@ table.insert(mod.settings_widgets, {
 			tooltip = "draw_distance_tooltip",
 		},
 		{
+			setting_id = "global_opacity",
+			type = "numeric",
+			default_value = 1,
+			decimals_number = 2,
+			step_size_value = 0.1,
+			range = {
+				0.1,
+				1,
+			},
+			tooltip = "global_opacity_tooltip",
+		},
+		{
+			setting_id = "enable_depth_fading",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "enable_depth_fading_tooltip",
+		},
+		--[[{
 			setting_id = "check_line_of_sight",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "check_line_of_sight_tooltip",
-		},
+		},]]
 		{
 			setting_id = "outlines_enable",
 			type = "checkbox",
@@ -449,6 +490,78 @@ table.insert(mod.settings_widgets, {
 				1.5,
 			},
 			tooltip = "text_scale_tooltip",
+		},
+		{
+			setting_id = "main_font_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "main_font_colour_R",
+					type = "numeric",
+					default_value = 220,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "main_font_colour_tooltip",
+				},
+				{
+					setting_id = "main_font_colour_G",
+					type = "numeric",
+					default_value = 220,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "main_font_colour_tooltip",
+				},
+				{
+					setting_id = "main_font_colour_B",
+					type = "numeric",
+					default_value = 220,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "main_font_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "secondary_font_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "secondary_font_colour_R",
+					type = "numeric",
+					default_value = 180,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "secondary_font_colour_tooltip",
+				},
+				{
+					setting_id = "secondary_font_colour_G",
+					type = "numeric",
+					default_value = 180,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "secondary_font_colour_tooltip",
+				},
+				{
+					setting_id = "secondary_font_colour_B",
+					type = "numeric",
+					default_value = 180,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "secondary_font_colour_tooltip",
+				},
+			},
 		},
 	},
 })
@@ -558,12 +671,7 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
-		{
-			setting_id = "hb_show_enemy_type",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "hb_show_enemy_type_tooltip",
-		},
+
 		{
 			setting_id = "hb_horde_enable",
 			type = "checkbox",
@@ -582,12 +690,12 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "hb_hide_after_no_damage_tooltip",
 		},
-		{
+		--[[{
 			setting_id = "hb_text_show_health",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_text_show_health_tooltip",
-		},
+		},]]
 		{
 			setting_id = "hb_text_show_damage",
 			type = "checkbox",
@@ -607,12 +715,12 @@ table.insert(mod.settings_widgets, {
 			default_value = "floating",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
-		{
+		--[[{
 			setting_id = "hb_show_armour_types",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_show_armour_types_tooltip",
-		},
+		},]]
 		{
 			setting_id = "hb_frame",
 			type = "dropdown",
@@ -651,6 +759,34 @@ table.insert(mod.settings_widgets, {
 				25,
 			},
 			tooltip = "hb_size_height_tooltip",
+		},
+	},
+})
+
+table.insert(mod.settings_widgets, {
+	setting_id = "healthbar_text_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "hb_text_top_left_01",
+			type = "dropdown",
+			options = enemy_type_options,
+			default_value = "enemy_name",
+			tooltip = "hb_text_top_left_01_tooltip",
+		},
+		{
+			setting_id = "hb_text_bottom_left_01",
+			type = "dropdown",
+			options = enemy_type_options,
+			default_value = "health",
+			tooltip = "hb_text_bottom_left_01_tooltip",
+		},
+		{
+			setting_id = "hb_text_bottom_left_02",
+			type = "dropdown",
+			options = enemy_type_options,
+			default_value = "armour_type",
+			tooltip = "hb_text_bottom_left_02_tooltip",
 		},
 	},
 })

@@ -18,6 +18,43 @@ mod.build_frame_settings = function(dt)
 	fs.text_scale = mod:get("text_scale")
 	fs.font_type = mod:get("font_type")
 	fs.check_line_of_sight = mod:get("check_line_of_sight")
+	fs.enable_depth_fading = mod:get("enable_depth_fading")
+
+	local r = mod:get("main_font_colour_R")
+	local g = mod:get("main_font_colour_G")
+	local b = mod:get("main_font_colour_B")
+
+	if not r or not g or not b then
+		r = 220
+		g = 220
+		b = 220
+	end
+
+	fs.main_colour = {
+		255,
+		r,
+		g,
+		b,
+	}
+
+	local rs = mod:get("secondary_font_colour_R")
+	local gs = mod:get("secondary_font_colour_G")
+	local bs = mod:get("secondary_font_colour_B")
+
+	if not rs or not gs or not bs then
+		rs = 150
+		gs = 150
+		bs = 150
+	end
+
+	fs.secondary_colour = {
+		255,
+		rs,
+		gs,
+		bs,
+	}
+
+	fs.global_opacity = mod:get("global_opacity") or 1
 
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
@@ -31,8 +68,11 @@ mod.build_frame_settings = function(dt)
 	fs.hide_after_no_damage = mod:get("hb_hide_after_no_damage")
 	fs.horde_enable = mod:get("hb_horde_enable")
 	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
-	fs.hb_show_enemy_type = mod:get("hb_show_enemy_type")
-	fs.hb_text_show_health = mod:get("hb_text_show_health")
+
+	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
+	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
+	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
+
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
@@ -55,6 +95,14 @@ mod.build_frame_settings = function(dt)
 end
 
 mod.build_frame_settings()
+
+mod.detect_alive = function(unit)
+	if not HEALTH_ALIVE[unit] or not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
+		return false
+	else
+		return true
+	end
+end
 
 local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_healthbar_template")
@@ -106,7 +154,6 @@ local Managers_state = Managers.state
 local Managers_event = Managers.event
 local Managers_ui = Managers.ui
 local Managers_time = Managers.time
-local Unit_alive = Unit.alive
 local ScriptUnit_extension = ScriptUnit.extension
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local table_clear = table.clear
@@ -173,7 +220,12 @@ mod.on_game_state_changed = function(state, state_name)
 		Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemies_improved", nil, true)
 
 		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemies_improved", nil, true)
-		Managers.package:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemies_improved", nil, true)
+		Managers.package:load(
+			"packages/ui/views/talent_builder_view/talent_builder_view",
+			"enemies_improved",
+			nil,
+			true
+		)
 
 		Managers.package:load(
 			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
@@ -214,13 +266,15 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	local enemy_count = table.size(mod.enemy_cache) or 0
 
 	local update_interval
+
 	if enemy_count > 100 then
-		update_interval = 1.0
+		update_interval = 0.2
 	elseif enemy_count > 50 then
-		update_interval = 0.75
+		update_interval = 0.1
 	else
-		update_interval = 0.4
+		update_interval = 0.05
 	end
+
 	update_time = (update_time or 0) + dt
 
 	if update_time > update_interval then
@@ -234,8 +288,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		return
 	end
 
-	mod.markers = self._markers_by_type
-
 	for i = 1, #markers do
 		local marker = markers[i]
 		local template = marker and marker.template
@@ -248,9 +300,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			end
 		end
 	end
-
-	-- Apply distance / stacking fade to all active markers
-	mod.apply_marker_fade(self)
 end)
 
 mod.get_marker_by_id = function(id)
@@ -259,7 +308,11 @@ mod.get_marker_by_id = function(id)
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	local markers_by_id = world_markers and world_markers._markers_by_id
 
-	return markers_by_id[id]
+	if markers_by_id then
+		return markers_by_id[id]
+	else
+		return nil
+	end
 end
 
 mod.enable_enemy_outlines = function(unit, entry)
@@ -432,7 +485,7 @@ mod.scan_enemies = function()
 	end
 
 	local player_unit = local_player.player_unit
-	if not player_unit or not Unit_alive(player_unit) then
+	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
 
@@ -490,7 +543,7 @@ mod.scan_enemies = function()
 	for i = 1, num_hits do
 		local unit = results[i]
 
-		if Unit_alive(unit) then
+		if mod.detect_alive(unit) then
 			local entry = cache[unit]
 
 			if not entry then
@@ -546,7 +599,7 @@ local function _build_horde_clusters(units, num_units)
 
 	for i = 1, num_units do
 		local unit = units[i]
-		if Unit_alive(unit) then
+		if mod.detect_alive(unit) then
 			local entry = mod.enemy_cache[unit]
 			local breed = entry and entry.breed
 			local tags = breed and breed.tags
@@ -621,10 +674,12 @@ local function _build_horde_clusters(units, num_units)
 
 				for _, u in ipairs(units_in_cluster) do
 					local entry = mod.enemy_cache[u]
-					local he = entry and entry.health_ext
-					if he then
-						total_current = total_current + (he:current_health() or 0)
-						total_max = total_max + (he:max_health() or 0)
+					if mod.detect_alive(entry.unit) then
+						local he = entry and entry.health_ext
+						if he then
+							total_current = total_current + (he:current_health() or 0)
+							total_max = total_max + (he:max_health() or 0)
+						end
 					end
 				end
 
@@ -943,7 +998,7 @@ mod.special_attack_animations = {
 --[[mod:hook(Unit, "animation_event", function(func, unit, event, ...)
 	local result = func(unit, event, ...)
 
-	if not unit or not Unit_alive(unit) then
+	if not unit or not mod.detect_alive(unit) then
 		return result
 	end
 
@@ -1104,7 +1159,7 @@ mod.handle_special_attacks = function(event_name, source_unit)
 
 		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), unit, event_name))
 
-		if unit and Unit_alive(unit) then
+		if unit and mod.detect_alive(unit) then
 			entry = mod.enemy_cache[unit]
 
 			if entry then
@@ -1178,7 +1233,7 @@ mod.remove_dead = function()
 
 	-- Detect if dead
 	for unit, data in pairs(mod.enemy_cache) do
-		if not HEALTH_ALIVE[unit] or not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
+		if not mod.detect_alive(unit) then
 			iterate_types_removal(unit)
 		else
 			local entry = mod.enemy_cache[unit]
@@ -1214,12 +1269,61 @@ mod.is_horde = function(unit)
 	end
 end
 
+local Scanning = require("scripts/utilities/scanning")
 mod.update_enemy_outlines = function(entry)
 	local unit = entry.unit
 
 	local fs = mod.frame_settings
 	if not fs.outlines_enable then
 		return
+	end
+
+	local world = Managers.world:world("level_world")
+	local physics_world = World.get_data(world, "physics_world")
+
+	local player_unit = Managers.player:local_player(1).player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
+	end
+
+	local unit_data_extension = ScriptUnit.extension(player_unit, "unit_data_system")
+	local first_person_component = unit_data_extension:read_component("first_person")
+
+	local rotation = first_person_component.rotation
+	local look_forward = rotation and Quaternion.forward(rotation)
+	local look_pos = first_person_component.position
+	local los_hit, _, los_dist, _ = PhysicsWorld.raycast(
+		physics_world,
+		look_pos,
+		look_forward,
+		100,
+		"closest",
+		"collision_filter",
+		"filter_minion_line_of_sight_check"
+	)
+	local hits, _ = PhysicsWorld.raycast(
+		physics_world,
+		look_pos,
+		look_forward,
+		100,
+		"all",
+		"collision_filter",
+		"filter_minion_line_of_sight_check"
+	)
+	local line_of_sight = false
+
+	if hits then
+		for i = 1, #hits do
+			local hit = hits[i]
+			local hit_distance = hit[2]
+			local hit_actor = hit[4]
+			local target_unit = hit_actor and Actor.unit(hit_actor)
+			local los_is_blocked = los_hit and los_dist
+
+			if target_unit and not los_is_blocked then
+				line_of_sight = true
+			end
+		end
 	end
 
 	if fs.outlines_enable then
@@ -1244,6 +1348,7 @@ mod.update_special_attack_detection = function(entry)
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	local markers_by_id = world_markers and world_markers._markers_by_id
+	dbg_markers = world_markers._markers_by_type
 
 	-- remove special_attack_imminent if over the timer...
 	if entry.special_attack_imminent then
@@ -1331,7 +1436,7 @@ mod.update_enemy_healthbars = function(entry)
 	if entry._last_healthbar_update and t_now < entry._last_healthbar_update then
 		return
 	end
-	entry._last_healthbar_update = t_now + 0.35
+	entry._last_healthbar_update = t_now + 0.15
 
 	-- skip if already created
 	if entry._healthbar_created then
@@ -1374,7 +1479,7 @@ mod.update_enemy_debuffs = function(entry)
 		return
 	end
 
-	entry._next_debuff_update = t + 0.25
+	entry._next_debuff_update = t + 0.35
 
 	-- only add debuffs for living enemies that are not dead and removed
 	if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
@@ -1396,11 +1501,11 @@ mod.update_enemy_utility_debuffs = function(entry)
 
 	local t = mod.get_time()
 
-	if entry._next_debuff_update and t < entry._next_debuff_update then
+	if entry._next_util_debuff_update and t < entry._next_util_debuff_update then
 		return
 	end
 
-	entry._next_debuff_update = t + 0.25
+	entry._next_util_debuff_update = t + 0.35
 
 	if not mod.enemy_utility_debuffs[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
@@ -1446,14 +1551,6 @@ mod.world_to_screen = function(self, world_markers, world_pos)
 end
 
 mod.apply_marker_fade = function(self)
-	mod._fade_t = (mod._fade_t or 0) + (mod.frame_settings.dt or 0)
-
-	if mod._fade_t < 0.05 then
-		return
-	end
-
-	mod._fade_t = 0
-
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
@@ -1473,7 +1570,7 @@ mod.apply_marker_fade = function(self)
 	end
 
 	local player_unit = player.player_unit
-	if not player_unit or not Unit_alive(player_unit) then
+	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
 
@@ -1495,45 +1592,49 @@ mod.apply_marker_fade = function(self)
 	-- DEPTH STACKING SETTINGS
 	--------------------------------------------------
 	local STACK_FADE_FACTOR = 0.9 -- how much stacking reduces marker visibility
-	local DEPTH_THRESHOLD = 0.1 -- how far behind to start stacking
-	local MAX_STACK_DIST_SQ = 25 -- how close 2 units need to be to stack
-	local MAX_DEPTH_STACK = 25 -- how far behind stacking still applies
+	local DEPTH_THRESHOLD = 0.05 -- how far behind to start stacking
+	local MAX_STACK_DIST_SQ = 100 -- how close 2 units need to be to stack
+	local MAX_DEPTH_STACK = 100 -- how far behind stacking still applies
 	local ALIGNMENT_NEAR = 0.96 -- how aligned they need to be when close
 	local ALIGNMENT_FAR = 0.96 -- how aligned they need to be when far
 
 	local marker_list = {}
 
-	for marker_id in pairs(mod.active_markers) do
-		local marker = markers_by_id[marker_id]
+	if mod.frame_settings.enable_depth_fading then
+		for marker_id in pairs(mod.active_markers) do
+			local marker = markers_by_id[marker_id]
 
-		if marker and marker.unit and Unit_alive(marker.unit) then
-			if
-				marker.type == "enemy_healthbar"
-				or marker.type == "enemy_markers"
-				or marker.type == "enemy_debuff"
-				or marker.type == "enemy_utility_debuff"
-			then
-				local pos = Unit.world_position(marker.unit, 1)
+			if marker and marker.unit and mod.detect_alive(marker.unit) then
+				if
+					marker.type == "enemy_healthbar"
+					or marker.type == "enemy_markers"
+					or marker.type == "enemy_debuff"
+					or marker.type == "enemy_utility_debuff"
+				then
+					local pos = Unit.world_position(marker.unit, 1)
 
-				local dx = pos.x - player_pos.x
-				local dy = pos.y - player_pos.y
-				local dz = pos.z - player_pos.z
+					local dx = pos.x - player_pos.x
+					local dy = pos.y - player_pos.y
+					local dz = pos.z - player_pos.z
 
-				local dist_sq = dx * dx + dy * dy + dz * dz
+					local dist_sq = dx * dx + dy * dy + dz * dz
 
-				-- depth relative to camera
-				local to_marker_x = pos.x - cam_pos.x
-				local to_marker_y = pos.y - cam_pos.y
-				local to_marker_z = pos.z - cam_pos.z
+					-- depth relative to camera
+					local to_marker_x = pos.x - cam_pos.x
+					local to_marker_y = pos.y - cam_pos.y
+					local to_marker_z = pos.z - cam_pos.z
 
-				local depth = to_marker_x * cam_forward.x + to_marker_y * cam_forward.y + to_marker_z * cam_forward.z
+					local depth = to_marker_x * cam_forward.x
+						+ to_marker_y * cam_forward.y
+						+ to_marker_z * cam_forward.z
 
-				marker_list[#marker_list + 1] = {
-					marker = marker,
-					pos = pos,
-					dist_sq = dist_sq,
-					depth = depth,
-				}
+					marker_list[#marker_list + 1] = {
+						marker = marker,
+						pos = pos,
+						dist_sq = dist_sq,
+						depth = depth,
+					}
+				end
 			end
 		end
 	end
@@ -1648,6 +1749,7 @@ end
 mod.update_enemies = function(dt, t)
 	local fs = mod.frame_settings
 	dbg_mod = mod
+
 	for _, entry in pairs(mod.enemy_cache) do
 		entry.pos = nil
 	end
@@ -1763,6 +1865,9 @@ mod.update_enemies = function(dt, t)
 		::continue_enemy_loop::
 	end
 
+	-- Apply distance / stacking fade to all active markers
+	mod.apply_marker_fade(self)
+
 	mod.remove_dead()
 end
 
@@ -1778,7 +1883,7 @@ local SPECIALIST_TAGS = {
 }
 
 mod.get_breed_tags = function(unit)
-	if not HEALTH_ALIVE[unit] then
+	if not mod.detect_alive(unit) then
 		return nil
 	end
 
@@ -1815,7 +1920,7 @@ mod.find_breed_category = function(unit)
 			return "disabler"
 		elseif tags.special and tags.sniper then
 			return "sniper"
-		elseif tags.elite and tags.far or tags.special and tags.far then
+		elseif tags.elite and tags.far or tags.special and tags.far or tags.elite and tags.close then
 			return "far"
 		elseif tags.elite then
 			return "elite"
