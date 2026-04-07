@@ -22,7 +22,7 @@ local size = {
 	hb_size_width,
 	hb_size_height,
 }
-local base_y = (fs.show_armor_types and hb_size_height + 52) or (hb_size_height + 32)
+local base_y = (fs.show_armor_types and hb_size_height + 56) or (hb_size_height + 32)
 
 local row_step = hb_size_height + (24 * mod.text_scale)
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
@@ -123,62 +123,17 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local passes = {}
 	local content = {}
 	local style = {}
-	local icon_bg_ids = {}
-	local icon_ids = {}
-	local stack_ids = {}
-	local name_ids = {}
 
 	for i = 1, max_rows do
-		icon_bg_ids[i] = "debuff_icon_background_" .. i
-		icon_ids[i] = "debuff_icon_" .. i
-		stack_ids[i] = "stack_counter_" .. i
-		name_ids[i] = "debuff_name_" .. i
-	end
-
-	for i = 1, max_rows do
-		local icon_bg_id = icon_bg_ids[i]
-		local icon_id = icon_ids[i]
-		local stack_text_id = stack_ids[i]
-		local name_text_id = name_ids[i]
+		local icon_id = "util_icon_" .. i
+		local stack_text_id = "stack_counter_" .. i
+		local name_text_id = "util_name_" .. i
 
 		local row_offset_y = base_y + ((i - 1) * row_step)
 
-		content[icon_bg_id] = "content/ui/materials/frames/talents/talent_icon_container"
-		content[icon_id] = ""
+		content[icon_id] = nil
 		content[stack_text_id] = ""
 		content[name_text_id] = ""
-
-		-- ICON BACKGROUND
-		passes[#passes + 1] = {
-			pass_type = "texture",
-			style_id = icon_bg_id,
-			value_id = icon_bg_id,
-			visibility_function = function(content, style)
-				return content[icon_id] ~= nil
-			end,
-		}
-
-		style[icon_bg_id] = {
-			scale_to_material = true,
-			horizontal_alignment = "right",
-			vertical_alignment = "center",
-			offset = { icon_x + base_offset, row_offset_y, 4 },
-			default_offset = { icon_x + base_offset, row_offset_y, 4 },
-
-			color = { 0, 15, 15, 15 },
-			default_alpha = 0,
-
-			size = { 30 * mod.text_scale, 30 * mod.text_scale },
-
-			default_size = { 30 * mod.text_scale, 30 * mod.text_scale },
-
-			material_values = {
-				frame = "content/ui/textures/frames/horde/hex_frame_horde",
-				icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
-				intensity = 0,
-				saturation = 0.65,
-			},
-		}
 
 		-- ICON
 		passes[#passes + 1] = {
@@ -241,7 +196,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 16,
 			default_font_size = 16,
 
-			text_color = fs.main_colour or { 220, 220, 220, 220 },
+			text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 			size = { bar_width * 0.25 * mod.text_scale, 20 },
 			default_size = { bar_width * 0.25 * mod.text_scale, 20 },
 
@@ -331,7 +286,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if t < widget._next_update then
 		return
 	end
-	widget._next_update = t + 0.05
+	widget._next_update = t + 0.02
 
 	local unit = marker.unit
 	local content = widget.content
@@ -654,7 +609,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- apply scaling
 				if marker.draw then
-					local scale = marker.scale * mod.text_scale
+					local scale = marker.scale
 
 					if scale ~= widget._last_scale then
 						widget._last_scale = scale

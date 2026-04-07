@@ -303,6 +303,12 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	widget._next_update = widget._next_update or 0
+	if t < widget._next_update then
+		return
+	end
+	widget._next_update = t + 0.02
+
 	local content = widget.content
 	local distance = content.distance or 0
 	local data = marker.data

@@ -731,7 +731,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_padding_scale",
 			type = "numeric",
-			default_value = 1.4,
+			default_value = 1.25,
 			range = {
 				0.5,
 				3,
@@ -803,6 +803,18 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_enable_tooltip",
 		},
 		{
+			setting_id = "debuff_dot_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_dot_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_utility_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_utility_enable_tooltip",
+		},
+		{
 			setting_id = "debuff_names",
 			type = "checkbox",
 			default_value = true,
@@ -817,7 +829,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_show_on_body",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "debuff_show_on_body_tooltip",
 		},
 		{

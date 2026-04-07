@@ -88,6 +88,8 @@ mod.build_frame_settings = function(dt)
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")
+	fs.debuff_dot_enable = mod:get("debuff_dot_enable")
+	fs.debuff_utility_enable = mod:get("debuff_utility_enable")
 	fs.debuff_names = mod:get("debuff_names")
 	fs.debuff_names_fade = mod:get("debuff_names_fade")
 	fs.debuff_horde_enable = mod:get("debuff_horde_enable")
@@ -1473,6 +1475,10 @@ mod.update_enemy_debuffs = function(entry)
 		return
 	end
 
+	if not fs.debuff_dot_enable then
+		return
+	end
+
 	local t = mod.get_time()
 
 	if entry._next_debuff_update and t < entry._next_debuff_update then
@@ -1501,6 +1507,10 @@ mod.update_enemy_utility_debuffs = function(entry)
 
 	local fs = mod.frame_settings
 	if not fs.debuff_enable then
+		return
+	end
+
+	if not fs.debuff_utility_enable then
 		return
 	end
 

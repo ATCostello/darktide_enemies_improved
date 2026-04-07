@@ -6,8 +6,9 @@ local UIRenderer = require("scripts/managers/ui/ui_renderer")
 local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
+local fs = mod.frame_settings
 
-local size = { mod.frame_settings.hb_size_width, mod.frame_settings.hb_size_height }
+local size = { fs.hb_size_width, fs.hb_size_height }
 
 local min_size = { 0, 0 }
 
@@ -18,8 +19,8 @@ template.name = "enemy_healthbar"
 template.unit_node = "root_point"
 template.position_offset = { 0, 0, 0 }
 
-template.check_line_of_sight = mod.frame_settings.check_line_of_sight
-template.max_distance = mod.frame_settings.draw_distance
+template.check_line_of_sight = fs.check_line_of_sight
+template.max_distance = fs.draw_distance
 template.screen_clamp = false
 
 template.bar_settings = {
@@ -83,7 +84,7 @@ local damage_number_types = table.enum("readable", "floating", "flashy")
 template.show_dps = true
 template.skip_damage_from_others = false
 
-local hb_damage_number_type = mod.frame_settings.hb_damage_number_type
+local hb_damage_number_type = fs.hb_damage_number_type
 
 template.damage_number_settings = {
 	add_numbers_together_timer = 3,
@@ -537,7 +538,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 			local dps_y_offset = damage_number_settings.dps_y_offset
 			local damage_has_started_position
 
-			if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
+			if fs.hb_damage_number_type == damage_number_types.readable then
 				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
 			else
 				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
@@ -564,11 +565,11 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				--armor_type = breed.hitzone_armor_override[hit_zone_name]
 			end
 
-			if mod.frame_settings.show_armor_types then
+			if fs.show_armor_types then
 				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
 				local armor_type_text = Localize(armor_type_loc_string)
 
-				if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
+				if fs.hb_damage_number_type == damage_number_types.readable then
 					local armor_type_position = Vector3(x_position, y_position, z_position)
 
 					--[[UIRenderer.draw_text(
@@ -603,8 +604,8 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 		end
 	end
 
-	if mod.frame_settings.show_damage_numbers and num_damage_numbers > 0 then
-		if mod.frame_settings.hb_damage_number_type == damage_number_types.readable then
+	if fs.show_damage_numbers and num_damage_numbers > 0 then
+		if fs.hb_damage_number_type == damage_number_types.readable then
 			_readable_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -621,7 +622,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				hundreds_font_size,
 				font_type
 			)
-		elseif mod.frame_settings.hb_damage_number_type == damage_number_types.floating then
+		elseif fs.hb_damage_number_type == damage_number_types.floating then
 			_floating_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -638,7 +639,7 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 				hundreds_font_size,
 				font_type
 			)
-		elseif mod.frame_settings.hb_damage_number_type == damage_number_types.flashy then
+		elseif fs.hb_damage_number_type == damage_number_types.flashy then
 			_flashy_damage_number_function(
 				ui_content,
 				ui_renderer,
@@ -666,7 +667,7 @@ end
 -----------------------------------------------------------------------
 
 template.create_widget_defintion = function(template, scenegraph_id)
-	local size = { mod.frame_settings.hb_size_width, mod.frame_settings.hb_size_height }
+	local size = { fs.hb_size_width, fs.hb_size_height }
 	local bar_width = size[1]
 	local bar_height = size[2]
 
@@ -688,14 +689,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "texture",
 			style_id = "frame",
-			value = mod.frame_settings.frame_type,
+			value = fs.frame_type,
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
 				offset = { bar_offset[1] - 6, bar_offset[2], 0 },
 				default_offset = { bar_offset[1] - 6, bar_offset[2], 0 },
-				size = { bar_width, bar_height },
-				default_size = { bar_width, bar_height },
+				size = {
+					bar_width + (10 * fs.hb_padding_scale),
+					bar_height + (6 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width + (10 * fs.hb_padding_scale),
+					bar_height + (6 * fs.hb_padding_scale),
+				},
 				color = { 200, 180, 180, 180 },
 				default_alpha = 200,
 			},
@@ -915,8 +922,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
-				text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
-				default_text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
+				text_color = fs.main_colour or { 220, 220, 220, 220 },
+				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
 				size = { bar_width - 2 * mod.text_scale, 20 },
 				default_size = { bar_width - 2 * mod.text_scale, 20 },
 				default_alpha = 255,
@@ -938,8 +945,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
-				text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
-				default_text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
+				text_color = fs.main_colour or { 220, 220, 220, 220 },
+				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
 				size = { bar_width * 2 * mod.text_scale, 20 },
 				default_size = { bar_width * 2 * mod.text_scale, 20 },
 
@@ -962,8 +969,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
-				text_color = mod.frame_settings.secondary_colour or { 220, 220, 220, 220 },
-				default_text_color = mod.frame_settings.secondary_colour or { 220, 220, 220, 220 },
+				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
+				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				size = { bar_width * 2 * mod.text_scale, 20 },
 				default_size = { bar_width * 2 * mod.text_scale, 20 },
 
@@ -1047,7 +1054,7 @@ local function get_text_option(content, option)
 		local new_text = ""
 
 		if content._last_health_current and content._last_health_max and content._last_damage_value then
-			if not mod.frame_settings.hb_text_show_damage then
+			if not fs.hb_text_show_damage then
 				new_text = math_floor(content._last_health_current) .. " / " .. math_floor(content._last_health_max)
 			else
 				new_text = math_floor(content._last_health_current)
@@ -1093,7 +1100,7 @@ template.on_enter = function(widget, marker, template)
 	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
 
 	-- set frame background
-	content.frame = mod.frame_settings.frame_type
+	content.frame = fs.frame_type
 
 	-------------------------------------------------------------------
 	-- Icon logic / colors
@@ -1161,7 +1168,7 @@ template.on_enter = function(widget, marker, template)
 	end
 
 	-- do stuff per breed type
-	if mod.frame_settings.healthbar_type_icon_enable then
+	if fs.healthbar_type_icon_enable then
 		if breed_type == "far" then
 			content.icon_elite_ranged, style.icon_elite_ranged =
 				apply_icon_settings(content.icon_elite_ranged, style.icon_elite_ranged)
@@ -1216,9 +1223,16 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	widget._next_update = widget._next_update or 0
+	if t < widget._next_update then
+		return
+	end
+	widget._next_update = t + 0.02
+
 	local content = widget.content
 	local style = widget.style
 	local unit = marker.unit
+	fs = mod.frame_settings
 
 	if not unit then
 		marker.remove = true
@@ -1256,7 +1270,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local health_percent = 0
 	local is_dead = true
 
-	if health_extension then
+	if health_extension and mod.detect_alive(unit) then
 		health_current = health_extension:current_health() or 0
 		health_max = health_extension:max_health() or 0
 		health_percent = health_extension:current_health_percent() or 0
@@ -1279,7 +1293,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
 
-	if cluster and mod.frame_settings.horde_clusters_enable then
+	if cluster and fs.horde_clusters_enable then
 		in_horde_cluster = true
 
 		-- Only the cluster representative should ever have a bar marker, because
@@ -1460,8 +1474,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local was_critical = health_extension and health_extension:was_hit_by_critical_hit_this_render_frame()
 
 			if latest_damage_number then
-				local add_numbers_together_timer = mod.frame_settings.hb_damage_number_type
-							== damage_number_types.flashy
+				local add_numbers_together_timer = fs.hb_damage_number_type == damage_number_types.flashy
 						and damage_number_settings.add_numbers_together_timer_flashy
 					or damage_number_settings.add_numbers_together_timer
 
@@ -1542,7 +1555,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content._last_health_max = health_max
 		content._last_damage_value = latest_damage_number and latest_damage_number.value
 
-		--[[if mod.frame_settings.hb_text_show_damage then
+		--[[if fs.hb_text_show_damage then
 			if latest_damage_number and (t - (content.last_damage_taken_time or 0)) <= 3 then
 				local new_text = health_current
 					.. " / "
@@ -1552,7 +1565,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					.. ")"
 				content.health_counter = new_text
 			end
-		elseif mod.frame_settings.hb_text_show_health then
+		elseif fs.hb_text_show_health then
 			local new_text = health_current .. " / " .. health_max
 			if content.health_counter ~= new_text then
 				content.health_counter = new_text
@@ -1576,8 +1589,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		health_max_style.size[2] = health_max_style.default_size[2] * scale
 
 		local frame = style.frame
-		frame.size[1] = (frame.default_size[1] + (12 * mod.frame_settings.hb_padding_scale)) * scale
-		frame.size[2] = (frame.default_size[2] + (6 * mod.frame_settings.hb_padding_scale)) * scale
+		--frame.size[1] = (frame.default_size[1] + (12 * fs.hb_padding_scale)) * scale
+		--frame.size[2] = (frame.default_size[2] + (6 * fs.hb_padding_scale)) * scale
 
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
@@ -1612,7 +1625,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content._attack_update_time = (content._attack_update_time or 0) + dt
 
 		if content._attack_update_time > update_interval then
-			if mod.frame_settings.healthbar_specials_enable and marker.special_attack_imminent then
+			if fs.healthbar_specials_enable and marker.special_attack_imminent then
 				-- get special colour
 				local sr = mod:get("outline_specials_colour_R")
 				local sg = mod:get("outline_specials_colour_G")
@@ -1639,7 +1652,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					style.icon_background1.color[3] = sg
 					style.icon_background1.color[4] = sb
 					content.alert_healthbar = true
-				elseif content.alert_healthbar and mod.frame_settings.specials_flash then
+				elseif content.alert_healthbar and fs.specials_flash then
 					----- TURN OFF
 					-- set alert glow intensity
 					style.icon_background1.default_alpha = 0
@@ -1669,7 +1682,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- do stuff per breed type
-	if mod.frame_settings.healthbar_type_icon_enable then
+	if fs.healthbar_type_icon_enable then
 		if breed_type == "far" then
 			content.icon_elite_ranged, style.icon_elite_ranged =
 				icon_special_attack(content.icon_elite_ranged, style.icon_elite_ranged)
@@ -1719,14 +1732,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.health_max = health_max
 	content.health_percent = health_percent
 
-	if mod.frame_settings.hb_text_top_left_01 then
-		content.header_text = get_text_option(content, mod.frame_settings.hb_text_top_left_01)
+	if fs.hb_text_top_left_01 then
+		content.header_text = get_text_option(content, fs.hb_text_top_left_01)
 	end
-	if mod.frame_settings.hb_text_bottom_left_01 and breed then
-		content.health_counter = get_text_option(content, mod.frame_settings.hb_text_bottom_left_01)
+	if fs.hb_text_bottom_left_01 and breed then
+		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
 	end
-	if mod.frame_settings.hb_text_bottom_left_02 and breed then
-		content.armour_type = get_text_option(content, mod.frame_settings.hb_text_bottom_left_02)
+	if fs.hb_text_bottom_left_02 and breed then
+		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
 	end
 
 	-------------------------------------------------------------------
@@ -1739,11 +1752,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- only hide non-clustered horde units when horde disabled
-	if breed_type == "horde" and not mod.frame_settings.horde_enable and not in_horde_cluster then
+	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		marker.draw = false
 	end
 
-	if mod.frame_settings.hide_after_no_damage and time_since_last_damage > 5 then
+	if fs.hide_after_no_damage and time_since_last_damage > 5 then
 		marker.draw = false
 	end
 
