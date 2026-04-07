@@ -358,15 +358,35 @@ mod.enable_enemy_outlines = function(unit, entry)
 	end
 end
 
-mod.disable_enemy_outlines = function(unit)
-	if Unit.alive(unit) then
-		local has_outline_system = Managers.state.extension:has_system("outline_system")
+mod.disable_enemy_outlines = function(unit, entry)
+	if not Unit.alive(unit) then
+		return
+	end
 
-		if has_outline_system then
-			local outline_system = Managers.state.extension:system("outline_system")
-			-- Force outline visible
-			outline_system:remove_outline(unit, "enemies_improved")
+	local has_outline_system = Managers.state.extension:has_system("outline_system")
+	if not has_outline_system then
+		return
+	end
+
+	local outline_system = Managers.state.extension:system("outline_system")
+
+	-- get breed category
+	local breed_name = entry.breed_type
+
+	if not breed_name then
+		breed_name = "enemy"
+	end
+
+	local new_outline = "enemies_" .. breed_name
+
+	-- only update if changed
+	if entry.outline_name == new_outline then
+		-- remove
+		if entry.outline_name then
+			outline_system:remove_outline(unit, entry.outline_name)
 		end
+
+		entry.outline_name = "DELETED"
 	end
 end
 
@@ -1092,6 +1112,16 @@ mod.special_attack_events = {
 	-- renegade executor
 	["wwise/events/minions/play_enemy_traitor_executor__special_attack_vce"] = true,
 
+	-- Chaos Spawn
+	--["wwise/events/minions/play_chaos_spawn_vce_3_attack_combo"] = true,
+	--["wwise/events/minions/play_chaos_spawn_vce_4_attack_combo"] = true,
+	["wwise/events/minions/play_chaos_spawn_vce_eat"] = true,
+	["wwise/events/minions/play_chaos_spawn_vce_attack_long"] = true,
+	["wwise/events/minions/play_chaos_spawn_vce_leap"] = true,
+	["wwise/events/minions/play_chaos_spawn_bite_rip"] = true,
+
+	--["wwise/events/minions/play_chaos_spawn_vce_leap_short"] = true,
+
 	-- General rares / specials
 	["wwise/events/minions/play_traitor_guard_grenadier"] = true,
 	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
@@ -1271,7 +1301,52 @@ mod.is_horde = function(unit)
 	end
 end
 
-local Scanning = require("scripts/utilities/scanning")
+local function has_line_of_sight(player_unit, enemy_unit, physics_world)
+	-- Get player camera position
+	local unit_data_extension = ScriptUnit.extension(player_unit, "unit_data_system")
+	local first_person_component = unit_data_extension:read_component("first_person")
+	local player_pos = first_person_component.position
+
+	-- Get enemy position
+	local enemy_node = Unit.has_node(enemy_unit, "j_head") and Unit.node(enemy_unit, "j_head") or 0
+	local enemy_pos = Unit.world_position(enemy_unit, enemy_node)
+
+	local direction = enemy_pos - player_pos
+	local distance = Vector3.length(direction)
+
+	if distance == 0 then
+		return true
+	end
+
+	local normalized_direction = Vector3.normalize(direction)
+
+	-- Raycast directly toward enemy
+	local hit, hit_position, hit_normal = PhysicsWorld.raycast(
+		physics_world,
+		player_pos,
+		normalized_direction,
+		distance,
+		"closest",
+		"collision_filter",
+		"filter_minion_line_of_sight_check"
+	)
+
+	if hit and type(hit) == "boolean" then
+		return false
+	end
+
+	if hit and type(hit) == "table" then
+		local hit_actor = hit[4]
+		local hit_unit = hit_actor and Actor.unit(hit_actor)
+
+		if hit_unit ~= enemy_unit then
+			return false
+		end
+	end
+
+	return true
+end
+
 mod.update_enemy_outlines = function(entry)
 	local unit = entry.unit
 
@@ -1288,54 +1363,16 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	local unit_data_extension = ScriptUnit.extension(player_unit, "unit_data_system")
-	local first_person_component = unit_data_extension:read_component("first_person")
+	local has_los = has_line_of_sight(player_unit, unit, physics_world)
 
-	local rotation = first_person_component.rotation
-	local look_forward = rotation and Quaternion.forward(rotation)
-	local look_pos = first_person_component.position
-	local los_hit, _, los_dist, _ = PhysicsWorld.raycast(
-		physics_world,
-		look_pos,
-		look_forward,
-		100,
-		"closest",
-		"collision_filter",
-		"filter_minion_line_of_sight_check"
-	)
-	local hits, _ = PhysicsWorld.raycast(
-		physics_world,
-		look_pos,
-		look_forward,
-		100,
-		"all",
-		"collision_filter",
-		"filter_minion_line_of_sight_check"
-	)
-	local line_of_sight = false
-
-	if hits then
-		for i = 1, #hits do
-			local hit = hits[i]
-			local hit_distance = hit[2]
-			local hit_actor = hit[4]
-			local target_unit = hit_actor and Actor.unit(hit_actor)
-			local los_is_blocked = los_hit and los_dist
-
-			if target_unit and not los_is_blocked then
-				line_of_sight = true
-			end
-		end
-	end
-
-	if fs.outlines_enable then
+	if fs.outlines_enable and has_los then
 		if not entry._outline_applied then
 			mod.enable_enemy_outlines(unit, entry)
 			entry._outline_applied = true
 		end
 	else
 		if entry._outline_applied then
-			mod.disable_enemy_outlines(unit)
+			mod.disable_enemy_outlines(unit, entry)
 			entry._outline_applied = false
 		end
 	end
@@ -1350,7 +1387,6 @@ mod.update_special_attack_detection = function(entry)
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	local markers_by_id = world_markers and world_markers._markers_by_id
-	dbg_markers = world_markers._markers_by_type
 
 	-- remove special_attack_imminent if over the timer...
 	if entry.special_attack_imminent then
@@ -1725,7 +1761,8 @@ mod.apply_marker_fade = function(self)
 			end
 		end
 
-		local final_alpha = math.clamp(fade * depth_fade, MIN_ALPHA, 1)
+		local global_opacity = mod.frame_settings.global_opacity or 1
+		local final_alpha = math.clamp(fade * depth_fade * global_opacity, MIN_ALPHA, 1)
 
 		if math.abs((marker._last_alpha or 1) - final_alpha) < 0.02 then
 			goto continue_marker
@@ -1768,7 +1805,6 @@ end
 
 mod.update_enemies = function(dt, t)
 	local fs = mod.frame_settings
-	dbg_mod = mod
 
 	for _, entry in pairs(mod.enemy_cache) do
 		entry.pos = nil

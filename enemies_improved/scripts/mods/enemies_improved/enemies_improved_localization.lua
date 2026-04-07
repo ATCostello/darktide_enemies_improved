@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0"
+mod.version = "1.0test2"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -256,6 +256,18 @@ table.insert(localisations_to_add, {
 	draw_distance_tooltip = {
 		en = "The distance (in Metres) from the player to draw enemy information.\nThis setting is global and will effect all enemy types.",
 	},
+	global_opacity = {
+		en = "Global Opacity",
+	},
+	global_opacity_tooltip = {
+		en = "Set a global opacity slider for Enemies Improved UI elements. This will scale the opacity of all elements from their max (1) to their minimal value (0.1).",
+	},
+	enable_depth_fading = {
+		en = "Distance Fading?",
+	},
+	enable_depth_fading_tooltip = {
+		en = "Toggle distance fading for all Enemies Improved UI elements, so that enemies far away will be more transparent than closer ones. Also includes 'stack fading' which fades out UI elements for enemies that are behind other enemies, so that the closer enemy is easier to see.",
+	},
 	check_line_of_sight = {
 		en = "Check for line of sight?",
 	},
@@ -279,6 +291,36 @@ table.insert(localisations_to_add, {
 	},
 	text_scale_tooltip = {
 		en = "A global scale that applies to ALL text used in Enemies Improved. Think of this is an 'x' scaler. E.g. a value of 1.2 is 1.2x the font sizes. ",
+	},
+	main_font_colour = {
+		en = "Colour for main text font (Global)",
+	},
+	main_font_colour_R = {
+		en = "Main Font: Red",
+	},
+	main_font_colour_G = {
+		en = "Main Font: Green",
+	},
+	main_font_colour_B = {
+		en = "Main Font: Blue",
+	},
+	secondary_font_colour_tooltip = {
+		en = "Pick a colour to apply as the 'secondary' font colour throughout enemies improved elements.",
+	},
+	secondary_font_colour = {
+		en = "Colour for secondary text font (Global)",
+	},
+	secondary_font_colour_R = {
+		en = "Main Font: Red",
+	},
+	secondary_font_colour_G = {
+		en = "Main Font: Green",
+	},
+	secondary_font_colour_B = {
+		en = "Main Font: Blue",
+	},
+	secondary_font_colour_tooltip = {
+		en = "Pick a colour to apply as the 'secondary' font colour throughout enemies improved elements.",
 	},
 })
 
@@ -516,10 +558,22 @@ table.insert(localisations_to_add, {
 		en = "{#color(" .. colours.title .. ")}Debuffs{#reset()}",
 	},
 	debuff_enable = {
-		en = "Enable debuffs",
+		en = "Enable debuffs (Global)",
 	},
 	debuff_enable_tooltip = {
 		en = "Global toggle for debuff display.\n\nDebuffs are grouped into two categories, Damage over Time (DoT) and Utility. DoT debuffs are displayed upwards, whereas utility debuffs display downwards.\n\nDoT debuffs include things like bleeding, fire, electricity. Whereas utility includes rending, talent debuffs etc.",
+	},
+	debuff_dot_enable = {
+		en = "Enable Damage-Over-Time debuffs",
+	},
+	debuff_dot_enable_tooltip = {
+		en = "DoT debuffs are displayed upwards and include things like bleeding, fire, electricity.",
+	},
+	debuff_utility_enable = {
+		en = "Enable Utility debuffs",
+	},
+	debuff_utility_enable_tooltip = {
+		en = "Utility debuffs are displayed downwards and include things like rending, damage increases, weakening.",
 	},
 	debuff_names = {
 		en = "Show debuff names",

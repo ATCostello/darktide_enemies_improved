@@ -24,7 +24,7 @@ local size = {
 }
 local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
 
-local row_step = hb_size_height + (24 * mod.text_scale)
+local row_step = hb_size_height + (18 * mod.text_scale)
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
 local icon_x = (hb_size_width - (5 * mod.text_scale))
 local name_x = hb_size_width
@@ -605,30 +605,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					marker.draw = false
 				end
 
-				widget._last_scale = widget._last_scale or 0
-
 				-- apply scaling
 				if marker.draw then
 					local scale = marker.scale
 
-					if scale ~= widget._last_scale then
-						widget._last_scale = scale
+					icon_style.size[1] = icon_style.default_size[1] * scale
+					icon_style.size[2] = icon_style.default_size[2] * scale
 
-						icon_style.size[1] = icon_style.default_size[1] * scale
-						icon_style.size[2] = icon_style.default_size[2] * scale
+					stack_text_style.font_size = stack_text_style.default_font_size * scale
+					name_text_style.font_size = name_text_style.default_font_size * scale
 
-						stack_text_style.font_size = stack_text_style.default_font_size * scale
-						name_text_style.font_size = name_text_style.default_font_size * scale
+					icon_style.offset[1] = icon_style.default_offset[1] * scale
+					icon_style.offset[2] = icon_style.default_offset[2] * scale
 
-						icon_style.offset[1] = icon_style.default_offset[1] * scale
-						icon_style.offset[2] = icon_style.default_offset[2] * scale
+					stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
+					stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
 
-						stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
-						stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
-
-						name_text_style.offset[1] = name_text_style.default_offset[1] * scale
-						name_text_style.offset[2] = name_text_style.default_offset[2] * scale
-					end
+					name_text_style.offset[1] = name_text_style.default_offset[1] * scale
+					name_text_style.offset[2] = name_text_style.default_offset[2] * scale
 				end
 			end
 		else

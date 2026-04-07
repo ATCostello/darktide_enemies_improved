@@ -29,8 +29,8 @@ template.bar_settings = {
 	alpha_fade_min_value = 50,
 	animate_on_health_increase = true,
 	bar_spacing = 0,
-	duration_health = 1,
-	duration_health_ghost = 1,
+	duration_health = 0.1,
+	duration_health_ghost = 1.5,
 	health_animation_threshold = 0.1,
 }
 
@@ -703,8 +703,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					bar_width + (10 * fs.hb_padding_scale),
 					bar_height + (6 * fs.hb_padding_scale),
 				},
-				color = { 200, 180, 180, 180 },
-				default_alpha = 200,
+				color = { 185, 180, 180, 180 },
+				default_alpha = 185,
 			},
 		}, -- MAX HEALTH
 		{
@@ -731,9 +731,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { bar_offset[1], bar_offset[2], 2 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 100, 120, 40, 40 },
-				default_alpha = 100,
+				color = { 200, 120, 40, 40 },
+				default_alpha = 200,
 			},
+			visibility_function = function(content)
+				if content.health_ghost_fraction and content.health_fraction then
+					if content.health_ghost_fraction > content.health_fraction then
+						return true
+					else
+						return false
+					end
+				else
+					return false
+				end
+			end,
 		}, -- CURRENT HEALTH (main bar)
 		{
 			pass_type = "rect",
@@ -1207,9 +1218,9 @@ template.on_enter = function(widget, marker, template)
 
 	local ghost_color = style.ghost_bar.color
 
-	ghost_color[2] = bar_color[2] * 0.5
-	ghost_color[3] = bar_color[3] * 0.5
-	ghost_color[4] = bar_color[4] * 0.5
+	ghost_color[2] = bar_color[2] * 0.7
+	ghost_color[3] = bar_color[3] * 0.7
+	ghost_color[4] = bar_color[4] * 0.7
 
 	local icon_offset_y = 0
 
@@ -1265,10 +1276,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Health / alive
 	-------------------------------------------------------------------
 	local health_extension = content.health_extension
-	local health_current = 0
-	local health_max = 0
-	local health_percent = 0
-	local is_dead = true
+	health_current = health_current or 0
+	health_max = health_max or 0
+	health_percent = health_percent or 0
+	is_dead = is_dead or true
 
 	if health_extension and mod.detect_alive(unit) then
 		health_current = health_extension:current_health() or 0
@@ -1371,13 +1382,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Failsafe percent clamp
 	health_percent = health_percent or 0
-	--health_percent = math_clamp(health_percent, 0, 1)
+	health_percent = math_clamp(health_percent, 0, 1)
 
 	if bar_logic then
 		bar_logic:update(dt, t, health_percent)
 	end
 
-	local health_fraction, health_ghost_fraction, health_max_fraction
+	health_fraction = health_fraction or 0
+	health_ghost_fraction = health_ghost_fraction or 0
+	health_max_fraction = health_max_fraction or 0
 
 	marker.health_fraction = health_fraction
 	marker.health_ghost_fraction = health_ghost_fraction
@@ -1419,7 +1432,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		total_damage_taken = max_health_setting or health_max
 	end
 
-	if health_extension then
+	if health_extension and not is_dead then
 		local last_damaging_unit = health_extension:last_damaging_unit()
 
 		if last_damaging_unit then
@@ -1464,7 +1477,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local damage_numbers = content.damage_numbers
 	local latest_damage_number = damage_numbers[#damage_numbers]
 
-	if total_damage_taken and total_damage_taken ~= old_damage_taken then
+	if total_damage_taken and total_damage_taken ~= old_damage_taken and health_extension and not is_dead then
 		content.visibility_delay = damage_number_settings.visibility_delay
 		content.damage_taken = total_damage_taken
 
@@ -1576,6 +1589,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
+
 	if health_fraction and health_ghost_fraction then
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
@@ -1588,29 +1602,37 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		health_max_style.size[1] = health_max_style.default_size[1] * scale
 		health_max_style.size[2] = health_max_style.default_size[2] * scale
 
-		local frame = style.frame
-		--frame.size[1] = (frame.default_size[1] + (12 * fs.hb_padding_scale)) * scale
-		--frame.size[2] = (frame.default_size[2] + (6 * fs.hb_padding_scale)) * scale
-
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
 
-		local scaled_bar_width = current_health_style.default_size[1] * scale
+		local scaled_bar_width = health_max_style.size[1]
 
 		local scaled_health_width = scaled_bar_width * health_fraction
 
-		current_health_style.size[1] = scaled_health_width
-		--current_health_style.default_size[1] = scaled_health_width
+		-- prevent size spam updates unless actually damaged...
+		-- ISSUE - NEEDS TO STORE SIZE SO IT CAN REAPPLY ON LOS ACQUIRE
+		if damage_taken_since_last and damage_taken_since_last > 0 then
+			current_health_style.size[1] = scaled_health_width
+			current_health_style.default_size[1] = scaled_health_width
+			current_health_style.offset[1] = -scaled_bar_width * 0.5
+		end
 
-		--current_health_style.offset[1] = -scaled_bar_width * 0.5
+		if health_current < health_max and current_health_style.size[1] > scaled_health_width then
+			current_health_style.size[1] = scaled_health_width
+			current_health_style.default_size[1] = scaled_health_width
+			current_health_style.offset[1] = -scaled_bar_width * 0.5
+		end
 
-		local scaled_ghost_width = math.max(scaled_bar_width * health_ghost_fraction - scaled_health_width, 0)
+		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
+		local scaled_ghost_width = scaled_bar_width * ghost_fraction
 
 		ghost_bar_style.size[1] = scaled_ghost_width
-		--ghost_bar_style.default_size[1] = scaled_ghost_width
-
-		--ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
+		ghost_bar_style.default_size[1] = scaled_ghost_width
+		ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
 	end
+
+	content.health_fraction = health_fraction
+	content.health_ghost_fraction = health_ghost_fraction
 
 	local icon_color = mod.ICON_COLOURS[breed_type]
 	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
