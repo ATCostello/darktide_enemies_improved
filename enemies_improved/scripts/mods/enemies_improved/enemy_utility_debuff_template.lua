@@ -7,11 +7,11 @@ local template = {}
 -----------------------------------------------------------------------
 -- Cached settings
 -----------------------------------------------------------------------
-
-local hb_size_width = mod.frame_settings.hb_size_width
-local hb_size_height = mod.frame_settings.hb_size_height
+local fs = mod.frame_settings
+local hb_size_width = fs.hb_size_width
+local hb_size_height = fs.hb_size_height
 local max_visible_rows_setting = 5
-local draw_distance_setting = mod.frame_settings.draw_distance
+local draw_distance_setting = fs.draw_distance
 
 local NAME_FADE_IN = 0.15
 local NAME_VISIBLE = 4.0
@@ -22,19 +22,19 @@ local size = {
 	hb_size_width,
 	hb_size_height,
 }
-
-local base_y = (mod.frame_settings.show_armor_types and hb_size_height + 52) or (hb_size_height + 32)
+local base_y = (fs.show_armor_types and hb_size_height + 52) or (hb_size_height + 32)
 
 local row_step = hb_size_height + (24 * mod.text_scale)
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
 local icon_x = (hb_size_width - (5 * mod.text_scale))
 local name_x = hb_size_width
 local stack_x = hb_size_width + (60 * mod.text_scale)
+local active_pool = {}
 
 template.size = size
 template.name = "enemy_utility_debuff"
 
-if mod.frame_settings.debuff_show_on_body then
+if fs.debuff_show_on_body then
 	template.unit_node = "root_point"
 	template.position_offset = { 0, 0, 0 }
 else
@@ -44,7 +44,7 @@ end
 
 template.max_visible_rows = max_visible_rows_setting
 
-template.check_line_of_sight = mod.frame_settings.check_line_of_sight
+template.check_line_of_sight = fs.check_line_of_sight
 template.max_distance = draw_distance_setting
 template.screen_clamp = false
 template.bar_settings = {
@@ -123,12 +123,23 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local passes = {}
 	local content = {}
 	local style = {}
+	local icon_bg_ids = {}
+	local icon_ids = {}
+	local stack_ids = {}
+	local name_ids = {}
 
 	for i = 1, max_rows do
-		local icon_bg_id = "util_icon_background_" .. i
-		local icon_id = "util_icon_" .. i
-		local stack_text_id = "stack_counter_" .. i
-		local name_text_id = "util_name_" .. i
+		icon_bg_ids[i] = "debuff_icon_background_" .. i
+		icon_ids[i] = "debuff_icon_" .. i
+		stack_ids[i] = "stack_counter_" .. i
+		name_ids[i] = "debuff_name_" .. i
+	end
+
+	for i = 1, max_rows do
+		local icon_bg_id = icon_bg_ids[i]
+		local icon_id = icon_ids[i]
+		local stack_text_id = stack_ids[i]
+		local name_text_id = name_ids[i]
 
 		local row_offset_y = base_y + ((i - 1) * row_step)
 
@@ -230,7 +241,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 16,
 			default_font_size = 16,
 
-			text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
+			text_color = fs.main_colour or { 220, 220, 220, 220 },
 			size = { bar_width * 0.25 * mod.text_scale, 20 },
 			default_size = { bar_width * 0.25 * mod.text_scale, 20 },
 
@@ -246,7 +257,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = name_text_id,
 			value_id = name_text_id,
 			visibility_function = function(content, style)
-				if not mod.frame_settings.debuff_names then
+				if not fs.debuff_names then
 					return false
 				end
 				local v = content[name_text_id]
@@ -274,7 +285,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			font_size = 14,
 			default_font_size = 14,
 
-			text_color = mod.frame_settings.main_colour or { 220, 220, 220, 220 },
+			text_color = fs.main_colour or { 220, 220, 220, 220 },
 			size = { name_x * mod.text_scale, 22 },
 			default_size = { name_x * mod.text_scale, 22 },
 
@@ -316,9 +327,16 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	widget._next_update = widget._next_update or 0
+	if t < widget._next_update then
+		return
+	end
+	widget._next_update = t + 0.05
+
 	local unit = marker.unit
 	local content = widget.content
 	local need_sort = false
+	local fs = mod.frame_settings
 
 	if not unit then
 		marker.draw = false
@@ -327,7 +345,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- don't process hordes if disabled
 	if
-		mod.frame_settings.debuff_horde_enable == false
+		fs.debuff_horde_enable == false
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
 		marker.draw = false
@@ -366,11 +384,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
-			active[active_count] = {
-				name = name,
-				stacks = stacks,
-			}
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			entry.name = name
+			entry.stacks = stacks
 		end
+	end
+
+	for i = active_count + 1, #active do
+		active_pool[#active_pool + 1] = active[i]
+		active[i] = nil
 	end
 
 	-- get from keywords
@@ -420,7 +452,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local stack_speed = 8
 	local glow_threshold = 5
 
-	local active_lookup = {}
+	widget._active_lookup = widget._active_lookup or {}
+	local active_lookup = widget._active_lookup
+
+	for k in pairs(active_lookup) do
+		active_lookup[k] = nil
+	end
 
 	-------------------------------------------------------------------
 	-- UPDATE STATE (KEYED BY DEBUFF NAME)
@@ -440,7 +477,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				prev_stacks = stacks,
 				y = y_base,
 				name_time = 0,
-				name_visible = mod.frame_settings.debuff_names,
+				name_visible = fs.debuff_names,
 			}
 			state_table[name] = state
 		end
@@ -483,9 +520,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		state.icon_scale = math_lerp(state.icon_scale, 0, icon_lerp_t)
 
 		-- Update name pop timer if enabled
-		if mod.frame_settings.debuff_names and state.name_visible then
+		if fs.debuff_names and state.name_visible then
 			state.name_time = state.name_time + dt
-			if state.name_time >= NAME_TOTAL and mod.frame_settings.debuff_names_fade == true then
+			if state.name_time >= NAME_TOTAL and fs.debuff_names_fade == true then
 				state.name_visible = false
 			end
 		end
@@ -511,7 +548,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	if content.breed and mod.detect_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
-		if not mod.frame_settings.debuff_show_on_body then
+		if not fs.debuff_show_on_body then
 			root_position.z = root_position.z + content.breed.base_height + 0.5
 		else
 			root_position.z = root_position.z + content.breed.base_height / 1.5
@@ -553,7 +590,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 
 				content[stack_text_id] = stack_str
-				if mod.frame_settings.debuff_names then
+				if fs.debuff_names then
 					if state.name_visible and name_text_style then
 						local loc = localized_cache[name]
 						if not loc then
@@ -585,7 +622,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 							a = 1
 						end
 
-						name_text_style.text_color[1] = math_floor(255 * a + 0.5)
+						name_text_style.text_color[1] = (255 * a + 0.5)
 					else
 						content[name_text_id] = ""
 						if name_text_style then
@@ -613,24 +650,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					marker.draw = false
 				end
 
+				widget._last_scale = widget._last_scale or 0
+
 				-- apply scaling
 				if marker.draw then
-					marker.scale = marker.scale * mod.text_scale
-					local scale = marker.scale
-					icon_style.size[1] = icon_style.default_size[1] * scale
-					icon_style.size[2] = icon_style.default_size[2] * scale
+					local scale = marker.scale * mod.text_scale
 
-					stack_text_style.font_size = stack_text_style.default_font_size * scale
-					name_text_style.font_size = name_text_style.default_font_size * scale
+					if scale ~= widget._last_scale then
+						widget._last_scale = scale
 
-					icon_style.offset[1] = icon_style.default_offset[1] * scale
-					icon_style.offset[2] = icon_style.default_offset[2] * scale
+						icon_style.size[1] = icon_style.default_size[1] * scale
+						icon_style.size[2] = icon_style.default_size[2] * scale
 
-					stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
-					stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
+						stack_text_style.font_size = stack_text_style.default_font_size * scale
+						name_text_style.font_size = name_text_style.default_font_size * scale
 
-					name_text_style.offset[1] = name_text_style.default_offset[1] * scale
-					name_text_style.offset[2] = name_text_style.default_offset[2] * scale
+						icon_style.offset[1] = icon_style.default_offset[1] * scale
+						icon_style.offset[2] = icon_style.default_offset[2] * scale
+
+						stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
+						stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
+
+						name_text_style.offset[1] = name_text_style.default_offset[1] * scale
+						name_text_style.offset[2] = name_text_style.default_offset[2] * scale
+					end
 				end
 			end
 		else

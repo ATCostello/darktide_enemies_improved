@@ -1334,7 +1334,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Move bar to horde center, before template.position_offset is applied
 		if cluster.center then
 			local c = cluster.center
-			local cx, cy, cz = c.x, c.y, c.z
+			local cx, cy, cz = c.x, c.y, c.z + 1
 
 			-- Base position for bar; template.position_offset will be added later
 			if not marker.world_position then

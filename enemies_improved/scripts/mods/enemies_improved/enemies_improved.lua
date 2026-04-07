@@ -1481,6 +1481,11 @@ mod.update_enemy_debuffs = function(entry)
 
 	entry._next_debuff_update = t + 0.35
 
+	-- don't process hordes if disabled
+	if not fs.debuff_horde_enable and entry.is_horde then
+		return
+	end
+
 	-- only add debuffs for living enemies that are not dead and removed
 	if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
@@ -1506,6 +1511,11 @@ mod.update_enemy_utility_debuffs = function(entry)
 	end
 
 	entry._next_util_debuff_update = t + 0.35
+
+	-- don't process hordes if disabled
+	if not fs.debuff_horde_enable and entry.is_horde then
+		return
+	end
 
 	if not mod.enemy_utility_debuffs[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
