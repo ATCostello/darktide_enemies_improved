@@ -1619,6 +1619,7 @@ mod.apply_marker_fade = function(self)
 	if not markers_by_id then
 		return
 	end
+	--dbg_markers = markers_by_id
 
 	local player = Managers_player:local_player(1)
 	if not player then
@@ -1914,7 +1915,7 @@ mod.update_enemies = function(dt, t)
 				mod.pulse_enemy_outline(entry)
 			end
 			if fs.healthbar_specials_enable then
-				--mod.pulse_enemy_healthbar(entry)
+				mod.pulse_enemy_healthbar(entry)
 			end
 		end
 

@@ -1238,7 +1238,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if t < widget._next_update then
 		return
 	end
-	widget._next_update = t + 0.02
+	widget._next_update = t + 0.005
 
 	local content = widget.content
 	local style = widget.style
@@ -1254,6 +1254,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not marker.draw and not marker.is_inside_frustum and not template.check_line_of_sight then
 		return
 	end
+
+	if not mod.detect_alive(unit) then
+		marker.draw = false
+		marker.remove = true
+		return
+	end
+
+	template.max_distance = fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
@@ -1594,13 +1602,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
 		local bar_width = template.size[1]
+		local bar_height = template.size[2]
+
 		local default_width_offset = -bar_width * 0.5
 		local scale = marker.scale or 1
 		content.scale = scale
 
 		local health_max_style = style.health_max
-		health_max_style.size[1] = health_max_style.default_size[1] * scale
-		health_max_style.size[2] = health_max_style.default_size[2] * scale
+		health_max_style.default_size[1] = bar_width * scale
+		health_max_style.size[1] = bar_width * scale
+
+		health_max_style.size[2] = bar_height * scale
 
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
@@ -1609,19 +1621,23 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		local scaled_health_width = scaled_bar_width * health_fraction
 
-		-- prevent size spam updates unless actually damaged...
-		-- ISSUE - NEEDS TO STORE SIZE SO IT CAN REAPPLY ON LOS ACQUIRE
-		if damage_taken_since_last and damage_taken_since_last > 0 then
-			current_health_style.size[1] = scaled_health_width
-			current_health_style.default_size[1] = scaled_health_width
-			current_health_style.offset[1] = -scaled_bar_width * 0.5
-		end
+		local frame_style = style.frame
+		frame_style.size[1] = (bar_width + 12) * scale
+		frame_style.default_size[1] = (bar_width + 12) * scale
+		--current_health_style.offset[1] = -scaled_bar_width * 0.5
 
-		if health_current < health_max and current_health_style.size[1] > scaled_health_width then
-			current_health_style.size[1] = scaled_health_width
-			current_health_style.default_size[1] = scaled_health_width
-			current_health_style.offset[1] = -scaled_bar_width * 0.5
-		end
+		-- prevent size spam updates unless actually damaged...
+		--if damage_taken_since_last and damage_taken_since_last > 0 then
+		current_health_style.size[1] = scaled_health_width
+		current_health_style.default_size[1] = scaled_health_width
+		current_health_style.offset[1] = -scaled_bar_width * 0.5
+		--end
+
+		--if health_current < health_max and current_health_style.size[1] > scaled_health_width then
+		--	current_health_style.size[1] = scaled_health_width
+		--	current_health_style.default_size[1] = scaled_health_width
+		--	current_health_style.offset[1] = -scaled_bar_width * 0.5
+		--end
 
 		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
 		local scaled_ghost_width = scaled_bar_width * ghost_fraction
@@ -1773,6 +1789,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.remove = true
 	end
 
+	content.line_of_sight_progress = line_of_sight_progress
+	widget.alpha_multiplier = line_of_sight_progress or 1
+
 	-- only hide non-clustered horde units when horde disabled
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		marker.draw = false
@@ -1787,9 +1806,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local draw = marker.draw
-
-	content.line_of_sight_progress = line_of_sight_progress
-	widget.alpha_multiplier = line_of_sight_progress or 1
 
 	if draw then
 		marker.scale = marker.scale * mod.text_scale
