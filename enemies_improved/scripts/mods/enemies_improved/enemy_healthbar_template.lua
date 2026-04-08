@@ -1238,7 +1238,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if t < widget._next_update then
 		return
 	end
-	widget._next_update = t + 0.005
+	widget._next_update = t + 0.004 -- maximum value that will still work with the base-game healthbar render logic!
 
 	local content = widget.content
 	local style = widget.style
@@ -1261,6 +1261,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	size = { fs.hb_size_width, fs.hb_size_height }
+	template.size = size
+	
 	template.max_distance = fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0

@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0test2"
+mod.version = "1.0test3"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -93,6 +93,12 @@ table.insert(localisations_to_add, {
 	flamer_assault = {
 		en = "Burning",
 	},
+	flame_grenade_liquid_area = {
+		en = "Burning (Fire Grenade)",
+	},
+	in_smoke_fog = {
+		en = "Blinded (Smoke Grenade)",
+	},
 	warp_fire = {
 		en = "Warpfire",
 	},
@@ -110,17 +116,25 @@ table.insert(localisations_to_add, {
 	},
 
 	psyker_discharge_damage_debuff = {
-		en = "Discharge",
+		en = "Increased Damage (Warp Rupture)",
 	},
 	psyker_force_staff_quick_attack_debuff = {
-		en = "Warpfire Brand",
+		en = "Increased Warp Damage (Empyric Shock)",
 	},
 
 	toxin_damage_debuff = {
-		en = "Toxin",
+		en = "Weak (Targeted Toxin)",
 	},
 	toxin_damage_debuff_monster = {
-		en = "Toxin (Elite)",
+		en = "Weak (Targeted Toxin)",
+	},
+
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = {
+		en = "Increased Damage (Virulent Strain)",
+	},
+
+	shock_effect = {
+		en = "Electrocuted",
 	},
 
 	-- Rending / “take more damage”, tags, etc.
@@ -147,26 +161,38 @@ table.insert(localisations_to_add, {
 	psyker_protectorate_spread_charged_chain_lightning_interval_improved = {
 		en = "Charged Chain Lightning",
 	},
+	psyker_protectorate_spread_chain_lightning_interval = {
+		en = "Chain Lightning",
+	},
+	psyker_protectorate_spread_charged_chain_lightning_interval = {
+		en = "Charged Chain Lightning",
+	},
+	psyker_heavy_swings_shock = {
+		en = "Charged Strike",
+	},
+	psyker_heavy_swings_shock_improved = {
+		en = "Charged Strike",
+	},
 
 	-- Ogryn
 	ogryn_recieve_damage_taken_increase_debuff = {
-		en = "Softened Up",
+		en = "Increased Damage Taken (Soften Them Up)",
 	},
 	ogryn_taunt_increased_damage_taken_buff = {
-		en = "Taunted",
+		en = "Increased Damage Taken (Valuable Distraction)",
 	},
 	ogryn_staggering_damage_taken_increase = {
-		en = "Staggering Blows",
+		en = "Increased Damage Taken (Hard Knocks)",
 	},
 
 	-- Veteran
 	veteran_improved_tag_debuff = {
-		en = "Tagged Target",
+		en = "Increased Damage Taken (Tagged Target)",
 	},
 
 	-- Zealot
 	zealot_bled_enemies_take_more_damage_effect = {
-		en = "Bled for the Emperor",
+		en = "Increased Damage Taken (Bleeding)",
 	},
 
 	-- Arbite
@@ -180,15 +206,19 @@ table.insert(localisations_to_add, {
 		en = "Weakspot Stagger",
 	},
 	adamant_staggered_enemies_deal_less_damage_debuff = {
-		en = "Weakened Strikes",
+		en = "Weak (Suppression Force)",
 	},
 	adamant_staggering_increases_damage_taken = {
-		en = "Stagger Vulnerability",
+		en = "Increased Damage (Break Dissent)",
 	},
 
 	-- Broker
 	broker_punk_rage_improved_shout_debuff = {
-		en = "Rage Shout",
+		en = "Forge's Bellow",
+	},
+
+	shock_grenade_interval = {
+		en = "Shock Grenade Stagger",
 	},
 })
 

@@ -1,22 +1,19 @@
 local mod = get_mod("enemies_improved")
 
 mod.dot_debuffs = {
-	-- DoT (Show above health bar as cool icons with stacks)
+	-- DoT
 	"bleed",
 	"flamer_assault",
+	"flame_grenade_liquid_area",
 	"warp_fire",
+	"shock_effect",
+
 	"neurotoxin_interval_buff",
 	"neurotoxin_interval_buff2",
 	"neurotoxin_interval_buff3",
 	"exploding_toxin_interval_buff",
 
-	-- Psyker DoT-like
-	"psyker_discharge_damage_debuff",
 	"psyker_force_staff_quick_attack_debuff",
-
-	-- Broker / toxin damage over time
-	"toxin_damage_debuff",
-	"toxin_damage_debuff_monster",
 }
 
 mod.utility_debuffs = {
@@ -28,8 +25,13 @@ mod.utility_debuffs = {
 	"increase_damage_taken",
 
 	-- Psyker utility / chain lightning etc.
+	"psyker_heavy_swings_shock",
+	"psyker_heavy_swings_shock_improved",
+	"psyker_protectorate_spread_chain_lightning_interval",
 	"psyker_protectorate_spread_chain_lightning_interval_improved",
+	"psyker_protectorate_spread_charged_chain_lightning_interval",
 	"psyker_protectorate_spread_charged_chain_lightning_interval_improved",
+	"psyker_discharge_damage_debuff",
 
 	-- Ogryn
 	"ogryn_recieve_damage_taken_increase_debuff",
@@ -51,6 +53,17 @@ mod.utility_debuffs = {
 
 	-- Broker
 	"broker_punk_rage_improved_shout_debuff",
+
+	-- Stagger
+	"shock_grenade_interval",
+
+	-- Blinded/smoke
+	"in_smoke_fog",
+
+	-- Broker
+	"toxin_damage_debuff",
+	"toxin_damage_debuff_monster",
+	"broker_passive_toxin_infected_enemies_take_increased_damage_debuff",
 }
 
 mod.debuffs = {}
@@ -70,32 +83,42 @@ mod.debuff_icons = {
 
 	-- Bleeding
 	bleed = "content/ui/materials/icons/presets/preset_13",
-	zealot_bled_enemies_take_more_damage_effect = "content/ui/textures/icons/buffs/hud/zealot/zealot_multi_hits_grant_impact_and_uninterruptible",
+	zealot_bled_enemies_take_more_damage_effect = "content/ui/materials/icons/presets/preset_13",
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	increase_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	increase_damage_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	veteran_improved_tag_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+
+	-- + damage
+	veteran_improved_tag_debuff = "content/ui/materials/icons/player_states/dead",
+	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/player_states/dead",
+	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/player_states/dead",
+	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/player_states/dead",
+	psyker_discharge_damage_debuff = "content/ui/materials/icons/player_states/dead",
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = "content/ui/materials/icons/player_states/dead",
 
 	-- Electricity / shock / chain lightning
 	electricity = "content/ui/materials/icons/presets/preset_11",
+	shock_effect = "content/ui/materials/icons/presets/preset_11",
+
+	psyker_heavy_swings_shock_improved = "content/ui/materials/icons/presets/preset_11",
 	psyker_heavy_swings_shock = "content/ui/materials/icons/presets/preset_11",
+
 	powermaul_p2_stun_interval = "content/ui/materials/icons/presets/preset_11",
 	powermaul_p2_stun_interval_basic = "content/ui/materials/icons/presets/preset_11",
 	shockmaul_stun_interval_damage = "content/ui/materials/icons/presets/preset_11",
 	shock_grenade_stun_interval = "content/ui/materials/icons/presets/preset_11",
 	protectorate_force_field = "content/ui/materials/icons/presets/preset_11",
+
+	psyker_protectorate_spread_chain_lightning_interval = "content/ui/materials/icons/presets/preset_11",
 	psyker_protectorate_spread_chain_lightning_interval_improved = "content/ui/materials/icons/presets/preset_11",
+	psyker_protectorate_spread_charged_chain_lightning_interval = "content/ui/materials/icons/presets/preset_11",
 	psyker_protectorate_spread_charged_chain_lightning_interval_improved = "content/ui/materials/icons/presets/preset_11",
-	psyker_discharge_damage_debuff = "content/ui/materials/icons/presets/preset_11",
 
 	-- Explosion
 	broker_flash_grenade_impact = "content/ui/materials/icons/presets/preset_19",
@@ -106,15 +129,18 @@ mod.debuff_icons = {
 	poxwalker_explosion = "content/ui/materials/icons/presets/preset_19",
 	default = "content/ui/materials/icons/presets/preset_19",
 
-	-- Burn / warp fire
+	-- FIRE Burn
 	flame_grenade_liquid_area_fire_burning = "content/ui/materials/icons/presets/preset_20",
 	liquid_area_fire_burning_barrel = "content/ui/materials/icons/presets/preset_20",
 	liquid_area_fire_burning = "content/ui/materials/icons/presets/preset_20",
 	burning = "content/ui/materials/icons/presets/preset_20",
-	warpfire = "content/ui/materials/icons/presets/preset_20",
-	warp_fire = "content/ui/materials/icons/presets/preset_20",
 	flamer_assault = "content/ui/materials/icons/presets/preset_20",
-	psyker_force_staff_quick_attack_debuff = "content/ui/materials/icons/presets/preset_20",
+	flame_grenade_liquid_area = "content/ui/materials/icons/presets/preset_20",
+
+	--  warp fire
+	warpfire = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
+	warp_fire = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
+	psyker_force_staff_quick_attack_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
 
 	-- Toxin / poison / chem
 	toxin_variant_1 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
@@ -133,17 +159,20 @@ mod.debuff_icons = {
 	exploding_toxin_interval_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	toxin_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	toxin_damage_debuff_monster = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
+	-- Arbite debuffs
+	adamant_drone_enemy_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
+	adamant_drone_talent_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
 
-	-- Arbite debuffs (generic hostile effect – use toxin icon for “control” feel)
-	adamant_drone_enemy_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	adamant_drone_talent_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-
-	-- Broker rage / shout – use a “fist”/aggression‑style icon
+	-- Broker rage
 	broker_punk_rage_improved_shout_debuff = "content/ui/materials/icons/presets/preset_18",
 
-	-- CC / suppression / stagger (if enabled later)
-	-- stagger = "content/ui/materials/icons/hud/stance/block",
-	-- suppression = "content/ui/materials/icons/presets/preset_15",
+	-- "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin" good shield type icon
+
+	-- Stagger
+	shock_grenade_interval = "content/ui/materials/icons/throwables/hud/small/party_non_grenade",
+
+	-- Blinded/smoke
+	in_smoke_fog = "content/ui/materials/icons/circumstances/ventilation_purge_01",
 }
 
 mod.debuff_colours = {
@@ -153,23 +182,28 @@ mod.debuff_colours = {
 	headshot = { 255, 150, 150, 150 },
 	ranged = { 255, 150, 150, 150 },
 
-	-- Bleeding (red)
+	-- Bleeding
 	bleed = { 255, 255, 0, 0 },
 	zealot_bled_enemies_take_more_damage_effect = { 255, 255, 40, 40 },
 
-	-- Electricity (yellow/white)
+	-- Electricity
 	electricity = { 255, 255, 255, 0 },
+	shock_effect = { 255, 255, 255, 0 },
 	psyker_heavy_swings_shock = { 255, 255, 255, 0 },
+	psyker_heavy_swings_shock_improved = { 255, 255, 255, 0 },
+
 	powermaul_p2_stun_interval = { 255, 255, 255, 0 },
 	powermaul_p2_stun_interval_basic = { 255, 255, 255, 0 },
 	shockmaul_stun_interval_damage = { 255, 255, 255, 0 },
 	shock_grenade_stun_interval = { 255, 255, 255, 0 },
 	protectorate_force_field = { 255, 200, 230, 255 },
-	psyker_protectorate_spread_chain_lightning_interval_improved = { 255, 255, 255, 0 },
-	psyker_protectorate_spread_charged_chain_lightning_interval_improved = { 255, 255, 255, 0 },
-	psyker_discharge_damage_debuff = { 255, 230, 255, 120 },
 
-	-- Explosion (bright yellow/white)
+	psyker_protectorate_spread_chain_lightning_interval = { 255, 255, 255, 0 },
+	psyker_protectorate_spread_chain_lightning_interval_improved = { 255, 255, 255, 0 },
+	psyker_protectorate_spread_charged_chain_lightning_interval = { 255, 255, 255, 0 },
+	psyker_protectorate_spread_charged_chain_lightning_interval_improved = { 255, 255, 255, 0 },
+
+	-- Explosion
 	broker_flash_grenade_impact = { 255, 250, 250, 20 },
 	explosion = { 255, 250, 250, 20 },
 	barrel_explosion_close = { 255, 250, 250, 20 },
@@ -178,17 +212,20 @@ mod.debuff_colours = {
 	poxwalker_explosion = { 255, 250, 250, 20 },
 	default = { 255, 250, 250, 20 },
 
-	-- Burn / warp fire (orange)
+	-- Burn
 	flame_grenade_liquid_area_fire_burning = { 255, 250, 150, 20 },
+	flame_grenade_liquid_area = { 255, 250, 150, 20 },
 	liquid_area_fire_burning_barrel = { 255, 250, 150, 20 },
 	liquid_area_fire_burning = { 255, 250, 150, 20 },
 	burning = { 255, 250, 150, 20 },
-	warpfire = { 255, 250, 150, 20 },
-	warp_fire = { 255, 250, 150, 20 },
 	flamer_assault = { 255, 250, 150, 20 },
-	psyker_force_staff_quick_attack_debuff = { 255, 250, 150, 20 },
 
-	-- Toxin / poison (sickly green)
+	-- Warpfire
+	warpfire = { 255, 120, 200, 255 },
+	warp_fire = { 255, 120, 200, 255 },
+	psyker_force_staff_quick_attack_debuff = { 255, 120, 200, 255 },
+
+	-- Toxin / poison
 	toxin_variant_1 = { 255, 50, 255, 20 },
 	toxin_variant_2 = { 255, 50, 255, 20 },
 	toxin_variant_3 = { 255, 50, 255, 20 },
@@ -206,25 +243,35 @@ mod.debuff_colours = {
 	toxin_damage_debuff = { 255, 80, 255, 80 },
 	toxin_damage_debuff_monster = { 255, 80, 255, 80 },
 
-	-- Rending / “take more damage” (purple)
+	-- Rending
 	rending_debuff = { 255, 185, 85, 255 },
 	increase_damage_taken = { 255, 185, 85, 255 },
 	increase_impact_received_while_staggered = { 255, 185, 85, 255 },
 	increase_damage_received_while_staggered = { 255, 185, 85, 255 },
-	ogryn_recieve_damage_taken_increase_debuff = { 255, 185, 85, 255 },
-	ogryn_taunt_increased_damage_taken_buff = { 255, 185, 85, 255 },
-	ogryn_staggering_damage_taken_increase = { 255, 185, 85, 255 },
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 185, 85, 255 },
 	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 185, 85, 255 },
 	adamant_staggering_increases_damage_taken = { 255, 185, 85, 255 },
-	veteran_improved_tag_debuff = { 255, 185, 85, 255 },
 
-	-- Arbite generic “enemy debuff”
+	-- damage taken increased
+	veteran_improved_tag_debuff = { 255, 200, 185, 100 },
+	ogryn_recieve_damage_taken_increase_debuff = { 255, 200, 185, 100 },
+	ogryn_taunt_increased_damage_taken_buff = { 255, 200, 185, 100 },
+	ogryn_staggering_damage_taken_increase = { 255, 200, 185, 100 },
+	psyker_discharge_damage_debuff = { 255, 200, 185, 100 },
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = { 255, 200, 185, 100 },
+
+	-- Arbite
 	adamant_drone_enemy_debuff = { 255, 180, 180, 255 },
 	adamant_drone_talent_debuff = { 255, 180, 180, 255 },
 
-	-- Broker rage debuff (aggressive red/orange)
+	-- Broker rage debuff
 	broker_punk_rage_improved_shout_debuff = { 255, 255, 120, 40 },
+
+	-- Stagger
+	shock_grenade_interval = { 255, 100, 200, 255 },
+
+	-- Blinded/smoke
+	in_smoke_fog = { 255, 200, 200, 200 },
 }
 
 mod.BREED_COLOURS = {
@@ -1037,7 +1084,7 @@ table.insert(mod.settings_widgets, {
 return {
 	name = mod:localize("mod_name"),
 	description = mod:localize("mod_description"),
-	is_togglable = true,
+	is_togglable = false,
 	options = {
 		widgets = mod.settings_widgets,
 	},
