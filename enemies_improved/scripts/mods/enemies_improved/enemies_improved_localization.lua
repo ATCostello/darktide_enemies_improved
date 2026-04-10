@@ -118,8 +118,14 @@ table.insert(localisations_to_add, {
 	psyker_discharge_damage_debuff = {
 		en = "Increased Damage (Warp Rupture)",
 	},
+	psyker_discharge_damage_debuff_abrv = {
+		en = "+ Damage",
+	},
 	psyker_force_staff_quick_attack_debuff = {
 		en = "Increased Warp Damage (Empyric Shock)",
+	},
+	psyker_force_staff_quick_attack_debuff_abrv = {
+		en = "+ Warp Damage",
 	},
 
 	toxin_damage_debuff = {
@@ -132,6 +138,9 @@ table.insert(localisations_to_add, {
 	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = {
 		en = "Increased Damage (Virulent Strain)",
 	},
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff_abrv = {
+		en = "+ Damage (Toxin)",
+	},
 
 	shock_effect = {
 		en = "Electrocuted",
@@ -139,19 +148,28 @@ table.insert(localisations_to_add, {
 
 	-- Rending / “take more damage”, tags, etc.
 	rending_debuff = {
-		en = "Rending",
+		en = "Brittleness",
 	},
 	increase_impact_received_while_staggered = {
 		en = "Increased Impact Taken",
 	},
+	increase_impact_received_while_staggered_abrv = {
+		en = "+ Impact",
+	},
 	increase_damage_received_while_staggered = {
 		en = "Increased Damage Taken (Staggered)",
+	},
+	increase_damage_received_while_staggered_abrv = {
+		en = "+ Damage",
 	},
 	power_maul_sticky_tick = {
 		en = "Power Maul Impact",
 	},
 	increase_damage_taken = {
 		en = "Increased Damage Taken",
+	},
+	increase_damage_taken_abrv = {
+		en = "+ Damage",
 	},
 
 	-- Psyker utility / chain lightning etc.
@@ -178,21 +196,36 @@ table.insert(localisations_to_add, {
 	ogryn_recieve_damage_taken_increase_debuff = {
 		en = "Increased Damage Taken (Soften Them Up)",
 	},
+	ogryn_recieve_damage_taken_increase_debuff_abrv = {
+		en = "+ Damage",
+	},
 	ogryn_taunt_increased_damage_taken_buff = {
 		en = "Increased Damage Taken (Valuable Distraction)",
 	},
+	ogryn_taunt_increased_damage_taken_buff_abrv = {
+		en = "+ Damage",
+	},
 	ogryn_staggering_damage_taken_increase = {
-		en = "Increased Damage Taken (Hard Knocks)",
+		en = "Increased Melee Damage Taken (Hard Knocks)",
+	},
+	ogryn_staggering_damage_taken_increase_abrv = {
+		en = "+ Melee Damage",
 	},
 
 	-- Veteran
 	veteran_improved_tag_debuff = {
 		en = "Increased Damage Taken (Tagged Target)",
 	},
+	veteran_improved_tag_debuff_abrv = {
+		en = "+ Damage",
+	},
 
 	-- Zealot
 	zealot_bled_enemies_take_more_damage_effect = {
 		en = "Increased Damage Taken (Bleeding)",
+	},
+	zealot_bled_enemies_take_more_damage_effect_abrv = {
+		en = "+ Damage (Bleeding)",
 	},
 
 	-- Arbite
@@ -210,6 +243,9 @@ table.insert(localisations_to_add, {
 	},
 	adamant_staggering_increases_damage_taken = {
 		en = "Increased Damage (Break Dissent)",
+	},
+	adamant_staggering_increases_damage_taken_abrv = {
+		en = "+ Damage",
 	},
 
 	-- Broker
@@ -272,6 +308,44 @@ table.insert(localisations_to_add, {
 	},
 	flashy = {
 		en = "flashy",
+	},
+})
+
+-- frame options localisations
+table.insert(localisations_to_add, {
+	panel_main_lower_frame = {
+		en = "Gritty texture",
+	},
+	heavy_frame_back = {
+		en = "No Frame",
+	},
+	heavy_frame_top = {
+		en = "Riveted panel",
+	},
+	simple = {
+		en = "Simple black box",
+	},
+	contracts_progress_overall_fill = {
+		en = "White box",
+	},
+})
+
+-- enemy type options localisations
+table.insert(localisations_to_add, {
+	enemy_type = {
+		en = "Enemy Type",
+	},
+	enemy_name = {
+		en = "Name",
+	},
+	armour_type = {
+		en = "Armour Type",
+	},
+	health = {
+		en = "Current Health",
+	},
+	nothing = {
+		en = "Don't Show",
 	},
 })
 
@@ -382,6 +456,12 @@ table.insert(localisations_to_add, {
 	},
 	specials_flash_tooltip = {
 		en = "Applies a flashing effect to the special attack indicators. \n\nDisable for a solid colour instead.",
+	},
+	special_attack_pulse_speed = {
+		en = "Special Attack Pulse Speed",
+	},
+	special_attack_pulse_speed_tooltip = {
+		en = "Set a speed for the flashing of the special attack warnings. With a lower value being faster flashing.",
 	},
 	outline_specials_colour = {
 		en = "Colour for special attacks (Global)",
@@ -499,21 +579,7 @@ table.insert(localisations_to_add, {
 			.. ")}"
 			.. "Armour Type: {#reset()}Display the previously hit armour zone type e.g. Carapace, Flak etc.",
 	},
-	enemy_type = {
-		en = "Enemy Type",
-	},
-	enemy_name = {
-		en = "Name",
-	},
-	armour_type = {
-		en = "Armour Type",
-	},
-	health = {
-		en = "Current Health",
-	},
-	nothing = {
-		en = "Don't Show",
-	},
+
 	hb_horde_enable = {
 		en = "Enable individual healthbars on horde enemies?",
 	},
@@ -606,10 +672,22 @@ table.insert(localisations_to_add, {
 		en = "Utility debuffs are displayed downwards and include things like rending, damage increases, weakening.",
 	},
 	debuff_names = {
-		en = "Show debuff names",
+		en = "Show Debuff Names",
 	},
 	debuff_names_tooltip = {
 		en = "Toggles a text display of different debuffs applied to enemies.",
+	},
+	debuffs_abrv = {
+		en = "Abbreviate Debuff Names?",
+	},
+	debuffs_abrv_tooltip = {
+		en = "Should the debuff names use abbreviated (shortend) versions if available? \nIf disabled, the full text name will show - with the talent name too. e.g. 'Increased Damage Taken (Soften Them Up)' \nIf enabled, it will be shortened to just the effect e.g. '+ Damage'",
+	},
+	debuffs_combine = {
+		en = "Combine similar debuffs?",
+	},
+	debuffs_combine_tooltip = {
+		en = "Should multiple debuffs that apply a similar effect be combined into one entry?\nFor example, if enabled, multiple '+ Damage Taken' debuffs applied via different sources would combine into one value.",
 	},
 	debuff_names_fade = {
 		en = "Fade out debuffs",

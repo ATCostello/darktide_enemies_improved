@@ -85,6 +85,7 @@ mod.build_frame_settings = function(dt)
 	fs.healthbar_specials_enable = mod:get("healthbar_specials_enable")
 	fs.outline_specials_enable = mod:get("outline_specials_enable")
 	fs.specials_flash = mod:get("specials_flash")
+	fs.special_attack_pulse_speed = mod:get("special_attack_pulse_speed")
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")
@@ -94,6 +95,8 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_names_fade = mod:get("debuff_names_fade")
 	fs.debuff_horde_enable = mod:get("debuff_horde_enable")
 	fs.debuff_show_on_body = mod:get("debuff_show_on_body")
+	fs.debuffs_abrv = mod:get("debuffs_abrv")
+	fs.debuffs_combine = mod:get("debuffs_combine")
 end
 
 mod.build_frame_settings()
@@ -422,76 +425,6 @@ mod.pulse_enemy_outline = function(entry)
 			-- Force outline visible
 			outline_system:remove_outline(unit, "enemies_improved_alert")
 			entry.alert_outline = false
-		end
-	end
-end
-
-mod.pulse_enemy_healthbar = function(entry)
-	local unit = entry.unit
-	local fs = mod.frame_settings
-
-	if
-		entry
-		and entry.healthbar
-		and entry.healthbar.widget.style.icon_background1
-		and entry.healthbar.widget.style.icon_background1.color
-	then
-		-- get breed category
-		local breed_type = entry.breed_type
-
-		if not breed_type then
-			breed_type = "enemy"
-		end
-
-		-- get settings
-		local breed_settings = mod.ICON_SETTINGS[breed_type]
-		local glow_colour = mod.ICON_COLOURS["glow"]
-		local glow_colour_default = mod.ICON_COLOURS["glow_default"]
-
-		if entry.special_attack_imminent then
-			-- get special colour
-			local sr = (mod:get("outline_specials_colour_R"))
-			local sg = (mod:get("outline_specials_colour_G"))
-			local sb = (mod:get("outline_specials_colour_B"))
-
-			if not sr then
-				sr = 255
-			end
-			if not sg then
-				sg = 0
-			end
-			if not sb then
-				sb = 0
-			end
-
-			if not entry.alert_healthbar then
-				----- TURN ON
-				entry.healthbar.widget.style.icon_background1.default_alpha = 255
-
-				-- set alert glow intensity
-				entry.healthbar.widget.style.icon_background1.default_alpha = 255
-				entry.healthbar.widget.style.icon_background1.color[1] = 255
-
-				-- set alert glow colour
-				entry.healthbar.widget.style.icon_background1.color[2] = sr
-				entry.healthbar.widget.style.icon_background1.color[3] = sg
-				entry.healthbar.widget.style.icon_background1.color[4] = sb
-
-				entry.alert_healthbar = true
-			elseif entry.alert_healthbar and fs.specials_flash then
-				----- TURN OFF
-				-- set alert glow intensity
-				entry.healthbar.widget.style.icon_background1.default_alpha = 0
-				entry.healthbar.widget.style.icon_background1.color[1] = 0
-
-				entry.alert_healthbar = false
-			end
-		else
-			if entry.alert_healthbar then
-				entry.alert_healthbar = false
-			end
-			entry.healthbar.widget.style.icon_background1.default_alpha = breed_settings.glow_intensity * 2.5
-			entry.healthbar.widget.style.icon_background1.color = glow_colour_default
 		end
 	end
 end
@@ -1911,11 +1844,12 @@ mod.update_enemies = function(dt, t)
 
 			mod.update_special_attack_detection(entry)
 
-			if fs.outline_specials_enable then
+			local update_interval = fs.special_attack_pulse_speed / 5
+			_attack_update_time = (_attack_update_time or 0) + dt
+
+			if fs.outline_specials_enable and _attack_update_time > update_interval then
 				mod.pulse_enemy_outline(entry)
-			end
-			if fs.healthbar_specials_enable then
-				--mod.pulse_enemy_healthbar(entry)
+				_attack_update_time = 0
 			end
 		end
 

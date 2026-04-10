@@ -842,7 +842,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.icon_enabled
+				return content.icon_enabled and content.glow_enabled
 			end,
 		},
 		-- ELITE ICON
@@ -1147,21 +1147,7 @@ template.on_enter = function(widget, marker, template)
 		content_icon = icon_enabled
 		content.icon_enabled = content_icon
 
-		-- set colours and glow
-		if style.icon_background1.color and not marker.special_attack_imminent then
-			if icon_glow_intensity == 0 then
-				style.icon_background1.default_alpha = 0
-				style.icon_background1.color[1] = 0
-			else
-				style.icon_background1.default_alpha = icon_glow_intensity * 2.5
-				style.icon_background1.color[1] = icon_glow_intensity * 2.5
-			end
-
-			style.icon_background1.color[2] = icon_glow_colour[2]
-			style.icon_background1.color[3] = icon_glow_colour[3]
-			style.icon_background1.color[4] = icon_glow_colour[4]
-		end
-
+		-- set colours
 		style_icon.color[2] = icon_color[2]
 		style_icon.color[3] = icon_color[3]
 		style_icon.color[4] = icon_color[4]
@@ -1263,7 +1249,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	size = { fs.hb_size_width, fs.hb_size_height }
 	template.size = size
-	
+
 	template.max_distance = fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0
@@ -1654,15 +1640,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.health_ghost_fraction = health_ghost_fraction
 
 	local icon_color = mod.ICON_COLOURS[breed_type]
+
 	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
 	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale
 	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
+	local icon_glow_colour_default = mod.ICON_COLOURS["glow_default"]
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
 
 	-- apply values to relevant icon
 	local function icon_special_attack(content_icon, style_icon)
-		local update_interval = 0.1
+		local update_interval = fs.special_attack_pulse_speed
 		content._attack_update_time = (content._attack_update_time or 0) + dt
 
 		if content._attack_update_time > update_interval then
@@ -1686,7 +1674,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					----- TURN ON
 					-- set alert glow intensity
 					style.icon_background1.default_alpha = 255
-					style.icon_background1.color[1] = 255
 
 					-- set alert glow colour
 					style.icon_background1.color[2] = sr
@@ -1697,13 +1684,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					----- TURN OFF
 					-- set alert glow intensity
 					style.icon_background1.default_alpha = 0
-					style.icon_background1.color[1] = 0
 
 					content.alert_healthbar = false
 				end
 			else
 				if content.alert_healthbar then
 					content.alert_healthbar = false
+				end
+
+				-- set alert glow colour
+				style.icon_background1.default_alpha = icon_glow_intensity * 2.5
+				style.icon_background1.color[2] = icon_glow_colour[2]
+				style.icon_background1.color[3] = icon_glow_colour[3]
+				style.icon_background1.color[4] = icon_glow_colour[4]
+
+				if icon_glow_intensity > 0 then
+					content.glow_enabled = true
+				else
+					content.glow_enabled = false
 				end
 			end
 

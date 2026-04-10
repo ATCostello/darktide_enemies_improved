@@ -547,10 +547,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content[stack_text_id] = stack_str
 				if fs.debuff_names then
 					if state.name_visible and name_text_style then
-						local loc = localized_cache[name]
+						local loc = ""
+
+						if fs.debuffs_abrv then
+							loc = localized_cache[name .. "_abrv"]
+						else
+							loc = localized_cache[name]
+						end
+
 						if not loc then
-							loc = mod:localize(name) or ""
-							localized_cache[name] = loc
+							if fs.debuffs_abrv then
+								loc = mod:localize(name .. "_abrv") or ""
+								localized_cache[name .. "_abrv"] = loc
+							else
+								loc = mod:localize(name) or ""
+								localized_cache[name] = loc
+							end
+						end
+
+						if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
+							loc = mod:localize(name)
 						end
 
 						content[name_text_id] = loc
@@ -559,15 +575,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local t_name = state.name_time or 0
 						local a = 0
 
-						if t_name <= NAME_FADE_IN then
-							a = (t_name / NAME_FADE_IN) -- fade in
-						elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
-							a = 1 -- fully visible
-						elseif t_name <= NAME_TOTAL then
-							local remain = NAME_TOTAL - t_name
-							a = remain / NAME_FADE_OUT -- fade out
+						if fs.debuff_names_fade then
+							if t_name <= NAME_FADE_IN then
+								a = (t_name / NAME_FADE_IN) -- fade in
+							elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
+								a = 1 -- fully visible
+							elseif t_name <= NAME_TOTAL then
+								local remain = NAME_TOTAL - t_name
+								a = remain / NAME_FADE_OUT -- fade out
+							else
+								a = 0
+							end
 						else
-							a = 0
+							a = 1
 						end
 
 						-- clamp & apply

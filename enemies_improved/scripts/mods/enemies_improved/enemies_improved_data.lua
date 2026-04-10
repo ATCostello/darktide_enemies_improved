@@ -87,9 +87,7 @@ mod.debuff_icons = {
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	increase_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	increase_damage_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
@@ -101,6 +99,8 @@ mod.debuff_icons = {
 	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/player_states/dead",
 	psyker_discharge_damage_debuff = "content/ui/materials/icons/player_states/dead",
 	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = "content/ui/materials/icons/player_states/dead",
+	increase_damage_taken = "content/ui/materials/icons/player_states/dead",
+	increase_damage_received_while_staggered = "content/ui/materials/icons/player_states/dead",
 
 	-- Electricity / shock / chain lightning
 	electricity = "content/ui/materials/icons/presets/preset_11",
@@ -245,9 +245,7 @@ mod.debuff_colours = {
 
 	-- Rending
 	rending_debuff = { 255, 185, 85, 255 },
-	increase_damage_taken = { 255, 185, 85, 255 },
 	increase_impact_received_while_staggered = { 255, 185, 85, 255 },
-	increase_damage_received_while_staggered = { 255, 185, 85, 255 },
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 185, 85, 255 },
 	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 185, 85, 255 },
 	adamant_staggering_increases_damage_taken = { 255, 185, 85, 255 },
@@ -259,6 +257,8 @@ mod.debuff_colours = {
 	ogryn_staggering_damage_taken_increase = { 255, 200, 185, 100 },
 	psyker_discharge_damage_debuff = { 255, 200, 185, 100 },
 	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = { 255, 200, 185, 100 },
+	increase_damage_taken = { 255, 200, 185, 100 },
+	increase_damage_received_while_staggered = { 255, 200, 185, 100 },
 
 	-- Arbite
 	adamant_drone_enemy_debuff = { 255, 180, 180, 255 },
@@ -395,40 +395,24 @@ mod.OUTLINE_COLOURS_DEFAULT = table.clone(mod.OUTLINE_COLOURS)
 
 local hb_frames = {
 	{
-		text = "content/ui/materials/frames/masteries/panel_main_lower_frame",
+		text = "panel_main_lower_frame",
 		value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
 	},
 	{
-		text = "content/ui/materials/bars/heavy/frame_back",
-		value = "content/ui/materials/bars/heavy/frame_back",
-	},
-	{
-		text = "content/ui/materials/bars/heavy/frame_top",
+		text = "heavy_frame_top",
 		value = "content/ui/materials/bars/heavy/frame_top",
 	},
 	{
-		text = "content/ui/materials/frames/masteries/panel_main_top_frame",
-		value = "content/ui/materials/frames/masteries/panel_main_top_frame",
-	},
-	{
-		text = "content/ui/materials/bars/simple/frame",
+		text = "simple",
 		value = "content/ui/materials/bars/simple/frame",
 	},
 	{
-		text = "content/ui/materials/bars/contracts_progress_overall_fill",
+		text = "contracts_progress_overall_fill",
 		value = "content/ui/materials/bars/contracts_progress_overall_fill",
 	},
 	{
-		text = "content/ui/materials/frames/talents/talent_icon_container",
-		value = "content/ui/materials/frames/talents/talent_icon_container",
-	},
-	{
-		text = "content/ui/materials/frames/difficulty_stepper_frame",
-		value = "content/ui/materials/frames/difficulty_stepper_frame",
-	},
-	{
-		text = "content/ui/materials/bars/heavy/frame_effect_electric",
-		value = "content/ui/materials/bars/heavy/frame_effect_electric",
+		text = "heavy_frame_back",
+		value = "content/ui/materials/bars/heavy/frame_back",
 	},
 }
 
@@ -545,7 +529,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "main_font_colour_R",
 					type = "numeric",
-					default_value = 220,
+					default_value = 255,
 					range = {
 						0,
 						255,
@@ -555,7 +539,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "main_font_colour_G",
 					type = "numeric",
-					default_value = 220,
+					default_value = 255,
 					range = {
 						0,
 						255,
@@ -565,7 +549,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "main_font_colour_B",
 					type = "numeric",
-					default_value = 220,
+					default_value = 255,
 					range = {
 						0,
 						255,
@@ -581,7 +565,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "secondary_font_colour_R",
 					type = "numeric",
-					default_value = 180,
+					default_value = 255,
 					range = {
 						0,
 						255,
@@ -591,7 +575,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "secondary_font_colour_G",
 					type = "numeric",
-					default_value = 180,
+					default_value = 225,
 					range = {
 						0,
 						255,
@@ -601,7 +585,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "secondary_font_colour_B",
 					type = "numeric",
-					default_value = 180,
+					default_value = 150,
 					range = {
 						0,
 						255,
@@ -641,6 +625,18 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "specials_flash_tooltip",
+		},
+		{
+			setting_id = "special_attack_pulse_speed",
+			type = "numeric",
+			default_value = 0.2,
+			range = {
+				0.1,
+				0.5,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "special_attack_pulse_speed_tooltip",
 		},
 		{
 			setting_id = "outline_specials_colour",
@@ -817,21 +813,21 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_text_top_left_01",
 			type = "dropdown",
-			options = enemy_type_options,
+			options = table.clone(enemy_type_options),
 			default_value = "enemy_name",
 			tooltip = "hb_text_top_left_01_tooltip",
 		},
 		{
 			setting_id = "hb_text_bottom_left_01",
 			type = "dropdown",
-			options = enemy_type_options,
+			options = table.clone(enemy_type_options),
 			default_value = "health",
 			tooltip = "hb_text_bottom_left_01_tooltip",
 		},
 		{
 			setting_id = "hb_text_bottom_left_02",
 			type = "dropdown",
-			options = enemy_type_options,
+			options = table.clone(enemy_type_options),
 			default_value = "armour_type",
 			tooltip = "hb_text_bottom_left_02_tooltip",
 		},
@@ -860,6 +856,18 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "debuff_utility_enable_tooltip",
+		},
+		{
+			setting_id = "debuffs_abrv",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuffs_abrv_tooltip",
+		},
+		{
+			setting_id = "debuffs_combine",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuffs_combine_tooltip",
 		},
 		{
 			setting_id = "debuff_names",

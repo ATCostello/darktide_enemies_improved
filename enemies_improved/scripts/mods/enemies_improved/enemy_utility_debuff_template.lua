@@ -109,7 +109,6 @@ end
 rebuild_dot_lookup()
 
 local localized_cache = {}
-local stack_string_cache = {}
 -----------------------------------------------------------------------
 -- Widget definition
 -----------------------------------------------------------------------
@@ -334,6 +333,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	for i = 1, #debuffs do
 		local buff = debuffs[i]
 		local name = buff:template_name()
+		local template = buff:template()
+		local stat_buffs = template.stat_buffs
+		local conditional_stat_buffs = template.conditional_stat_buffs
 
 		if dot_lookup[name] then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
@@ -352,6 +354,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 			entry.name = name
 			entry.stacks = stacks
+			entry.max_stacks = template.max_stacks
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
 		end
 	end
 
@@ -384,6 +389,54 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	for i = active_count + 1, #active do
 		active[i] = nil
+	end
+
+	-------------------------------------------------------------------
+	-- COMBINE SAME ICONS AND CALCULATE COMBINED STACKS/PERCENTAGE
+	-------------------------------------------------------------------
+	if fs.debuffs_combine and active_count > 1 then
+		local combined = {}
+		local combined_count = 0
+		local icon_map = {}
+
+		for i = 1, active_count do
+			local entry = active[i]
+			local name = entry.name
+			local icon = mod.debuff_icons and mod.debuff_icons[name]
+
+			icon = icon or name
+
+			local existing = icon_map[icon]
+
+			if existing then
+				existing.stacks = (existing.stacks or 0) + (entry.stacks or 0)
+				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
+				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
+			else
+				combined_count = combined_count + 1
+
+				local new_entry = {
+					name = name,
+					stacks = entry.stacks,
+					stat_buffs = entry.stat_buffs,
+					conditional_stat_buffs = entry.conditional_stat_buffs,
+					combined = true,
+				}
+
+				combined[combined_count] = new_entry
+				icon_map[icon] = new_entry
+			end
+		end
+
+		for i = 1, combined_count do
+			active[i] = combined[i]
+		end
+
+		for i = combined_count + 1, active_count do
+			active[i] = nil
+		end
+
+		active_count = combined_count
 	end
 
 	-- Sort by stack count desc
@@ -431,7 +484,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_scale = 1.25,
 				prev_stacks = stacks,
 				y = y_base,
-				name_time = 0,
+				name_time = 1,
 				name_visible = fs.debuff_names,
 			}
 			state_table[name] = state
@@ -532,25 +585,96 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if debuff then
 			local name = debuff.name
 			local stacks = debuff.stacks
+			local max_stacks = debuff.max_stacks
+			local stat_buffs = debuff.stat_buffs
+			local conditional_stat_buffs = debuff.conditional_stat_buffs
+
+			if max_stacks and stacks > max_stacks then
+				stacks = max_stacks
+			end
+
 			local state = state_table[name]
 
 			if state then
 				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
 					or "content/ui/materials/icons/generic/danger"
 
-				local stack_str = stack_string_cache[stacks]
-				if not stack_str then
+				-- Add percentage text
+				local stack_buff_percentage = ""
+				if stat_buffs then
+					for stat_name, val in pairs(stat_buffs) do
+						if stat_name and val then
+							local loc = mod:localize(stat_name)
+							local perc = 0
+
+							if stat_name == "damage_taken_multiplier" then
+								perc = math.ceil(((val * stacks) * 100) - 100)
+							else
+								perc = math.ceil((val * stacks) * 100)
+							end
+
+							stack_buff_percentage = tostring(perc)
+
+							--mod:echo(stat_name)
+						end
+					end
+				elseif conditional_stat_buffs then
+					for stat_name, val in pairs(conditional_stat_buffs) do
+						if stat_name and val then
+							local loc = mod:localize(stat_name)
+							local perc = 0
+
+							if stat_name == "damage_taken_multiplier" then
+								perc = math.ceil(((val * stacks) * 100) - 100)
+							else
+								perc = math.ceil((val * stacks) * 100)
+							end
+
+							stack_buff_percentage = tostring(perc)
+
+							--mod:echo(stat_name)
+						end
+					end
+				end
+
+				-- Update stack text
+				local stack_str = ""
+
+				if stack_buff_percentage ~= "" then
+					stack_str = "" .. stack_buff_percentage .. "%"
+				else
 					stack_str = "x " .. stacks
-					stack_string_cache[stacks] = stack_str
 				end
 
 				content[stack_text_id] = stack_str
+
+				-- Update debuff name
 				if fs.debuff_names then
 					if state.name_visible and name_text_style then
-						local loc = localized_cache[name]
+						local loc = ""
+
+						if fs.debuffs_abrv then
+							loc = localized_cache[name .. "_abrv"]
+						else
+							loc = localized_cache[name]
+						end
+
 						if not loc then
-							loc = mod:localize(name) or ""
-							localized_cache[name] = loc
+							if fs.debuffs_abrv then
+								loc = mod:localize(name .. "_abrv") or ""
+								localized_cache[name .. "_abrv"] = loc
+							else
+								loc = mod:localize(name) or ""
+								localized_cache[name] = loc
+							end
+						end
+
+						if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
+							loc = mod:localize(name)
+						end
+
+						if debuff.combined then
+							loc = string.gsub(loc, "%b()", "")
 						end
 
 						content[name_text_id] = loc
@@ -559,15 +683,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local t_name = state.name_time or 0
 						local a = 0
 
-						if t_name <= NAME_FADE_IN then
-							a = (t_name / NAME_FADE_IN) -- fade in
-						elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
-							a = 1 -- fully visible
-						elseif t_name <= NAME_TOTAL then
-							local remain = NAME_TOTAL - t_name
-							a = remain / NAME_FADE_OUT -- fade out
+						if fs.debuff_names_fade then
+							if t_name <= NAME_FADE_IN then
+								a = (t_name / NAME_FADE_IN) -- fade in
+							elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
+								a = 1 -- fully visible
+							elseif t_name <= NAME_TOTAL then
+								local remain = NAME_TOTAL - t_name
+								a = remain / NAME_FADE_OUT -- fade out
+							else
+								a = 0
+							end
 						else
-							a = 0
+							a = 1
 						end
 
 						-- clamp & apply
