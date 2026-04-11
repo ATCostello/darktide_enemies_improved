@@ -97,6 +97,8 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_show_on_body = mod:get("debuff_show_on_body")
 	fs.debuffs_abrv = mod:get("debuffs_abrv")
 	fs.debuffs_combine = mod:get("debuffs_combine")
+	fs.split_debuff_types = mod:get("split_debuff_types")
+	
 end
 
 mod.build_frame_settings()

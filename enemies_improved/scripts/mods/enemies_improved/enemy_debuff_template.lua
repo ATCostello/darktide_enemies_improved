@@ -7,16 +7,16 @@ local template = {}
 -----------------------------------------------------------------------
 -- Cached settings
 -----------------------------------------------------------------------
+local NAME_FADE_IN = 0.15
+local NAME_VISIBLE = 4.0
+local NAME_FADE_OUT = 1
+local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
+
 local fs = mod.frame_settings
 local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
 local max_visible_rows_setting = 10
 local draw_distance_setting = fs.draw_distance
-
-local NAME_FADE_IN = 0.15
-local NAME_VISIBLE = 4.0
-local NAME_FADE_OUT = 1
-local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local size = {
 	hb_size_width,
@@ -90,8 +90,8 @@ local pairs = pairs
 local Localize = Localize
 local ScriptUnit_extension = ScriptUnit.extension
 
--- O(1) lookup table (rebuilt only if mod.dot_debuffs changes)
 local dot_lookup = {}
+local utility_lookup = {}
 
 local function rebuild_dot_lookup()
 	table.clear(dot_lookup)
@@ -105,8 +105,21 @@ local function rebuild_dot_lookup()
 	end
 end
 
+local function rebuild_utility_lookup()
+	table.clear(utility_lookup)
+	local list = mod.utility_debuffs
+	if not list then
+		return
+	end
+
+	for i = 1, #list do
+		utility_lookup[list[i]] = true
+	end
+end
+
 -- build once at load
 rebuild_dot_lookup()
+rebuild_utility_lookup()
 
 -----------------------------------------------------------------------
 -- Widget definition
@@ -305,6 +318,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	local split_debuff_types = fs.split_debuff_types
+
+	local hb_size_width = fs.hb_size_width
+	local hb_size_height = fs.hb_size_height
+	local max_visible_rows_setting = 10
+	local draw_distance_setting = fs.draw_distance
+
+	local size = {
+		hb_size_width,
+		hb_size_height,
+	}
+	local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+
+	local row_step = hb_size_height + (18 * mod.text_scale)
+	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
+	local icon_x = (hb_size_width - (5 * mod.text_scale))
+	local name_x = hb_size_width
+	local stack_x = hb_size_width + (60 * mod.text_scale)
+
 	-------------------------------------------------------------------
 	-- Breed / type
 	-------------------------------------------------------------------
@@ -336,6 +368,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local stat_buffs = template.stat_buffs
 		local conditional_stat_buffs = template.conditional_stat_buffs
 
+		-- DOT STUFF
 		if dot_lookup[name] then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
@@ -356,6 +389,31 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			entry.max_stacks = template.max_stacks
 			entry.stat_buffs = stat_buffs
 			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "dot"
+		end
+
+		-- UTILITY STUFF
+		if utility_lookup[name] then
+			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
+
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			entry.name = name
+			entry.stacks = stacks
+			entry.max_stacks = template.max_stacks
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "utility"
 		end
 	end
 
@@ -370,6 +428,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local keyword = keywords[i]
 			local name = keyword
 
+			-- DOT STUFF
 			if dot_lookup[name] then
 				local stacks = 1
 
@@ -377,6 +436,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				active[active_count] = {
 					name = name,
 					stacks = stacks,
+					type = "dot",
+				}
+			end
+
+			-- UTILITY STUFF
+			if utility_lookup[name] then
+				local stacks = 1
+
+				active_count = active_count + 1
+				active[active_count] = {
+					name = name,
+					stacks = stacks,
+					type = "utility",
 				}
 			end
 		end
@@ -397,11 +469,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local combined = {}
 		local combined_count = 0
 		local icon_map = {}
-
+		dbg_active = active
 		for i = 1, active_count do
 			local entry = active[i]
 			local name = entry.name
 			local icon = mod.debuff_icons and mod.debuff_icons[name]
+			local debuff_type = entry.type
 
 			icon = icon or name
 
@@ -420,6 +493,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					stat_buffs = entry.stat_buffs,
 					conditional_stat_buffs = entry.conditional_stat_buffs,
 					combined = true,
+					type = debuff_type,
 				}
 
 				combined[combined_count] = new_entry
@@ -473,7 +547,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
-		local y_base = base_y - ((index - 1) * row_height)
+		local y_base = 0
+
+		if split_debuff_types then
+			if debuff.type == "dot" then
+				base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+				y_base = base_y - ((index - 1) * row_height)
+			elseif debuff.type == "utility" then
+				base_y = (fs.show_armor_types and hb_size_height + 60) or (hb_size_height + 32)
+				y_base = base_y + ((index - 1) * row_height)
+			end
+		end
 
 		local state = state_table[name]
 		if not state then
@@ -570,6 +654,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- DRAW ROWS
 	-------------------------------------------------------------------
+	local dot_index = 0
+	local util_index = 0
+
 	for i = 1, max_rows do
 		local icon_id = "debuff_icon_" .. i
 		local stack_text_id = "stack_counter_" .. i
@@ -580,8 +667,50 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local name_text_style = style[name_text_id]
 
 		local debuff = active[i]
+		local row_i = 0
 
 		if debuff then
+			if split_debuff_types then
+				if debuff.type == "dot" then
+					dot_index = dot_index + 1
+					row_i = dot_index
+				elseif debuff.type == "utility" then
+					util_index = util_index + 1
+					row_i = util_index
+				end
+			else
+				row_i = i
+			end
+
+			-- split different debuff types (one goes up, one goes down ;))
+			if split_debuff_types then
+				if debuff.type == "dot" then
+					local dot_base = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+					local row_offset_y = dot_base - ((row_i - 1) * row_step)
+
+					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
+					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
+
+					stack_text_style.offset = { stack_x + base_offset, row_offset_y, 6 }
+					stack_text_style.default_offset = { stack_x + base_offset, row_offset_y, 6 }
+
+					name_text_style.offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+					name_text_style.default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+				elseif debuff.type == "utility" then
+					local util_base = (fs.show_armor_types and hb_size_height + 60) or (hb_size_height + 32)
+					local row_offset_y = util_base + ((row_i - 1) * row_step)
+
+					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
+					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
+
+					stack_text_style.offset = { stack_x + base_offset, row_offset_y, 6 }
+					stack_text_style.default_offset = { stack_x + base_offset, row_offset_y, 6 }
+
+					name_text_style.offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+					name_text_style.default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+				end
+			end
+
 			local name = debuff.name
 			local stacks = debuff.stacks
 			local max_stacks = debuff.max_stacks

@@ -875,6 +875,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_utility_enable_tooltip",
 		},
 		{
+			setting_id = "split_debuff_types",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "split_debuff_types_tooltip",
+		},
+		{
 			setting_id = "debuffs_abrv",
 			type = "checkbox",
 			default_value = true,
