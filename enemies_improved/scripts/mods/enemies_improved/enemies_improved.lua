@@ -135,7 +135,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 500
+local MAX_ENEMIES_PER_FRAME = 1000
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
@@ -239,6 +239,12 @@ mod.on_game_state_changed = function(state, state_name)
 			true
 		)
 		Managers.package:load("packages/ui/views/expedition_view/expedition_view", "enemies_improved", nil, true)
+		Managers.package:load(
+			"packages/ui/views/character_appearance_view/character_appearance_view",
+			"enemies_improved",
+			nil,
+			true
+		)
 		-- empty caches
 		mod.clear_caches()
 	end
@@ -347,18 +353,15 @@ mod.enable_enemy_outlines = function(unit, entry)
 		return
 	end
 
-	-- only update if changed
-	if entry.outline_name ~= new_outline then
-		-- remove old
-		if entry.outline_name then
-			outline_system:remove_outline(unit, entry.outline_name)
-		end
-
-		-- add new
-		outline_system:add_outline(unit, new_outline)
-
-		entry.outline_name = new_outline
+	-- remove old
+	if entry.outline_name then
+		outline_system:remove_outline(unit, entry.outline_name)
 	end
+
+	-- add new
+	outline_system:add_outline(unit, new_outline)
+
+	entry.outline_name = new_outline
 end
 
 mod.disable_enemy_outlines = function(unit, entry)
@@ -380,17 +383,10 @@ mod.disable_enemy_outlines = function(unit, entry)
 		breed_name = "enemy"
 	end
 
-	local new_outline = "enemies_" .. breed_name
+	local enemies_improved_outline = "enemies_" .. breed_name
 
-	-- only update if changed
-	if entry.outline_name == new_outline then
-		-- remove
-		if entry.outline_name then
-			outline_system:remove_outline(unit, entry.outline_name)
-		end
-
-		entry.outline_name = "DELETED"
-	end
+	-- remove
+	outline_system:remove_outline(unit, enemies_improved_outline)
 end
 
 mod.pulse_enemy_outline = function(entry)
@@ -1158,15 +1154,23 @@ end
 mod.remove_dead = function()
 	local units_to_remove = {}
 
+	-- Get player
+	local player = Managers.player:local_player(1)
+	if not player then
+		return
+	end
+
+	local player_unit = player.player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
+	end
+
+	local player_pos = Unit.world_position(player_unit, 1)
+	local max_dist_sq = (mod.frame_settings.draw_distance or 50) ^ 2
+	local mark_dead = false
+
 	-- Go through each marker type and clear caches.
 	local function iterate_types_removal(unit)
-		local found_unit_marker = mod.enemy_markers[unit]
-			or mod.enemy_healthbars[unit]
-			or mod.enemy_debuffs[unit]
-			or mod.enemy_utility_debuffs[unit]
-			or nil
-
-		-- try to find unit match from marker list..
 		local id
 
 		id = mod.enemy_markers[unit]
@@ -1196,25 +1200,49 @@ mod.remove_dead = function()
 		table.insert(units_to_remove, unit)
 	end
 
-	-- Detect if dead
-	for unit, data in pairs(mod.enemy_cache) do
+	-- Main loop
+	for unit, entry in pairs(mod.enemy_cache) do
+		local remove = false
+
+		-- Dead check
 		if not mod.detect_alive(unit) then
-			iterate_types_removal(unit)
+			remove = true
+			mark_dead = true
 		else
-			local entry = mod.enemy_cache[unit]
 			local health_extension = entry and entry.health_ext
-			if health_extension then
-				local health_percent = health_extension:current_health_percent()
-				if health_percent <= 0 then
-					iterate_types_removal(unit)
-				end
+			if health_extension and health_extension:current_health_percent() <= 0 then
+				remove = true
+				mark_dead = true
 			end
+		end
+
+		-- Distance check
+		if not remove and player_pos then
+			local pos = entry.pos or Unit.world_position(unit, 1)
+
+			local dx = pos.x - player_pos.x
+			local dy = pos.y - player_pos.y
+			local dz = pos.z - player_pos.z
+			local dist_sq = dx * dx + dy * dy + dz * dz
+
+			if dist_sq > max_dist_sq then
+				remove = true
+				--mark_dead = false
+
+				-- disable outlines too
+				mod.disable_enemy_outlines(unit, entry)
+				entry._outline_applied = false
+			end
+		end
+
+		if remove then
+			iterate_types_removal(unit)
 		end
 	end
 
-	-- Remove dead enemies from the cache after processing
+	-- Cleanup
 	for _, unit in ipairs(units_to_remove) do
-		mod.marked_dead[unit] = true
+		mod.marked_dead[unit] = mark_dead
 		mod.enemy_healthbars[unit] = nil
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_utility_debuffs[unit] = nil
@@ -1304,10 +1332,8 @@ mod.update_enemy_outlines = function(entry)
 			entry._outline_applied = true
 		end
 	else
-		if entry._outline_applied then
-			mod.disable_enemy_outlines(unit, entry)
-			entry._outline_applied = false
-		end
+		mod.disable_enemy_outlines(unit, entry)
+		entry._outline_applied = false
 	end
 end
 
@@ -1375,7 +1401,7 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
-	if not mod.marked_dead[unit] then
+	if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
 		Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
 			entry.marker = mod.get_marker_by_id(marker_id)
 			mod.enemy_markers[unit] = marker_id
@@ -1422,7 +1448,7 @@ mod.update_enemy_healthbars = function(entry)
 		end
 	end
 
-	if not mod.marked_dead[unit] then
+	if not mod.enemy_healthbars[unit] and not mod.marked_dead[unit] then
 		Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
 			entry.healthbar = mod.get_marker_by_id(marker_id)
 			mod.enemy_healthbars[unit] = marker_id
@@ -1517,6 +1543,7 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
 	table_clear(mod.enemy_utility_debuffs)
+	table_clear(mod.active_markers)
 
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
@@ -1594,38 +1621,48 @@ mod.apply_marker_fade = function(self)
 		for marker_id in pairs(mod.active_markers) do
 			local marker = markers_by_id[marker_id]
 
-			if marker and marker.unit and mod.detect_alive(marker.unit) then
-				if
-					marker.type == "enemy_healthbar"
-					or marker.type == "enemy_markers"
-					or marker.type == "enemy_debuff"
-					or marker.type == "enemy_utility_debuff"
-				then
-					local pos = Unit.world_position(marker.unit, 1)
-
-					local dx = pos.x - player_pos.x
-					local dy = pos.y - player_pos.y
-					local dz = pos.z - player_pos.z
-
-					local dist_sq = dx * dx + dy * dy + dz * dz
-
-					-- depth relative to camera
-					local to_marker_x = pos.x - cam_pos.x
-					local to_marker_y = pos.y - cam_pos.y
-					local to_marker_z = pos.z - cam_pos.z
-
-					local depth = to_marker_x * cam_forward.x
-						+ to_marker_y * cam_forward.y
-						+ to_marker_z * cam_forward.z
-
-					marker_list[#marker_list + 1] = {
-						marker = marker,
-						pos = pos,
-						dist_sq = dist_sq,
-						depth = depth,
-					}
-				end
+			if not marker or not marker.unit then
+				goto continue_marker_1
 			end
+
+			if marker.draw == false or marker.alpha_multiplier == 0 then
+				goto continue_marker_1
+			end
+
+			if not mod.detect_alive(marker.unit) then
+				goto continue_marker_1
+			end
+
+			if
+				marker.type == "enemy_healthbar"
+				or marker.type == "enemy_markers"
+				or marker.type == "enemy_debuff"
+				or marker.type == "enemy_utility_debuff"
+			then
+				local pos = Unit.world_position(marker.unit, 1)
+
+				local dx = pos.x - player_pos.x
+				local dy = pos.y - player_pos.y
+				local dz = pos.z - player_pos.z
+
+				local dist_sq = dx * dx + dy * dy + dz * dz
+
+				-- depth relative to camera
+				local to_marker_x = pos.x - cam_pos.x
+				local to_marker_y = pos.y - cam_pos.y
+				local to_marker_z = pos.z - cam_pos.z
+
+				local depth = to_marker_x * cam_forward.x + to_marker_y * cam_forward.y + to_marker_z * cam_forward.z
+
+				marker_list[#marker_list + 1] = {
+					marker = marker,
+					pos = pos,
+					dist_sq = dist_sq,
+					depth = depth,
+				}
+			end
+
+			::continue_marker_1::
 		end
 	end
 
@@ -1839,7 +1876,7 @@ mod.update_enemies = function(dt, t)
 
 			if fs.debuff_enable then
 				mod.update_enemy_debuffs(entry)
-				mod.update_enemy_utility_debuffs(entry)
+				--mod.update_enemy_utility_debuffs(entry) -- disabled and merged into just enemy_debuffs for performance ;)
 			end
 
 			mod.update_special_attack_detection(entry)

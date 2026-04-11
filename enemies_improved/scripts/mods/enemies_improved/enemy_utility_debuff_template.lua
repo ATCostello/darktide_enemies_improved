@@ -10,7 +10,7 @@ local template = {}
 local fs = mod.frame_settings
 local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
-local max_visible_rows_setting = 5
+local max_visible_rows_setting = 10
 local draw_distance_setting = fs.draw_distance
 
 local NAME_FADE_IN = 0.15
@@ -108,7 +108,6 @@ end
 -- build once at load
 rebuild_dot_lookup()
 
-local localized_cache = {}
 -----------------------------------------------------------------------
 -- Widget definition
 -----------------------------------------------------------------------
@@ -654,19 +653,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local loc = ""
 
 						if fs.debuffs_abrv then
-							loc = localized_cache[name .. "_abrv"]
+							loc = mod:localize(name .. "_abrv") or ""
 						else
-							loc = localized_cache[name]
-						end
-
-						if not loc then
-							if fs.debuffs_abrv then
-								loc = mod:localize(name .. "_abrv") or ""
-								localized_cache[name .. "_abrv"] = loc
-							else
-								loc = mod:localize(name) or ""
-								localized_cache[name] = loc
-							end
+							loc = mod:localize(name) or ""
 						end
 
 						if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
@@ -674,7 +663,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						end
 
 						if debuff.combined then
-							loc = string.gsub(loc, "%b()", "")
+							--loc = string.gsub(loc, "%b()", "")
 						end
 
 						content[name_text_id] = loc
@@ -728,6 +717,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				c[2] = colour[2] or colour[1] or 255
 				c[3] = colour[3] or colour[2] or 255
 				c[4] = colour[4] or colour[3] or 255
+
+				if #widget._active > 0 then
+					marker.draw = true
+				end
 
 				if not marker.is_inside_frustum then
 					marker.draw = false

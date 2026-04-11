@@ -83,24 +83,29 @@ mod.debuff_icons = {
 
 	-- Bleeding
 	bleed = "content/ui/materials/icons/presets/preset_13",
-	zealot_bled_enemies_take_more_damage_effect = "content/ui/materials/icons/presets/preset_13",
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
 
-	-- + damage
+	-- + damage taken
 	veteran_improved_tag_debuff = "content/ui/materials/icons/player_states/dead",
 	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/player_states/dead",
 	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/player_states/dead",
-	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/player_states/dead",
 	psyker_discharge_damage_debuff = "content/ui/materials/icons/player_states/dead",
-	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = "content/ui/materials/icons/player_states/dead",
 	increase_damage_taken = "content/ui/materials/icons/player_states/dead",
-	increase_damage_received_while_staggered = "content/ui/materials/icons/player_states/dead",
+
+	-- + melee damage taken
+	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/weapons/actions/melee",
+
+	-- + damage if bleeding
+	zealot_bled_enemies_take_more_damage_effect = "content/ui/materials/icons/presets/preset_13",
+
+	-- + damage if staggered
+	increase_damage_received_while_staggered = "content/ui/materials/icons/weapons/actions/melee_hand",
+
+	-- + damage if toxin
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = "content/ui/materials/icons/player_states/dead",
 
 	-- Electricity / shock / chain lightning
 	electricity = "content/ui/materials/icons/presets/preset_11",
@@ -159,9 +164,13 @@ mod.debuff_icons = {
 	exploding_toxin_interval_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	toxin_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
 	toxin_damage_debuff_monster = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
+
 	-- Arbite debuffs
 	adamant_drone_enemy_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
 	adamant_drone_talent_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
+	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/weapons/actions/melee_hand",
+	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/weapons/actions/melee_hand",
 
 	-- Broker rage
 	broker_punk_rage_improved_shout_debuff = "content/ui/materials/icons/presets/preset_18",
@@ -184,7 +193,6 @@ mod.debuff_colours = {
 
 	-- Bleeding
 	bleed = { 255, 255, 0, 0 },
-	zealot_bled_enemies_take_more_damage_effect = { 255, 255, 40, 40 },
 
 	-- Electricity
 	electricity = { 255, 255, 255, 0 },
@@ -244,28 +252,37 @@ mod.debuff_colours = {
 	toxin_damage_debuff_monster = { 255, 80, 255, 80 },
 
 	-- Rending
-	rending_debuff = { 255, 185, 85, 255 },
-	increase_impact_received_while_staggered = { 255, 185, 85, 255 },
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 185, 85, 255 },
-	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 185, 85, 255 },
-	adamant_staggering_increases_damage_taken = { 255, 185, 85, 255 },
+	rending_debuff = { 255, 172, 115, 255 },
+	increase_impact_received_while_staggered = { 255, 172, 115, 255 },
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 172, 115, 255 },
+	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 172, 115, 255 },
 
-	-- damage taken increased
-	veteran_improved_tag_debuff = { 255, 200, 185, 100 },
-	ogryn_recieve_damage_taken_increase_debuff = { 255, 200, 185, 100 },
-	ogryn_taunt_increased_damage_taken_buff = { 255, 200, 185, 100 },
-	ogryn_staggering_damage_taken_increase = { 255, 200, 185, 100 },
-	psyker_discharge_damage_debuff = { 255, 200, 185, 100 },
-	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = { 255, 200, 185, 100 },
-	increase_damage_taken = { 255, 200, 185, 100 },
-	increase_damage_received_while_staggered = { 255, 200, 185, 100 },
+	-- + damage taken
+	veteran_improved_tag_debuff = { 255, 255, 185, 100 },
+	ogryn_recieve_damage_taken_increase_debuff = { 255, 255, 185, 100 },
+	ogryn_taunt_increased_damage_taken_buff = { 255, 255, 185, 100 },
+	psyker_discharge_damage_debuff = { 255, 255, 185, 100 },
+	increase_damage_taken = { 255, 255, 185, 100 },
+
+	-- + melee damage taken
+	ogryn_staggering_damage_taken_increase = { 255, 255, 242, 99 },
+
+	-- + damage if bleeding
+	zealot_bled_enemies_take_more_damage_effect = { 255, 255, 40, 40 },
+
+	-- + damage if staggered
+	increase_damage_received_while_staggered = { 255, 124, 227, 187 },
+	adamant_staggering_increases_damage_taken = { 255, 124, 227, 187 },
+
+	-- + damage if toxin
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = { 255, 80, 255, 80 },
 
 	-- Arbite
-	adamant_drone_enemy_debuff = { 255, 180, 180, 255 },
-	adamant_drone_talent_debuff = { 255, 180, 180, 255 },
+	adamant_drone_enemy_debuff = { 255, 0, 144, 255 },
+	adamant_drone_talent_debuff = { 255, 0, 144, 255 },
 
 	-- Broker rage debuff
-	broker_punk_rage_improved_shout_debuff = { 255, 255, 120, 40 },
+	broker_punk_rage_improved_shout_debuff = { 255, 255, 117, 255 },
 
 	-- Stagger
 	shock_grenade_interval = { 255, 100, 200, 255 },
@@ -466,7 +483,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "draw_distance",
 			type = "numeric",
-			default_value = 30,
+			default_value = 50,
 			range = {
 				30,
 				200,

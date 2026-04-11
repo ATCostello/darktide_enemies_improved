@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0test3"
+mod.version = "1.0test5"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -160,7 +160,7 @@ table.insert(localisations_to_add, {
 		en = "Increased Damage Taken (Staggered)",
 	},
 	increase_damage_received_while_staggered_abrv = {
-		en = "+ Damage",
+		en = "+ Damage (Staggered)",
 	},
 	power_maul_sticky_tick = {
 		en = "Power Maul Impact",
@@ -245,7 +245,7 @@ table.insert(localisations_to_add, {
 		en = "Increased Damage (Break Dissent)",
 	},
 	adamant_staggering_increases_damage_taken_abrv = {
-		en = "+ Damage",
+		en = "+ Damage (Staggered)",
 	},
 
 	-- Broker
