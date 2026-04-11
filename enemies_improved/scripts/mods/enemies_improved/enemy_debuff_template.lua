@@ -299,8 +299,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	-- if not on screen or draw == false, throttle heavily....
+	if not marker.is_inside_frustum or marker.draw == false then
+		widget._next_update = t + 0.25
+
 	-- distance based updates
-	if marker.distance < 30 then
+	elseif marker.distance < 30 then
 		widget._next_update = t + 0.02
 	elseif marker.distance < 50 then
 		widget._next_update = t + 0.03
@@ -747,38 +751,37 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- Add percentage text
 				local stack_buff_percentage = ""
+
+				-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
+				local function calc_stack_buff_percentage(val, stacks)
+					if stat_name == "damage_taken_multiplier" then
+						perc = math.ceil(((val * stacks) * 100) - 100)
+					else
+						perc = math.ceil((val * stacks) * 100)
+					end
+
+					local threshold = 1
+
+					local nearest = math.floor((perc + 5) / 10) * 10
+					if math.abs(perc - nearest) <= threshold then
+						perc = nearest
+					end
+
+					stack_buff_percentage = tostring(perc)
+				end
+
 				if stat_buffs then
 					for stat_name, val in pairs(stat_buffs) do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							local perc = 0
-
-							if stat_name == "damage_taken_multiplier" then
-								perc = math.ceil(((val * stacks) * 100) - 100)
-							else
-								perc = math.ceil((val * stacks) * 100)
-							end
-
-							stack_buff_percentage = tostring(perc)
-
-							--mod:echo(stat_name)
+							calc_stack_buff_percentage(val, stacks)
 						end
 					end
 				elseif conditional_stat_buffs then
 					for stat_name, val in pairs(conditional_stat_buffs) do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							local perc = 0
-
-							if stat_name == "damage_taken_multiplier" then
-								perc = math.ceil(((val * stacks) * 100) - 100)
-							else
-								perc = math.ceil((val * stacks) * 100)
-							end
-
-							stack_buff_percentage = tostring(perc)
-
-							--mod:echo(stat_name)
+							calc_stack_buff_percentage(val, stacks)
 						end
 					end
 				end

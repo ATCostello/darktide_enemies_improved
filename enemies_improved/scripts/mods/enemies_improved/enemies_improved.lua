@@ -113,8 +113,6 @@ end
 local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_markers_template")
 local EnemyHealthbarTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_debuff_template")
-local EnemyUtilityDebuffTemplate =
-	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_utility_debuff_template")
 
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -267,7 +265,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
 	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
 	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
-	self._marker_templates[EnemyUtilityDebuffTemplate.name] = EnemyUtilityDebuffTemplate
 end)
 
 -----------------------------------------------------------------------
@@ -1498,40 +1495,6 @@ mod.update_enemy_debuffs = function(entry)
 	end
 end
 
-mod.update_enemy_utility_debuffs = function(entry)
-	local unit = entry.unit
-
-	local fs = mod.frame_settings
-	if not fs.debuff_enable then
-		return
-	end
-
-	if not fs.debuff_utility_enable then
-		return
-	end
-
-	local t = mod.get_time()
-
-	if entry._next_util_debuff_update and t < entry._next_util_debuff_update then
-		return
-	end
-
-	entry._next_util_debuff_update = t + 0.35
-
-	-- don't process hordes if disabled
-	if not fs.debuff_horde_enable and entry.is_horde then
-		return
-	end
-
-	if not mod.enemy_utility_debuffs[unit] and not mod.marked_dead[unit] then
-		Managers_event:trigger("add_world_marker_unit", EnemyUtilityDebuffTemplate.name, unit, function(marker_id)
-			entry.utility_debuffs = mod.get_marker_by_id(marker_id)
-			mod.enemy_utility_debuffs[unit] = marker_id
-			mod.active_markers[marker_id] = true
-		end)
-	end
-end
-
 -----------------------------------------------------------------------
 -- Cache clearing
 -----------------------------------------------------------------------
@@ -1877,7 +1840,6 @@ mod.update_enemies = function(dt, t)
 
 			if fs.debuff_enable then
 				mod.update_enemy_debuffs(entry)
-				--mod.update_enemy_utility_debuffs(entry) -- disabled and merged into just enemy_debuffs for performance ;)
 			end
 
 			mod.update_special_attack_detection(entry)
