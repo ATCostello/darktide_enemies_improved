@@ -118,6 +118,7 @@ local function rebuild_utility_lookup()
 end
 
 -- build once at load
+
 rebuild_dot_lookup()
 rebuild_utility_lookup()
 
@@ -297,7 +298,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if t < widget._next_update then
 		return
 	end
-	widget._next_update = t + 0.01
+
+	-- distance based updates
+	if marker.distance < 30 then
+		widget._next_update = t + 0.02
+	elseif marker.distance < 50 then
+		widget._next_update = t + 0.03
+	elseif marker.distance < 70 then
+		widget._next_update = t + 0.05
+	else
+		widget._next_update = t + 0.08
+	end
 
 	local unit = marker.unit
 	local content = widget.content
@@ -316,6 +327,23 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	then
 		marker.draw = false
 		return
+	end
+
+	local line_of_sight_progress = content.line_of_sight_progress or 0
+
+	if template.check_line_of_sight then
+		if marker.raycast_initialized then
+			local raycast_result = marker.raycast_result
+			local line_of_sight_speed = 8
+
+			if raycast_result then
+				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+			else
+				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+			end
+		end
+	elseif not template.check_line_of_sight then
+		line_of_sight_progress = 1
 	end
 
 	local split_debuff_types = fs.split_debuff_types
@@ -345,12 +373,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local debuffs = content.debuffs
 	local keywords = content.keywords
 
-	if not debuffs or #debuffs == 0 then
-		marker.draw = false
-	else
-		marker.draw = true
-	end
-
 	-- Gather active debuffs that we care about
 	widget._active = widget._active or {}
 	local active = widget._active
@@ -369,7 +391,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local conditional_stat_buffs = template.conditional_stat_buffs
 
 		-- DOT STUFF
-		if dot_lookup[name] then
+		if dot_lookup[name] and fs.debuff_dot_enable then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -393,7 +415,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		-- UTILITY STUFF
-		if utility_lookup[name] then
+		if utility_lookup[name] and fs.debuff_utility_enable then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -429,7 +451,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local name = keyword
 
 			-- DOT STUFF
-			if dot_lookup[name] then
+			if dot_lookup[name] and fs.debuff_dot_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
@@ -441,7 +463,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			-- UTILITY STUFF
-			if utility_lookup[name] then
+			if utility_lookup[name] and fs.debuff_utility_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
@@ -452,10 +474,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				}
 			end
 		end
-	end
-
-	if active_count == 0 then
-		marker.draw = false
 	end
 
 	for i = active_count + 1, #active do
@@ -567,7 +585,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_scale = 1.25,
 				prev_stacks = stacks,
 				y = y_base,
-				name_time = 1,
+				name_time = 0,
 				name_visible = fs.debuff_names,
 			}
 			state_table[name] = state
@@ -619,7 +637,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		active_lookup[name] = true
-		marker.draw = true
 	end
 
 	-- Fade out removed debuffs
@@ -644,11 +661,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			root_position.z = root_position.z + content.breed.base_height / 1.5
 		end
-		if not marker.world_position then
-			marker.world_position = Vector3Box(root_position)
-		else
-			marker.world_position:store(root_position)
-		end
+
+		--if not marker.world_position then
+		marker.world_position = Vector3Box(root_position)
+		--else
+		--	marker.world_position:store(root_position)
+		--end
 	end
 
 	-------------------------------------------------------------------
@@ -796,45 +814,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						end
 
 						content[name_text_id] = loc
-
-						-- compute name alpha based on timer
-						local t_name = state.name_time or 0
-						local a = 0
-
-						if fs.debuff_names_fade then
-							if t_name <= NAME_FADE_IN then
-								a = (t_name / NAME_FADE_IN) -- fade in
-							elseif t_name <= NAME_FADE_IN + NAME_VISIBLE then
-								a = 1 -- fully visible
-							elseif t_name <= NAME_TOTAL then
-								local remain = NAME_TOTAL - t_name
-								a = remain / NAME_FADE_OUT -- fade out
-							else
-								a = 0
-							end
-						else
-							a = 1
-						end
-
-						-- clamp & apply
-						if a < 0 then
-							a = 0
-						elseif a > 1 then
-							a = 1
-						end
-
-						name_text_style.text_color[1] = (255 * a + 0.5)
 					else
 						content[name_text_id] = ""
-						if name_text_style then
-							name_text_style.text_color[1] = 0
-						end
 					end
 				else
 					content[name_text_id] = ""
-					if name_text_style then
-						name_text_style.text_color[1] = 0
-					end
 				end
 
 				-- colour mutation
@@ -842,13 +826,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				local c = icon_style.color
 
-				c[1] = state.alpha
+				--c[1] = state.alpha
 				c[2] = colour[2] or colour[1] or 255
 				c[3] = colour[3] or colour[2] or 255
 				c[4] = colour[4] or colour[3] or 255
 
+				content.line_of_sight_progress = line_of_sight_progress
+				widget.alpha_multiplier = line_of_sight_progress or 1
+
 				if #widget._active > 0 then
 					marker.draw = true
+				else
+					marker.draw = false
 				end
 
 				if not marker.is_inside_frustum then
@@ -878,10 +867,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			content[icon_id] = nil
 			content[stack_text_id] = nil
-			if name_text_style then
-				content[name_text_id] = ""
-				name_text_style.text_color[1] = 0
-			end
+			content[name_text_id] = nil
 		end
 	end
 end

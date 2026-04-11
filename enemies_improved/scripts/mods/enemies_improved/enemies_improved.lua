@@ -98,7 +98,6 @@ mod.build_frame_settings = function(dt)
 	fs.debuffs_abrv = mod:get("debuffs_abrv")
 	fs.debuffs_combine = mod:get("debuffs_combine")
 	fs.split_debuff_types = mod:get("split_debuff_types")
-	
 end
 
 mod.build_frame_settings()
@@ -137,7 +136,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 1000
+local MAX_ENEMIES_PER_FRAME = 200
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 

@@ -307,7 +307,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if t < widget._next_update then
 		return
 	end
-	widget._next_update = t + 0.01
+
+	-- distance based updates
+	if marker.distance < 30 then
+		widget._next_update = t + 0.02
+	elseif marker.distance < 50 then
+		widget._next_update = t + 0.03
+	elseif marker.distance < 70 then
+		widget._next_update = t + 0.05
+	else
+		widget._next_update = t + 0.08
+	end
 
 	local content = widget.content
 	local distance = content.distance or 0
