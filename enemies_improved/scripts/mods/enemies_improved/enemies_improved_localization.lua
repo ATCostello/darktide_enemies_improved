@@ -205,7 +205,7 @@ table.insert(localisations_to_add, {
 	},
 	increase_damage_received_while_staggered_abrv = {
 		en = "+ Damage (Staggered)",
-		["zh-cn"] = "+伤害",
+		["zh-cn"] = "+伤害（踉跄）",
 	},
 	power_maul_sticky_tick = {
 		en = "Power Maul Impact",
@@ -315,7 +315,7 @@ table.insert(localisations_to_add, {
 	},
 	adamant_staggering_increases_damage_taken_abrv = {
 		en = "+ Damage (Staggered)",
-		["zh-cn"] = "+伤害",
+		["zh-cn"] = "+伤害（踉跄）",
 	},
 
 	-- Broker
@@ -546,6 +546,7 @@ table.insert(localisations_to_add, {
 	},
 	secondary_font_colour_tooltip = {
 		en = "Pick a colour to apply as the 'secondary' font colour throughout enemies improved elements.",
+		["zh-cn"] = "选择用于敌人增强模组所有元素的次要字体颜色。",
 	},
 })
 
@@ -746,15 +747,15 @@ table.insert(localisations_to_add, {
 	},
 
 	hb_horde_enable = {
-		en = "Enable individual healthbars on horde enemies?",
+		en = "Enable individual horde healthbars?",
 		["zh-cn"] = "尸潮怪显示独立血条",
 	},
 	hb_horde_enable_tooltip = {
-		en = "Toggles individual healthbars for horde enemies.",
+		en = "Toggles individual healthbars for horde enemies.\nWarning: This can have a hit to performance if staring directly at a large group of horde enemies, without the clustering enabled.",
 		["zh-cn"] = "为每个尸潮小怪显示独立血条。",
 	},
 	hb_horde_clusters_enable = {
-		en = "Cluster horde healthbars?",
+		en = "Enable clustered horde healthbars?",
 		["zh-cn"] = "尸潮血条聚合",
 	},
 	hb_horde_clusters_enable_tooltip = {
@@ -867,9 +868,11 @@ table.insert(localisations_to_add, {
 	},
 	split_debuff_types = {
 		en = "Split DoT and Utility debuffs?",
+		["zh-cn"] = "分离持续伤害与功能型减益？",
 	},
 	split_debuff_types_tooltip = {
 		en = "Choose to split the damage-over-time and utility debuffs into two different groups, or to keep them together as one group.",
+		["zh-cn"] = "选择将持续伤害减益与功能型减益分为两组，或合并为一组显示。",
 	},
 	debuff_names = {
 		en = "Show Debuff Names",
@@ -916,7 +919,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "尸潮怪显示减益",
 	},
 	debuff_horde_enable_tooltip = {
-		en = "Toggle to show debuffs for horde enemies.",
+		en = "Toggle to show debuffs for horde enemies.\nWarning: This can have a hit to performance if staring directly at a large group of horde enemies.",
 		["zh-cn"] = "为尸潮小怪显示减益效果。",
 	},
 })

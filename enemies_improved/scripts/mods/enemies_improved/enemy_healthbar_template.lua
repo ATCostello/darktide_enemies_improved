@@ -935,8 +935,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width - 2 * mod.text_scale, 20 },
-				default_size = { bar_width - 2 * mod.text_scale, 20 },
+				size = { bar_width * 4 - 2 * mod.text_scale, 20 },
+				default_size = { bar_width * 4 - 2 * mod.text_scale, 20 },
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -958,8 +958,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 2 * mod.text_scale, 20 },
-				default_size = { bar_width * 2 * mod.text_scale, 20 },
+				size = { bar_width * 4 * mod.text_scale, 20 },
+				default_size = { bar_width * 4 * mod.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -982,8 +982,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 2 * mod.text_scale, 20 },
-				default_size = { bar_width * 2 * mod.text_scale, 20 },
+				size = { bar_width * 4 * mod.text_scale, 20 },
+				default_size = { bar_width * 4 * mod.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -1038,7 +1038,17 @@ local function get_text_option(content, option)
 	if option == "enemy_type" then
 		return mod:localize(breed_type) or ""
 	elseif option == "enemy_name" then
-		return Localize(breed.display_name) or ""
+		if content.in_horde_cluster then
+			local cluster_string = Localize(breed.display_name) .. " " .. mod:localize("horde")
+
+			if content.cluster_count then
+				cluster_string = cluster_string .. " (x " .. content.cluster_count .. ")"
+			end
+
+			return cluster_string
+		else
+			return Localize(breed.display_name) or ""
+		end
 	elseif option == "armour_type" then
 		local armor_type = breed and breed.armor_type
 		local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
@@ -1220,6 +1230,8 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	widget.alpha_multiplier = 0
+
 	widget._next_update = widget._next_update or 0
 	if t < widget._next_update then
 		return
@@ -1250,8 +1262,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	local entry = mod.enemy_cache[unit]
+
 	-- early out
 	if not marker.draw and not marker.is_inside_frustum and not template.check_line_of_sight then
+		marker.draw = false
 		return
 	end
 
@@ -1323,10 +1338,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Still, guard and bail out if somehow non-rep gets here.
 		if cluster.rep_unit ~= unit then
 			marker.draw = false
+			marker.remove = true
 			in_horde_cluster = false
-		else
-			marker.draw = true
 		end
+
+		content.in_horde_cluster = in_horde_cluster
 
 		-- Recompute pooled health so it stays up-to-date as members take damage/die
 		local total_current = content._cluster_cached_current or 0
@@ -1336,6 +1352,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		total_max_instant = 0
 
 		local units = cluster.units
+		content.cluster_count = #units
 		for i = 1, #units do
 			local u = units[i]
 			if mod.detect_alive(u) then
@@ -1387,6 +1404,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if marker.world_position then
 			marker.world_position = nil
 		end
+	end
+
+	-- if horde individual bars is disabled, but clustered is enabled, only show clustered...
+	if entry and entry.is_horde and not fs.horde_enable and fs.horde_clusters_enable and not in_horde_cluster then
+		marker.draw = false
+		return
 	end
 
 	local bar_logic = marker.bar_logic

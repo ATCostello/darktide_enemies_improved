@@ -1386,14 +1386,6 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
-	local t_now = mod.get_time()
-
-	-- throttle updates
-	if entry._last_marker_update and t_now < entry._last_marker_update then
-		return
-	end
-	entry._last_marker_update = t_now + 0.2
-
 	-- skip if already created
 	if entry._marker_created then
 		return
@@ -1421,17 +1413,9 @@ mod.update_enemy_healthbars = function(entry)
 
 	local unit = entry.unit
 
-	if (entry.is_horde and not fs.horde_enable) and (entry.is_horde and not fs.horde_clusters_enable) then
+	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
 		return
 	end
-
-	local t_now = mod.get_time()
-
-	--  throttle
-	if entry._last_healthbar_update and t_now < entry._last_healthbar_update then
-		return
-	end
-	entry._last_healthbar_update = t_now + 0.15
 
 	-- skip if already created
 	if entry._healthbar_created then
@@ -1471,14 +1455,6 @@ mod.update_enemy_debuffs = function(entry)
 	if not fs.debuff_dot_enable then
 		return
 	end
-
-	local t = mod.get_time()
-
-	if entry._next_debuff_update and t < entry._next_debuff_update then
-		return
-	end
-
-	entry._next_debuff_update = t + 0.35
 
 	-- don't process hordes if disabled
 	if not fs.debuff_horde_enable and entry.is_horde then
@@ -2272,6 +2248,7 @@ mod.update_dmf_settings_colours = function(setting_id)
 		end
 	end
 end
+
 mod.on_setting_changed = function(setting_id)
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
@@ -2313,3 +2290,11 @@ mod.on_setting_changed = function(setting_id)
 
 	mod.build_frame_settings()
 end
+
+-- Rebuilds all enemies improved UI stuff if the settings menu is closed, as by default the UI elements go invisible
+mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
+	if view_name == "dmf_options_view" or view_name == "options_view" then
+		mod.clear_caches()
+		mod.build_frame_settings()
+	end
+end)

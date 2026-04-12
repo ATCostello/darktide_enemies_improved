@@ -205,8 +205,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				6,
 			},
 			font_type = mod.font_type,
-			font_size = 16,
-			default_font_size = 16,
+			font_size = 16 * mod.text_scale,
+			default_font_size = 16 * mod.text_scale,
 
 			text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 			size = { bar_width * 0.25 * mod.text_scale, 20 },
@@ -249,8 +249,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 
 			font_type = mod.font_type,
-			font_size = 14,
-			default_font_size = 14,
+			font_size = 16 * mod.text_scale,
+			default_font_size = 16 * mod.text_scale,
 
 			text_color = fs.main_colour or { 220, 220, 220, 220 },
 			size = { name_x * mod.text_scale, 22 },
@@ -302,7 +302,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
 		widget._next_update = t + 0.25
-
 	-- distance based updates
 	elseif marker.distance < 30 then
 		widget._next_update = t + 0.02
@@ -316,11 +315,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local unit = marker.unit
 	local content = widget.content
+
 	local need_sort = false
 	local fs = mod.frame_settings
 
 	if not unit then
 		marker.draw = false
+		return
+	end
+
+	-- dont draw or do calculations if there are no debuffs applied..
+	if #content.debuffs < 1 and #content.keywords < 1 then
+		marker.draw = false
+		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -361,13 +368,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		hb_size_width,
 		hb_size_height,
 	}
-	local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+	local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40 * mod.text_scale)
+		or (-hb_size_height - 16 * mod.text_scale)
 
-	local row_step = hb_size_height + (18 * mod.text_scale)
+	local row_step = (hb_size_height + 18) * mod.text_scale
 	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
-	local icon_x = (hb_size_width - (5 * mod.text_scale))
-	local name_x = hb_size_width
-	local stack_x = hb_size_width + (60 * mod.text_scale)
+	local icon_x = (hb_size_width - 5) * mod.text_scale
+	local name_x = hb_size_width * mod.text_scale
+	local stack_x = (hb_size_width + 60) * mod.text_scale
 
 	-------------------------------------------------------------------
 	-- Breed / type
@@ -573,11 +581,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		if split_debuff_types then
 			if debuff.type == "dot" then
-				base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-				y_base = base_y - ((index - 1) * row_height)
+				base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) * mod.text_scale
+					or (-hb_size_height - 16) * mod.text_scale
+				y_base = base_y - ((index - 1) * row_height) * mod.text_scale
 			elseif debuff.type == "utility" then
-				base_y = (fs.show_armor_types and hb_size_height + 60) or (hb_size_height + 32)
-				y_base = base_y + ((index - 1) * row_height)
+				base_y = (fs.show_armor_types and hb_size_height + 60) * mod.text_scale
+					or (hb_size_height + 32) * mod.text_scale
+				y_base = base_y + ((index - 1) * row_height) * mod.text_scale
 			end
 		end
 

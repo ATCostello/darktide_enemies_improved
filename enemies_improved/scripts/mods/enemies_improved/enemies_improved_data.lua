@@ -648,11 +648,11 @@ table.insert(mod.settings_widgets, {
 			type = "numeric",
 			default_value = 0.2,
 			range = {
-				0.1,
+				0.05,
 				0.5,
 			},
 			decimals_number = 2,
-			step_size_value = 0.1,
+			step_size_value = 0.05,
 			tooltip = "special_attack_pulse_speed_tooltip",
 		},
 		{
@@ -741,7 +741,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_horde_clusters_enable",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "hb_horde_clusters_enable_tooltip",
 		},
 		{
