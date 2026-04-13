@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0test6"
+mod.version = "1.0test7"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -55,12 +55,18 @@ end
 -- base localisations
 mod.localisation = {
 	mod_name = {
+		en = "Enemies Improved",
+	},
+	mod_name_pizazz = {
 		en = "{#color("
 			.. colours.title
 			.. ")} {#color(255,0,0)}E{#color(248,0,14)}n{#color(240,0,29)}e{#color(233,0,43)}m{#color(225,0,57)}i{#color(218,0,71)}e{#color(210,0,86)}s {#color(203,0,100)}I{#color(195,0,114)}m{#color(188,0,129)}p{#color(180,0,143)}r{#color(173,0,157)}o{#color(165,0,171)}v{#color(158,0,186)}e{#color(150,0,200)}d{#reset()}",
 		["zh-cn"] = "{#color("
 			.. colours.title
 			.. ")} {#color(255,0,0)}敌{#color(248,0,14)}人{#color(240,0,29)}增{#color(233,0,43)}强{#reset()}",
+	},
+	mod_name_boring = {
+		en = "Enemies Improved",
 	},
 	mod_description = {
 		en = "{#color("
@@ -100,6 +106,12 @@ mod.localisation = {
 			.. ")}"
 			.. mod.version
 			.. "{#reset()}",
+	},
+	mod_name_pizazz_toggle = {
+		en = "Enable Name Pizazz",
+	},
+	mod_name_pizazz_tooltip = {
+		en = "Toggles the rainbow colours effect on the mod name text. Requires a reload.\nIf enabled, you will get a small euphoric experience everytime you scroll through the mod menu, \nIf disabled - you will be a John Darktide and have no rainbow sprinkles (but I'll love you anyway).",
 	},
 }
 
@@ -499,6 +511,9 @@ table.insert(localisations_to_add, {
 	font_type_tooltip = {
 		en = "The global font style to use. This will apply to all text elements from Enemies Improved.",
 		["zh-cn"] = "模组所有文本使用的统一字体。",
+	},
+	font_no_longer_available = {
+		en = "Selected font type is no longer available, resetting to a default option.",
 	},
 	text_scale = {
 		en = "Scale the text sizes (Global)",
@@ -1137,6 +1152,22 @@ local apply_colours = function()
 
 	return mod.localisation
 end
+
+mod.toggle_pizazz = function()
+	for key, values in pairs(mod.localisation) do
+		if key == "mod_name" then
+			for language, text in pairs(values) do
+				if mod:get("mod_name_pizazz_toggle") then
+					mod.localisation[key][language] = mod.localisation["mod_name_pizazz"][language]
+				else
+					mod.localisation[key][language] = mod.localisation["mod_name_boring"][language]
+				end
+			end
+		end
+	end
+end
+
+mod.toggle_pizazz()
 
 -- Insert font localisation
 insert_fonts(mod.localisation)

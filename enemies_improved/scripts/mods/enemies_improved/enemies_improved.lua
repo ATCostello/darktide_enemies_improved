@@ -134,7 +134,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 200
+local MAX_ENEMIES_PER_FRAME = 500
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
@@ -249,7 +249,26 @@ mod.on_game_state_changed = function(state, state_name)
 	end
 end
 
+local function check_selected_font()
+	local fonts = mod._get_font_options()
+	local selected_font = mod:get("font_type")
+	local exists = false
+
+	for i = 1, #fonts do
+		if fonts[i].value == selected_font then
+			exists = true
+		end
+	end
+
+	if not exists then
+		mod:echo(mod:localize(font_no_longer_available) .. " \n" .. fonts[1].text)
+		mod:set("font_type", fonts[1].value)
+	end
+end
+
 mod.on_all_mods_loaded = function()
+	check_selected_font()
+
 	mod.clear_caches()
 
 	mod.init_healthbar_defaults()
@@ -1562,10 +1581,6 @@ mod.apply_marker_fade = function(self)
 			local marker = markers_by_id[marker_id]
 
 			if not marker or not marker.unit then
-				goto continue_marker_1
-			end
-
-			if marker.draw == false or marker.alpha_multiplier == 0 then
 				goto continue_marker_1
 			end
 

@@ -528,6 +528,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "font_type_tooltip",
 		},
 		{
+			setting_id = "mod_name_pizazz_toggle",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "mod_name_pizazz_tooltip",
+		},
+		{
 			setting_id = "text_scale",
 			type = "numeric",
 			default_value = 1.15,

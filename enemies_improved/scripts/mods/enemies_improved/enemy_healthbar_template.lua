@@ -706,6 +706,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 185, 180, 180, 180 },
 				default_alpha = 185,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		}, -- MAX HEALTH
 		{
 			pass_type = "rect",
@@ -720,6 +727,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 200, 0, 0, 0 },
 				default_alpha = 200,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		}, -- GHOST DAMAGE
 		{
 			pass_type = "rect",
@@ -734,13 +748,27 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 200, 120, 40, 40 },
 				default_alpha = 200,
 			},
+
+			change_function = function(content, style)
+				local health_fraction = content.health_fraction or 0
+				local health_ghost_fraction = content.health_ghost_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_health_width = scaled_bar_width * health_fraction
+				local scaled_ghost_width = scaled_bar_width * health_ghost_fraction
+
+				style.size[1] = scaled_ghost_width
+				style.offset[1] = -scaled_bar_width * 0.5
+			end,
+
 			visibility_function = function(content)
-				if content.health_ghost_fraction and content.health_fraction then
-					if content.health_ghost_fraction > content.health_fraction then
-						return true
-					else
-						return false
-					end
+				if
+					content.hb_built
+					and content.health_fraction
+					and content.health_ghost_fraction
+					and content.health_ghost_fraction > content.health_fraction
+				then
+					return true
 				else
 					return false
 				end
@@ -759,6 +787,23 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 255, 170, 30, 30 },
 				default_alpha = 255,
 			},
+			change_function = function(content, style)
+				local health_fraction = content.health_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_health_width = scaled_bar_width * health_fraction
+
+				style.size[1] = scaled_health_width
+				style.offset[1] = -scaled_bar_width * 0.5
+			end,
+
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		}, -- SHADOW
 		{
 			pass_type = "texture",
@@ -775,6 +820,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 150, 80, 80, 80 },
 				default_alpha = 150,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		}, -- TOP EDGE HIGHLIGHT
 		{
 			pass_type = "texture",
@@ -790,6 +842,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 100, 255, 255, 255 },
 				default_alpha = 100,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		},
 		-- ICON BACKGROUND
 		{
@@ -816,7 +875,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.icon_enabled
+				return content.hb_built and content.icon_enabled
 			end,
 		},
 		{ -- icon glow
@@ -842,7 +901,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.icon_enabled and content.glow_enabled
+				return content.hb_built and content.icon_enabled and content.glow_enabled
 			end,
 		},
 		-- ELITE ICON
@@ -861,7 +920,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_damnation",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_boss
+				return content.hb_built and content.icon_enabled and content.icon_boss
 			end,
 		},
 		{ -- DAEMONHOST ICON
@@ -870,7 +929,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/icons/speaker",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_witch
+				return content.hb_built and content.icon_enabled and content.icon_witch
 			end,
 		},
 		{ -- CAPTAIN ICON
@@ -879,7 +938,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_captain
+				return content.hb_built and content.icon_enabled and content.icon_captain
 			end,
 		},
 		{ -- Ranged elites
@@ -888,7 +947,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/circumstances/assault_01",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_elite_ranged
+				return content.hb_built and content.icon_enabled and content.icon_elite_ranged
 			end,
 		},
 		{ -- specialists
@@ -897,7 +956,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_special
+				return content.hb_built and content.icon_enabled and content.icon_special
 			end,
 		},
 		{ -- disablers
@@ -906,7 +965,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/generic/exclamation_mark",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_disabler
+				return content.hb_built and content.icon_enabled and content.icon_disabler
 			end,
 		},
 		{ -- snipers
@@ -915,7 +974,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/weapons/actions/ads",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_sniper
+				return content.hb_built and content.icon_enabled and content.icon_sniper
 			end,
 		}, -- header text
 		{
@@ -940,6 +999,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 255,
 				drop_shadow = true,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		}, -- Health text
 		{
 			pass_type = "text",
@@ -964,6 +1030,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		},
 		{ -- armour types
 			pass_type = "text",
@@ -988,6 +1061,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		},
 		-- damage numbers
 		{
@@ -1010,6 +1090,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			visibility_function = function(content)
+				if content.hb_built then
+					return true
+				else
+					return false
+				end
+			end,
 		},
 	}, scenegraph_id)
 end
@@ -1097,6 +1184,7 @@ template.on_enter = function(widget, marker, template)
 	local content = widget.content
 	local style = widget.style
 
+	content.hb_built = false
 	marker.draw = false -- force hidden until ready...
 
 	content.damage_taken = 0
@@ -1230,9 +1318,8 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
-	widget.alpha_multiplier = 0
-
 	widget._next_update = widget._next_update or 0
+
 	if t < widget._next_update then
 		return
 	end
@@ -1240,16 +1327,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
 		widget._next_update = t + 0.25
+		widget.alpha_multiplier = 0
 
 	-- distance based updates
-	elseif marker.distance < 30 then
-		widget._next_update = t + 0.004
 	elseif marker.distance < 50 then
-		widget._next_update = t + 0.01
-	elseif marker.distance < 70 then
 		widget._next_update = t + 0.02
+	elseif marker.distance < 70 then
+		widget._next_update = t + 0.04
 	else
-		widget._next_update = t + 0.05
+		widget._next_update = t + 0.08
 	end
 
 	local content = widget.content
@@ -1275,9 +1361,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.remove = true
 		return
 	end
-
-	size = { fs.hb_size_width, fs.hb_size_height }
-	template.size = size
 
 	template.max_distance = fs.draw_distance
 
@@ -1426,12 +1509,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	health_ghost_fraction = health_ghost_fraction or 0
 	health_max_fraction = health_max_fraction or 0
 
-	marker.health_fraction = health_fraction
-	marker.health_ghost_fraction = health_ghost_fraction
-
 	if bar_logic then
 		health_fraction, health_ghost_fraction, health_max_fraction = bar_logic:animated_health_fractions()
 	end
+
+	marker.health_fraction = health_fraction
+	marker.health_ghost_fraction = health_ghost_fraction
 
 	-- Fallback if animation system fails
 	if not health_fraction then
@@ -1624,6 +1707,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
 
+	size = { fs.hb_size_width, fs.hb_size_height }
+	template.size = size
+
 	if health_fraction and health_ghost_fraction then
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
@@ -1635,7 +1721,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.scale = scale
 
 		local health_max_style = style.health_max
-		health_max_style.default_size[1] = bar_width * scale
+		--health_max_style.default_size[1] = bar_width * scale
 		health_max_style.size[1] = bar_width * scale
 
 		health_max_style.size[2] = bar_height * scale
@@ -1644,33 +1730,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local ghost_bar_style = style.ghost_bar
 
 		local scaled_bar_width = health_max_style.size[1]
+		content.scaled_bar_width = scaled_bar_width
 
 		local scaled_health_width = scaled_bar_width * health_fraction
 
 		local frame_style = style.frame
 		frame_style.size[1] = (bar_width + 12) * scale
-		frame_style.default_size[1] = (bar_width + 12) * scale
-		--current_health_style.offset[1] = -scaled_bar_width * 0.5
-
-		-- prevent size spam updates unless actually damaged...
-		--if damage_taken_since_last and damage_taken_since_last > 0 then
-		current_health_style.size[1] = scaled_health_width
-		current_health_style.default_size[1] = scaled_health_width
-		current_health_style.offset[1] = -scaled_bar_width * 0.5
-		--end
-
-		--if health_current < health_max and current_health_style.size[1] > scaled_health_width then
-		--	current_health_style.size[1] = scaled_health_width
-		--	current_health_style.default_size[1] = scaled_health_width
-		--	current_health_style.offset[1] = -scaled_bar_width * 0.5
-		--end
 
 		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
 		local scaled_ghost_width = scaled_bar_width * ghost_fraction
-
-		ghost_bar_style.size[1] = scaled_ghost_width
-		ghost_bar_style.default_size[1] = scaled_ghost_width
-		ghost_bar_style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
 	end
 
 	content.health_fraction = health_fraction
@@ -1846,8 +1914,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local draw = marker.draw
 
 	if draw then
-		marker.scale = marker.scale * mod.text_scale
-		local scale = marker.scale
+		content.hb_built = true
+
+		local scale = marker.scale * mod.text_scale
 
 		local header_style = style.header_text
 		local health_counter = style.health_counter
