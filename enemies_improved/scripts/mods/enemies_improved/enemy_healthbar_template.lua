@@ -1895,9 +1895,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.remove = true
 	end
 
-	content.line_of_sight_progress = line_of_sight_progress
-	widget.alpha_multiplier = line_of_sight_progress or 1
-
 	-- only hide non-clustered horde units when horde disabled
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		marker.draw = false
@@ -1915,6 +1912,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if draw then
 		content.hb_built = true
+
+		content.line_of_sight_progress = line_of_sight_progress
+		widget.alpha_multiplier = line_of_sight_progress or 1
 
 		local scale = marker.scale * mod.text_scale
 

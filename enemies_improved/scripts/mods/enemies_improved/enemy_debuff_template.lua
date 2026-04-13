@@ -253,8 +253,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			default_font_size = 16 * mod.text_scale,
 
 			text_color = fs.main_colour or { 220, 220, 220, 220 },
-			size = { name_x * mod.text_scale, 22 },
-			default_size = { name_x * mod.text_scale, 22 },
+			size = { (name_x * 2) * mod.text_scale, 22 },
+			default_size = { (name_x * 2) * mod.text_scale, 22 },
 
 			truncated = true,
 			max_lines = 1,
@@ -300,7 +300,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- if not on screen or draw == false, throttle heavily....
-	if not marker.is_inside_frustum or marker.draw == false then
+	if not marker.is_inside_frustum then
 		widget._next_update = t + 0.25
 	-- distance based updates
 	elseif marker.distance < 30 then
@@ -368,10 +368,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		hb_size_width,
 		hb_size_height,
 	}
-	local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40 * mod.text_scale)
-		or (-hb_size_height - 16 * mod.text_scale)
+	local base_y = hb_size_height * mod.text_scale
 
-	local row_step = (hb_size_height + 18) * mod.text_scale
+	local row_step = (hb_size_height + 20) * mod.text_scale
 	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
 	local icon_x = (hb_size_width - 5) * mod.text_scale
 	local name_x = hb_size_width * mod.text_scale
@@ -442,6 +441,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				active[active_count] = entry
 			end
 
+			-- FIX THIS STAT'S MAX BUFFS BEING SET TO 8 WHEN ITS ACTUALLY 1... (pickaxe pull)
+			if name == "increase_damage_taken" then
+				template.max_stacks = 1
+			end
+
 			entry.name = name
 			entry.stacks = stacks
 			entry.max_stacks = template.max_stacks
@@ -498,20 +502,29 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if fs.debuffs_combine and active_count > 1 then
 		local combined = {}
 		local combined_count = 0
-		local icon_map = {}
-		dbg_active = active
+		local grouped_dot_map = {}
+		local grouped_utility_map = {}
+
 		for i = 1, active_count do
 			local entry = active[i]
 			local name = entry.name
+			local max_stacks = entry.max_stacks
 			local icon = mod.debuff_icons and mod.debuff_icons[name]
 			local debuff_type = entry.type
 
 			icon = icon or name
+			local existing
 
-			local existing = icon_map[icon]
+			if debuff_type == "dot" then
+				existing = grouped_dot_map[icon]
+			elseif debuff_type == "utility" then
+				existing = grouped_utility_map[icon]
+			end
 
 			if existing then
 				existing.stacks = (existing.stacks or 0) + (entry.stacks or 0)
+				existing.max_stacks = (existing.max_stacks or 0) + (entry.max_stacks or 0)
+
 				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
 				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
 			else
@@ -520,6 +533,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local new_entry = {
 					name = name,
 					stacks = entry.stacks,
+					max_stacks = entry.max_stacks,
 					stat_buffs = entry.stat_buffs,
 					conditional_stat_buffs = entry.conditional_stat_buffs,
 					combined = true,
@@ -527,10 +541,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				}
 
 				combined[combined_count] = new_entry
-				icon_map[icon] = new_entry
+
+				if debuff_type == "dot" then
+					grouped_dot_map[icon] = new_entry
+				elseif debuff_type == "utility" then
+					grouped_utility_map[icon] = new_entry
+				end
 			end
 		end
 
+		dbg_combined = combined
 		for i = 1, combined_count do
 			active[i] = combined[i]
 		end
@@ -581,13 +601,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		if split_debuff_types then
 			if debuff.type == "dot" then
-				base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) * mod.text_scale
-					or (-hb_size_height - 16) * mod.text_scale
-				y_base = base_y - ((index - 1) * row_height) * mod.text_scale
+				if fs.hb_text_top_left_01 == "nothing" then
+					y_base = -hb_size_height * mod.text_scale
+				else
+					y_base = (-hb_size_height - 30) * mod.text_scale
+				end
 			elseif debuff.type == "utility" then
-				base_y = (fs.show_armor_types and hb_size_height + 60) * mod.text_scale
-					or (hb_size_height + 32) * mod.text_scale
-				y_base = base_y + ((index - 1) * row_height) * mod.text_scale
+				if fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 == "nothing" then
+					y_base = (hb_size_height + 16) * mod.text_scale
+				elseif fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 ~= "nothing" then
+					y_base = (hb_size_height + 40) * mod.text_scale
+				else
+					y_base = (hb_size_height + 60) * mod.text_scale
+				end
 			end
 		end
 
@@ -714,11 +740,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				row_i = i
 			end
 
+			local name = debuff.name
+			local state = state_table[name]
+			local stacks = debuff.stacks
+			local max_stacks = debuff.max_stacks
+			local stat_buffs = debuff.stat_buffs
+			local conditional_stat_buffs = debuff.conditional_stat_buffs
+
 			-- split different debuff types (one goes up, one goes down ;))
 			if split_debuff_types then
 				if debuff.type == "dot" then
-					local dot_base = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-					local row_offset_y = dot_base - ((row_i - 1) * row_step)
+					local row_offset_y = state.y - ((row_i - 1) * row_step)
 
 					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
 					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
@@ -729,8 +761,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					name_text_style.offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
 					name_text_style.default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
 				elseif debuff.type == "utility" then
-					local util_base = (fs.show_armor_types and hb_size_height + 60) or (hb_size_height + 32)
-					local row_offset_y = util_base + ((row_i - 1) * row_step)
+					local row_offset_y = state.y + ((row_i - 1) * row_step)
 
 					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
 					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
@@ -743,17 +774,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 			end
 
-			local name = debuff.name
-			local stacks = debuff.stacks
-			local max_stacks = debuff.max_stacks
-			local stat_buffs = debuff.stat_buffs
-			local conditional_stat_buffs = debuff.conditional_stat_buffs
-
 			if max_stacks and stacks > max_stacks then
 				stacks = max_stacks
 			end
-
-			local state = state_table[name]
 
 			if state then
 				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
@@ -763,8 +786,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local stack_buff_percentage = ""
 
 				-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
-				local function calc_stack_buff_percentage(val, stacks)
-					if stat_name == "damage_taken_multiplier" then
+				local function calc_stack_buff_percentage(val, stacks, stat_name)
+					if stat_name == "damage_taken_multiplier" or stat_name == "" then
 						perc = math.ceil(((val * stacks) * 100) - 100)
 					else
 						perc = math.ceil((val * stacks) * 100)
@@ -784,14 +807,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					for stat_name, val in pairs(stat_buffs) do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							calc_stack_buff_percentage(val, stacks)
+							calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
 				elseif conditional_stat_buffs then
 					for stat_name, val in pairs(conditional_stat_buffs) do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							calc_stack_buff_percentage(val, stacks)
+							calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
 				end
@@ -823,7 +846,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						end
 
 						if debuff.combined then
-							--loc = string.gsub(loc, "%b()", "")
+							loc = string.gsub(loc, "%b()", "")
 						end
 
 						content[name_text_id] = loc

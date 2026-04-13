@@ -1135,8 +1135,6 @@ mod.handle_special_attacks = function(event_name, source_unit)
 
 		--extract_locals(1)
 
-		--mod:echo(string.format("%s [SOUND ATTACK DETECTED] %s -> %s", mod.ts(), unit, event_name))
-
 		if unit and mod.detect_alive(unit) then
 			entry = mod.enemy_cache[unit]
 
@@ -1538,7 +1536,6 @@ mod.apply_marker_fade = function(self)
 	if not markers_by_id then
 		return
 	end
-	--dbg_markers = markers_by_id
 
 	local player = Managers_player:local_player(1)
 	if not player then

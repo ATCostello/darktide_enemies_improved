@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0test7"
+mod.version = "1.0test8"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
