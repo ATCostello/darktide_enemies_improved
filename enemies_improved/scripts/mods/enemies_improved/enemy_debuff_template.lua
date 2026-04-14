@@ -550,7 +550,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 		end
 
-		dbg_combined = combined
 		for i = 1, combined_count do
 			active[i] = combined[i]
 		end
