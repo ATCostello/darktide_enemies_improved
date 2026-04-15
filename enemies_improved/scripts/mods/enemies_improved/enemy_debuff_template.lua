@@ -3,6 +3,8 @@ local mod = get_mod("enemies_improved")
 local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
+local BuffSettings = require("scripts/settings/buff/buff_settings")
+local stat_buff_types = BuffSettings.stat_buff_types
 
 -----------------------------------------------------------------------
 -- Cached settings
@@ -792,11 +794,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
 				local function calc_stack_buff_percentage(val, stacks, stat_name)
-					if stat_name == "damage_taken_multiplier" or string.find(stat_name, "multiplier") then
+					if stat_name then
+						stat_buff_type = stat_buff_types[stat_name]
+					end
+
+					if stat_buff_type == "multiplicative_multiplier" then
 						val = val - 1 -- convert from mult fraction to just increase e.g 1.05x -> 0.05
-						perc = math.ceil((val * stacks) * 100) -- convert from fraction to percentage
-					else
-						perc = math.ceil((val * stacks) * 100) -- convert from fraction to percentage
+						perc = ((val * stacks) * 100) -- convert from fraction to percentage
+					elseif stat_buff_type == "additive_multiplier" then
+						perc = ((val * stacks) * 100) -- convert from fraction to percentage
 					end
 
 					local threshold = 1
@@ -804,6 +810,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					local nearest = math.floor((perc + 5) / 10) * 10
 					if math.abs(perc - nearest) <= threshold then
 						perc = nearest
+					end
+
+					local number_format = string.format("%%.%sf", 1)
+					perc = string.format(number_format, perc)
+
+					if string.find(perc, ".0") then
+						perc = string.format(" %." .. 1 .. "f", perc):gsub("%.?0+$", "")
 					end
 
 					stack_buff_percentage = tostring(perc)

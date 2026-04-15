@@ -17,7 +17,7 @@ mod.build_frame_settings = function(dt)
 	fs.outlines_enable = mod:get("outlines_enable")
 	fs.text_scale = mod:get("text_scale")
 	fs.font_type = mod:get("font_type")
-	fs.check_line_of_sight = mod:get("check_line_of_sight")
+	fs.check_line_of_sight = true
 	fs.enable_depth_fading = mod:get("enable_depth_fading")
 
 	local r = mod:get("main_font_colour_R")
