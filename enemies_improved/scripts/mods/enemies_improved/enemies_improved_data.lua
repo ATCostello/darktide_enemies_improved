@@ -17,6 +17,9 @@ mod.dot_debuffs = {
 mod.utility_debuffs = {
 	-- Rending / “take more damage”, tags, etc.
 	"rending_debuff",
+	"rending_debuff_medium",
+	"rending_burn_debuff",
+
 	"increase_impact_received_while_staggered",
 	"increase_damage_received_while_staggered",
 	"power_maul_sticky_tick",
@@ -97,6 +100,9 @@ mod.debuff_icons = {
 
 	-- Rending / armor shred
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	rending_debuff_medium = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	rending_burn_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+
 	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
 
 	-- + damage taken
@@ -264,6 +270,9 @@ mod.debuff_colours = {
 
 	-- Rending
 	rending_debuff = { 255, 172, 115, 255 },
+	rending_debuff_medium = { 255, 172, 115, 255 },
+	rending_burn_debuff = { 255, 172, 115, 255 },
+
 	increase_impact_received_while_staggered = { 255, 172, 115, 255 },
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 172, 115, 255 },
 	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 172, 115, 255 },

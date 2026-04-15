@@ -287,7 +287,7 @@ template.on_enter = function(widget, marker, template)
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension
 	content.breed = breed
-	content.debuffs = buff_extension:buffs()
+	content.debuffs = buff_extension and buff_extension:buffs()
 	content.keywords = buff_extension and buff_extension:keywords()
 end
 
@@ -609,7 +609,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if split_debuff_types then
 			if debuff.type == "dot" then
 				if fs.hb_text_top_left_01 == "nothing" then
-					y_base = -hb_size_height * mod.text_scale
+					y_base = (-hb_size_height - 16) * mod.text_scale
 				else
 					y_base = (-hb_size_height - 30) * mod.text_scale
 				end

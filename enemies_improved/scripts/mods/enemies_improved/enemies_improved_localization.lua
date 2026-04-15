@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.2"
+mod.version = "1.2.1"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -283,6 +283,15 @@ table.insert(localisations_to_add, {
 		en = "Brittleness",
 		["zh-cn"] = "碎裂",
 	},
+	rending_debuff_medium = {
+		en = "Brittleness",
+		["zh-cn"] = "碎裂",
+	},
+	rending_burn_debuff = {
+		en = "Brittleness",
+		["zh-cn"] = "碎裂",
+	},
+
 	increase_impact_received_while_staggered = {
 		en = "Increased Impact Taken",
 		["zh-cn"] = "受到冲击提升",
@@ -1042,16 +1051,16 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "为尸潮小怪显示减益效果。",
 	},
 	debuff_toggles = {
-		en = "Choose a debuff to toggle"
+		en = "Choose a debuff to toggle",
 	},
 	debuff_toggles_tooltip = {
-		en = "Pick a debuff here to be able to toggle it on or off in the option below."
+		en = "Pick a debuff here to be able to toggle it on or off in the option below.",
 	},
 	debuff_selected_enable = {
-		en = "Selected debuff toggle"
+		en = "Selected debuff toggle",
 	},
 	debuff_selected_enable_tooltip = {
-		en = "Toggle the selected debuff on or off."
+		en = "Toggle the selected debuff on or off.",
 	},
 })
 
