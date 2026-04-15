@@ -26,9 +26,9 @@ local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_he
 
 local row_step = hb_size_height + (18 * mod.text_scale)
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
-local icon_x = (hb_size_width - (5 * mod.text_scale))
-local name_x = hb_size_width
-local stack_x = hb_size_width + (60 * mod.text_scale)
+local icon_x = ((hb_size_width - 5) * mod.text_scale) - 40
+local name_x = (hb_size_width * mod.text_scale) - 40
+local stack_x = ((hb_size_width + 60) * mod.text_scale) - 40
 local active_pool = {}
 
 template.size = size
@@ -93,7 +93,7 @@ local ScriptUnit_extension = ScriptUnit.extension
 local dot_lookup = {}
 local utility_lookup = {}
 
-local function rebuild_dot_lookup()
+mod.rebuild_dot_lookup = function()
 	table.clear(dot_lookup)
 	local list = mod.dot_debuffs
 	if not list then
@@ -105,7 +105,7 @@ local function rebuild_dot_lookup()
 	end
 end
 
-local function rebuild_utility_lookup()
+mod.rebuild_utility_lookup = function()
 	table.clear(utility_lookup)
 	local list = mod.utility_debuffs
 	if not list then
@@ -119,8 +119,8 @@ end
 
 -- build once at load
 
-rebuild_dot_lookup()
-rebuild_utility_lookup()
+mod.rebuild_dot_lookup()
+mod.rebuild_utility_lookup()
 
 -----------------------------------------------------------------------
 -- Widget definition
@@ -325,7 +325,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- dont draw or do calculations if there are no debuffs applied..
-	if #content.debuffs < 1 and #content.keywords < 1 then
+	if not content.debuffs then
+		marker.draw = false
+		widget.alpha_multiplier = 0
+		return
+	end
+
+	if content.debuffs and #content.debuffs < 1 then
 		marker.draw = false
 		widget.alpha_multiplier = 0
 		return
@@ -372,9 +378,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local row_step = (hb_size_height + 20) * mod.text_scale
 	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
-	local icon_x = (hb_size_width - 5) * mod.text_scale
-	local name_x = hb_size_width * mod.text_scale
-	local stack_x = (hb_size_width + 60) * mod.text_scale
+	local icon_x = ((hb_size_width - 5) * mod.text_scale) - 40
+	local name_x = (hb_size_width * mod.text_scale) - 40
+	local stack_x = ((hb_size_width + 60) * mod.text_scale) - 40
 
 	-------------------------------------------------------------------
 	-- Breed / type
@@ -786,10 +792,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
 				local function calc_stack_buff_percentage(val, stacks, stat_name)
-					if stat_name == "damage_taken_multiplier" or stat_name == "" then
-						perc = math.ceil(((val * stacks) * 100) - 100)
+					if stat_name == "damage_taken_multiplier" or string.find(stat_name, "multiplier") then
+						val = val - 1 -- convert from mult fraction to just increase e.g 1.05x -> 0.05
+						perc = math.ceil((val * stacks) * 100) -- convert from fraction to percentage
 					else
-						perc = math.ceil((val * stacks) * 100)
+						perc = math.ceil((val * stacks) * 100) -- convert from fraction to percentage
 					end
 
 					local threshold = 1

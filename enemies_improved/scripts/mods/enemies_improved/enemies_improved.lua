@@ -79,6 +79,10 @@ mod.build_frame_settings = function(dt)
 	fs.hb_size_width = mod:get("hb_size_width")
 	fs.hb_size_height = mod:get("hb_size_height")
 	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
+	fs.hb_damage_numbers_track_friendly = mod:get("hb_damage_numbers_track_friendly")
+	fs.hb_damage_numbers_add_total = mod:get("hb_damage_numbers_add_total")
+	fs.hb_damage_show_only_latest = mod:get("hb_damage_show_only_latest")
+	fs.hb_damage_show_only_latest_value = mod:get("hb_damage_show_only_latest_value")
 
 	-- SPECIAL ATTACKS
 	fs.marker_specials_enable = mod:get("marker_specials_enable")
@@ -277,6 +281,8 @@ mod.on_all_mods_loaded = function()
 
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
+
+	mod.load_toggled_debuffs_state()
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
@@ -962,17 +968,18 @@ mod.special_attack_animations = {
 	},
 }
 
--- local games only. rpc_minion_anim_event is the networked version, but only provides event_id, which I cant find out how to get event_name from
---[[mod:hook(Unit, "animation_event", function(func, unit, event, ...)
-	local result = func(unit, event, ...)
-
+local process_animation_event = function(unit, event)
 	if not unit or not mod.detect_alive(unit) then
-		return result
+		return
+	end
+
+	if not event then
+		return
 	end
 
 	local entry = mod.enemy_cache[unit]
 	if not entry then
-		return result
+		return
 	end
 
 	-------------------------------------------------
@@ -986,7 +993,7 @@ mod.special_attack_animations = {
 	end
 
 	if not breed_name then
-		return result
+		return
 	end
 
 	-------------------------------------------------
@@ -995,7 +1002,7 @@ mod.special_attack_animations = {
 	local breed_table = mod.special_attack_animations[breed_name]
 
 	if not breed_table then
-		return result
+		return
 	end
 
 	local attack_data = breed_table[event]
@@ -1012,14 +1019,36 @@ mod.special_attack_animations = {
 			else
 				entry.special_attack_timer = now + 1.5
 			end
-
 		end
 	end
+end
 
-	return result
+-- local games only. Needs event ID caching to work, but thats a lot of extra work ;p rpc_minion_anim_event is the networked version, but only provides event_id, which I cant find out how to get event_name from
+--[[mod:hook_safe(Unit, "animation_event", function(unit, event)
+	process_animation_event(unit, event)
+end)
+
+mod:hook_safe(Unit, "animation_event_by_index", function(unit, event_index)
+	local event_index = event_index or 0
+
+	local breed_name
+
+	if entry.unit_data_ext then
+		local breed = entry.unit_data_ext:breed()
+		breed_name = breed and breed.name
+	end
+
+	if not breed_name then
+		return
+	end
+
+	local event_name = event_index_cache_manager.get_event_name_from_index(breed_name, event_index)
+
+	process_animation_event(unit, event_name)
 end)]]
 
 mod.special_attack_events = {
+
 	-- Trapper / Netgunner
 	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
 	--["wwise/events/minions/play_netgunner_run_foley_special"] = true,
@@ -1698,6 +1727,11 @@ mod.apply_marker_fade = function(self)
 
 		if widget and widget.style then
 			for _, style_data in pairs(widget.style) do
+				-- skip unwanted fades
+				if _ == "damage_numbers" then
+					goto continue_widget
+				end
+
 				if style_data.default_alpha and style_data.color then
 					style_data.color[1] = style_data.default_alpha * final_alpha
 				end
@@ -1705,6 +1739,8 @@ mod.apply_marker_fade = function(self)
 				if style_data.default_alpha and style_data.text_color then
 					style_data.text_color[1] = style_data.default_alpha * final_alpha
 				end
+
+				::continue_widget::
 			end
 		end
 
@@ -2054,9 +2090,21 @@ local enemy_type_settings = {
 	["reset_type_to_default"] = false,
 }
 
+-- REQUIRES "_individual_" AS THAT IS WHERE THE SPECIFIC ENEMY NAME IS PLACED...
+local enemy_override_settings = {
+	["healthbar_individual_enable"] = true,
+	["healthbar_individual_colour_R"] = 255,
+	["healthbar_individual_colour_G"] = 0,
+	["healthbar_individual_colour_B"] = 0,
+
+	["reset_individual_to_default"] = false,
+}
+
 mod.reset_type_to_default = function(enemy_type)
 	-- reset all options to nil so that the defaults will be loaded...
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
+	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
+
 	mod:set("healthbar_icon_" .. enemy_type .. "_enable", nil)
 	mod:set("healthbar_icon_" .. enemy_type .. "_scale", nil)
 	mod:set("healthbar_icon_" .. enemy_type .. "_glow_intensity", nil)
@@ -2070,6 +2118,19 @@ mod.reset_type_to_default = function(enemy_type)
 
 	mod.init_healthbar_defaults()
 end
+
+mod.reset_individual_to_default = function(enemy_type)
+	-- reset all options to nil so that the defaults will be loaded...
+	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
+
+	local reset_message = mod:localize("reset_individual_to_default_message") or ""
+	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))
+
+	mod.init_healthbar_defaults()
+end
+
+local BreedQueries = require("scripts/utilities/breed_queries")
+local minion_breeds = BreedQueries.minion_breeds_by_name()
 
 mod.init_healthbar_defaults = function()
 	-- bar colours
@@ -2112,9 +2173,39 @@ mod.init_healthbar_defaults = function()
 			mod:set("healthbar_icon_" .. breed .. "_colour_B", b)
 		end
 	end
+
+	-- individual override bar colours
+	for _, options in pairs(mod.breed_names) do
+		local enemy_individual = options.value
+
+		if enemy_individual then
+			local breed_settings = minion_breeds[enemy_individual]
+
+			if breed_settings then
+				local tags = breed_settings.tags
+				local breed_type = mod.find_breed_category_by_tags(tags)
+
+				for breed, color in pairs(mod.BREED_COLOURS_DEFAULT) do
+					if breed_type == breed then
+						local r = color[2]
+						local g = color[3]
+						local b = color[4]
+
+						-- only set if not already saved
+						if mod:get("healthbar_" .. enemy_individual .. "_colour_R") == nil then
+							mod:set("healthbar_" .. enemy_individual .. "_colour_R", r)
+							mod:set("healthbar_" .. enemy_individual .. "_colour_G", g)
+							mod:set("healthbar_" .. enemy_individual .. "_colour_B", b)
+						end
+					end
+				end
+			end
+		end
+	end
 end
 
 mod.update_breed_colours = function()
+	-- BREED GROUPS
 	for breed, default_color in pairs(mod.BREED_COLOURS) do
 		local r = mod:get("healthbar_" .. breed .. "_colour_R")
 		local g = mod:get("healthbar_" .. breed .. "_colour_G")
@@ -2123,6 +2214,22 @@ mod.update_breed_colours = function()
 
 		if r and g and b then
 			mod.BREED_COLOURS[breed] = { a, r, g, b }
+		end
+	end
+
+	-- INDIVIDUAL OVERRIDE GROUPS
+	for _, options in pairs(mod.breed_names) do
+		local enemy_individual = options.value
+
+		if enemy_individual then
+			local r = mod:get("healthbar_" .. enemy_individual .. "_colour_R")
+			local g = mod:get("healthbar_" .. enemy_individual .. "_colour_G")
+			local b = mod:get("healthbar_" .. enemy_individual .. "_colour_B")
+			local a = 255
+
+			if r and g and b then
+				mod.BREED_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
+			end
 		end
 	end
 end
@@ -2153,6 +2260,7 @@ mod.update_breed_icons = function()
 end
 
 mod.update_settings_values = function(setting_id)
+	-- GROUP OVERRIDES
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
 		return
@@ -2185,6 +2293,43 @@ mod.update_settings_values = function(setting_id)
 			if type_value ~= enemy_type_value then
 				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
 				mod:set(setting_name, enemy_type_value)
+			end
+		end
+	end
+
+	-- INDIVIDUAL OVERRIDES
+	local selected_enemy_individual = mod:get("individual_overrides")
+	if not selected_enemy_individual then
+		return
+	end
+
+	local reset_string = "reset_individual_to_default"
+	local reset_setting_id = reset_string:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
+
+	-- Set the enemy individual widgets when a new enemy is selected
+	for setting_name, default_value in pairs(enemy_override_settings) do
+		local individual_value = mod:get(setting_name)
+
+		local enemy_individual = setting_name:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
+		local enemy_individual_value = mod:get(enemy_individual)
+
+		if enemy_individual_value == nil then
+			enemy_individual_value = default_value
+		end
+
+		-- STORE VALUES WHEN CHANGED
+		if setting_id == setting_name then
+			if enemy_individual_value ~= individual_value then
+				--mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
+				mod:set(enemy_individual, individual_value)
+			end
+		end
+
+		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
+		if setting_id == "individual_overrides" or mod:get(reset_setting_id) == true or setting_id == nil then
+			if individual_value ~= enemy_individual_value then
+				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
+				mod:set(setting_name, enemy_individual_value)
 			end
 		end
 	end
@@ -2261,7 +2406,101 @@ mod.update_dmf_settings_colours = function(setting_id)
 	end
 end
 
+mod.update_debuff_toggles = function(debuff_name, toggle_state)
+	if toggle_state then
+		local exists = false
+		local is_dot = false
+
+		-- figure out if dot or utility...
+		for _, name in ipairs(mod.default_dot_debuffs) do
+			if name == debuff_name then
+				is_dot = true
+			end
+		end
+
+		-- add if doesnt exist...
+		if is_dot then
+			for _, name in ipairs(mod.default_dot_debuffs) do
+				if name == debuff_name then
+					exists = true
+				end
+			end
+			if not exists then
+				mod.dot_debuffs[#mod.dot_debuffs + 1] = debuff_name
+			end
+		else
+			for _, name in ipairs(mod.default_utility_debuffs) do
+				if name == debuff_name then
+					exists = true
+				end
+			end
+			if not exists then
+				mod.utility_debuffs[#mod.utility_debuffs + 1] = debuff_name
+			end
+		end
+	else
+		for _, name in ipairs(mod.dot_debuffs) do
+			if name == debuff_name then
+				table.remove(mod.dot_debuffs, _)
+			end
+		end
+
+		for _, name in ipairs(mod.utility_debuffs) do
+			if name == debuff_name then
+				table.remove(mod.utility_debuffs, _)
+			end
+		end
+	end
+
+	mod.rebuild_dot_lookup()
+	mod.rebuild_utility_lookup()
+end
+
+mod.load_toggled_debuffs_state = function()
+	-- DOTS
+	for _, name in ipairs(mod.default_dot_debuffs) do
+		local debuff_toggle_setting_string = name .. "_toggle_state"
+		local debuff_setting = mod:get(debuff_toggle_setting_string)
+
+		if debuff_setting ~= nil then
+			mod.update_debuff_toggles(name, debuff_setting)
+		end
+	end
+
+	-- UTILS
+	for _, name in ipairs(mod.default_utility_debuffs) do
+		local debuff_toggle_setting_string = name .. "_toggle_state"
+		local debuff_setting = mod:get(debuff_toggle_setting_string)
+
+		if debuff_setting ~= nil then
+			mod.update_debuff_toggles(name, debuff_setting)
+		end
+	end
+end
+
 mod.on_setting_changed = function(setting_id)
+	if setting_id == "debuff_toggles" then
+		local selected_option = mod:get("debuff_toggles")
+		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
+		local setting = mod:get(debuff_toggle_setting_string) or true
+
+		if setting ~= nil then
+			mod:set("debuff_selected_enable", setting)
+		else
+			mod:set("debuff_selected_enable", true)
+		end
+	end
+
+	if setting_id == "debuff_selected_enable" then
+		local selected_option = mod:get("debuff_toggles")
+		local selected_toggle_state = mod:get("debuff_selected_enable")
+		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
+
+		mod:set(debuff_toggle_setting_string, selected_toggle_state)
+
+		mod.update_debuff_toggles(selected_option, selected_toggle_state)
+	end
+
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
 		return
@@ -2272,10 +2511,20 @@ mod.on_setting_changed = function(setting_id)
 	local reset_string = "reset_type_to_default"
 	local reset_setting_id = reset_string:gsub("_type_", "_" .. selected_enemy_type .. "_")
 
-	-- HANDLE RESET TO DEFAULT LOGIC...
+	-- HANDLE GROUP RESET TO DEFAULT LOGIC...
 	if mod:get(reset_setting_id) == true then
 		mod.reset_type_to_default(mod:get("enemy_group"))
 		mod.update_settings_values(reset_setting_id)
+	end
+
+	local selected_enemy_individual = mod:get("individual_overrides")
+	local reset_string_individual = "reset_individual_to_default"
+	local reset_setting_id_individual = reset_string:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
+
+	-- HANDLE INDIVIDUAL RESET TO DEFAULT LOGIC...
+	if mod:get(reset_setting_id_individual) == true then
+		--mod.reset_individual_to_default(selected_enemy_individual)
+		--mod.update_settings_values(reset_setting_id_individual)
 	end
 
 	-- rebuild outlines
@@ -2295,8 +2544,27 @@ mod.on_setting_changed = function(setting_id)
 	if mod:get(reset_setting_id) == true then
 		mod:set(reset_setting_id, false)
 	end
+	if mod:get(reset_setting_id_individual) == true then
+		mod:set(reset_setting_id_individual, false)
+	end
 
 	mod.update_settings_values()
+
+	-- update colours when the dropdown selectors are changed...
+	if setting_id == "individual_overrides" or setting_id == "enemy_group" then
+		-- GROUPS
+		if setting_id == "enemy_group" then
+			for setting_name, default_value in pairs(enemy_type_settings) do
+				mod.update_dmf_settings_colours(setting_name)
+			end
+		end
+
+		if setting_id == "individual_overrides" then
+			for setting_name, default_value in pairs(enemy_override_settings) do
+				mod.update_dmf_settings_colours(setting_name)
+			end
+		end
+	end
 
 	mod.update_dmf_settings_colours(setting_id)
 

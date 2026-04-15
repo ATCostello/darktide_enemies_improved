@@ -12,8 +12,6 @@ mod.dot_debuffs = {
 	"neurotoxin_interval_buff2",
 	"neurotoxin_interval_buff3",
 	"exploding_toxin_interval_buff",
-
-	"psyker_force_staff_quick_attack_debuff",
 }
 
 mod.utility_debuffs = {
@@ -23,6 +21,7 @@ mod.utility_debuffs = {
 	"increase_damage_received_while_staggered",
 	"power_maul_sticky_tick",
 	"increase_damage_taken",
+	"psyker_force_staff_quick_attack_debuff",
 
 	-- Psyker utility / chain lightning etc.
 	"psyker_heavy_swings_shock",
@@ -66,6 +65,9 @@ mod.utility_debuffs = {
 	"broker_passive_toxin_infected_enemies_take_increased_damage_debuff",
 }
 
+mod.default_dot_debuffs = mod.dot_debuffs
+mod.default_utility_debuffs = mod.utility_debuffs
+
 mod.debuffs = {}
 for _, name in ipairs(mod.dot_debuffs) do
 	mod.debuffs[#mod.debuffs + 1] = name
@@ -73,6 +75,15 @@ end
 for _, name in ipairs(mod.utility_debuffs) do
 	mod.debuffs[#mod.debuffs + 1] = name
 end
+
+-- add debuff selector entries
+mod.debuff_list = {}
+for _, name in ipairs(mod.debuffs) do
+	mod.debuff_list[#mod.debuff_list + 1] = { text = name, value = name, sort = mod:localize(name) or name }
+end
+table.sort(mod.debuff_list, function(a, b)
+	return a.sort < b.sort
+end)
 
 mod.debuff_icons = {
 	-- Weaponry / generic damage types
@@ -775,6 +786,36 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_show_damage_numbers_tooltip",
 		},
 		{
+			setting_id = "hb_damage_numbers_track_friendly",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_damage_numbers_track_friendly_tooltip",
+		},
+		{
+			setting_id = "hb_damage_numbers_add_total",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_damage_numbers_add_total_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_damage_show_only_latest_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest_value",
+			type = "numeric",
+			default_value = 3,
+			range = {
+				1,
+				10,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "hb_damage_show_only_latest_value_tooltip",
+		},
+		{
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
@@ -921,6 +962,19 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "debuff_horde_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_toggles",
+			type = "dropdown",
+			options = mod.debuff_list,
+			default_value = "bleed",
+			tooltip = "debuff_toggles_tooltip",
+		},
+		{
+			setting_id = "debuff_selected_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_selected_enable_tooltip",
 		},
 	},
 })
@@ -1116,6 +1170,74 @@ table.insert(mod.settings_widgets, {
 	setting_id = "group_settings",
 	type = "group",
 	sub_widgets = mod.group_settings_widgets,
+})
+
+mod.breed_names = mod.gather_enemy_names_by_breed_types()
+mod.BREED_COLOURS_OVERRIDE = {}
+mod.individual_override_settings = {
+	{
+		setting_id = "individual_overrides",
+		type = "dropdown",
+		options = mod.breed_names,
+		default_value = "select",
+		tooltip = "individual_overrides_tooltip",
+	},
+
+	--{
+	--	setting_id = "reset_individual_to_default",
+	--	type = "checkbox",
+	--	default_value = false,
+	--	tooltip = "reset_individual_to_default_tooltip",
+	--},
+
+	{
+		setting_id = "healthbar_individual_enable",
+		type = "checkbox",
+		default_value = false,
+		tooltip = "healthbar_individual_enable_tooltip",
+	},
+	{
+		setting_id = "healthbar_individual_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "healthbar_individual_colour_R",
+				type = "numeric",
+				default_value = 150,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_individual_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_individual_colour_G",
+				type = "numeric",
+				default_value = 75,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_individual_colour_tooltip",
+			},
+			{
+				setting_id = "healthbar_individual_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "healthbar_individual_colour_tooltip",
+			},
+		},
+	},
+}
+
+table.insert(mod.settings_widgets, {
+	setting_id = "individual_override_settings",
+	type = "group",
+	sub_widgets = mod.individual_override_settings,
 })
 
 return {

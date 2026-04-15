@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.0"
+mod.version = "1.1"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -49,6 +49,86 @@ local insert_fonts = function(localisation_table)
 			en = apply_font_to_text(text, data.value),
 		}
 		localisation_table[data.value] = new_localised_readable_text
+	end
+end
+
+-- Get all enemy names from breeds, to allow specific enemy colour changes.
+local Breeds = require("scripts/settings/breed/breeds")
+local BreedQueries = require("scripts/utilities/breed_queries")
+local minion_breeds = BreedQueries.minion_breeds_by_name()
+
+mod.find_breed_category_by_tags = function(tags)
+	if tags then
+		if tags.horde or tags.roamer then
+			return "horde"
+		elseif tags.captain or tags.cultist_captain then
+			return "captain"
+		elseif tags.witch then
+			return "witch"
+		elseif tags.monster then
+			return "monster"
+		elseif tags.disabler then
+			return "disabler"
+		elseif tags.special and tags.sniper then
+			return "sniper"
+		elseif tags.elite and tags.far or tags.special and tags.far or tags.elite and tags.close then
+			return "far"
+		elseif tags.elite then
+			return "elite"
+		elseif tags.special then
+			return "special"
+		else
+			return "enemy"
+		end
+	end
+end
+
+mod.gather_enemy_names_by_breed_types = function()
+	local enemies = {}
+	enemies[1] = { text = "SELECT ENEMY", value = "select" }
+
+	local i = 2
+
+	for name, options in pairs(minion_breeds) do
+		-- skip things that shouldn't be here
+		if name ~= "attack_valkyrie" then
+			local tags = options.tags
+			local breed_type = mod.find_breed_category_by_tags(tags)
+
+			if breed_type then
+				enemies[i] =
+					{ text = options.display_name, value = options.name, sort = Localize(options.display_name) }
+				i = i + 1
+			end
+		end
+	end
+
+	table.sort(enemies, function(a, b)
+		if a.value == "select" and b.value ~= "select" then
+			return true
+		elseif b.value == "select" and a.value ~= "select" then
+			return false
+		end
+
+		return a.sort < b.sort
+	end)
+
+	return enemies
+end
+
+local insert_enemy_names = function(localisation_table)
+	local enemies_data = mod.gather_enemy_names_by_breed_types()
+
+	for _, data in pairs(enemies_data) do
+		if data.value ~= "select" then
+			local new_localised_readable_text = {
+				en = Localize(data.text),
+			}
+
+			if not localisation_table[data.text] then
+				localisation_table[data.text] = new_localised_readable_text
+			end
+		end
 	end
 end
 
@@ -793,6 +873,30 @@ table.insert(localisations_to_add, {
 		en = "Toggles damage numbers when attacking enemies showing how much damage you are dealing.\n\nSee 'Floating damage type' for more options.",
 		["zh-cn"] = "攻击敌人时显示伤害数值，可在下方选择样式。",
 	},
+	hb_damage_numbers_track_friendly = {
+		en = "Show Friendly Damage?",
+	},
+	hb_damage_numbers_track_friendly_tooltip = {
+		en = "Whether damage on enemies will be shown if friendly players harm them, or if damage should only show if you are the one to damage the enemy.",
+	},
+	hb_damage_numbers_add_total = {
+		en = "Add together damage numbers",
+	},
+	hb_damage_numbers_add_total_tooltip = {
+		en = "Whether the damage numbers in a small timeframe should be added together into one larger number, or if each damage should be shown individually.",
+	},
+	hb_damage_show_only_latest = {
+		en = "Only show last damaged enemies?",
+	},
+	hb_damage_show_only_latest_tooltip = {
+		en = "Toggle showing the healthbars of only the last damaged enemies. See below for a slider to control how many last damaged enemies to track.",
+	},
+	hb_damage_show_only_latest_value = {
+		en = "Number of last damaged enemies to track",
+	},
+	hb_damage_show_only_latest_value_tooltip = {
+		en = "Set the amount of last damaged enemies to track for the 'Only show last damaged enemies' setting.\n\nSetting this too low may cause a flickering effect, as damage-over-time effects still count as player damage.",
+	},
 	hb_text_show_health = {
 		en = "Show current health on healthbar?",
 		["zh-cn"] = "显示当前血量数值",
@@ -937,6 +1041,18 @@ table.insert(localisations_to_add, {
 		en = "Toggle to show debuffs for horde enemies.\nWarning: This can have a hit to performance if staring directly at a large group of horde enemies.",
 		["zh-cn"] = "为尸潮小怪显示减益效果。",
 	},
+	debuff_toggles = {
+		en = "Choose a debuff to toggle"
+	},
+	debuff_toggles_tooltip = {
+		en = "Pick a debuff here to be able to toggle it on or off in the option below."
+	},
+	debuff_selected_enable = {
+		en = "Selected debuff toggle"
+	},
+	debuff_selected_enable_tooltip = {
+		en = "Toggle the selected debuff on or off."
+	},
 })
 
 -- Group settings
@@ -1074,6 +1190,53 @@ table.insert(localisations_to_add, {
 	},
 })
 
+-- enemy individual overrides localisations
+table.insert(localisations_to_add, {
+	["SELECT ENEMY"] = {
+		en = "SELECT AN ENEMY",
+	},
+	individual_override_settings = {
+		en = "OVERRIDE SPECIFIC ENEMIES",
+	},
+	individual_overrides = {
+		en = "Selected Enemy",
+	},
+	individual_overrides_tooltip = {
+		en = "Selectively override specific enemy settings. These settings override the group settings above.",
+	},
+	reset_individual_to_default = {
+		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
+		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}恢复默认设置",
+	},
+	reset_individual_to_default_tooltip = {
+		en = "Reset settings for individual '_individual_' to default.",
+	},
+	healthbar_individual_enable = {
+		en = "Enable healthbars override?",
+	},
+	healthbar_individual_enable_tooltip = {
+		en = "Toggle healthbars overriding for your selected enemy",
+	},
+	healthbar_individual_colour = {
+		en = "Healthbar colour (Enemy Specific)",
+	},
+	healthbar_individual_colour_R = {
+		en = "Healthbar Colour: Red",
+		["zh-cn"] = "血条颜色：红",
+	},
+	healthbar_individual_colour_G = {
+		en = "Healthbar Colour: Green",
+		["zh-cn"] = "血条颜色：绿",
+	},
+	healthbar_individual_colour_B = {
+		en = "Healthbar Colour: Blue",
+		["zh-cn"] = "血条颜色：蓝",
+	},
+	healthbar_individual_colour_tooltip = {
+		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+	},
+})
+
 -- add localisations to main map
 for i = 1, #localisations_to_add do
 	if localisations_to_add[i] then
@@ -1171,6 +1334,9 @@ mod.toggle_pizazz()
 
 -- Insert font localisation
 insert_fonts(mod.localisation)
+
+-- Insert enemy names localisation
+insert_enemy_names(mod.localisation)
 
 apply_colours()
 
