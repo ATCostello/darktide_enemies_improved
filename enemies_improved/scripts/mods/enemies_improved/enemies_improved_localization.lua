@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.2.1"
+mod.version = "1.3.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local colours = {
@@ -288,6 +288,10 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "碎裂",
 	},
 	rending_burn_debuff = {
+		en = "Brittleness",
+		["zh-cn"] = "碎裂",
+	},
+	saw_rending_debuff = {
 		en = "Brittleness",
 		["zh-cn"] = "碎裂",
 	},
@@ -744,6 +748,37 @@ table.insert(localisations_to_add, {
 		en = "Enables the overhead marker for horde enemies, such as poxwalkers.",
 		["zh-cn"] = "为疫变步行者等尸潮怪显示头顶标记。",
 	},
+	marker_size = {
+		en = "Marker Scale",
+	},
+	marker_size_tooltip = {
+		en = "Adjust the scale of the overhead marker.",
+	},
+	markers_health_enable = {
+		en = "Toggle simple health tracker",
+	},
+	markers_health_enable_tooltip = {
+		en = "Toggles a simple quadrant-based (25, 50, 75, 100) health tracker on the overhead marker. \n\nUses the healthbar colours. \n\nCan be useful if you want a minimal way to get an insight on the health of enemies.",
+	},
+
+	marker_bg_colour = {
+		en = "Colour for marker background",
+	},
+	marker_bg_colour_A = {
+		en = "Alpha",
+	},
+	marker_bg_colour_R = {
+		en = "Red",
+	},
+	marker_bg_colour_G = {
+		en = "Green",
+	},
+	marker_bg_colour_B = {
+		en = "Blue",
+	},
+	marker_bg_colour_tooltip = {
+		en = "Select a colour for the background of the overhead markers.",
+	},
 })
 
 -- Healthbar settings
@@ -771,6 +806,12 @@ table.insert(localisations_to_add, {
 	healthbar_type_icon_enable_tooltip = {
 		en = "Toggles a class-based icon next to the healthbar as an option to track enemy types from afar.",
 		["zh-cn"] = "在血条旁显示敌人类型图标，便于远距离识别。",
+	},
+	hb_toggle_ghostbar = {
+		en = "Enable Ghost Healthbar?",
+	},
+	hb_toggle_ghostbar_tooltip = {
+		en = "Toggles a dark 'ghost' bar next to the current health bar, when you deal large amounts of damage to an enemy.",
 	},
 	hb_padding_scale = {
 		en = "Scale for the decorative frame around the healthbar (Global)",
@@ -850,6 +891,12 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "选择血条下方第二行显示内容。",
 	},
 
+	healthbar_segments_enable = {
+		en = "Toggle Healthbar Segments",
+	},
+	healthbar_segments_enable_tooltip = {
+		en = "Adds small lines to the healthbar to indicate percentages of 25, 50 and 75.",
+	},
 	hb_horde_enable = {
 		en = "Enable individual horde healthbars?",
 		["zh-cn"] = "尸潮怪显示独立血条",
@@ -871,8 +918,17 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "无伤害后隐藏血条",
 	},
 	hb_hide_after_no_damage_tooltip = {
-		en = "Toggle hiding of healthbars after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
+		en = "Toggle hiding of healthbars for non-horde enemies after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
 		["zh-cn"] = "停止攻击后短暂延迟自动隐藏血条，减少画面杂乱。关闭则永久显示。",
+	},
+	hb_horde_hide_after_no_damage = {
+		en = "Hide horde healthbars after no damage received?",
+	},
+	hb_horde_hide_after_no_damage_tooltip = {
+		en = "Toggle hiding of healthbars for horde enemies after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
+	},
+	damage_number_settings = {
+		en = "{#color(" .. colours.title .. ")}Floating Damage Numbers{#reset()}",
 	},
 	hb_show_damage_numbers = {
 		en = "Show floating damage numbers?",
@@ -1062,6 +1118,18 @@ table.insert(localisations_to_add, {
 	debuff_selected_enable_tooltip = {
 		en = "Toggle the selected debuff on or off.",
 	},
+	debuff_icons = {
+		en = "Toggle Debuff Icons",
+	},
+	debuff_icons_tooltip = {
+		en = "Decide whether to show the debuff icons or not.",
+	},
+	debuff_stacks_icon_colour = {
+		en = "Debuff Stacks use Icon Colour?",
+	},
+	debuff_stacks_icon_colour_tooltip = {
+		en = "Decide whether to use the debuff icon category colour on the stack/percentage display?",
+	},
 })
 
 -- Group settings
@@ -1243,6 +1311,27 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+	},
+	outline_individual_enable = {
+		en = "Enable outline override?",
+	},
+	outline_individual_enable_tooltip = {
+		en = "Toggle outline overriding for your selected enemy. Note: Only enables or changes colours, disabling will not override the group settings.",
+	},
+	outline_individual_colour = {
+		en = "Outline colour (Enemy Specific)",
+	},
+	outline_individual_colour_R = {
+		en = "Outline Colour: Red",
+	},
+	outline_individual_colour_G = {
+		en = "Outline Colour: Green",
+	},
+	outline_individual_colour_B = {
+		en = "Outline Colour: Blue",
+	},
+	outline_individual_colour_tooltip = {
+		en = "Adjust the colour of the overrided enemy outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
 	},
 })
 

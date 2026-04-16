@@ -155,7 +155,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = icon_id,
 			value_id = icon_id,
 			visibility_function = function(content, style)
-				return content[icon_id] ~= nil
+				return content[icon_id] ~= nil and fs.debuff_icons
 			end,
 		}
 
@@ -382,7 +382,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
 	local icon_x = ((hb_size_width - 5) * mod.text_scale) - 40
 	local name_x = (hb_size_width * mod.text_scale) - 40
-	local stack_x = ((hb_size_width + 60) * mod.text_scale) - 40
+	local stack_x = fs.debuff_icons and (((hb_size_width + 60) * mod.text_scale) - 40)
+		or (((hb_size_width + 30) * mod.text_scale) - 40)
 
 	-------------------------------------------------------------------
 	-- Breed / type
@@ -608,16 +609,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		if split_debuff_types then
 			if debuff.type == "dot" then
-				if fs.hb_text_top_left_01 == "nothing" then
+				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
 					y_base = (-hb_size_height - 16) * mod.text_scale
+				elseif fs.markers_enable and not fs.healthbar_enable then
+					y_base = (-hb_size_height - (15 * fs.marker_size)) * mod.text_scale
 				else
 					y_base = (-hb_size_height - 30) * mod.text_scale
 				end
 			elseif debuff.type == "utility" then
-				if fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 == "nothing" then
+				if
+					(
+						fs.healthbar_enable
+						and fs.hb_text_bottom_left_02 == "nothing"
+						and fs.hb_text_bottom_left_01 == "nothing"
+					) or fs.debuff_show_on_body
+				then
 					y_base = (hb_size_height + 16) * mod.text_scale
-				elseif fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 ~= "nothing" then
+				elseif
+					fs.healthbar_enable
+					and fs.hb_text_bottom_left_02 == "nothing"
+					and fs.hb_text_bottom_left_01 ~= "nothing"
+				then
 					y_base = (hb_size_height + 40) * mod.text_scale
+				elseif fs.markers_enable and not fs.healthbar_enable then
+					y_base = (hb_size_height + (15 * fs.marker_size)) * mod.text_scale
 				else
 					y_base = (hb_size_height + 60) * mod.text_scale
 				end
@@ -770,6 +785,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				elseif debuff.type == "utility" then
 					local row_offset_y = state.y + ((row_i - 1) * row_step)
 
+					if fs.hb_damage_number_type == "readable" then
+						row_offset_y = state.y + 16 + ((row_i - 1) * row_step)
+					end
+
 					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
 					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
 
@@ -879,12 +898,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- colour mutation
 				local colour = (mod.debuff_colours and mod.debuff_colours[name]) or { 255, 255, 255, 255 }
 
-				local c = icon_style.color
+				icon_style.color[2] = colour[2] or 255
+				icon_style.color[3] = colour[3] or 255
+				icon_style.color[4] = colour[4] or 255
 
-				--c[1] = state.alpha
-				c[2] = colour[2] or colour[1] or 255
-				c[3] = colour[3] or colour[2] or 255
-				c[4] = colour[4] or colour[3] or 255
+				if fs.debuff_stacks_icon_colour then
+					stack_text_style.text_color[2] = colour[2] or 255
+					stack_text_style.text_color[3] = colour[3] or 255
+					stack_text_style.text_color[4] = colour[4] or 255
+				end
 
 				content.line_of_sight_progress = line_of_sight_progress
 				widget.alpha_multiplier = line_of_sight_progress or 1

@@ -81,6 +81,24 @@ local table_remove = table.remove
 local table_clone = table.clone
 
 -----------------------------------------------------------------------
+-- Cached damage number colors
+-----------------------------------------------------------------------
+
+local CACHED_DAMAGE_COLORS = {}
+
+local function _init_damage_colors()
+	if next(CACHED_DAMAGE_COLORS) then
+		return
+	end
+
+	local settings = template.damage_number_settings
+
+	CACHED_DAMAGE_COLORS.default = Color_color[settings.default_color](255, true)
+	CACHED_DAMAGE_COLORS.crit = Color_color[settings.crit_color](255, true)
+	CACHED_DAMAGE_COLORS.weakspot = Color_color[settings.weakspot_color](255, true)
+end
+
+-----------------------------------------------------------------------
 -- Damage numbers config
 -----------------------------------------------------------------------
 
@@ -112,8 +130,8 @@ template.damage_number_settings = {
 	visibility_delay = 2,
 	weakspot_color = "yellow",
 	x_offset = (size[1] / 2) + 10,
-	x_offset_between_numbers = 30,
-	y_offset = -20,
+	x_offset_between_numbers = 40 * mod.text_scale,
+	y_offset = -30,
 	flashy_font_size_dmg_multiplier = { 1, 1.5 },
 	flashy_font_size_dmg_scale_range = { 50, 300 },
 }
@@ -136,24 +154,6 @@ mod.latest_damaged_enemies = {}
 -----------------------------------------------------------------------
 -- Damage number render helpers
 -----------------------------------------------------------------------
-
------------------------------------------------------------------------
--- Cached damage number colors (NO per-frame allocation)
------------------------------------------------------------------------
-
-local CACHED_DAMAGE_COLORS = {}
-
-local function _init_damage_colors()
-	if next(CACHED_DAMAGE_COLORS) then
-		return
-	end
-
-	local settings = template.damage_number_settings
-
-	CACHED_DAMAGE_COLORS.default = Color_color[settings.default_color](255, true)
-	CACHED_DAMAGE_COLORS.crit = Color_color[settings.crit_color](255, true)
-	CACHED_DAMAGE_COLORS.weakspot = Color_color[settings.weakspot_color](255, true)
-end
 
 local function _readable_damage_number_function(
 	ui_content,
@@ -282,6 +282,14 @@ local function _floating_damage_number_function(
 		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
+
+		if damage_number.hit_world_position then
+			local world_to_screen_position =
+				Camera.world_to_screen(ui_content.player_camera, damage_number.hit_world_position:unbox())
+
+			base_y = world_to_screen_position[2] + 60
+			base_x = world_to_screen_position[1] + 190
+		end
 
 		if progress >= 1 then
 			table_remove(damage_numbers, i)
@@ -898,6 +906,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			visibility_function = function(content)
 				if
 					content.hb_built
+					and fs.hb_toggle_ghostbar
 					and content.health_fraction
 					and content.health_ghost_fraction
 					and content.health_ghost_fraction > content.health_fraction
@@ -938,7 +947,77 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					return false
 				end
 			end,
-		}, -- SHADOW
+		},
+
+		-- SEGMENT BAR 25%
+		{
+			pass_type = "rect",
+			style_id = "health_segment_25",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 3 },
+				default_offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 3 },
+				size = { 5, bar_height },
+				default_size = { 5, bar_height },
+				color = { 200, 0, 0, 0 },
+				default_alpha = 200,
+			},
+			visibility_function = function(content)
+				if content.hb_built and fs.healthbar_segments_enable then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+
+		-- SEGMENT BAR 50%
+		{
+			pass_type = "rect",
+			style_id = "health_segment_50",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 3 },
+				default_offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 3 },
+				size = { 5, bar_height },
+				default_size = { 5, bar_height },
+				color = { 200, 0, 0, 0 },
+				default_alpha = 200,
+			},
+			visibility_function = function(content)
+				if content.hb_built and fs.healthbar_segments_enable then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+		-- SEGMENT BAR 75%
+		{
+			pass_type = "rect",
+			style_id = "health_segment_75",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 3 },
+				default_offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 3 },
+				size = { 5, bar_height },
+				default_size = { 5, bar_height },
+				color = { 200, 0, 0, 0 },
+				default_alpha = 200,
+			},
+			visibility_function = function(content)
+				if content.hb_built and fs.healthbar_segments_enable then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+
+		-- SHADOW
 		{
 			pass_type = "texture",
 			style_id = "shading1",
@@ -951,8 +1030,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { bar_offset[1], bar_offset[2], 4 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 150, 80, 80, 80 },
-				default_alpha = 150,
+				color = { 200, 80, 80, 80 },
+				default_alpha = 200,
 			},
 			visibility_function = function(content)
 				if content.hb_built then
@@ -1045,7 +1124,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/interactions/icons/enemy_priority",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.icon_enabled and content.icon_elite
+				return content.hb_built and content.icon_enabled and content.icon_elite
 			end,
 		}, -- BOSS ICON
 		{
@@ -1121,8 +1200,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "top",
-				offset = { -bar_width * 0.5, -bar_height - 8 * mod.text_scale, 6 },
-				default_offset = { -bar_width * 0.5, -bar_height - 8 * mod.text_scale, 6 },
+				offset = { -bar_width * 0.5, -bar_height - 10 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, -bar_height - 10 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -1151,8 +1230,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 12 * mod.text_scale, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 12 * mod.text_scale, 6 },
+				offset = { -bar_width * 0.5, bar_height + 16 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 16 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -1182,8 +1261,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 28 * mod.text_scale, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 28 * mod.text_scale, 6 },
+				offset = { -bar_width * 0.5, bar_height + 32 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 32 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -1213,8 +1292,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 42 * mod.text_scale, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 42 * mod.text_scale, 6 },
+				offset = { -bar_width * 0.5, bar_height + 48 * mod.text_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 48 * mod.text_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -1227,7 +1306,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 255,
 			},
 			visibility_function = function(content)
-				if content.hb_built then
+				if content.dn_built then
 					return true
 				else
 					return false
@@ -1257,7 +1336,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 255,
 			},
 			visibility_function = function(content)
-				if content.hb_built then
+				if content.dn_built then
 					return true
 				else
 					return false
@@ -1607,7 +1686,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
 
-	if cluster and fs.horde_clusters_enable then
+	if cluster and fs.horde_clusters_enable and fs.healthbar_enable then
 		in_horde_cluster = true
 
 		-- Only the cluster representative should ever have a bar marker, because
@@ -1729,201 +1808,187 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- DAMAGE NUMBERS LOGIC
 	-------------------------------------------------------------------
-	local max_health_setting = health_max
-	max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
-			and Managers.state.difficulty:get_minion_max_health(content.breed.name)
-		or health_max
+	if fs.show_damage_numbers or fs.hb_text_show_damage then
+		local max_health_setting = health_max
+		max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
+				and Managers.state.difficulty:get_minion_max_health(content.breed.name)
+			or health_max
 
-	local total_damage_taken
-	local player_camera = parent._parent and parent._parent:player_camera()
+		local total_damage_taken
+		local player_camera = parent._parent and parent._parent:player_camera()
 
-	content.player_camera = player_camera
+		content.player_camera = player_camera
 
-	if not is_dead and health_extension then
-		total_damage_taken = health_extension:total_damage_taken()
-	else
-		total_damage_taken = max_health_setting or health_max
-	end
-
-	if health_extension and not is_dead then
-		local last_damaging_unit = health_extension:last_damaging_unit()
-
-		if last_damaging_unit then
-			content.last_hit_zone_name = health_extension:last_hit_zone_name() or "center_mass"
-			content.last_damaging_unit = last_damaging_unit
-
-			local breed_local = content.breed
-			local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
-
-			if is_weakspot(breed_local, content.last_hit_zone_name) then
-				content.hit_weakspot = true
-			else
-				content.hit_weakspot = false
-			end
-
-			content.was_critical = health_extension:was_hit_by_critical_hit_this_render_frame()
-
-			local last_hit_world_position = health_extension:last_hit_world_position()
-
-			if last_hit_world_position then
-				local box = content.last_hit_world_position
-				if not box then
-					content.last_hit_world_position = Vector3Box(last_hit_world_position)
-				else
-					box:store(last_hit_world_position)
-				end
-			end
-		end
-	end
-
-	local damage_number_settings = template.damage_number_settings
-	local Managers_player_local = Managers_player
-	local local_player = Managers_player_local:local_player(1)
-	local local_player_unit = local_player and local_player.player_unit
-
-	template.skip_damage_from_others = fs.hb_damage_numbers_track_friendly
-
-	local show_damage_number = true
-	local last_was_player_damage = content.last_damaging_unit and content.last_damaging_unit == local_player_unit
-		or false
-
-	if template.skip_damage_from_others then
-		if last_was_player_damage then
-			show_damage_number = true
+		if not is_dead and health_extension then
+			total_damage_taken = health_extension:total_damage_taken()
 		else
-			show_damage_number = false
+			total_damage_taken = max_health_setting or health_max
 		end
-	else
-		show_damage_number = true
-	end
 
-	local damage_numbers = content.damage_numbers
-	local latest_damage_number = damage_numbers[#damage_numbers]
+		if health_extension and not is_dead then
+			local last_damaging_unit = health_extension:last_damaging_unit()
 
-	if damage_taken_since_last > 0 and health_extension and not is_dead then
-		content.visibility_delay = damage_number_settings.visibility_delay
-		content.damage_taken = total_damage_taken
+			if last_damaging_unit then
+				content.last_hit_zone_name = health_extension:last_hit_zone_name() or "center_mass"
+				content.last_damaging_unit = last_damaging_unit
 
-		if show_damage_number then
-			if fs.hb_damage_show_only_latest then
-				-- add new unit to the end
-				table.insert(mod.latest_damaged_enemies, unit)
-
-				-- remove oldest entries if we exceed the limit
-				while #mod.latest_damaged_enemies > fs.hb_damage_show_only_latest_value do
-					table.remove(mod.latest_damaged_enemies, 1)
-				end
-			end
-
-			local damage_diff = math.ceil(damage_taken_since_last)
-			local should_add = true
-			local was_critical = health_extension and health_extension:was_hit_by_critical_hit_this_render_frame()
-
-			if latest_damage_number then
-				local add_numbers_together_timer = fs.hb_damage_number_type == damage_number_types.flashy
-						and damage_number_settings.add_numbers_together_timer_flashy
-					or damage_number_settings.add_numbers_together_timer
-
-				if add_numbers_together_timer > t - latest_damage_number.start_time then
-					should_add = false
-				end
-			end
-
-			content.add_on_next_number = not fs.hb_damage_numbers_add_total
-
-			if content.add_on_next_number or was_critical or should_add then
-				local damage_number = {
-					expand_time = 0,
-					time = 0,
-					start_time = t,
-					duration = damage_number_settings.duration,
-					value = damage_diff,
-					expand_duration = damage_number_settings.expand_duration,
-					random_number = math_random(),
-					float_right = math_random() > 0.5,
-				}
 				local breed_local = content.breed
 				local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
 
 				if is_weakspot(breed_local, content.last_hit_zone_name) then
-					damage_number.hit_weakspot = true
+					content.hit_weakspot = true
 				else
-					damage_number.hit_weakspot = false
+					content.hit_weakspot = false
 				end
 
-				damage_number.was_critical = was_critical
-				damage_numbers[#damage_numbers + 1] = damage_number
+				content.was_critical = health_extension:was_hit_by_critical_hit_this_render_frame()
 
-				if content.add_on_next_number then
-					content.add_on_next_number = nil
-				end
+				local last_hit_world_position = health_extension:last_hit_world_position()
 
-				if was_critical then
-					content.add_on_next_number = true
+				if last_hit_world_position then
+					local box = content.last_hit_world_position
+					if not box then
+						content.last_hit_world_position = Vector3Box(last_hit_world_position)
+					else
+						box:store(last_hit_world_position)
+					end
 				end
+			end
+		end
 
-				if content.last_hit_world_position then
-					damage_number.hit_world_position = Vector3Box(content.last_hit_world_position:unbox())
-				end
+		local damage_number_settings = template.damage_number_settings
+		local Managers_player_local = Managers_player
+		local local_player = Managers_player_local:local_player(1)
+		local local_player_unit = local_player and local_player.player_unit
+
+		template.skip_damage_from_others = fs.hb_damage_numbers_track_friendly
+
+		local show_damage_number = true
+		local last_was_player_damage = content.last_damaging_unit and content.last_damaging_unit == local_player_unit
+			or false
+
+		if template.skip_damage_from_others then
+			if last_was_player_damage then
+				show_damage_number = true
 			else
-				latest_damage_number.value = math_clamp(latest_damage_number.value + damage_diff, 0, max_health_setting)
-				latest_damage_number.time = 0
-				latest_damage_number.expand_time = 0
-				latest_damage_number.expand_duration = damage_number_settings.expand_duration
-				latest_damage_number.shrink_start_t = nil
-				latest_damage_number.y_position = nil
-				latest_damage_number.start_time = t
+				show_damage_number = false
+			end
+		else
+			show_damage_number = true
+		end
 
-				local breed_local = content.breed
-				local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
+		local damage_numbers = content.damage_numbers
+		local latest_damage_number = damage_numbers[#damage_numbers]
 
-				if is_weakspot(breed_local, content.last_hit_zone_name) then
-					latest_damage_number.hit_weakspot = true
-				else
-					latest_damage_number.hit_weakspot = false
+		if damage_taken_since_last > 0 and health_extension and not is_dead then
+			content.visibility_delay = damage_number_settings.visibility_delay
+			content.damage_taken = total_damage_taken
+
+			if show_damage_number then
+				if fs.hb_damage_show_only_latest then
+					-- add new unit to the end
+					table.insert(mod.latest_damaged_enemies, unit)
+
+					-- remove oldest entries if we exceed the limit
+					while #mod.latest_damaged_enemies > fs.hb_damage_show_only_latest_value do
+						table.remove(mod.latest_damaged_enemies, 1)
+					end
 				end
 
-				latest_damage_number.was_critical = was_critical
+				local damage_diff = math.ceil(damage_taken_since_last)
+				local should_add = true
+				local was_critical = health_extension and health_extension:was_hit_by_critical_hit_this_render_frame()
+
+				if latest_damage_number then
+					local add_numbers_together_timer = fs.hb_damage_number_type == damage_number_types.flashy
+							and damage_number_settings.add_numbers_together_timer_flashy
+						or damage_number_settings.add_numbers_together_timer
+
+					if add_numbers_together_timer > t - latest_damage_number.start_time then
+						should_add = false
+					end
+				end
+
+				content.add_on_next_number = not fs.hb_damage_numbers_add_total
+
+				if content.add_on_next_number or was_critical or should_add then
+					local damage_number = {
+						expand_time = 0,
+						time = 0,
+						start_time = t,
+						duration = damage_number_settings.duration,
+						value = damage_diff,
+						expand_duration = damage_number_settings.expand_duration,
+						random_number = math_random(),
+						float_right = math_random() > 0.5,
+					}
+					local breed_local = content.breed
+					local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
+
+					if is_weakspot(breed_local, content.last_hit_zone_name) then
+						damage_number.hit_weakspot = true
+					else
+						damage_number.hit_weakspot = false
+					end
+
+					damage_number.was_critical = was_critical
+					damage_numbers[#damage_numbers + 1] = damage_number
+
+					if content.add_on_next_number then
+						content.add_on_next_number = nil
+					end
+
+					if was_critical then
+						content.add_on_next_number = true
+					end
+
+					if content.last_hit_world_position then
+						damage_number.hit_world_position = Vector3Box(content.last_hit_world_position:unbox())
+					end
+				else
+					latest_damage_number.value =
+						math_clamp(latest_damage_number.value + damage_diff, 0, max_health_setting)
+					latest_damage_number.time = 0
+					latest_damage_number.expand_time = 0
+					latest_damage_number.expand_duration = damage_number_settings.expand_duration
+					latest_damage_number.shrink_start_t = nil
+					latest_damage_number.y_position = nil
+					latest_damage_number.start_time = t
+
+					local breed_local = content.breed
+					local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
+
+					if is_weakspot(breed_local, content.last_hit_zone_name) then
+						latest_damage_number.hit_weakspot = true
+					else
+						latest_damage_number.hit_weakspot = false
+					end
+
+					latest_damage_number.was_critical = was_critical
+				end
 			end
+
+			if not content.damage_has_started then
+				content.damage_has_started = true
+			end
+
+			content.last_damage_taken_time = t
 		end
 
-		if not content.damage_has_started then
-			content.damage_has_started = true
+		-------------------------------------------------------------------
+		-- Health counter text
+		-------------------------------------------------------------------
+		if
+			content._last_health_current ~= health_current
+			or content._last_health_max ~= health_max
+			or content._last_damage_value ~= (latest_damage_number and latest_damage_number.value)
+		then
+			content._last_health_current = health_current
+			content._last_health_max = health_max
+			content._last_damage_value = latest_damage_number and latest_damage_number.value
 		end
-
-		content.last_damage_taken_time = t
 	end
-
-	-------------------------------------------------------------------
-	-- Health counter text
-	-------------------------------------------------------------------
-	if
-		content._last_health_current ~= health_current
-		or content._last_health_max ~= health_max
-		or content._last_damage_value ~= (latest_damage_number and latest_damage_number.value)
-	then
-		content._last_health_current = health_current
-		content._last_health_max = health_max
-		content._last_damage_value = latest_damage_number and latest_damage_number.value
-
-		--[[if fs.hb_text_show_damage then
-			if latest_damage_number and (t - (content.last_damage_taken_time or 0)) <= 3 then
-				local new_text = health_current
-					.. " / "
-					.. health_max
-					.. " ({#color(255, 255, 50)}-"
-					.. latest_damage_number.value
-					.. ")"
-				content.health_counter = new_text
-			end
-		elseif fs.hb_text_show_health then
-			local new_text = health_current .. " / " .. health_max
-			if content.health_counter ~= new_text then
-				content.health_counter = new_text
-			end
-		end]]
-	end
-
+	--if fs.healthbar_enable then
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
@@ -1931,6 +1996,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	size = { fs.hb_size_width, fs.hb_size_height }
 	template.size = size
 
+	-- only do healthbar calculations if theyre enabled... Still lets the damage numbers do their thing :)
 	if health_fraction and health_ghost_fraction then
 		local bar_settings = template.bar_settings
 		local spacing = bar_settings.bar_spacing
@@ -2100,16 +2166,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if fs.hb_text_top_left_01 then
 		content.header_text = get_text_option(content, fs.hb_text_top_left_01)
 	end
-	if fs.hb_text_bottom_left_01 and breed then
+	if fs.hb_text_bottom_left_01 then
 		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
 	end
-	if fs.hb_text_bottom_left_02 and breed then
+	if fs.hb_text_bottom_left_02 then
 		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
 	end
+	--end
 
 	-------------------------------------------------------------------
 	-- Hide logic / LOS fade
 	-------------------------------------------------------------------
+
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
 	if not mod.detect_alive(unit) and (not marker.health_fraction or marker.health_fraction == 0) then
@@ -2121,7 +2189,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 	end
 
-	if fs.hide_after_no_damage and time_since_last_damage > 5 then
+	if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
+		marker.draw = false
+	end
+
+	if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
 		marker.draw = false
 	end
 
@@ -2138,13 +2210,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local draw = marker.draw
 
 	if draw then
-		content.hb_built = true
+		if fs.healthbar_enable then
+			content.hb_built = true
+		end
+		if fs.show_damage_numbers then
+			content.dn_built = true
+		end
 
 		content.line_of_sight_progress = line_of_sight_progress
 		widget.alpha_multiplier = line_of_sight_progress or 1
 
 		local scale = marker.scale * mod.text_scale
 		mod.scale = scale
+
 		local header_style = style.header_text
 		local health_counter = style.health_counter
 		local armour_type = style.armour_type
@@ -2162,6 +2240,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if armour_type then
 			armour_type.font_size = armour_type.default_font_size * scale
 		end
+	else
+		content.hb_built = false
 	end
 end
 

@@ -2,19 +2,22 @@ local mod = get_mod("enemies_improved")
 
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
+local BreedQueries = require("scripts/utilities/breed_queries")
+local minion_breeds = BreedQueries.minion_breeds_by_name()
 
 -----------------------------------------------------------------------
 -- Cached settings / constants
 -----------------------------------------------------------------------
+local fs = mod.frame_settings
 
-local max_size_value = 32
+local max_size_value = 32 * fs.marker_size
 
 local size = { max_size_value, max_size_value }
 local ping_size = { max_size_value, max_size_value }
 local arrow_size = { max_size_value * 8, max_size_value * 8 }
 local icon_size = { max_size_value / 2, max_size_value / 2 }
 local background_size = { max_size_value, max_size_value }
-local scale_fraction = 0.75
+local scale_fraction = 1
 
 local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or true
 local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
@@ -87,12 +90,12 @@ template.ping_min_size = {
 }
 template.ping_max_size = { ping_size[1], ping_size[2] }
 
-template.screen_margins = {
-	down = 0.23148148148148148,
-	left = 0.234375,
-	right = 0.234375,
-	up = 0.23148148148148148,
-}
+--template.screen_margins = {
+--	down = 0.23148148148148148,
+--	left = 0.234375,
+--	right = 0.234375,
+--	up = 0.23148148148148148,
+--}
 
 template.evolve_distance = 1
 
@@ -136,11 +139,67 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = { 200, 255, 255, 255 },
 				default_alpha = 200,
 			},
+
 			visibility_function = function(content, style)
 				return (content.special_attack_imminent and content.is_clamped)
 					or (not content.is_clamped and content.background ~= nil)
 			end,
 		},
+
+		-- ONE WIDGET ONLY...
+		{
+			pass_type = "rotated_texture",
+			style_id = "marker_health",
+			value = "content/ui/materials/icons/system/page_indicator_02_idle",
+			value_id = "marker_health",
+			style = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				size = { background_size[1] / 2, background_size[2] / 2 },
+				default_size = { background_size[1] / 2, background_size[2] / 2 },
+
+				offset = { 0, 0, 2 },
+				default_offset = { 0, 0, 2 },
+
+				color = { 200, 255, 0, 0 },
+				default_alpha = 200,
+			},
+
+			change_function = function(content, style)
+				local health_extension = content.health_extension
+				health_current = health_current or 0
+				health_max = health_max or 0
+				health_percent = health_percent or 0
+				is_dead = is_dead or true
+				local unit = content.unit
+				local breed = content.breed
+
+				if unit and health_extension and mod.detect_alive(unit) then
+					health_current = health_extension:current_health() or 0
+					health_max = health_extension:max_health() or 0
+					health_percent = health_extension:current_health_percent() or 0
+					is_dead = not health_extension:is_alive()
+				end
+
+				-- set styling depending on health percentage...
+				if health_percent then
+					if health_percent > 0.75 then
+						content.marker_health = "content/ui/materials/icons/perks/perk_level_04"
+					elseif health_percent > 0.50 then
+						content.marker_health = "content/ui/materials/icons/perks/perk_level_03"
+					elseif health_percent > 0.25 then
+						content.marker_health = "content/ui/materials/icons/perks/perk_level_02"
+					elseif health_percent > 0 then
+						content.marker_health = "content/ui/materials/icons/perks/perk_level_01"
+					end
+				end
+			end,
+
+			visibility_function = function(content, style)
+				return fs.markers_health_enable and not content.is_clamped and content.background ~= nil
+			end,
+		},
+
 		{
 			pass_type = "texture",
 			style_id = "ring",
@@ -288,14 +347,25 @@ template.on_enter = function(widget, marker, template)
 	content.spawn_progress_timer = 0
 
 	local unit = marker.unit
+	content.unit = unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
+	content.health_extension = ScriptUnit_extension(unit, "health_system")
 
 	content.breed = breed
+	content.breed_type = mod.find_breed_category(unit)
 
 	content.distance_text = ""
 	content.show_distance = false
 	content.special_attack_imminent = false
+
+	local fs = mod.frame_settings
+	max_size_value = 32 * fs.marker_size
+	size = { max_size_value, max_size_value }
+	ping_size = { max_size_value, max_size_value }
+	arrow_size = { max_size_value * 8, max_size_value * 8 }
+	icon_size = { max_size_value / 2, max_size_value / 2 }
+	background_size = { max_size_value, max_size_value }
 end
 
 -----------------------------------------------------------------------
@@ -460,9 +530,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		--content.is_clamped = false
 		content.special_attack_imminent = false
 
-		style.background.color[2] = 255
-		style.background.color[3] = 255
-		style.background.color[4] = 255
+		style.background.color[1] = fs.marker_bg_colour[1]
+		style.background.default_alpha = fs.marker_bg_colour[1]
+
+		style.background.color[2] = fs.marker_bg_colour[2]
+		style.background.color[3] = fs.marker_bg_colour[3]
+		style.background.color[4] = fs.marker_bg_colour[4]
 
 		style.arrow.color[2] = 255
 		style.arrow.color[3] = 255
@@ -473,7 +546,34 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		style.background.size[1] = background_size[1] * marker.scale
 		style.background.size[2] = background_size[2] * marker.scale
+
+		style.marker_health.size[1] = (background_size[1] / 2) * marker.scale
+		style.marker_health.size[2] = (background_size[2] / 2) * marker.scale
 	end
+
+	local bar_color = mod.BREED_COLOURS[content.breed_type] or mod.BREED_COLOURS.horde
+
+	-- INDIVIDUAL COLOUR OVERRIDES
+	local enemy_individual = content.breed.name
+
+	if enemy_individual then
+		local breed_settings = minion_breeds[enemy_individual]
+
+		if breed_settings then
+			local tags = breed_settings.tags
+			local individual_breed_type = mod.find_breed_category_by_tags(tags)
+
+			if individual_breed_type == content.breed_type then
+				if mod:get("healthbar_" .. enemy_individual .. "_enable") then
+					bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
+				end
+			end
+		end
+	end
+
+	style.marker_health.color[2] = bar_color[2]
+	style.marker_health.color[3] = bar_color[3]
+	style.marker_health.color[4] = bar_color[4]
 
 	local text_offset = style.distance_text.offset
 	text_offset[1] = 0

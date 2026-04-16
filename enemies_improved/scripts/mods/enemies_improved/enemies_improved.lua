@@ -1,6 +1,9 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
+local BreedQueries = require("scripts/utilities/breed_queries")
+local minion_breeds = BreedQueries.minion_breeds_by_name()
+
 mod.text_scale = mod:get("text_scale") or 1
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
@@ -58,7 +61,26 @@ mod.build_frame_settings = function(dt)
 
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
-	fs.marker_horde_enable = mod:get("marker_horde_enable")
+	fs.markers_horde_enable = mod:get("markers_horde_enable")
+	fs.marker_size = mod:get("marker_size")
+	fs.markers_health_enable = mod:get("markers_health_enable")
+	local a = mod:get("marker_bg_colour_A")
+	local r = mod:get("marker_bg_colour_R")
+	local g = mod:get("marker_bg_colour_G")
+	local b = mod:get("marker_bg_colour_B")
+
+	if not r or not g or not b then
+		r = 220
+		g = 220
+		b = 220
+	end
+
+	fs.marker_bg_colour = {
+		a,
+		r,
+		g,
+		b,
+	}
 
 	-- HEALTHBARS
 	fs.healthbar_enable = mod:get("healthbar_enable")
@@ -66,9 +88,12 @@ mod.build_frame_settings = function(dt)
 	fs.show_damage_numbers = mod:get("hb_show_damage_numbers")
 	fs.show_armor_types = mod:get("hb_show_armour_types")
 	fs.hide_after_no_damage = mod:get("hb_hide_after_no_damage")
+	fs.horde_hide_after_no_damage = mod:get("hb_horde_hide_after_no_damage")
 	fs.horde_enable = mod:get("hb_horde_enable")
 	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
-
+	fs.hb_toggle_ghostbar = mod:get("hb_toggle_ghostbar")
+	fs.healthbar_segments_enable = mod:get("healthbar_segments_enable")
+	
 	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
 	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
 	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
@@ -102,6 +127,8 @@ mod.build_frame_settings = function(dt)
 	fs.debuffs_abrv = mod:get("debuffs_abrv")
 	fs.debuffs_combine = mod:get("debuffs_combine")
 	fs.split_debuff_types = mod:get("split_debuff_types")
+	fs.debuff_icons = mod:get("debuff_icons")
+	fs.debuff_stacks_icon_colour = mod:get("debuff_stacks_icon_colour")
 end
 
 mod.build_frame_settings()
@@ -354,37 +381,45 @@ mod.enable_enemy_outlines = function(unit, entry)
 		return
 	end
 
-	local has_outline_system = Managers.state.extension:has_system("outline_system")
-	if not has_outline_system then
+	local extension_manager = Managers.state.extension
+	if not extension_manager:has_system("outline_system") then
 		return
 	end
 
-	local outline_system = Managers.state.extension:system("outline_system")
+	local outline_system = extension_manager:system("outline_system")
 
-	-- get breed category
-	local breed_name = entry.breed_type
+	local breed_name = entry.breed and entry.breed.name
+	local breed_type = entry.breed_type or "enemy"
 
-	if not breed_name then
-		breed_name = "enemy"
+	----------------------------------------------------------------
+	--  INDIVIDUAL OVERRIDE
+	----------------------------------------------------------------
+	if breed_name then
+		local key = "outline_" .. breed_name .. "_enable"
+		local enabled = mod:get(key)
+
+		if enabled then
+			local outline_name = "enemies_" .. breed_name
+
+			outline_system:remove_outline(unit, outline_name)
+			outline_system:add_outline(unit, outline_name)
+			entry.outline_name = outline_name
+			return
+		end
 	end
 
-	local new_outline = "enemies_" .. breed_name
+	----------------------------------------------------------------
+	-- CATEGORY OUTLINE
+	----------------------------------------------------------------
+	local enabled = mod:get("outline_" .. breed_type .. "_enable")
 
-	-- Do not enable outline if breed isn't allowed...
-	local enabled = mod:get("outline_" .. breed_name .. "_enable")
-	if enabled == false then
-		return
+	if enabled then
+		local outline_name = "enemies_" .. breed_type
+
+		outline_system:remove_outline(unit, outline_name)
+		outline_system:add_outline(unit, outline_name)
+		entry.outline_name = outline_name
 	end
-
-	-- remove old
-	if entry.outline_name then
-		outline_system:remove_outline(unit, entry.outline_name)
-	end
-
-	-- add new
-	outline_system:add_outline(unit, new_outline)
-
-	entry.outline_name = new_outline
 end
 
 mod.disable_enemy_outlines = function(unit, entry)
@@ -519,6 +554,12 @@ mod.scan_enemies = function()
 
 		if mod.detect_alive(unit) then
 			local entry = cache[unit]
+			local breed = ScriptUnit_has_extension(unit, "unit_data_system"):breed()
+
+			-- DO NOT ADD WIDGETS FOR THESE BREEDS:
+			if breed.name == "sand_vortex" or breed.name == "nurgle_flies" or breed.name == "attack_valkyrie" then
+				goto skip_breed
+			end
 
 			if not entry then
 				cache[unit] = {
@@ -534,7 +575,7 @@ mod.scan_enemies = function()
 
 					is_horde = mod.is_horde(unit),
 
-					breed = ScriptUnit_has_extension(unit, "unit_data_system"):breed(),
+					breed = breed,
 					breed_type = mod.find_breed_category(unit),
 
 					special_attack_event = nil,
@@ -555,6 +596,8 @@ mod.scan_enemies = function()
 			else
 				entry.seen = true
 			end
+
+			::skip_breed::
 		end
 	end
 end
@@ -1428,7 +1471,7 @@ mod.update_enemy_markers = function(entry, t)
 
 	local unit = entry.unit
 
-	if entry.is_horde and not fs.marker_horde_enable then
+	if entry.is_horde and not fs.markers_horde_enable then
 		return
 	end
 
@@ -1453,12 +1496,13 @@ end
 
 mod.update_enemy_healthbars = function(entry)
 	local fs = mod.frame_settings
-	if not fs.healthbar_enable then
-		return
-	end
 
 	local unit = entry.unit
 
+	-- Healthbars contains damage numbers too, so if either are still enabled, continue.
+	if not fs.healthbar_enable and not fs.show_damage_numbers then
+		return
+	end
 	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
 		return
 	end
@@ -1858,7 +1902,7 @@ mod.update_enemies = function(dt, t)
 				mod.update_enemy_outlines(entry)
 			end
 
-			if fs.healthbar_enable then
+			if fs.healthbar_enable or fs.show_damage_numbers then
 				mod.update_enemy_healthbars(entry)
 			end
 
@@ -2027,6 +2071,67 @@ mod.apply_enemy_outlines = function(settings)
 		end
 	end
 
+	-- INDIVIDUAL COLOUR OVERRIDES
+	for _, options in pairs(mod.breed_names) do
+		local enemy_individual = options.value
+
+		if enemy_individual then
+			local key = "outline_" .. enemy_individual .. "_enable"
+			local enabled = mod:get(key)
+
+			if enabled and mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] then
+				local r = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2]
+				local g = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][3]
+				local b = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][4]
+
+				if not r then
+					r = 50
+				end
+				if not g then
+					g = 10
+				end
+				if not b then
+					b = 0
+				end
+
+				r = r / 255
+				g = g / 255
+				b = b / 255
+
+				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
+					priority = 2,
+					material_layers = {
+						"minion_outline",
+						"minion_outline_reversed_depth",
+					},
+					color = { r, g, b },
+
+					visibility_check = function(unit)
+						if not Unit.alive(unit) then
+							return false
+						end
+
+						local unit_data = ScriptUnit.has_extension(unit, "unit_data_system")
+						if not unit_data then
+							return false
+						end
+
+						local breed = unit_data:breed()
+						if not breed then
+							return false
+						end
+
+						if breed.name ~= enemy_individual then
+							return false
+						end
+
+						return mod:get("outline_" .. enemy_individual .. "_enable")
+					end,
+				}
+			end
+		end
+	end
+
 	-- SPECIAL ATTACK OUTLINE
 	local sr = (mod:get("outline_specials_colour_R"))
 	local sg = (mod:get("outline_specials_colour_G"))
@@ -2096,6 +2201,11 @@ local enemy_override_settings = {
 	["healthbar_individual_colour_R"] = 255,
 	["healthbar_individual_colour_G"] = 0,
 	["healthbar_individual_colour_B"] = 0,
+
+	["outline_individual_enable"] = false,
+	["outline_individual_colour_R"] = 255,
+	["outline_individual_colour_G"] = 50,
+	["outline_individual_colour_B"] = 10,
 
 	["reset_individual_to_default"] = false,
 }
@@ -2174,7 +2284,7 @@ mod.init_healthbar_defaults = function()
 		end
 	end
 
-	-- individual override bar colours
+	-- individual override colours
 	for _, options in pairs(mod.breed_names) do
 		local enemy_individual = options.value
 
@@ -2185,6 +2295,7 @@ mod.init_healthbar_defaults = function()
 				local tags = breed_settings.tags
 				local breed_type = mod.find_breed_category_by_tags(tags)
 
+				-- healthbar
 				for breed, color in pairs(mod.BREED_COLOURS_DEFAULT) do
 					if breed_type == breed then
 						local r = color[2]
@@ -2196,6 +2307,22 @@ mod.init_healthbar_defaults = function()
 							mod:set("healthbar_" .. enemy_individual .. "_colour_R", r)
 							mod:set("healthbar_" .. enemy_individual .. "_colour_G", g)
 							mod:set("healthbar_" .. enemy_individual .. "_colour_B", b)
+						end
+					end
+				end
+
+				-- outlines
+				for breed, color in pairs(mod.OUTLINE_COLOURS_DEFAULT) do
+					if breed_type == breed then
+						local r = color[2]
+						local g = color[3]
+						local b = color[4]
+
+						-- only set if not already saved
+						if mod:get("outline_" .. enemy_individual .. "_colour_R") == nil then
+							mod:set("outline_" .. enemy_individual .. "_colour_R", r)
+							mod:set("outline_" .. enemy_individual .. "_colour_G", g)
+							mod:set("outline_" .. enemy_individual .. "_colour_B", b)
 						end
 					end
 				end
@@ -2217,7 +2344,7 @@ mod.update_breed_colours = function()
 		end
 	end
 
-	-- INDIVIDUAL OVERRIDE GROUPS
+	-- INDIVIDUAL HEALTHBAR OVERRIDES
 	for _, options in pairs(mod.breed_names) do
 		local enemy_individual = options.value
 
@@ -2229,6 +2356,22 @@ mod.update_breed_colours = function()
 
 			if r and g and b then
 				mod.BREED_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
+			end
+		end
+	end
+
+	-- INDIVIDUAL OUTLINE OVERRIDES
+	for _, options in pairs(mod.breed_names) do
+		local enemy_individual = options.value
+
+		if enemy_individual then
+			r = mod:get("outline_" .. enemy_individual .. "_colour_R")
+			g = mod:get("outline_" .. enemy_individual .. "_colour_G")
+			b = mod:get("outline_" .. enemy_individual .. "_colour_B")
+			local a = 255
+
+			if r and g and b then
+				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
 			end
 		end
 	end
@@ -2353,7 +2496,7 @@ mod.update_dmf_settings_colours = function(setting_id)
 		local old_title = mod:localize(base_key)
 		local new_title = nil
 
-		-- Recompute localization table (your function)
+		-- Recompute localization table
 		local updated_localization = mod.apply_colours()
 
 		-- GET CURRENT UPDATED VALUE FROM UPDATED_LOCALIZATION

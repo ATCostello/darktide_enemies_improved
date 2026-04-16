@@ -19,6 +19,7 @@ mod.utility_debuffs = {
 	"rending_debuff",
 	"rending_debuff_medium",
 	"rending_burn_debuff",
+	"saw_rending_debuff",
 
 	"increase_impact_received_while_staggered",
 	"increase_damage_received_while_staggered",
@@ -102,6 +103,7 @@ mod.debuff_icons = {
 	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	rending_debuff_medium = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 	rending_burn_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+	saw_rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
 
 	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
 
@@ -272,6 +274,7 @@ mod.debuff_colours = {
 	rending_debuff = { 255, 172, 115, 255 },
 	rending_debuff_medium = { 255, 172, 115, 255 },
 	rending_burn_debuff = { 255, 172, 115, 255 },
+	saw_rending_debuff = { 255, 172, 115, 255 },
 
 	increase_impact_received_while_staggered = { 255, 172, 115, 255 },
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 172, 115, 255 },
@@ -429,6 +432,9 @@ mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
 mod.ICON_SETTINGS_DEFAULT = table.clone(mod.ICON_SETTINGS)
 mod.OUTLINE_COLOURS_DEFAULT = table.clone(mod.OUTLINE_COLOURS)
+mod.breed_names = mod.gather_enemy_names_by_breed_types()
+mod.BREED_COLOURS_OVERRIDE = {}
+mod.OUTLINE_COLOURS_OVERRIDE = {}
 
 local hb_frames = {
 	{
@@ -491,6 +497,23 @@ local enemy_type_options = {
 	},
 }
 
+mod.outline_types = {
+	{ text = "minion_outline", value = "minion_outline" },
+	{ text = "minion_outline_reversed_depth", value = "minion_outline_reversed_depth" },
+	{ text = "minion_outline_combat_ability", value = "minion_outline_combat_ability" },
+	{ text = "minion_outline_combat_ability_reversed_depth", value = "minion_outline_combat_ability_reversed_depth" },
+	{ text = "minion_outline_psyker", value = "minion_outline_psyker" },
+
+	{ text = "scanning", value = "scanning" },
+	{ text = "scanning_reversed_depth", value = "scanning_reversed_depth" },
+
+	{ text = "player_outline_target", value = "player_outline_target" },
+	{ text = "player_outline_knocked_down", value = "player_outline_knocked_down" },
+	{ text = "player_outline_knocked_down_reversed_depth", value = "player_outline_knocked_down_reversed_depth" },
+	{ text = "player_outline_general", value = "player_outline_general" },
+	{ text = "player_outline_general_depth", value = "player_outline_general_depth" },
+}
+
 mod.settings_widgets = {}
 
 local fonts = mod._get_font_options()
@@ -540,6 +563,13 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "outlines_enable_tooltip",
 		},
+		--[[{
+			setting_id = "outlines_style",
+			type = "dropdown",
+			options = mod.outline_types,
+			default_value = "minion_outline",
+			tooltip = "outlines_style_tooltip",
+		},]]
 		{
 			setting_id = "font_type",
 			type = "dropdown",
@@ -737,6 +767,71 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "markers_horde_enable_tooltip",
 		},
+		{
+			setting_id = "marker_size",
+			type = "numeric",
+			default_value = 2.2,
+			decimals_number = 1,
+			step_size_value = 1,
+			range = {
+				1,
+				6,
+			},
+			tooltip = "marker_size_tooltip",
+		},
+
+		{
+			setting_id = "markers_health_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "markers_health_enable_tooltip",
+		},
+		{
+			setting_id = "marker_bg_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "marker_bg_colour_A",
+					type = "numeric",
+					default_value = 200,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "marker_bg_colour_tooltip",
+				},
+				{
+					setting_id = "marker_bg_colour_R",
+					type = "numeric",
+					default_value = 200,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "marker_bg_colour_tooltip",
+				},
+				{
+					setting_id = "marker_bg_colour_G",
+					type = "numeric",
+					default_value = 200,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "marker_bg_colour_tooltip",
+				},
+				{
+					setting_id = "marker_bg_colour_B",
+					type = "numeric",
+					default_value = 200,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "marker_bg_colour_tooltip",
+				},
+			},
+		},
 	},
 })
 
@@ -757,7 +852,12 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
-
+		{
+			setting_id = "healthbar_segments_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "healthbar_segments_enable_tooltip",
+		},
 		{
 			setting_id = "hb_horde_enable",
 			type = "checkbox",
@@ -776,67 +876,24 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "hb_hide_after_no_damage_tooltip",
 		},
-		--[[{
-			setting_id = "hb_text_show_health",
+		{
+			setting_id = "hb_horde_hide_after_no_damage",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_horde_hide_after_no_damage_tooltip",
+		},
+		{
+			setting_id = "hb_toggle_ghostbar",
 			type = "checkbox",
 			default_value = true,
-			tooltip = "hb_text_show_health_tooltip",
-		},]]
+			tooltip = "hb_toggle_ghostbar_tooltip",
+		},
 		{
 			setting_id = "hb_text_show_damage",
 			type = "checkbox",
 			default_value = false,
 			tooltip = "hb_text_show_damage_tooltip",
 		},
-		{
-			setting_id = "hb_show_damage_numbers",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "hb_show_damage_numbers_tooltip",
-		},
-		{
-			setting_id = "hb_damage_numbers_track_friendly",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "hb_damage_numbers_track_friendly_tooltip",
-		},
-		{
-			setting_id = "hb_damage_numbers_add_total",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "hb_damage_numbers_add_total_tooltip",
-		},
-		{
-			setting_id = "hb_damage_show_only_latest",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "hb_damage_show_only_latest_tooltip",
-		},
-		{
-			setting_id = "hb_damage_show_only_latest_value",
-			type = "numeric",
-			default_value = 3,
-			range = {
-				1,
-				10,
-			},
-			decimals_number = 0,
-			step_size_value = 1,
-			tooltip = "hb_damage_show_only_latest_value_tooltip",
-		},
-		{
-			setting_id = "hb_damage_number_types",
-			type = "dropdown",
-			options = damage_number_types,
-			default_value = "floating",
-			tooltip = "hb_damage_number_types_tooltip",
-		},
-		--[[{
-			setting_id = "hb_show_armour_types",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "hb_show_armour_types_tooltip",
-		},]]
 		{
 			setting_id = "hb_frame",
 			type = "dropdown",
@@ -907,6 +964,56 @@ table.insert(mod.settings_widgets, {
 	},
 })
 
+-- DAMAGE NUMBERS
+table.insert(mod.settings_widgets, {
+	setting_id = "damage_number_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "hb_show_damage_numbers",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_show_damage_numbers_tooltip",
+		},
+		{
+			setting_id = "hb_damage_numbers_track_friendly",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_damage_numbers_track_friendly_tooltip",
+		},
+		{
+			setting_id = "hb_damage_numbers_add_total",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_damage_numbers_add_total_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_damage_show_only_latest_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest_value",
+			type = "numeric",
+			default_value = 3,
+			range = {
+				1,
+				10,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "hb_damage_show_only_latest_value_tooltip",
+		},
+		{
+			setting_id = "hb_damage_number_types",
+			type = "dropdown",
+			options = damage_number_types,
+			default_value = "floating",
+			tooltip = "hb_damage_number_types_tooltip",
+		},
+	},
+})
 -- DEBUFFS
 table.insert(mod.settings_widgets, {
 	setting_id = "debuff_settings",
@@ -953,6 +1060,18 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "debuff_names_tooltip",
+		},
+		{
+			setting_id = "debuff_icons",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_icons_tooltip",
+		},
+		{
+			setting_id = "debuff_stacks_icon_colour",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "debuff_stacks_icon_colour_tooltip",
 		},
 		{
 			setting_id = "debuff_names_fade",
@@ -1181,8 +1300,6 @@ table.insert(mod.settings_widgets, {
 	sub_widgets = mod.group_settings_widgets,
 })
 
-mod.breed_names = mod.gather_enemy_names_by_breed_types()
-mod.BREED_COLOURS_OVERRIDE = {}
 mod.individual_override_settings = {
 	{
 		setting_id = "individual_overrides",
@@ -1238,6 +1355,50 @@ mod.individual_override_settings = {
 					255,
 				},
 				tooltip = "healthbar_individual_colour_tooltip",
+			},
+		},
+	},
+	-- outline
+	{
+		setting_id = "outline_individual_enable",
+		type = "checkbox",
+		default_value = true,
+		tooltip = "outline_individual_enable_tooltip",
+	},
+
+	{
+		setting_id = "outline_individual_colour",
+		type = "group",
+		sub_widgets = {
+			{
+				setting_id = "outline_individual_colour_R",
+				type = "numeric",
+				default_value = 50,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_individual_colour_tooltip",
+			},
+			{
+				setting_id = "outline_individual_colour_G",
+				type = "numeric",
+				default_value = 10,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_individual_colour_tooltip",
+			},
+			{
+				setting_id = "outline_individual_colour_B",
+				type = "numeric",
+				default_value = 0,
+				range = {
+					0,
+					255,
+				},
+				tooltip = "outline_individual_colour_tooltip",
 			},
 		},
 	},
