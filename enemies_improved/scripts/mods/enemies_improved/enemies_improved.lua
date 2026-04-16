@@ -93,7 +93,7 @@ mod.build_frame_settings = function(dt)
 	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
 	fs.hb_toggle_ghostbar = mod:get("hb_toggle_ghostbar")
 	fs.healthbar_segments_enable = mod:get("healthbar_segments_enable")
-	
+
 	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
 	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
 	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
@@ -325,6 +325,7 @@ end)
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- throttle updates according to enemy amounts to help keep performance in check...
 	local enemy_count = table.size(mod.enemy_cache) or 0
+	local fs = mod.frame_settings
 
 	local update_interval
 
@@ -343,21 +344,23 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		mod.update_enemies(dt, t)
 	end
 
-	-- Hide default health bars (all damage_indicator variants except our custom one)
-	local markers = self._markers
-	if not markers or #markers == 0 then
-		return
-	end
+	-- Hide default health bars if custom healthbars are enabled!
+	if fs.healthbar_enable then
+		local markers = self._markers
+		if not markers or #markers == 0 then
+			return
+		end
 
-	for i = 1, #markers do
-		local marker = markers[i]
-		local template = marker and marker.template
+		for i = 1, #markers do
+			local marker = markers[i]
+			local template = marker and marker.template
 
-		if template then
-			local name = template.name
-			if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
-				marker.draw = false
-				marker.alpha_multiplier = 0
+			if template then
+				local name = template.name
+				if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
+					marker.draw = false
+					marker.alpha_multiplier = 0
+				end
 			end
 		end
 	end
@@ -402,8 +405,8 @@ mod.enable_enemy_outlines = function(unit, entry)
 			local outline_name = "enemies_" .. breed_name
 
 			outline_system:remove_outline(unit, outline_name)
+
 			outline_system:add_outline(unit, outline_name)
-			entry.outline_name = outline_name
 			return
 		end
 	end
@@ -418,7 +421,6 @@ mod.enable_enemy_outlines = function(unit, entry)
 
 		outline_system:remove_outline(unit, outline_name)
 		outline_system:add_outline(unit, outline_name)
-		entry.outline_name = outline_name
 	end
 end
 
@@ -435,16 +437,22 @@ mod.disable_enemy_outlines = function(unit, entry)
 	local outline_system = Managers.state.extension:system("outline_system")
 
 	-- get breed category
-	local breed_name = entry.breed_type
+	local breed_type = entry.breed_type
+	local breed_name = entry.breed and entry.breed.name
 
-	if not breed_name then
-		breed_name = "enemy"
+	if not breed_type then
+		breed_type = "enemy"
 	end
 
-	local enemies_improved_outline = "enemies_" .. breed_name
-
+	local enemies_improved_outline = "enemies_" .. breed_type
 	-- remove
 	outline_system:remove_outline(unit, enemies_improved_outline)
+
+	if breed_name then
+		local outline_name = "enemies_" .. breed_name
+
+		outline_system:remove_outline(unit, outline_name)
+	end
 end
 
 mod.pulse_enemy_outline = function(entry)
