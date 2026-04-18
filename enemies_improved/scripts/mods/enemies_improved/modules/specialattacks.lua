@@ -121,7 +121,9 @@ mod.handle_special_attacks = function(event_name, source_unit)
 		)
 	then
 		local name, value = debug.getlocal(8, 1)
-		unit = value._unit
+		if value then
+			unit = value._unit
+		end
 	end
 
 	-- if not, try to get from all locals
