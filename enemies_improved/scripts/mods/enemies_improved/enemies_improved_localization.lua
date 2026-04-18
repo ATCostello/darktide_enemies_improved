@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.0"
+mod.version = "1.4.02"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -323,11 +323,11 @@ table.insert(localisations_to_add, {
 	},
 
 	toxin_damage_debuff = {
-		en = "Weak (Targeted Toxin)",
+		en = "Weakened (Targeted Toxin)",
 		["zh-cn"] = "虚弱（定向毒素）",
 	},
 	toxin_damage_debuff_monster = {
-		en = "Weak (Targeted Toxin)",
+		en = "Weakened Monster (Targeted Toxin)",
 		["zh-cn"] = "虚弱（定向毒素）",
 	},
 
@@ -351,15 +351,15 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "碎裂",
 	},
 	rending_debuff_medium = {
-		en = "Brittleness",
+		en = "Brittleness (Medium)",
 		["zh-cn"] = "碎裂",
 	},
 	rending_burn_debuff = {
-		en = "Brittleness",
+		en = "Brittleness (Burn)",
 		["zh-cn"] = "碎裂",
 	},
 	saw_rending_debuff = {
-		en = "Brittleness",
+		en = "Brittleness (Saw Blade)",
 		["zh-cn"] = "碎裂",
 	},
 
@@ -394,11 +394,11 @@ table.insert(localisations_to_add, {
 
 	-- Psyker utility / chain lightning etc.
 	psyker_protectorate_spread_chain_lightning_interval_improved = {
-		en = "Chain Lightning",
+		en = "Chain Lightning (Improved)",
 		["zh-cn"] = "连锁闪电",
 	},
 	psyker_protectorate_spread_charged_chain_lightning_interval_improved = {
-		en = "Charged Chain Lightning",
+		en = "Charged Chain Lightning (Improved)",
 		["zh-cn"] = "蓄力连锁闪电",
 	},
 	psyker_protectorate_spread_chain_lightning_interval = {
@@ -414,7 +414,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "蓄力打击",
 	},
 	psyker_heavy_swings_shock_improved = {
-		en = "Charged Strike",
+		en = "Charged Strike (Improved)",
 		["zh-cn"] = "蓄力打击",
 	},
 

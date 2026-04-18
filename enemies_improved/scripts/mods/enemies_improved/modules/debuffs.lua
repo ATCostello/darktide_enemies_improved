@@ -22,7 +22,7 @@ local Managers_event = Managers.event
 mod.update_enemy_debuffs = function(entry, t)
 	local fs = mod.frame_settings
 
-	if not fs.debuff_enable or not fs.debuff_dot_enable then
+	if not fs.debuff_enable then
 		return
 	end
 

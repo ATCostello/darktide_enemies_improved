@@ -352,7 +352,7 @@ mod.update_settings_values = function(setting_id)
 		-- STORE VALUES WHEN CHANGED
 		if setting_id == setting_name then
 			if enemy_individual_value ~= individual_value then
-				--mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
+				mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
 				mod:set(enemy_individual, individual_value)
 			end
 		end
@@ -360,7 +360,7 @@ mod.update_settings_values = function(setting_id)
 		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
 		if setting_id == "individual_overrides" or mod:get(reset_setting_id) == true or setting_id == nil then
 			if individual_value ~= enemy_individual_value then
-				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
+				mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
 				mod:set(setting_name, enemy_individual_value)
 			end
 		end
@@ -461,7 +461,7 @@ mod.on_setting_changed = function(setting_id)
 	if setting_id == "debuff_toggles" then
 		local selected_option = mod:get("debuff_toggles")
 		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
-		local setting = mod:get(debuff_toggle_setting_string) or true
+		local setting = mod:get(debuff_toggle_setting_string)
 
 		if setting ~= nil then
 			mod:set("debuff_selected_enable", setting)
