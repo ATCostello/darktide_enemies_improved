@@ -119,7 +119,7 @@ local function check_selected_font()
 		end
 	end
 
-	if not exists then
+	if not exists and #fonts > 1 then
 		mod:echo(mod:localize(font_no_longer_available) .. " \n" .. fonts[1].text)
 		mod:set("font_type", fonts[1].value)
 	end

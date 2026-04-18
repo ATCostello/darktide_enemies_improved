@@ -62,6 +62,7 @@ mod.enable_enemy_outlines = function(unit, entry)
 	if breed_name then
 		local key = "outline_" .. breed_name .. "_enable"
 		if mod:get(key) then
+
 			local outline_name = entry._outline_name_individual
 			if not outline_name then
 				outline_name = "enemies_" .. breed_name
@@ -229,6 +230,10 @@ mod.update_enemy_outlines = function(entry)
 	local physics_world = World.get_data(world, "physics_world")
 
 	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
+
+	if entry._outline_applied == nil then
+		entry._outline_applied = false
+	end
 
 	if has_los then
 		if not entry._outline_applied then

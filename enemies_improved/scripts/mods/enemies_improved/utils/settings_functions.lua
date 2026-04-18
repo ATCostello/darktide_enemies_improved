@@ -206,11 +206,8 @@ mod.update_breed_colours = function()
 			b = mod:get("outline_" .. enemy_individual .. "_colour_B")
 			local a = 255
 
-			if mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] and r and g and b then
-				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][1] = a
-				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2] = r
-				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][3] = g
-				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][4] = b
+			if r and g and b then
+				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
 			end
 		end
 	end
@@ -352,7 +349,7 @@ mod.update_settings_values = function(setting_id)
 		-- STORE VALUES WHEN CHANGED
 		if setting_id == setting_name then
 			if enemy_individual_value ~= individual_value then
-				mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
+				--mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
 				mod:set(enemy_individual, individual_value)
 			end
 		end
@@ -360,7 +357,7 @@ mod.update_settings_values = function(setting_id)
 		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
 		if setting_id == "individual_overrides" or mod:get(reset_setting_id) == true or setting_id == nil then
 			if individual_value ~= enemy_individual_value then
-				mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
+				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
 				mod:set(setting_name, enemy_individual_value)
 			end
 		end
@@ -516,13 +513,13 @@ mod.on_setting_changed = function(setting_id)
 		--mod.reset_individual_to_default(selected_enemy_individual)
 		--mod.update_settings_values(reset_setting_id_individual)
 	end
+	mod.update_breed_colours()
 
 	-- rebuild outlines
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
 
 	-- update breed settings
-	mod.update_breed_colours()
 	mod.update_breed_icons()
 
 	-- clear all caches to reload data with new values
