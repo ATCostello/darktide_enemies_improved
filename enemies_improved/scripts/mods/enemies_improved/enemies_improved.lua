@@ -1,150 +1,42 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
-local BreedQueries = require("scripts/utilities/breed_queries")
-local minion_breeds = BreedQueries.minion_breeds_by_name()
-
-mod.text_scale = mod:get("text_scale") or 1
-mod.font_type = mod:get("font_type")
-mod.frame_settings = {}
-
-mod.build_frame_settings = function(dt)
-	local fs = mod.frame_settings
-
-	fs.dt = dt or 0
-
-	-- Draw distance
-	fs.draw_distance = mod:get("draw_distance")
-
-	-- GENERAL
-	fs.outlines_enable = mod:get("outlines_enable")
-	fs.text_scale = mod:get("text_scale")
-	fs.font_type = mod:get("font_type")
-	fs.check_line_of_sight = true
-	fs.enable_depth_fading = mod:get("enable_depth_fading")
-
-	local r = mod:get("main_font_colour_R")
-	local g = mod:get("main_font_colour_G")
-	local b = mod:get("main_font_colour_B")
-
-	if not r or not g or not b then
-		r = 220
-		g = 220
-		b = 220
-	end
-
-	fs.main_colour = {
-		255,
-		r,
-		g,
-		b,
-	}
-
-	local rs = mod:get("secondary_font_colour_R")
-	local gs = mod:get("secondary_font_colour_G")
-	local bs = mod:get("secondary_font_colour_B")
-
-	if not rs or not gs or not bs then
-		rs = 150
-		gs = 150
-		bs = 150
-	end
-
-	fs.secondary_colour = {
-		255,
-		rs,
-		gs,
-		bs,
-	}
-
-	fs.global_opacity = mod:get("global_opacity") or 1
-
-	-- MARKERS
-	fs.markers_enable = mod:get("markers_enable")
-	fs.markers_horde_enable = mod:get("markers_horde_enable")
-	fs.marker_size = mod:get("marker_size")
-	fs.markers_health_enable = mod:get("markers_health_enable")
-	local a = mod:get("marker_bg_colour_A")
-	local r = mod:get("marker_bg_colour_R")
-	local g = mod:get("marker_bg_colour_G")
-	local b = mod:get("marker_bg_colour_B")
-
-	if not r or not g or not b then
-		r = 220
-		g = 220
-		b = 220
-	end
-
-	fs.marker_bg_colour = {
-		a,
-		r,
-		g,
-		b,
-	}
-
-	-- HEALTHBARS
-	fs.healthbar_enable = mod:get("healthbar_enable")
-	fs.healthbar_type_icon_enable = mod:get("healthbar_type_icon_enable")
-	fs.show_damage_numbers = mod:get("hb_show_damage_numbers")
-	fs.show_armor_types = mod:get("hb_show_armour_types")
-	fs.hide_after_no_damage = mod:get("hb_hide_after_no_damage")
-	fs.horde_hide_after_no_damage = mod:get("hb_horde_hide_after_no_damage")
-	fs.horde_enable = mod:get("hb_horde_enable")
-	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
-	fs.hb_toggle_ghostbar = mod:get("hb_toggle_ghostbar")
-	fs.healthbar_segments_enable = mod:get("healthbar_segments_enable")
-
-	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
-	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
-	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
-
-	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
-	fs.frame_type = mod:get("hb_frame")
-	fs.hb_padding_scale = mod:get("hb_padding_scale")
-	fs.hb_size_width = mod:get("hb_size_width")
-	fs.hb_size_height = mod:get("hb_size_height")
-	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
-	fs.hb_damage_numbers_track_friendly = mod:get("hb_damage_numbers_track_friendly")
-	fs.hb_damage_numbers_add_total = mod:get("hb_damage_numbers_add_total")
-	fs.hb_damage_show_only_latest = mod:get("hb_damage_show_only_latest")
-	fs.hb_damage_show_only_latest_value = mod:get("hb_damage_show_only_latest_value")
-
-	-- SPECIAL ATTACKS
-	fs.marker_specials_enable = mod:get("marker_specials_enable")
-	fs.healthbar_specials_enable = mod:get("healthbar_specials_enable")
-	fs.outline_specials_enable = mod:get("outline_specials_enable")
-	fs.specials_flash = mod:get("specials_flash")
-	fs.special_attack_pulse_speed = mod:get("special_attack_pulse_speed")
-
-	-- DEBUFFS
-	fs.debuff_enable = mod:get("debuff_enable")
-	fs.debuff_dot_enable = mod:get("debuff_dot_enable")
-	fs.debuff_utility_enable = mod:get("debuff_utility_enable")
-	fs.debuff_names = mod:get("debuff_names")
-	fs.debuff_names_fade = mod:get("debuff_names_fade")
-	fs.debuff_horde_enable = mod:get("debuff_horde_enable")
-	fs.debuff_show_on_body = mod:get("debuff_show_on_body")
-	fs.debuffs_abrv = mod:get("debuffs_abrv")
-	fs.debuffs_combine = mod:get("debuffs_combine")
-	fs.split_debuff_types = mod:get("split_debuff_types")
-	fs.debuff_icons = mod:get("debuff_icons")
-	fs.debuff_stacks_icon_colour = mod:get("debuff_stacks_icon_colour")
-end
-
-mod.build_frame_settings()
+local Managers_player = Managers.player
+local Managers_state = Managers.state
+local Managers_ui = Managers.ui
+local Managers_time = Managers.time
+local ScriptUnit_extension = ScriptUnit.extension
+local ScriptUnit_has_extension = ScriptUnit.has_extension
+local table_clear = table.clear
+local math_lerp = math.lerp
+local math_min = math.min
+local math_max = math.max
+local next = next
+local math_floor = math.floor
+local Unit_alive = Unit.alive
 
 mod.detect_alive = function(unit)
-	if not HEALTH_ALIVE[unit] or not Unit.alive(unit) or string.starts(tostring(unit), "[Unit (deleted)") then
-		return false
-	else
-		return true
-	end
+	return unit and HEALTH_ALIVE[unit] and Unit_alive(unit)
 end
 
-local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_markers_template")
-local EnemyHealthbarTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_healthbar_template")
-local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemy_debuff_template")
+-- ENEMIES IMPROVED FUNCTIONS
+local FrameSettings = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/frame_settings")
+local SettingsFunctions = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_functions")
+local DistanceFade = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/fading")
 
+local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
+local EnemyHealthbarTemplate =
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbar_template")
+local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
+
+local Outlines = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/outlines")
+local Healthbars = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/healthbars")
+local Markers = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/markers")
+local Debuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/debuffs")
+local SpecialAttacks = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/specialattacks")
+
+local BreedQueries = require("scripts/utilities/breed_queries")
+local minion_breeds = BreedQueries.minion_breeds_by_name()
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
@@ -165,12 +57,13 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 500
+local MAX_ENEMIES_PER_FRAME = 300
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
-local HORDE_CLUSTER_RADIUS_SQ = 30 ^ 2
-local HORDE_MIN_UNITS_FOR_CLUSTER = 20
+local _player_pos_vec = Vector3.zero()
+local _pos_vec = Vector3.zero()
+
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
 
@@ -184,100 +77,35 @@ local COLOUR_LOOKUP = {
 	Default = { 255, 161, 166, 169 },
 }
 
-local Managers_player = Managers.player
-local Managers_state = Managers.state
-local Managers_event = Managers.event
-local Managers_ui = Managers.ui
-local Managers_time = Managers.time
-local ScriptUnit_extension = ScriptUnit.extension
-local ScriptUnit_has_extension = ScriptUnit.has_extension
-local table_clear = table.clear
-local math_lerp = math.lerp
-local math_min = math.min
-local math_max = math.max
-local next = next
-local pairs = pairs
-
--- Marker fade settings
-local DIST_FADE_START = 10 -- meters where fade begins
-local DIST_FADE_END = 50 -- full fade at draw distance
-local MIN_ALPHA = 0.1 -- never fully invisible
-
------------------------------------------------------------------------
--- Frame settings builder
------------------------------------------------------------------------
-
 -----------------------------------------------------------------------
 -- preload resources + reset caches on game state change
 -----------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
-	mod.on_game_state_changed = function(state, state_name)
-		-- ensure packages are loaded
-		Managers.package:load("packages/ui/views/inventory_view/inventory_view", "enemies_improved", nil, true)
-		Managers.package:load(
-			"packages/ui/views/inventory_weapons_view/inventory_weapons_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load(
-			"packages/ui/views/inventory_background_view/inventory_background_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load(
-			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load("packages/ui/hud/player_weapon/player_weapon", "enemies_improved", nil, true)
-		Managers.package:load(
-			"packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load(
-			"packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load(
-			"packages/ui/views/masteries_overview_view/masteries_overview_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load("packages/ui/views/mastery_view/mastery_view", "enemies_improved", nil, true)
-		Managers.package:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemies_improved", nil, true)
+	-- ensure packages are loaded
+	local pkg = Managers.package
 
-		Managers.package:load("packages/ui/views/talent_builder_view/ogryn", "enemies_improved", nil, true)
-		Managers.package:load(
-			"packages/ui/views/talent_builder_view/talent_builder_view",
-			"enemies_improved",
-			nil,
-			true
-		)
+	pkg:load("packages/ui/views/inventory_view/inventory_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/inventory_weapons_view/inventory_weapons_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/inventory_background_view/inventory_background_view", "enemies_improved", nil, true)
+	pkg:load(
+		"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
+		"enemies_improved",
+		nil,
+		true
+	)
+	pkg:load("packages/ui/hud/player_weapon/player_weapon", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/inventory_weapon_marks_view/inventory_weapon_marks_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/cosmetics_inspect_view/cosmetics_inspect_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/masteries_overview_view/masteries_overview_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/mastery_view/mastery_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/dlc_purchase_view/dlc_purchase_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/talent_builder_view/ogryn", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/talent_builder_view/talent_builder_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/expedition_view/expedition_view", "enemies_improved", nil, true)
+	pkg:load("packages/ui/views/character_appearance_view/character_appearance_view", "enemies_improved", nil, true)
 
-		Managers.package:load(
-			"packages/ui/views/inventory_weapon_details_view/inventory_weapon_details_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		Managers.package:load("packages/ui/views/expedition_view/expedition_view", "enemies_improved", nil, true)
-		Managers.package:load(
-			"packages/ui/views/character_appearance_view/character_appearance_view",
-			"enemies_improved",
-			nil,
-			true
-		)
-		-- empty caches
-		mod.clear_caches()
-	end
+	-- empty caches
+	mod.clear_caches()
 end
 
 local function check_selected_font()
@@ -310,6 +138,7 @@ mod.on_all_mods_loaded = function()
 	mod.apply_enemy_outlines(outline_settings)
 
 	mod.load_toggled_debuffs_state()
+	mod.load_debuff_colours()
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
@@ -324,24 +153,39 @@ end)
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- throttle updates according to enemy amounts to help keep performance in check...
-	local enemy_count = table.size(mod.enemy_cache) or 0
+	local enemy_count = 0
+	for _ in next, mod.enemy_cache do
+		enemy_count = enemy_count + 1
+	end
 	local fs = mod.frame_settings
 
 	local update_interval
 
-	if enemy_count > 100 then
-		update_interval = 0.2
-	elseif enemy_count > 50 then
-		update_interval = 0.1
-	else
-		update_interval = 0.05
+	update_interval = 0.15
+
+	self._update_time = (self._update_time or 0) + dt
+
+	if self._update_time > update_interval then
+		self._update_time = 0
+		mod.update_enemies(dt, t)
 	end
 
-	update_time = (update_time or 0) + dt
+	-- pulse special attacks (Outside of global throttle)
+	if fs.outline_specials_enable then
+		local interval = fs.special_attack_pulse_speed or 0.5
 
-	if update_time > update_interval then
-		update_time = 0
-		mod.update_enemies(dt, t)
+		for _, entry in next, mod.enemy_cache do
+			if entry.special_attack_imminent then
+				entry._pulse_timer = (entry._pulse_timer or 0) + dt
+
+				if entry._pulse_timer >= interval then
+					mod.pulse_enemy_outline(entry)
+					entry._pulse_timer = 0
+				end
+			else
+				mod.remove_alert_outline(entry)
+			end
+		end
 	end
 
 	-- Hide default health bars if custom healthbars are enabled!
@@ -379,118 +223,6 @@ mod.get_marker_by_id = function(id)
 	end
 end
 
-mod.enable_enemy_outlines = function(unit, entry)
-	if not Unit.alive(unit) then
-		return
-	end
-
-	local extension_manager = Managers.state.extension
-	if not extension_manager:has_system("outline_system") then
-		return
-	end
-
-	local outline_system = extension_manager:system("outline_system")
-
-	local breed_name = entry.breed and entry.breed.name
-	local breed_type = entry.breed_type or "enemy"
-
-	----------------------------------------------------------------
-	--  INDIVIDUAL OVERRIDE
-	----------------------------------------------------------------
-	if breed_name then
-		local key = "outline_" .. breed_name .. "_enable"
-		local enabled = mod:get(key)
-
-		if enabled then
-			local outline_name = "enemies_" .. breed_name
-
-			outline_system:remove_outline(unit, outline_name)
-
-			outline_system:add_outline(unit, outline_name)
-			return
-		end
-	end
-
-	----------------------------------------------------------------
-	-- CATEGORY OUTLINE
-	----------------------------------------------------------------
-	local enabled = mod:get("outline_" .. breed_type .. "_enable")
-
-	if enabled then
-		local outline_name = "enemies_" .. breed_type
-
-		outline_system:remove_outline(unit, outline_name)
-		outline_system:add_outline(unit, outline_name)
-	end
-end
-
-mod.disable_enemy_outlines = function(unit, entry)
-	if not Unit.alive(unit) then
-		return
-	end
-
-	local has_outline_system = Managers.state.extension:has_system("outline_system")
-	if not has_outline_system then
-		return
-	end
-
-	local outline_system = Managers.state.extension:system("outline_system")
-
-	-- get breed category
-	local breed_type = entry.breed_type
-	local breed_name = entry.breed and entry.breed.name
-
-	if not breed_type then
-		breed_type = "enemy"
-	end
-
-	local enemies_improved_outline = "enemies_" .. breed_type
-	-- remove
-	outline_system:remove_outline(unit, enemies_improved_outline)
-
-	if breed_name then
-		local outline_name = "enemies_" .. breed_name
-
-		outline_system:remove_outline(unit, outline_name)
-	end
-end
-
-mod.pulse_enemy_outline = function(entry)
-	local unit = entry.unit
-	local fs = mod.frame_settings
-
-	if entry.special_attack_imminent then
-		if not entry.alert_outline then
-			local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-			if has_outline_system then
-				local outline_system = Managers.state.extension:system("outline_system")
-				-- Force outline visible
-				outline_system:add_outline(unit, "enemies_improved_alert")
-				entry.alert_outline = true
-			end
-		elseif entry.alert_outline and fs.specials_flash then
-			local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-			if has_outline_system then
-				local outline_system = Managers.state.extension:system("outline_system")
-				-- Force outline visible
-				outline_system:remove_outline(unit, "enemies_improved_alert")
-				entry.alert_outline = false
-			end
-		end
-	elseif not entry.special_attack_imminent and entry.alert_outline then
-		local has_outline_system = Managers.state.extension:has_system("outline_system")
-
-		if has_outline_system then
-			local outline_system = Managers.state.extension:system("outline_system")
-			-- Force outline visible
-			outline_system:remove_outline(unit, "enemies_improved_alert")
-			entry.alert_outline = false
-		end
-	end
-end
-
 -----------------------------------------------------------------------
 -- Enemy scanning
 -----------------------------------------------------------------------
@@ -507,7 +239,7 @@ mod.scan_enemies = function()
 	end
 
 	-- Skip scan if player hasn't moved enough (Optimisation)
-	local current_pos = Unit.world_position(player_unit, 1)
+	local current_pos = Unit.world_position(player_unit, 1, _player_pos_vec)
 	local last_pos = mod._last_scan_pos
 
 	if last_pos then
@@ -541,7 +273,7 @@ mod.scan_enemies = function()
 	end
 
 	local broadphase = broadphase_system.broadphase
-	local from_pos = Unit.world_position(player_unit, 1)
+	local from_pos = current_pos
 	local enemy_side_names = side:relation_side_names("enemy")
 	local range = mod.frame_settings.draw_distance
 
@@ -550,19 +282,28 @@ mod.scan_enemies = function()
 
 	local num_hits = broadphase.query(broadphase, from_pos, range, results, enemy_side_names)
 
+	if num_hits == 0 then
+		return
+	end
+
 	local cache = mod.enemy_cache
 
 	-- mark unseen
-	for _, data in pairs(cache) do
+	for _, data in next, cache do
 		data.seen = false
 	end
 
 	for i = 1, num_hits do
 		local unit = results[i]
 
-		if mod.detect_alive(unit) then
+		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local entry = cache[unit]
-			local breed = ScriptUnit_has_extension(unit, "unit_data_system"):breed()
+			local unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system")
+			if not unit_data_ext then
+				goto skip_breed
+			end
+
+			local breed = unit_data_ext:breed()
 
 			-- DO NOT ADD WIDGETS FOR THESE BREEDS:
 			if breed.name == "sand_vortex" or breed.name == "nurgle_flies" or breed.name == "attack_valkyrie" then
@@ -578,7 +319,7 @@ mod.scan_enemies = function()
 
 					-- cache extensions
 					health_ext = ScriptUnit_has_extension(unit, "health_system"),
-					unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system"),
+					unit_data_ext = unit_data_ext,
 					behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 
 					is_horde = mod.is_horde(unit),
@@ -614,71 +355,121 @@ end
 -- Horde clustering helpers
 -----------------------------------------------------------------------
 
--- Build clusters from a compact list of units
+-- Distance-based clustering radius (in meters)
+local CLUSTER_RADIUS = 10
+local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
+local HASH_CELL_SIZE = CLUSTER_RADIUS
+local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
+local HORDE_MIN_UNITS_FOR_CLUSTER = 15
+
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 
-	local candidates = {}
-	local c_count = 0
+	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
+		return
+	end
 
+	local clusters = _horde_clusters
+	local spatial = {}
+
+	-- Step 1: build spatial hash
 	for i = 1, num_units do
 		local unit = units[i]
-		if mod.detect_alive(unit) then
+
+		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local entry = mod.enemy_cache[unit]
 			local breed = entry and entry.breed
 			local tags = breed and breed.tags
 
 			if tags and (tags.horde or tags.roamer) then
-				local pos = Unit.world_position(unit, 1)
-				c_count = c_count + 1
-				candidates[c_count] = {
-					unit = unit,
-					breed_name = breed.name,
-					pos = pos,
-				}
+				local pos = entry.pos
+				if not pos then
+					pos = Unit.world_position(unit, 1, _pos_vec)
+					entry.pos = Vector3(pos.x, pos.y, pos.z)
+				end
+
+				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
+				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
+				local key = gx * 73856093 + gy * 19349663
+
+				local cell = spatial[key]
+				if not cell then
+					cell = {}
+					spatial[key] = cell
+				end
+
+				cell[#cell + 1] = unit
 			end
 		end
 	end
 
-	if c_count < HORDE_MIN_UNITS_FOR_CLUSTER then
-		return
-	end
+	local visited = {}
 
-	-- Simple clustering by (breed_name, distance)
-	local used = {}
+	-- Step 2: cluster via BFS
+	for i = 1, num_units do
+		local unit = units[i]
 
-	for i = 1, c_count do
-		if not used[i] then
-			local seed = candidates[i]
-			local breed_name = seed.breed_name
-			local pos_i = seed.pos
+		if not visited[unit] and mod.detect_alive(unit) then
+			local entry = mod.enemy_cache[unit]
+			local breed = entry and entry.breed
+			local tags = breed and breed.tags
 
-			local units_in_cluster = { seed.unit }
-			local sum_x, sum_y = pos_i.x, pos_i.y
-			local base_z = pos_i.z + 1.8
+			if not (tags and (tags.horde or tags.roamer)) then
+				goto continue
+			end
 
-			local count = 1
+			local cluster_units = {}
+			local queue = { unit }
+			visited[unit] = true
 
-			for j = i + 1, c_count do
-				if not used[j] then
-					local cand = candidates[j]
-					if cand.breed_name == breed_name then
-						local pos_j = cand.pos
-						local dx = pos_j.x - pos_i.x
-						local dy = pos_j.y - pos_i.y
-						local dz = pos_j.z - pos_i.z
-						local dist_sq = dx * dx + dy * dy + dz * dz
+			local sum_x, sum_y, sum_z = 0, 0, 0
+			local count = 0
 
-						if dist_sq ~= dist_sq or dist_sq == math.huge or dist_sq == -math.huge then
-							-- NaN or inf, skip this candidate
-						else
-							if dist_sq <= HORDE_CLUSTER_RADIUS_SQ then
-								used[j] = true
-								units_in_cluster[#units_in_cluster + 1] = cand.unit
-								sum_x = sum_x + pos_j.x
-								sum_y = sum_y + pos_j.y
-								count = count + 1
+			while #queue > 0 do
+				local current = queue[#queue]
+				queue[#queue] = nil
+
+				local e = mod.enemy_cache[current]
+				local pos = e.pos or Unit.world_position(current, 1)
+				e.pos = pos
+
+				cluster_units[#cluster_units + 1] = current
+
+				sum_x = sum_x + pos.x
+				sum_y = sum_y + pos.y
+				sum_z = sum_z + pos.z
+				count = count + 1
+
+				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
+				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
+
+				-- check neighboring cells
+				for dx = -1, 1 do
+					for dy = -1, 1 do
+						local key = (gx + dx) * 73856093 + (gy + dy) * 19349663
+						local cell = spatial[key]
+
+						if cell then
+							for j = 1, #cell do
+								local other = cell[j]
+
+								if not visited[other] and mod.detect_alive(other) then
+									local oe = mod.enemy_cache[other]
+									if oe and oe.breed == breed then
+										local op = oe.pos or Unit.world_position(other, 1)
+										oe.pos = op
+
+										local dx = op.x - pos.x
+										local dy = op.y - pos.y
+										local dist_sq = dx * dx + dy * dy
+
+										if dist_sq <= CLUSTER_RADIUS_SQ then
+											visited[other] = true
+											queue[#queue + 1] = other
+										end
+									end
+								end
 							end
 						end
 					end
@@ -687,20 +478,44 @@ local function _build_horde_clusters(units, num_units)
 
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
-				local center = {
-					x = sum_x * inv,
-					y = sum_y * inv,
-					z = base_z,
+
+				local cx = sum_x * inv
+				local cy = sum_y * inv
+				local avg_z = sum_z * inv
+
+				local target_z = avg_z + 2.0
+
+				local cluster = {
+					breed_name = breed.name,
+					units = cluster_units,
+					count = count,
+					rep_unit = cluster_units[1],
+					center = {
+						x = cx,
+						y = cy,
+						z = target_z,
+					},
+					total_current = 0,
+					total_max = 0,
 				}
 
-				-- Sum health across cluster members
+				local idx = #clusters + 1
+				clusters[idx] = cluster
+
+				for j = 1, #cluster_units do
+					_horde_cluster_by_unit[cluster_units[j]] = idx
+				end
+
+				-- aggregate health (cached extensions)
 				local total_current = 0
 				local total_max = 0
 
-				for _, u in ipairs(units_in_cluster) do
-					local entry = mod.enemy_cache[u]
-					if mod.detect_alive(entry.unit) then
-						local he = entry and entry.health_ext
+				for j = 1, #cluster_units do
+					local u = cluster_units[j]
+					local e = mod.enemy_cache[u]
+
+					if e and mod.detect_alive(u) then
+						local he = e.health_ext
 						if he then
 							total_current = total_current + (he:current_health() or 0)
 							total_max = total_max + (he:max_health() or 0)
@@ -708,23 +523,12 @@ local function _build_horde_clusters(units, num_units)
 					end
 				end
 
-				local idx = #_horde_clusters + 1
-				local rep_unit = units_in_cluster[1]
-
-				_horde_clusters[idx] = {
-					breed_name = breed_name,
-					units = units_in_cluster,
-					center = center,
-					total_current = total_current,
-					total_max = total_max,
-					rep_unit = rep_unit,
-				}
-
-				for _, u in ipairs(units_in_cluster) do
-					_horde_cluster_by_unit[u] = idx
-				end
+				cluster.total_current = total_current
+				cluster.total_max = total_max
 			end
 		end
+
+		::continue::
 	end
 end
 
@@ -749,498 +553,6 @@ end
 mod.ts = function()
 	return string.format("[%.3f]", mod.get_time())
 end
-
--- better than audio cues - but only works on local games due to event_names not being known locally :(
-mod.special_attack_animations = {
-
-	----------------------------------------------------------------
-	-- CHAOS HOUND
-	----------------------------------------------------------------
-	chaos_hound = {
-		attack_leap = {
-			attack = "leap_attack",
-			damage_time = 1.05,
-			duration = 2.8,
-		},
-		attack_pounce = {
-			attack = "pounce_attack",
-			damage_time = 1.25,
-			duration = 3.1,
-		},
-		attack_leap_start = {
-			attack = "attack_leap_start",
-			damage_time = 1.05,
-			duration = 2.8,
-		},
-		attack_leap_short = {
-			attack = "attack_leap_short",
-			damage_time = 1.05,
-			duration = 2.8,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS MUTANT
-	----------------------------------------------------------------
-	chaos_mutant = {
-		attack_charge = {
-			attack = "charge_attack",
-			damage_time = 1.35,
-			duration = 3.4,
-		},
-
-		attack_grab = {
-			attack = "grab_attack",
-			damage_time = 1.45,
-			duration = 3.2,
-		},
-
-		attack_throw = {
-			attack = "throw_attack",
-			damage_time = 1.9,
-			duration = 3.6,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS TRAPPER
-	----------------------------------------------------------------
-	chaos_trapper = {
-		attack_netgun = {
-			attack = "netgun_attack",
-			damage_time = 0.95,
-			duration = 2.3,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- RENEGADE SNIPER
-	----------------------------------------------------------------
-	renegade_sniper = {
-		attack_shoot = {
-			attack = "shoot",
-			damage_time = 0.82,
-			duration = 1.9,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS GRENADIER
-	----------------------------------------------------------------
-	chaos_grenadier = {
-		attack_throw_grenade = {
-			attack = "grenade_throw",
-			damage_time = 0.9,
-			duration = 2.2,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- POXBURSTER
-	----------------------------------------------------------------
-	chaos_poxwalker_bomber = {
-		attack_explode = {
-			attack = "suicide_attack",
-			damage_time = 1.5,
-			duration = 2.8,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- MAULER
-	----------------------------------------------------------------
-	chaos_mauler = {
-		attack_01 = {
-			attack = "melee_combo",
-			damage_time = 0.92,
-			duration = 2.4,
-		},
-
-		attack_02 = {
-			attack = "melee_combo",
-			damage_time = 1.1,
-			duration = 2.6,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- RAGER
-	----------------------------------------------------------------
-	chaos_rager = {
-		attack_01 = {
-			attack = "frenzy_combo",
-			damage_time = 0.4,
-			duration = 1.2,
-		},
-
-		attack_02 = {
-			attack = "frenzy_combo",
-			damage_time = 0.55,
-			duration = 1.3,
-		},
-
-		attack_03 = {
-			attack = "frenzy_combo",
-			damage_time = 0.7,
-			duration = 1.5,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS OGRYN EXECUTOR (CRUSHER)
-	----------------------------------------------------------------
-	chaos_ogryn_executor = {
-
-		attack_01 = {
-			attack = "melee_attack_cleave",
-			damage_time = 1.471,
-			duration = 3.103,
-		},
-
-		attack_02 = {
-			attack = "melee_attack_cleave",
-			damage_time = 1.310,
-			duration = 2.873,
-		},
-
-		attack_07 = {
-			attack = "melee_attack_cleave",
-			damage_time = 1.655,
-			duration = 3.678,
-		},
-
-		attack_08 = {
-			attack = "melee_attack_cleave",
-			damage_time = 1.586,
-			duration = 3.310,
-		},
-
-		attack_move_01 = {
-			attack = "moving_melee_attack_cleave",
-			damage_time = 1.531,
-			duration = 2.840,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS OGRYN BULWARK
-	----------------------------------------------------------------
-	chaos_ogryn_bulwark = {
-
-		attack_push = {
-			attack = "melee_attack_push",
-			damage_time = 0.93,
-			duration = 2,
-		},
-
-		attack_01 = {
-			attack = "melee_attack_sweep",
-			damage_time = 1.2,
-			duration = 3,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- CHAOS SPAWN
-	----------------------------------------------------------------
-	chaos_spawn = {
-
-		attack_01 = {
-			attack = "melee_combo",
-			damage_time = 0.84,
-			duration = 2.4,
-		},
-
-		attack_02 = {
-			attack = "melee_combo",
-			damage_time = 1.02,
-			duration = 2.7,
-		},
-
-		attack_grab = {
-			attack = "grab_attack",
-			damage_time = 1.4,
-			duration = 3.5,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- PLAGUE OGRYN
-	----------------------------------------------------------------
-	chaos_plague_ogryn = {
-
-		attack_01 = {
-			attack = "combo_attack",
-			damage_time = 0.96,
-			duration = 2.73,
-		},
-
-		attack_02 = {
-			attack = "combo_attack",
-			damage_time = 1.1,
-			duration = 2.88,
-		},
-
-		attack_03 = {
-			attack = "combo_attack",
-			damage_time = 1.24,
-			duration = 3.01,
-		},
-
-		attack_slam = {
-			attack = "slam_attack",
-			damage_time = 1.5,
-			duration = 3.5,
-		},
-
-		attack_charge = {
-			attack = "charge_attack",
-			damage_time = 2.0,
-			duration = 4.2,
-		},
-	},
-
-	----------------------------------------------------------------
-	-- BEAST OF NURGLE
-	----------------------------------------------------------------
-	chaos_beast_of_nurgle = {
-
-		attack_tongue = {
-			attack = "tongue_grab",
-			damage_time = 1.8,
-			duration = 3.6,
-		},
-
-		attack_eat = {
-			attack = "eat_attack",
-			damage_time = 2.2,
-			duration = 4,
-		},
-	},
-}
-
-local process_animation_event = function(unit, event)
-	if not unit or not mod.detect_alive(unit) then
-		return
-	end
-
-	if not event then
-		return
-	end
-
-	local entry = mod.enemy_cache[unit]
-	if not entry then
-		return
-	end
-
-	-------------------------------------------------
-	-- Get breed
-	-------------------------------------------------
-	local breed_name
-
-	if entry.unit_data_ext then
-		local breed = entry.unit_data_ext:breed()
-		breed_name = breed and breed.name
-	end
-
-	if not breed_name then
-		return
-	end
-
-	-------------------------------------------------
-	-- Lookup attack event
-	-------------------------------------------------
-	local breed_table = mod.special_attack_animations[breed_name]
-
-	if not breed_table then
-		return
-	end
-
-	local attack_data = breed_table[event]
-
-	if attack_data then
-		if event then
-			entry.special_attack_event = event
-			entry.special_attack_imminent = true
-
-			local now = mod.get_time()
-
-			if attack_data.damage_time then
-				entry.special_attack_timer = now + 1.5
-			else
-				entry.special_attack_timer = now + 1.5
-			end
-		end
-	end
-end
-
--- local games only. Needs event ID caching to work, but thats a lot of extra work ;p rpc_minion_anim_event is the networked version, but only provides event_id, which I cant find out how to get event_name from
---[[mod:hook_safe(Unit, "animation_event", function(unit, event)
-	process_animation_event(unit, event)
-end)
-
-mod:hook_safe(Unit, "animation_event_by_index", function(unit, event_index)
-	local event_index = event_index or 0
-
-	local breed_name
-
-	if entry.unit_data_ext then
-		local breed = entry.unit_data_ext:breed()
-		breed_name = breed and breed.name
-	end
-
-	if not breed_name then
-		return
-	end
-
-	local event_name = event_index_cache_manager.get_event_name_from_index(breed_name, event_index)
-
-	process_animation_event(unit, event_name)
-end)]]
-
-mod.special_attack_events = {
-
-	-- Trapper / Netgunner
-	["wwise/events/minions/play_weapon_netgunner_wind_up"] = true,
-	--["wwise/events/minions/play_netgunner_run_foley_special"] = true,
-
-	-- Daemonhost
-	["wwise/events/minions/play_enemy_daemonhost_alert_scream"] = true,
-	["wwise/events/minions/play_enemy_daemonhost_alert_scream_short"] = true,
-	["wwise/events/minions/play_enemy_daemonhost_struggle_vce"] = true,
-
-	-- Sniper
-	["wwise/events/weapon/play_special_sniper_flash"] = true,
-	["wwise/events/weapon/play_combat_weapon_las_sniper"] = true,
-	["wwise/events/weapon/play_weapon_longlas_minion"] = true,
-
-	-- Mutant Charger
-	["wwise/events/minions/play_minion_special_mutant_charger_spawn"] = true,
-
-	-- Chaos Hound / leap
-	["wwise/events/minions/play_enemy_chaos_hound_vce_leap"] = true,
-	["wwise/events/minions/play_enemy_chaos_hound"] = true,
-	["wwise/events/minions/play_chaos_hound_armoured_vce_leap"] = true,
-
-	-- Poxwalker Bomber
-	["wwise/events/minions/play_minion_special_poxwalker_bomber_spawn"] = true,
-	["wwise/events/minions/play_explosion_bomber"] = true,
-	["wwise/events/minions/play_minion_poxwalker_bomber"] = true,
-	["wwise/events/minions/play_enemy_combat_poxwalker_bomber"] = true,
-	["wwise/events/minions/play_minion_poxwalker_bomber_footstep_boots_heavy"] = true,
-
-	-- Plague Ogryn Charge
-	["wwise/events/minions/play_enemy_plague_ogryn_vce_charge"] = true,
-
-	-- Chaos Ogryn special attack vocal (heavy specials)
-	["wwise/events/minions/play_enemy_chaos_ogryn_armoured_executor_a__special_attack_vce"] = true,
-
-	-- renegade executor
-	["wwise/events/minions/play_enemy_traitor_executor__special_attack_vce"] = true,
-
-	-- Chaos Spawn
-	--["wwise/events/minions/play_chaos_spawn_vce_3_attack_combo"] = true,
-	--["wwise/events/minions/play_chaos_spawn_vce_4_attack_combo"] = true,
-	["wwise/events/minions/play_chaos_spawn_vce_eat"] = true,
-	["wwise/events/minions/play_chaos_spawn_vce_attack_long"] = true,
-	["wwise/events/minions/play_chaos_spawn_vce_leap"] = true,
-	["wwise/events/minions/play_chaos_spawn_bite_rip"] = true,
-
-	--["wwise/events/minions/play_chaos_spawn_vce_leap_short"] = true,
-
-	-- General rares / specials
-	["wwise/events/minions/play_traitor_guard_grenadier"] = true,
-	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
-}
-
-local function extract_locals(level_base)
-	local level = level_base
-	local res = {}
-	local return_value = nil
-
-	while debug.getinfo(level) ~= nil do
-		local v = 1
-
-		while true do
-			local name, value = debug.getlocal(level, v)
-
-			if not name then
-				break
-			end
-
-			res[name] = value
-
-			-- check for specifics...
-			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
-			if value and type(value) == "userdata" and name and name == "unit" then
-				return_value = value
-			end
-			v = v + 1
-		end
-
-		level = level + 1
-	end
-
-	return return_value
-end
-
-mod.handle_special_attacks = function(event_name, source_unit)
-	if mod.special_attack_events[event_name] then
-		local unit = nil
-
-		-- Try to get uni from sourceunit
-		if type(source_unit) == "userdata" and Unit.alive(source_unit) then
-			unit = source_unit
-		else
-			local flow_unit = Application.flow_callback_context_unit()
-			if flow_unit and type(flow_unit) == "userdata" and Unit.alive(flow_unit) then
-				unit = flow_unit
-			end
-		end
-
-		-- If not, try to get from local debugs
-		if
-			event_name
-				== ("wwise/events/minions/play_weapon_netgunner_wind_up" or "wwise/events/weapon/play_special_sniper_flash")
-			and not unit
-		then
-			local name, value = debug.getlocal(8, 1)
-			unit = value._unit
-		end
-
-		-- if not, try to get from all locals
-		if not unit then
-			unit = extract_locals(1)
-		end
-
-		--extract_locals(1)
-
-		if unit and mod.detect_alive(unit) then
-			entry = mod.enemy_cache[unit]
-
-			if entry then
-				entry.special_attack_event = event_name
-				entry.special_attack_imminent = true
-
-				local now = mod.get_time()
-
-				entry.special_attack_timer = now + 1.5
-			end
-		end
-	end
-end
-
-mod:hook_safe(WwiseWorld, "trigger_resource_event", function(wwise_world, event_name, source)
-	mod.handle_special_attacks(event_name, source)
-end)
-
-mod:hook_safe(
-	WwiseWorld,
-	"trigger_resource_external_event",
-	function(_wwise_world, event_name, source, path, format, source_id)
-		mod.handle_special_attacks(event_name, source)
-	end
-)
 
 function string.starts(String, Start)
 	return string.sub(String, 1, string.len(Start)) == Start
@@ -1292,11 +604,11 @@ mod.remove_dead = function()
 			mod.active_markers[id] = nil
 		end
 
-		table.insert(units_to_remove, unit)
+		units_to_remove[#units_to_remove + 1] = unit
 	end
 
 	-- Main loop
-	for unit, entry in pairs(mod.enemy_cache) do
+	for unit, entry in next, mod.enemy_cache do
 		local remove = false
 
 		-- Dead check
@@ -1313,7 +625,11 @@ mod.remove_dead = function()
 
 		-- Distance check
 		if not remove and player_pos then
-			local pos = entry.pos or Unit.world_position(unit, 1)
+			local pos = entry.pos
+			if not pos then
+				pos = Unit.world_position(unit, 1)
+				entry.pos = pos
+			end
 
 			local dx = pos.x - player_pos.x
 			local dy = pos.y - player_pos.y
@@ -1336,7 +652,7 @@ mod.remove_dead = function()
 	end
 
 	-- Cleanup
-	for _, unit in ipairs(units_to_remove) do
+	for _, unit in next, units_to_remove do
 		mod.marked_dead[unit] = mark_dead
 		mod.enemy_healthbars[unit] = nil
 		mod.enemy_debuffs[unit] = nil
@@ -1347,225 +663,13 @@ mod.remove_dead = function()
 end
 
 mod.is_horde = function(unit)
-	if Unit.alive(unit) then
+	if Unit_alive(unit) then
 		local tags = mod.get_breed_tags(unit)
 		local is_horde = tags and (tags.horde or tags.roamer) or false
 
-		return is_horde or false
+		return is_horde
 	else
 		return false
-	end
-end
-
-local function has_line_of_sight(player_unit, enemy_unit, physics_world)
-	-- Get player camera position
-	local unit_data_extension = ScriptUnit.extension(player_unit, "unit_data_system")
-	local first_person_component = unit_data_extension:read_component("first_person")
-	local player_pos = first_person_component.position
-
-	-- Get enemy position
-	local enemy_node = Unit.has_node(enemy_unit, "j_head") and Unit.node(enemy_unit, "j_head") or 0
-	local enemy_pos = Unit.world_position(enemy_unit, enemy_node)
-
-	local direction = enemy_pos - player_pos
-	local distance = Vector3.length(direction)
-
-	if distance == 0 then
-		return true
-	end
-
-	local normalized_direction = Vector3.normalize(direction)
-
-	-- Raycast directly toward enemy
-	local hit, hit_position, hit_normal = PhysicsWorld.raycast(
-		physics_world,
-		player_pos,
-		normalized_direction,
-		distance,
-		"closest",
-		"collision_filter",
-		"filter_minion_line_of_sight_check"
-	)
-
-	if hit and type(hit) == "boolean" then
-		return false
-	end
-
-	if hit and type(hit) == "table" then
-		local hit_actor = hit[4]
-		local hit_unit = hit_actor and Actor.unit(hit_actor)
-
-		if hit_unit ~= enemy_unit then
-			return false
-		end
-	end
-
-	return true
-end
-
-mod.update_enemy_outlines = function(entry)
-	local unit = entry.unit
-
-	local fs = mod.frame_settings
-	if not fs.outlines_enable then
-		return
-	end
-
-	local world = Managers.world:world("level_world")
-	local physics_world = World.get_data(world, "physics_world")
-
-	local player_unit = Managers.player:local_player(1).player_unit
-	if not player_unit or not mod.detect_alive(player_unit) then
-		return
-	end
-
-	local has_los = has_line_of_sight(player_unit, unit, physics_world)
-
-	if fs.outlines_enable and has_los then
-		if not entry._outline_applied then
-			mod.enable_enemy_outlines(unit, entry)
-			entry._outline_applied = true
-		end
-	else
-		mod.disable_enemy_outlines(unit, entry)
-		entry._outline_applied = false
-	end
-end
-
--------------------------------------------------------------------
--- Special attack detection
--------------------------------------------------------------------
-mod.update_special_attack_detection = function(entry)
-	local unit = entry.unit
-	local ui_manager = Managers_ui
-	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
-	local markers_by_id = world_markers and world_markers._markers_by_id
-
-	-- remove special_attack_imminent if over the timer...
-	if entry.special_attack_imminent then
-		local now = mod.get_time()
-
-		if entry.special_attack_timer and now >= entry.special_attack_timer then
-			entry.special_attack_imminent = false
-			entry.special_attack_timer = nil
-		end
-
-		-- update marker status...
-		local marker_id = mod.enemy_markers[unit]
-		local marker = marker_id and mod.get_marker_by_id(marker_id)
-
-		if marker then
-			marker.special_attack_imminent = entry.special_attack_imminent
-		end
-
-		local hb_id = mod.enemy_healthbars[unit]
-		local hb_marker = hb_id and mod.get_marker_by_id(hb_id)
-
-		if hb_marker then
-			hb_marker.special_attack_imminent = entry.special_attack_imminent
-		end
-	end
-end
-
--------------------------------------------------------------------
--- Enemy Markers
--------------------------------------------------------------------
-mod.update_enemy_markers = function(entry, t)
-	local fs = mod.frame_settings
-	if not fs.markers_enable then
-		return
-	end
-
-	local unit = entry.unit
-
-	if entry.is_horde and not fs.markers_horde_enable then
-		return
-	end
-
-	-- skip if already created
-	if entry._marker_created then
-		return
-	end
-
-	if not mod.enemy_markers[unit] and not mod.marked_dead[unit] then
-		Managers.event:trigger("add_world_marker_unit", EnemyMarkersTemplate.name, unit, function(marker_id)
-			entry.marker = mod.get_marker_by_id(marker_id)
-			mod.enemy_markers[unit] = marker_id
-			mod.active_markers[marker_id] = true
-			entry._marker_created = true
-		end)
-	end
-end
-
------------------------------------------------------------------------
--- Enemy healthbars
------------------------------------------------------------------------
-
-mod.update_enemy_healthbars = function(entry)
-	local fs = mod.frame_settings
-
-	local unit = entry.unit
-
-	-- Healthbars contains damage numbers too, so if either are still enabled, continue.
-	if not fs.healthbar_enable and not fs.show_damage_numbers then
-		return
-	end
-	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
-		return
-	end
-
-	-- skip if already created
-	if entry._healthbar_created then
-		return
-	end
-
-	local cluster = fs.horde_clusters_enable and mod.get_horde_cluster_for_unit(unit) or nil
-
-	if cluster then
-		if cluster.rep_unit ~= unit then
-			return
-		end
-	end
-
-	if not mod.enemy_healthbars[unit] and not mod.marked_dead[unit] then
-		Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
-			entry.healthbar = mod.get_marker_by_id(marker_id)
-			mod.enemy_healthbars[unit] = marker_id
-			mod.active_markers[marker_id] = true
-			entry._healthbar_created = true
-		end)
-	end
-end
-
------------------------------------------------------------------------
--- Enemy debuffs
------------------------------------------------------------------------
-
-mod.update_enemy_debuffs = function(entry)
-	local unit = entry.unit
-
-	local fs = mod.frame_settings
-	if not fs.debuff_enable then
-		return
-	end
-
-	if not fs.debuff_dot_enable then
-		return
-	end
-
-	-- don't process hordes if disabled
-	if not fs.debuff_horde_enable and entry.is_horde then
-		return
-	end
-
-	-- only add debuffs for living enemies that are not dead and removed
-	if not mod.enemy_debuffs[unit] and not mod.marked_dead[unit] then
-		Managers_event:trigger("add_world_marker_unit", "enemy_debuff", unit, function(debuff_id)
-			entry.dot_debuffs = mod.get_marker_by_id(debuff_id)
-			mod.enemy_debuffs[unit] = debuff_id
-			mod.active_markers[debuff_id] = true
-		end)
 	end
 end
 
@@ -1591,215 +695,6 @@ mod.clear_caches = function()
 	table_clear(_horde_cluster_by_unit)
 end
 
------------------------------------------------------------------------
--- Marker Distance * Fade
------------------------------------------------------------------------
-mod.world_to_screen = function(self, world_markers, world_pos)
-	local camera = self:_get_camera()
-
-	if not camera then
-		return nil
-	end
-
-	return Camera.world_to_screen(camera, world_pos)
-end
-
-mod.apply_marker_fade = function(self)
-	local ui_manager = Managers_ui
-	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
-
-	if not world_markers then
-		return
-	end
-
-	local markers_by_id = world_markers._markers_by_id
-	if not markers_by_id then
-		return
-	end
-
-	local player = Managers_player:local_player(1)
-	if not player then
-		return
-	end
-
-	local player_unit = player.player_unit
-	if not player_unit or not mod.detect_alive(player_unit) then
-		return
-	end
-
-	local camera = world_markers:_get_camera()
-	if not camera then
-		return
-	end
-
-	local cam_pos = Camera.world_position(camera)
-	local cam_rot = Camera.world_rotation(camera)
-	local cam_forward = Quaternion.forward(cam_rot)
-
-	local player_pos = Unit.world_position(player_unit, 1)
-
-	local DIST_FADE_START_SQ = DIST_FADE_START * DIST_FADE_START
-	local DIST_FADE_END_SQ = DIST_FADE_END * DIST_FADE_END
-
-	--------------------------------------------------
-	-- DEPTH STACKING SETTINGS
-	--------------------------------------------------
-	local STACK_FADE_FACTOR = 0.9 -- how much stacking reduces marker visibility
-	local DEPTH_THRESHOLD = 0.05 -- how far behind to start stacking
-	local MAX_STACK_DIST_SQ = 100 -- how close 2 units need to be to stack
-	local MAX_DEPTH_STACK = 100 -- how far behind stacking still applies
-	local ALIGNMENT_NEAR = 0.96 -- how aligned they need to be when close
-	local ALIGNMENT_FAR = 0.96 -- how aligned they need to be when far
-
-	local marker_list = {}
-
-	if mod.frame_settings.enable_depth_fading then
-		for marker_id in pairs(mod.active_markers) do
-			local marker = markers_by_id[marker_id]
-
-			if not marker or not marker.unit then
-				goto continue_marker_1
-			end
-
-			if not mod.detect_alive(marker.unit) then
-				goto continue_marker_1
-			end
-
-			if
-				marker.type == "enemy_healthbar"
-				or marker.type == "enemy_markers"
-				or marker.type == "enemy_debuff"
-				or marker.type == "enemy_utility_debuff"
-			then
-				local pos = Unit.world_position(marker.unit, 1)
-
-				local dx = pos.x - player_pos.x
-				local dy = pos.y - player_pos.y
-				local dz = pos.z - player_pos.z
-
-				local dist_sq = dx * dx + dy * dy + dz * dz
-
-				-- depth relative to camera
-				local to_marker_x = pos.x - cam_pos.x
-				local to_marker_y = pos.y - cam_pos.y
-				local to_marker_z = pos.z - cam_pos.z
-
-				local depth = to_marker_x * cam_forward.x + to_marker_y * cam_forward.y + to_marker_z * cam_forward.z
-
-				marker_list[#marker_list + 1] = {
-					marker = marker,
-					pos = pos,
-					dist_sq = dist_sq,
-					depth = depth,
-				}
-			end
-
-			::continue_marker_1::
-		end
-	end
-
-	table.sort(marker_list, function(a, b)
-		return a.depth < b.depth
-	end)
-
-	for i = 1, #marker_list do
-		local data = marker_list[i]
-		local marker = data.marker
-
-		local fade = 1
-
-		if data.dist_sq > DIST_FADE_START_SQ then
-			local t = math.clamp((data.dist_sq - DIST_FADE_START_SQ) / (DIST_FADE_END_SQ - DIST_FADE_START_SQ), 0, 1)
-			fade = 1 - t
-		end
-
-		fade = math.max(fade, MIN_ALPHA)
-
-		local depth_fade = 1
-
-		for j = 1, i - 1 do
-			local front = marker_list[j]
-
-			local dx = front.pos.x - data.pos.x
-			local dy = front.pos.y - data.pos.y
-			local dz = front.pos.z - data.pos.z
-			local dist_sq_between = dx * dx + dy * dy + dz * dz
-
-			if dist_sq_between < MAX_STACK_DIST_SQ then
-				local to_front_x = front.pos.x - cam_pos.x
-				local to_front_y = front.pos.y - cam_pos.y
-				local to_front_z = front.pos.z - cam_pos.z
-
-				local to_data_x = data.pos.x - cam_pos.x
-				local to_data_y = data.pos.y - cam_pos.y
-				local to_data_z = data.pos.z - cam_pos.z
-
-				local front_len = math.sqrt(to_front_x ^ 2 + to_front_y ^ 2 + to_front_z ^ 2)
-				local data_len = math.sqrt(to_data_x ^ 2 + to_data_y ^ 2 + to_data_z ^ 2)
-
-				if front_len > 0 and data_len > 0 then
-					to_front_x = to_front_x / front_len
-					to_front_y = to_front_y / front_len
-					to_front_z = to_front_z / front_len
-
-					to_data_x = to_data_x / data_len
-					to_data_y = to_data_y / data_len
-					to_data_z = to_data_z / data_len
-
-					local alignment = to_front_x * to_data_x + to_front_y * to_data_y + (to_front_z * to_data_z) * 0.5
-
-					local depth_delta = data.depth - front.depth
-
-					if depth_delta > DEPTH_THRESHOLD and depth_delta < MAX_DEPTH_STACK then
-						local t = math.clamp(depth_delta / MAX_DEPTH_STACK, 0, 1)
-
-						local required_alignment = ALIGNMENT_NEAR + (ALIGNMENT_FAR - ALIGNMENT_NEAR) * t
-
-						if alignment > required_alignment then
-							local scaled_factor = 1 - (1 - STACK_FADE_FACTOR) * (1 - t)
-							depth_fade = depth_fade * scaled_factor
-						end
-					end
-				end
-			end
-		end
-
-		local global_opacity = mod.frame_settings.global_opacity or 1
-		local final_alpha = math.clamp(fade * depth_fade * global_opacity, MIN_ALPHA, 1)
-
-		if math.abs((marker._last_alpha or 1) - final_alpha) < 0.02 then
-			goto continue_marker
-		end
-
-		marker._last_alpha = final_alpha
-		marker.alpha_multiplier = final_alpha
-
-		local widget = marker.widget
-
-		if widget and widget.style then
-			for _, style_data in pairs(widget.style) do
-				-- skip unwanted fades
-				if _ == "damage_numbers" then
-					goto continue_widget
-				end
-
-				if style_data.default_alpha and style_data.color then
-					style_data.color[1] = style_data.default_alpha * final_alpha
-				end
-
-				if style_data.default_alpha and style_data.text_color then
-					style_data.text_color[1] = style_data.default_alpha * final_alpha
-				end
-
-				::continue_widget::
-			end
-		end
-
-		::continue_marker::
-	end
-end
-
 mod.update_horde_clusters = function(temp, to_process)
 	local fs = mod.frame_settings
 
@@ -1810,6 +705,7 @@ mod.update_horde_clusters = function(temp, to_process)
 		table_clear(_horde_cluster_by_unit)
 	end
 end
+
 -----------------------------------------------------------------------
 -- Main update orchestration
 -----------------------------------------------------------------------
@@ -1817,7 +713,7 @@ end
 mod.update_enemies = function(dt, t)
 	local fs = mod.frame_settings
 
-	for _, entry in pairs(mod.enemy_cache) do
+	for _, entry in next, mod.enemy_cache do
 		entry.pos = nil
 	end
 
@@ -1830,7 +726,7 @@ mod.update_enemies = function(dt, t)
 	local temp = _enemy_units_temp
 	local count = 0
 
-	for unit, _ in pairs(mod.enemy_cache) do
+	for unit in next, mod.enemy_cache do
 		count = count + 1
 		temp[count] = unit
 	end
@@ -1870,12 +766,13 @@ mod.update_enemies = function(dt, t)
 	local player = Managers.player:local_player(1)
 	local player_unit = player and player.player_unit
 	local player_pos = player_unit and Unit.world_position(player_unit, 1)
+	local max_dist_sq = fs.draw_distance * fs.draw_distance
 
 	-- go through enemy_cache and perform updates...
 	for i = 1, to_process do
 		local unit = temp[i]
 
-		if player_pos and Unit.alive(unit) then
+		if player_pos and Unit_alive(unit) then
 			local entry = mod.enemy_cache[unit]
 
 			if not entry.pos then
@@ -1890,7 +787,7 @@ mod.update_enemies = function(dt, t)
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
 			-- LOD cutoff
-			if dist_sq > (fs.draw_distance * fs.draw_distance) then
+			if dist_sq > max_dist_sq then
 				goto continue_enemy_loop
 			end
 		end
@@ -1902,9 +799,7 @@ mod.update_enemies = function(dt, t)
 				goto continue_enemy_loop
 			end
 
-			if fs.markers_enable then
-				mod.update_enemy_markers(entry, t)
-			end
+			mod.update_enemy_markers(entry, t)
 
 			if fs.outlines_enable then
 				mod.update_enemy_outlines(entry)
@@ -1919,35 +814,17 @@ mod.update_enemies = function(dt, t)
 			end
 
 			mod.update_special_attack_detection(entry)
-
-			local update_interval = fs.special_attack_pulse_speed / 5
-			_attack_update_time = (_attack_update_time or 0) + dt
-
-			if fs.outline_specials_enable and _attack_update_time > update_interval then
-				mod.pulse_enemy_outline(entry)
-				_attack_update_time = 0
-			end
 		end
 
 		::continue_enemy_loop::
 	end
 
 	-- Apply distance / stacking fade to all active markers
-	mod.apply_marker_fade(self)
-
+	if fs.enable_depth_fading then
+		mod.apply_marker_fade(self)
+	end
 	mod.remove_dead()
 end
-
------------------------------------------------------------------------
--- Specialist detection
------------------------------------------------------------------------
-
-local SPECIALIST_TAGS = {
-	special = true,
-	disabler = true,
-	monster = true,
-	elite = true,
-}
 
 mod.get_breed_tags = function(unit)
 	if not mod.detect_alive(unit) then
@@ -1998,734 +875,3 @@ mod.find_breed_category = function(unit)
 		end
 	end
 end
-
--- OUTLINES
-mod.default_outline_enabled = {
-	horde = false,
-	monster = false,
-	captain = false,
-	disabler = true,
-	witch = true,
-	sniper = true,
-	far = false,
-	elite = false,
-	special = false,
-	enemy = false,
-}
-
-mod.apply_enemy_outlines = function(settings)
-	for _, entry in ipairs(mod.breed_types) do
-		local breed = entry.value
-
-		if breed ~= "select" then
-			local key = "outline_" .. breed .. "_enable"
-			local enabled = mod:get(key)
-
-			-- set default from above table if not expicitly set yet.
-			if enabled == nil then
-				enabled = mod.default_outline_enabled[breed]
-
-				if enabled == nil then
-					enabled = true
-				end
-
-				mod:set(key, enabled)
-			end
-
-			local r = mod:get("outline_" .. breed .. "_colour_R")
-			local g = mod:get("outline_" .. breed .. "_colour_G")
-			local b = mod:get("outline_" .. breed .. "_colour_B")
-
-			-- initialise to defaults if nil values...
-			if r == nil or g == nil or b == nil then
-				r = mod.OUTLINE_COLOURS_DEFAULT[breed][2]
-				mod:set("outline_" .. breed .. "_colour_R", r)
-				g = mod.OUTLINE_COLOURS_DEFAULT[breed][3]
-				mod:set("outline_" .. breed .. "_colour_G", g)
-				b = mod.OUTLINE_COLOURS_DEFAULT[breed][4]
-				mod:set("outline_" .. breed .. "_colour_B", b)
-			end
-
-			if enabled then
-				if not r then
-					r = 50
-				end
-				if not g then
-					g = 10
-				end
-				if not b then
-					b = 0
-				end
-
-				r = r / 255
-				g = g / 255
-				b = b / 255
-
-				settings.MinionOutlineExtension["enemies_" .. breed] = {
-					priority = 2,
-					material_layers = {
-						"minion_outline",
-						"minion_outline_reversed_depth",
-					},
-					color = { r, g, b },
-					visibility_check = function()
-						return true
-					end,
-				}
-			else
-				-- remove if disabled
-				settings.MinionOutlineExtension["enemies_" .. breed] = nil
-			end
-		end
-	end
-
-	-- INDIVIDUAL COLOUR OVERRIDES
-	for _, options in pairs(mod.breed_names) do
-		local enemy_individual = options.value
-
-		if enemy_individual then
-			local key = "outline_" .. enemy_individual .. "_enable"
-			local enabled = mod:get(key)
-
-			if enabled and mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] then
-				local r = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2]
-				local g = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][3]
-				local b = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][4]
-
-				if not r then
-					r = 50
-				end
-				if not g then
-					g = 10
-				end
-				if not b then
-					b = 0
-				end
-
-				r = r / 255
-				g = g / 255
-				b = b / 255
-
-				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
-					priority = 2,
-					material_layers = {
-						"minion_outline",
-						"minion_outline_reversed_depth",
-					},
-					color = { r, g, b },
-
-					visibility_check = function(unit)
-						if not Unit.alive(unit) then
-							return false
-						end
-
-						local unit_data = ScriptUnit.has_extension(unit, "unit_data_system")
-						if not unit_data then
-							return false
-						end
-
-						local breed = unit_data:breed()
-						if not breed then
-							return false
-						end
-
-						if breed.name ~= enemy_individual then
-							return false
-						end
-
-						return mod:get("outline_" .. enemy_individual .. "_enable")
-					end,
-				}
-			end
-		end
-	end
-
-	-- SPECIAL ATTACK OUTLINE
-	local sr = (mod:get("outline_specials_colour_R"))
-	local sg = (mod:get("outline_specials_colour_G"))
-	local sb = (mod:get("outline_specials_colour_B"))
-
-	if not sr then
-		sr = 255
-	end
-	if not sg then
-		sg = 0
-	end
-	if not sb then
-		sb = 0
-	end
-
-	sr = sr / 255
-	sg = sg / 255
-	sb = sb / 255
-
-	settings.MinionOutlineExtension.enemies_improved_alert = {
-		priority = 1,
-		material_layers = {
-			"minion_outline",
-			"minion_outline_reversed_depth",
-		},
-		color = { sr, sg, sb },
-		visibility_check = function()
-			return true
-		end,
-	}
-end
-
-mod:hook_require("scripts/settings/outline/outline_settings", function(settings)
-	mod.apply_enemy_outlines(settings)
-end)
-
------------------------------------------------------------------------
--- Settings changed
------------------------------------------------------------------------
-
--- list of settings to monitor PER enemy type, needs to be updated if more types are added...
--- REQUIRES "_type_" AS THAT IS WHERE THE SPECIFIC ENEMY GROUP NAME IS PLACED...
-local enemy_type_settings = {
-	["outline_type_enable"] = true,
-	["outline_type_colour_R"] = 50,
-	["outline_type_colour_G"] = 10,
-	["outline_type_colour_B"] = 0,
-
-	["healthbar_type_enable"] = true,
-	["healthbar_type_colour_R"] = 255,
-	["healthbar_type_colour_G"] = 0,
-	["healthbar_type_colour_B"] = 0,
-
-	["healthbar_icon_type_enable"] = true,
-	["healthbar_icon_type_scale"] = 1,
-	["healthbar_icon_type_glow_intensity"] = 1,
-	["healthbar_icon_type_colour_R"] = 200,
-	["healthbar_icon_type_colour_G"] = 150,
-	["healthbar_icon_type_colour_B"] = 0,
-
-	["reset_type_to_default"] = false,
-}
-
--- REQUIRES "_individual_" AS THAT IS WHERE THE SPECIFIC ENEMY NAME IS PLACED...
-local enemy_override_settings = {
-	["healthbar_individual_enable"] = true,
-	["healthbar_individual_colour_R"] = 255,
-	["healthbar_individual_colour_G"] = 0,
-	["healthbar_individual_colour_B"] = 0,
-
-	["outline_individual_enable"] = false,
-	["outline_individual_colour_R"] = 255,
-	["outline_individual_colour_G"] = 50,
-	["outline_individual_colour_B"] = 10,
-
-	["reset_individual_to_default"] = false,
-}
-
-mod.reset_type_to_default = function(enemy_type)
-	-- reset all options to nil so that the defaults will be loaded...
-	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
-	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
-
-	mod:set("healthbar_icon_" .. enemy_type .. "_enable", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_scale", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_glow_intensity", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_colour_R", nil)
-
-	mod:set("outline_" .. enemy_type .. "_enable", nil)
-	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
-
-	local reset_message = mod:localize("reset_type_to_default_message") or ""
-	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
-
-	mod.init_healthbar_defaults()
-end
-
-mod.reset_individual_to_default = function(enemy_type)
-	-- reset all options to nil so that the defaults will be loaded...
-	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
-
-	local reset_message = mod:localize("reset_individual_to_default_message") or ""
-	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))
-
-	mod.init_healthbar_defaults()
-end
-
-local BreedQueries = require("scripts/utilities/breed_queries")
-local minion_breeds = BreedQueries.minion_breeds_by_name()
-
-mod.init_healthbar_defaults = function()
-	-- bar colours
-	for breed, color in pairs(mod.BREED_COLOURS_DEFAULT) do
-		local r = color[2]
-		local g = color[3]
-		local b = color[4]
-
-		-- only set if not already saved
-		if mod:get("healthbar_" .. breed .. "_colour_R") == nil then
-			mod:set("healthbar_" .. breed .. "_colour_R", r)
-			mod:set("healthbar_" .. breed .. "_colour_G", g)
-			mod:set("healthbar_" .. breed .. "_colour_B", b)
-		end
-	end
-
-	-- icon settings
-	for breed, settings in pairs(mod.ICON_SETTINGS_DEFAULT) do
-		if mod:get("healthbar_icon_" .. breed .. "_enable") == nil then
-			mod:set("healthbar_icon_" .. breed .. "_enable", settings.enabled)
-		end
-		if mod:get("healthbar_icon_" .. breed .. "_scale") == nil then
-			mod:set("healthbar_icon_" .. breed .. "_scale", settings.scale)
-		end
-		if mod:get("healthbar_icon_" .. breed .. "_glow_intensity") == nil then
-			mod:set("healthbar_icon_" .. breed .. "_glow_intensity", settings.glow_intensity)
-		end
-	end
-
-	-- icon colours
-	for breed, color in pairs(mod.ICON_COLOURS_DEFAULT) do
-		local r = color[2]
-		local g = color[3]
-		local b = color[4]
-
-		-- only set if not already saved
-		if mod:get("healthbar_icon_" .. breed .. "_colour_R") == nil then
-			mod:set("healthbar_icon_" .. breed .. "_colour_R", r)
-			mod:set("healthbar_icon_" .. breed .. "_colour_G", g)
-			mod:set("healthbar_icon_" .. breed .. "_colour_B", b)
-		end
-	end
-
-	-- individual override colours
-	for _, options in pairs(mod.breed_names) do
-		local enemy_individual = options.value
-
-		if enemy_individual then
-			local breed_settings = minion_breeds[enemy_individual]
-
-			if breed_settings then
-				local tags = breed_settings.tags
-				local breed_type = mod.find_breed_category_by_tags(tags)
-
-				-- healthbar
-				for breed, color in pairs(mod.BREED_COLOURS_DEFAULT) do
-					if breed_type == breed then
-						local r = color[2]
-						local g = color[3]
-						local b = color[4]
-
-						-- only set if not already saved
-						if mod:get("healthbar_" .. enemy_individual .. "_colour_R") == nil then
-							mod:set("healthbar_" .. enemy_individual .. "_colour_R", r)
-							mod:set("healthbar_" .. enemy_individual .. "_colour_G", g)
-							mod:set("healthbar_" .. enemy_individual .. "_colour_B", b)
-						end
-					end
-				end
-
-				-- outlines
-				for breed, color in pairs(mod.OUTLINE_COLOURS_DEFAULT) do
-					if breed_type == breed then
-						local r = color[2]
-						local g = color[3]
-						local b = color[4]
-
-						-- only set if not already saved
-						if mod:get("outline_" .. enemy_individual .. "_colour_R") == nil then
-							mod:set("outline_" .. enemy_individual .. "_colour_R", r)
-							mod:set("outline_" .. enemy_individual .. "_colour_G", g)
-							mod:set("outline_" .. enemy_individual .. "_colour_B", b)
-						end
-					end
-				end
-			end
-		end
-	end
-end
-
-mod.update_breed_colours = function()
-	-- BREED GROUPS
-	for breed, default_color in pairs(mod.BREED_COLOURS) do
-		local r = mod:get("healthbar_" .. breed .. "_colour_R")
-		local g = mod:get("healthbar_" .. breed .. "_colour_G")
-		local b = mod:get("healthbar_" .. breed .. "_colour_B")
-		local a = default_color[1] or 255
-
-		if r and g and b then
-			mod.BREED_COLOURS[breed] = { a, r, g, b }
-		end
-	end
-
-	-- INDIVIDUAL HEALTHBAR OVERRIDES
-	for _, options in pairs(mod.breed_names) do
-		local enemy_individual = options.value
-
-		if enemy_individual then
-			local r = mod:get("healthbar_" .. enemy_individual .. "_colour_R")
-			local g = mod:get("healthbar_" .. enemy_individual .. "_colour_G")
-			local b = mod:get("healthbar_" .. enemy_individual .. "_colour_B")
-			local a = 255
-
-			if r and g and b then
-				mod.BREED_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
-			end
-		end
-	end
-
-	-- INDIVIDUAL OUTLINE OVERRIDES
-	for _, options in pairs(mod.breed_names) do
-		local enemy_individual = options.value
-
-		if enemy_individual then
-			r = mod:get("outline_" .. enemy_individual .. "_colour_R")
-			g = mod:get("outline_" .. enemy_individual .. "_colour_G")
-			b = mod:get("outline_" .. enemy_individual .. "_colour_B")
-			local a = 255
-
-			if r and g and b then
-				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }
-			end
-		end
-	end
-end
-
-mod.update_breed_icons = function()
-	-- settings
-	for breed, settings in pairs(mod.ICON_SETTINGS) do
-		local enabled = mod:get("healthbar_icon_" .. breed .. "_enable")
-		local scale = mod:get("healthbar_icon_" .. breed .. "_scale")
-		local glow_intensity = mod:get("healthbar_icon_" .. breed .. "_glow_intensity")
-
-		mod.ICON_SETTINGS[breed].enabled = enabled
-		mod.ICON_SETTINGS[breed].scale = scale
-		mod.ICON_SETTINGS[breed].glow_intensity = glow_intensity
-		mod.ICON_SETTINGS[breed].default_glow_intensity = glow_intensity
-	end
-	-- colours
-	for breed, default_color in pairs(mod.ICON_COLOURS) do
-		local r = mod:get("healthbar_icon_" .. breed .. "_colour_R")
-		local g = mod:get("healthbar_icon_" .. breed .. "_colour_G")
-		local b = mod:get("healthbar_icon_" .. breed .. "_colour_B")
-		local a = default_color[1] or 255
-
-		if r and g and b then
-			mod.ICON_COLOURS[breed] = { a, r, g, b }
-		end
-	end
-end
-
-mod.update_settings_values = function(setting_id)
-	-- GROUP OVERRIDES
-	local selected_enemy_type = mod:get("enemy_group")
-	if not selected_enemy_type then
-		return
-	end
-
-	local reset_string = "reset_type_to_default"
-	local reset_setting_id = reset_string:gsub("_type_", "_" .. selected_enemy_type .. "_")
-
-	-- Set the enemy type widgets when a group is selected
-	for setting_name, default_value in pairs(enemy_type_settings) do
-		local type_value = mod:get(setting_name)
-
-		local enemy_type = setting_name:gsub("_type_", "_" .. selected_enemy_type .. "_")
-		local enemy_type_value = mod:get(enemy_type)
-
-		if enemy_type_value == nil then
-			enemy_type_value = default_value
-		end
-
-		-- STORE VALUES WHEN CHANGED
-		if setting_id == setting_name then
-			if enemy_type_value ~= type_value then
-				--mod:error("set " .. tostring(enemy_type) .. " to " .. tostring(type_value))
-				mod:set(enemy_type, type_value)
-			end
-		end
-
-		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
-		if setting_id == "enemy_group" or mod:get(reset_setting_id) == true or setting_id == nil then
-			if type_value ~= enemy_type_value then
-				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_type_value))
-				mod:set(setting_name, enemy_type_value)
-			end
-		end
-	end
-
-	-- INDIVIDUAL OVERRIDES
-	local selected_enemy_individual = mod:get("individual_overrides")
-	if not selected_enemy_individual then
-		return
-	end
-
-	local reset_string = "reset_individual_to_default"
-	local reset_setting_id = reset_string:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
-
-	-- Set the enemy individual widgets when a new enemy is selected
-	for setting_name, default_value in pairs(enemy_override_settings) do
-		local individual_value = mod:get(setting_name)
-
-		local enemy_individual = setting_name:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
-		local enemy_individual_value = mod:get(enemy_individual)
-
-		if enemy_individual_value == nil then
-			enemy_individual_value = default_value
-		end
-
-		-- STORE VALUES WHEN CHANGED
-		if setting_id == setting_name then
-			if enemy_individual_value ~= individual_value then
-				--mod:error("set " .. tostring(enemy_individual) .. " to " .. tostring(individual_value))
-				mod:set(enemy_individual, individual_value)
-			end
-		end
-
-		-- SET UI VALUES WHEN DROPDOWN IS SELECTED...
-		if setting_id == "individual_overrides" or mod:get(reset_setting_id) == true or setting_id == nil then
-			if individual_value ~= enemy_individual_value then
-				--mod:error("LOADED VALUES: " .. tostring(setting_name) .. " to " .. tostring(enemy_individual_value))
-				mod:set(setting_name, enemy_individual_value)
-			end
-		end
-	end
-end
-
-mod.update_dmf_settings_colours = function(setting_id)
-	-- Only trigger for color settings
-	if
-		string.find(setting_id, "_colour_R")
-		or string.find(setting_id, "_colour_G")
-		or string.find(setting_id, "_colour_B")
-	then
-		local dmf = get_mod("DMF")
-		local mod_name = mod:get_name()
-
-		-- extract base key (e.g. "marker_colour")
-		local base_key = string.gsub(setting_id, "_R$", "")
-		base_key = string.gsub(base_key, "_G$", "")
-		base_key = string.gsub(base_key, "_B$", "")
-
-		local old_title = mod:localize(base_key)
-		local new_title = nil
-
-		-- Recompute localization table
-		local updated_localization = mod.apply_colours()
-
-		-- GET CURRENT UPDATED VALUE FROM UPDATED_LOCALIZATION
-		for id, data in pairs(updated_localization) do
-			if id == base_key then
-				local lang = Managers.localization:language()
-				local text = data[lang] or data.en
-
-				new_title = text
-			end
-		end
-
-		if not new_title then
-			return
-		end
-
-		-- OVERRIDE CURRENT DISPLAYED TEXT VALUES ON THE SETTINGS PAGES IN DMF
-		for i, mod_data in ipairs(dmf.options_widgets_data) do
-			if mod_data[1] and mod_data[1].mod_name == mod_name then
-				for j = 1, #mod_data do
-					if mod_data[j].setting_id == base_key then
-						mod_data[j].title = new_title
-						break
-					end
-				end
-			end
-		end
-
-		local view = Managers.ui:view_instance("dmf_options_view")
-
-		if view and view._settings_category_widgets and view._settings_category_widgets[mod:localize("mod_name")] then
-			for _, data in ipairs(view._settings_category_widgets[mod:localize("mod_name")]) do
-				local widget = data.widget
-				if not widget then
-					break
-				end
-
-				local clean = string.gsub(new_title, "{#.-}", "")
-				local clean2 = string.gsub(widget.content.text, "{#.-}", "")
-
-				if clean == clean2 then
-					if widget.content.entry then
-						widget.content.entry.display_name = new_title
-					end
-					widget.content.text = new_title
-					break
-				end
-			end
-		end
-	end
-end
-
-mod.update_debuff_toggles = function(debuff_name, toggle_state)
-	if toggle_state then
-		local exists = false
-		local is_dot = false
-
-		-- figure out if dot or utility...
-		for _, name in ipairs(mod.default_dot_debuffs) do
-			if name == debuff_name then
-				is_dot = true
-			end
-		end
-
-		-- add if doesnt exist...
-		if is_dot then
-			for _, name in ipairs(mod.default_dot_debuffs) do
-				if name == debuff_name then
-					exists = true
-				end
-			end
-			if not exists then
-				mod.dot_debuffs[#mod.dot_debuffs + 1] = debuff_name
-			end
-		else
-			for _, name in ipairs(mod.default_utility_debuffs) do
-				if name == debuff_name then
-					exists = true
-				end
-			end
-			if not exists then
-				mod.utility_debuffs[#mod.utility_debuffs + 1] = debuff_name
-			end
-		end
-	else
-		for _, name in ipairs(mod.dot_debuffs) do
-			if name == debuff_name then
-				table.remove(mod.dot_debuffs, _)
-			end
-		end
-
-		for _, name in ipairs(mod.utility_debuffs) do
-			if name == debuff_name then
-				table.remove(mod.utility_debuffs, _)
-			end
-		end
-	end
-
-	mod.rebuild_dot_lookup()
-	mod.rebuild_utility_lookup()
-end
-
-mod.load_toggled_debuffs_state = function()
-	-- DOTS
-	for _, name in ipairs(mod.default_dot_debuffs) do
-		local debuff_toggle_setting_string = name .. "_toggle_state"
-		local debuff_setting = mod:get(debuff_toggle_setting_string)
-
-		if debuff_setting ~= nil then
-			mod.update_debuff_toggles(name, debuff_setting)
-		end
-	end
-
-	-- UTILS
-	for _, name in ipairs(mod.default_utility_debuffs) do
-		local debuff_toggle_setting_string = name .. "_toggle_state"
-		local debuff_setting = mod:get(debuff_toggle_setting_string)
-
-		if debuff_setting ~= nil then
-			mod.update_debuff_toggles(name, debuff_setting)
-		end
-	end
-end
-
-mod.on_setting_changed = function(setting_id)
-	if setting_id == "debuff_toggles" then
-		local selected_option = mod:get("debuff_toggles")
-		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
-		local setting = mod:get(debuff_toggle_setting_string) or true
-
-		if setting ~= nil then
-			mod:set("debuff_selected_enable", setting)
-		else
-			mod:set("debuff_selected_enable", true)
-		end
-	end
-
-	if setting_id == "debuff_selected_enable" then
-		local selected_option = mod:get("debuff_toggles")
-		local selected_toggle_state = mod:get("debuff_selected_enable")
-		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
-
-		mod:set(debuff_toggle_setting_string, selected_toggle_state)
-
-		mod.update_debuff_toggles(selected_option, selected_toggle_state)
-	end
-
-	local selected_enemy_type = mod:get("enemy_group")
-	if not selected_enemy_type then
-		return
-	end
-
-	mod.update_settings_values(setting_id)
-
-	local reset_string = "reset_type_to_default"
-	local reset_setting_id = reset_string:gsub("_type_", "_" .. selected_enemy_type .. "_")
-
-	-- HANDLE GROUP RESET TO DEFAULT LOGIC...
-	if mod:get(reset_setting_id) == true then
-		mod.reset_type_to_default(mod:get("enemy_group"))
-		mod.update_settings_values(reset_setting_id)
-	end
-
-	local selected_enemy_individual = mod:get("individual_overrides")
-	local reset_string_individual = "reset_individual_to_default"
-	local reset_setting_id_individual = reset_string:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
-
-	-- HANDLE INDIVIDUAL RESET TO DEFAULT LOGIC...
-	if mod:get(reset_setting_id_individual) == true then
-		--mod.reset_individual_to_default(selected_enemy_individual)
-		--mod.update_settings_values(reset_setting_id_individual)
-	end
-
-	-- rebuild outlines
-	local outline_settings = require("scripts/settings/outline/outline_settings")
-	mod.apply_enemy_outlines(outline_settings)
-
-	-- update breed settings
-	mod.update_breed_colours()
-	mod.update_breed_icons()
-
-	-- clear all caches to reload data with new values
-	mod.clear_caches()
-
-	mod.font_type = mod:get("font_type")
-	mod.text_scale = mod:get("text_scale")
-
-	if mod:get(reset_setting_id) == true then
-		mod:set(reset_setting_id, false)
-	end
-	if mod:get(reset_setting_id_individual) == true then
-		mod:set(reset_setting_id_individual, false)
-	end
-
-	mod.update_settings_values()
-
-	-- update colours when the dropdown selectors are changed...
-	if setting_id == "individual_overrides" or setting_id == "enemy_group" then
-		-- GROUPS
-		if setting_id == "enemy_group" then
-			for setting_name, default_value in pairs(enemy_type_settings) do
-				mod.update_dmf_settings_colours(setting_name)
-			end
-		end
-
-		if setting_id == "individual_overrides" then
-			for setting_name, default_value in pairs(enemy_override_settings) do
-				mod.update_dmf_settings_colours(setting_name)
-			end
-		end
-	end
-
-	mod.update_dmf_settings_colours(setting_id)
-
-	mod.build_frame_settings()
-end
-
--- Rebuilds all enemies improved UI stuff if the settings menu is closed, as by default the UI elements go invisible
-mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
-	if view_name == "dmf_options_view" or view_name == "options_view" then
-		mod.clear_caches()
-		mod.build_frame_settings()
-	end
-end)

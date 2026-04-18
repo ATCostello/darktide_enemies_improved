@@ -14,23 +14,24 @@ local NAME_VISIBLE = 4.0
 local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
+local max_visible_rows_setting = 10
+
 local fs = mod.frame_settings
 local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
-local max_visible_rows_setting = 10
 local draw_distance_setting = fs.draw_distance
-
 local size = {
 	hb_size_width,
 	hb_size_height,
 }
 local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-
-local row_step = hb_size_height + (18 * mod.text_scale)
+local row_step = (hb_size_height + 18) * mod.text_scale
 local base_offset = (-hb_size_width * 0.5) * mod.text_scale
-local icon_x = ((hb_size_width - 5) * mod.text_scale) - 40
-local name_x = (hb_size_width * mod.text_scale) - 40
-local stack_x = ((hb_size_width + 60) * mod.text_scale) - 40
+local base_gap = -40 * mod.text_scale
+local icon_x = (hb_size_width - 5) * mod.text_scale + base_gap
+local name_x = (hb_size_width - 35) * mod.text_scale + base_gap
+local stack_x = (hb_size_width + 52) * mod.text_scale + base_gap
+
 local active_pool = {}
 
 template.size = size
@@ -41,7 +42,7 @@ if fs.debuff_show_on_body then
 	template.position_offset = { 0, 0, 0 }
 else
 	template.unit_node = "root_point"
-	template.position_offset = { 0, 0, 0 }
+	template.position_offset = { 0, 0, fs.hb_y_offset }
 end
 
 template.max_visible_rows = max_visible_rows_setting
@@ -88,41 +89,9 @@ local math_min = math.min
 local math_max = math.max
 local math_lerp = math.lerp
 local math_floor = math.floor
-local pairs = pairs
+local next = next
 local Localize = Localize
 local ScriptUnit_extension = ScriptUnit.extension
-
-local dot_lookup = {}
-local utility_lookup = {}
-
-mod.rebuild_dot_lookup = function()
-	table.clear(dot_lookup)
-	local list = mod.dot_debuffs
-	if not list then
-		return
-	end
-
-	for i = 1, #list do
-		dot_lookup[list[i]] = true
-	end
-end
-
-mod.rebuild_utility_lookup = function()
-	table.clear(utility_lookup)
-	local list = mod.utility_debuffs
-	if not list then
-		return
-	end
-
-	for i = 1, #list do
-		utility_lookup[list[i]] = true
-	end
-end
-
--- build once at load
-
-mod.rebuild_dot_lookup()
-mod.rebuild_utility_lookup()
 
 -----------------------------------------------------------------------
 -- Widget definition
@@ -240,12 +209,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			text_horizontal_alignment = "right",
 			text_vertical_alignment = "center",
 			offset = {
-				name_x - 40 * mod.text_scale + base_offset,
+				name_x + base_offset,
 				row_offset_y,
 				7,
 			},
 			default_offset = {
-				name_x - 40 * mod.text_scale + base_offset,
+				name_x + base_offset,
 				row_offset_y,
 				7,
 			},
@@ -277,6 +246,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 end
 
 template.on_enter = function(widget, marker, template)
+	local fs = mod.frame_settings
+
+	if fs.debuff_show_on_body then
+		template.position_offset = { 0, 0, 0 }
+	else
+		template.position_offset = { 0, 0, fs.hb_y_offset }
+	end
+
 	local content = widget.content
 	local style = widget.style
 	local unit = marker.unit
@@ -284,11 +261,46 @@ template.on_enter = function(widget, marker, template)
 	local breed = unit_data_extension and unit_data_extension:breed()
 	local buff_extension = ScriptUnit_extension(unit, "buff_system")
 
+	hb_size_width = fs.hb_size_width
+	hb_size_height = fs.hb_size_height
+	draw_distance_setting = fs.draw_distance
+	size = {
+		hb_size_width,
+		hb_size_height,
+	}
+	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+	local row_step = (hb_size_height + 18) * mod.text_scale
+	base_offset = (-hb_size_width * 0.5) * mod.text_scale
+	base_gap = -40 * mod.text_scale
+	icon_x = (hb_size_width - 5) * mod.text_scale + base_gap
+	name_x = (hb_size_width - 35) * mod.text_scale + base_gap
+	stack_x = (hb_size_width + 52) * mod.text_scale + base_gap
+
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension
 	content.breed = breed
 	content.debuffs = buff_extension and buff_extension:buffs()
 	content.keywords = buff_extension and buff_extension:keywords()
+end
+
+-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
+local function calc_stack_buff_percentage(val, stacks, stat_name)
+	local stat_buff_type = stat_buff_types[stat_name]
+	local perc = 0
+
+	if stat_buff_type == "multiplicative_multiplier" then
+		val = val - 1
+		perc = (val * stacks) * 100
+	elseif stat_buff_type == "additive_multiplier" then
+		perc = (val * stacks) * 100
+	end
+
+	local nearest = math_floor((perc + 5) / 10) * 10
+	if math.abs(perc - nearest) <= 1 then
+		perc = nearest
+	end
+
+	return math_floor(perc * 10 + 0.5) * 0.1
 end
 
 -----------------------------------------------------------------------
@@ -304,6 +316,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum then
 		widget._next_update = t + 0.25
+		return
 	-- distance based updates
 	elseif marker.distance < 30 then
 		widget._next_update = t + 0.02
@@ -367,24 +380,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local split_debuff_types = fs.split_debuff_types
 
-	local hb_size_width = fs.hb_size_width
-	local hb_size_height = fs.hb_size_height
-	local max_visible_rows_setting = 10
-	local draw_distance_setting = fs.draw_distance
-
-	local size = {
-		hb_size_width,
-		hb_size_height,
-	}
-	local base_y = hb_size_height * mod.text_scale
-
-	local row_step = (hb_size_height + 20) * mod.text_scale
-	local base_offset = (-hb_size_width * 0.5) * mod.text_scale
-	local icon_x = ((hb_size_width - 5) * mod.text_scale) - 40
-	local name_x = (hb_size_width * mod.text_scale) - 40
-	local stack_x = fs.debuff_icons and (((hb_size_width + 60) * mod.text_scale) - 40)
-		or (((hb_size_width + 30) * mod.text_scale) - 40)
-
 	-------------------------------------------------------------------
 	-- Breed / type
 	-------------------------------------------------------------------
@@ -411,7 +406,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local conditional_stat_buffs = template.conditional_stat_buffs
 
 		-- DOT STUFF
-		if dot_lookup[name] and fs.debuff_dot_enable then
+		if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -435,7 +430,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		-- UTILITY STUFF
-		if utility_lookup[name] and fs.debuff_utility_enable then
+		if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
 			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 
 			active_count = active_count + 1
@@ -476,27 +471,41 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local name = keyword
 
 			-- DOT STUFF
-			if dot_lookup[name] and fs.debuff_dot_enable then
+			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
-				active[active_count] = {
-					name = name,
-					stacks = stacks,
-					type = "dot",
-				}
+				local entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+
+				entry.name = name
+				entry.stacks = stacks
+				entry.type = "dot"
+
+				active[active_count] = entry
 			end
 
 			-- UTILITY STUFF
-			if utility_lookup[name] and fs.debuff_utility_enable then
+			if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
-				active[active_count] = {
-					name = name,
-					stacks = stacks,
-					type = "utility",
-				}
+				local entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+
+				entry.name = name
+				entry.stacks = stacks
+				entry.type = "utility"
+
+				active[active_count] = entry
 			end
 		end
 	end
@@ -509,16 +518,28 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- COMBINE SAME ICONS AND CALCULATE COMBINED STACKS/PERCENTAGE
 	-------------------------------------------------------------------
 	if fs.debuffs_combine and active_count > 1 then
-		local combined = {}
 		local combined_count = 0
-		local grouped_dot_map = {}
-		local grouped_utility_map = {}
+
+		widget._combined = widget._combined or {}
+		widget._grouped_dot = widget._grouped_dot or {}
+		widget._grouped_util = widget._grouped_util or {}
+
+		local combined = widget._combined
+		local grouped_dot_map = widget._grouped_dot
+		local grouped_utility_map = widget._grouped_util
+
+		for k in next, grouped_dot_map do
+			grouped_dot_map[k] = nil
+		end
+		for k in next, grouped_utility_map do
+			grouped_utility_map[k] = nil
+		end
 
 		for i = 1, active_count do
 			local entry = active[i]
 			local name = entry.name
 			local max_stacks = entry.max_stacks
-			local icon = mod.debuff_icons and mod.debuff_icons[name]
+			local icon = mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].icon
 			local debuff_type = entry.type
 
 			icon = icon or name
@@ -594,7 +615,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	widget._active_lookup = widget._active_lookup or {}
 	local active_lookup = widget._active_lookup
 
-	for k in pairs(active_lookup) do
+	for k in next, active_lookup do
 		active_lookup[k] = nil
 	end
 
@@ -702,7 +723,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- Fade out removed debuffs
-	for name, state in pairs(state_table) do
+	for name, state in next, state_table do
 		if not active_lookup[name] then
 			local alpha = state.alpha - dt * 255 * fade_speed
 			if alpha <= 0 then
@@ -724,11 +745,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			root_position.z = root_position.z + content.breed.base_height / 1.5
 		end
 
-		--if not marker.world_position then
-		marker.world_position = Vector3Box(root_position)
-		--else
-		--	marker.world_position:store(root_position)
-		--end
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
 	end
 
 	-------------------------------------------------------------------
@@ -774,14 +795,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				if debuff.type == "dot" then
 					local row_offset_y = state.y - ((row_i - 1) * row_step)
 
-					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
-					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
+					local o = icon_style.offset
+					o[1] = icon_x + base_offset
+					o[2] = row_offset_y
+					local o = icon_style.default_offset
+					o[1] = icon_x + base_offset
+					o[2] = row_offset_y
 
-					stack_text_style.offset = { stack_x + base_offset, row_offset_y, 6 }
-					stack_text_style.default_offset = { stack_x + base_offset, row_offset_y, 6 }
+					local o = stack_text_style.offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
+					local o = stack_text_style.default_offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
 
-					name_text_style.offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
-					name_text_style.default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+					local o = name_text_style.offset
+					o[1] = name_x + base_offset
+					o[2] = row_offset_y
+					local o = name_text_style.default_offset
+					o[1] = name_x + base_offset
+					o[2] = row_offset_y
 				elseif debuff.type == "utility" then
 					local row_offset_y = state.y + ((row_i - 1) * row_step)
 
@@ -789,70 +822,54 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						row_offset_y = state.y + 16 + ((row_i - 1) * row_step)
 					end
 
-					icon_style.offset = { icon_x + base_offset, row_offset_y, 6 }
-					icon_style.default_offset = { icon_x + base_offset, row_offset_y, 6 }
+					local o = icon_style.offset
+					o[1] = icon_x + base_offset
+					o[2] = row_offset_y
+					local o = icon_style.default_offset
+					o[1] = icon_x + base_offset
+					o[2] = row_offset_y
 
-					stack_text_style.offset = { stack_x + base_offset, row_offset_y, 6 }
-					stack_text_style.default_offset = { stack_x + base_offset, row_offset_y, 6 }
+					local o = stack_text_style.offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
+					local o = stack_text_style.default_offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
 
-					name_text_style.offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
-					name_text_style.default_offset = { name_x - 40 * mod.text_scale + base_offset, row_offset_y, 7 }
+					local o = name_text_style.offset
+					o[1] = name_x + base_offset
+					o[2] = row_offset_y
+					local o = name_text_style.default_offset
+					o[1] = name_x + base_offset
+					o[2] = row_offset_y
 				end
 			end
 
-			if max_stacks and stacks > max_stacks then
+			local at_max_stacks = false
+			if max_stacks and stacks >= max_stacks then
 				stacks = max_stacks
+				at_max_stacks = true
 			end
 
 			if state then
-				content[icon_id] = mod.debuff_icons and mod.debuff_icons[name]
+				content[icon_id] = mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].icon
 					or "content/ui/materials/icons/generic/danger"
 
 				-- Add percentage text
 				local stack_buff_percentage = ""
 
-				-- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
-				local function calc_stack_buff_percentage(val, stacks, stat_name)
-					if stat_name then
-						stat_buff_type = stat_buff_types[stat_name]
-					end
-
-					if stat_buff_type == "multiplicative_multiplier" then
-						val = val - 1 -- convert from mult fraction to just increase e.g 1.05x -> 0.05
-						perc = ((val * stacks) * 100) -- convert from fraction to percentage
-					elseif stat_buff_type == "additive_multiplier" then
-						perc = ((val * stacks) * 100) -- convert from fraction to percentage
-					end
-
-					local threshold = 1
-
-					local nearest = math.floor((perc + 5) / 10) * 10
-					if math.abs(perc - nearest) <= threshold then
-						perc = nearest
-					end
-
-					local number_format = string.format("%%.%sf", 1)
-					perc = string.format(number_format, perc)
-
-					if string.find(perc, ".0") then
-						perc = string.format(" %." .. 1 .. "f", perc):gsub("%.?0+$", "")
-					end
-
-					stack_buff_percentage = tostring(perc)
-				end
-
 				if stat_buffs then
-					for stat_name, val in pairs(stat_buffs) do
+					for stat_name, val in next, stat_buffs do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							calc_stack_buff_percentage(val, stacks, stat_name)
+							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
 				elseif conditional_stat_buffs then
-					for stat_name, val in pairs(conditional_stat_buffs) do
+					for stat_name, val in next, conditional_stat_buffs do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
-							calc_stack_buff_percentage(val, stacks, stat_name)
+							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
 				end
@@ -861,7 +878,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				local stack_str = ""
 
 				if stack_buff_percentage ~= "" then
-					stack_str = "" .. stack_buff_percentage .. "%"
+					stack_str = stack_buff_percentage .. "%"
 				else
 					stack_str = "x " .. stacks
 				end
@@ -884,7 +901,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						end
 
 						if debuff.combined then
-							loc = string.gsub(loc, "%b()", "")
+							loc = string.gsub(loc, "%s*%b()%s*", "")
+							loc = string.gsub(loc, "%s+$", "")
 						end
 
 						content[name_text_id] = loc
@@ -896,7 +914,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 
 				-- colour mutation
-				local colour = (mod.debuff_colours and mod.debuff_colours[name]) or { 255, 255, 255, 255 }
+				local colour = (mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].colour)
+					or { 255, 255, 255, 255 }
 
 				icon_style.color[2] = colour[2] or 255
 				icon_style.color[3] = colour[3] or 255
@@ -906,6 +925,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					stack_text_style.text_color[2] = colour[2] or 255
 					stack_text_style.text_color[3] = colour[3] or 255
 					stack_text_style.text_color[4] = colour[4] or 255
+				end
+
+				if fs.debuff_max_stacks_colour_toggle and at_max_stacks then
+					stack_text_style.text_color[2] = fs.debuff_max_stacks_colour[2] or 255
+					stack_text_style.text_color[3] = fs.debuff_max_stacks_colour[3] or 255
+					stack_text_style.text_color[4] = fs.debuff_max_stacks_colour[4] or 255
+				else
+					stack_text_style.text_color[2] = fs.secondary_colour[2] or 255
+					stack_text_style.text_color[3] = fs.secondary_colour[3] or 255
+					stack_text_style.text_color[4] = fs.secondary_colour[4] or 255
 				end
 
 				content.line_of_sight_progress = line_of_sight_progress
@@ -928,7 +957,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					icon_style.size[1] = icon_style.default_size[1] * scale
 					icon_style.size[2] = icon_style.default_size[2] * scale
 
-					stack_text_style.font_size = stack_text_style.default_font_size * scale
+					if fs.debuff_max_stacks_scale and at_max_stacks then
+						stack_text_style.font_size = (stack_text_style.default_font_size * scale) * 1.2
+					else
+						stack_text_style.font_size = stack_text_style.default_font_size * scale
+					end
+
 					name_text_style.font_size = name_text_style.default_font_size * scale
 
 					icon_style.offset[1] = icon_style.default_offset[1] * scale

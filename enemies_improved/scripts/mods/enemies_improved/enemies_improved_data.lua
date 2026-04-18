@@ -1,318 +1,247 @@
 local mod = get_mod("enemies_improved")
+local next = next
 
-mod.dot_debuffs = {
-	-- DoT
-	"bleed",
-	"flamer_assault",
-	"flame_grenade_liquid_area",
-	"warp_fire",
-	"shock_effect",
+mod.debuff_styles = {
+	generic = {
+		icon = "content/ui/materials/icons/weapons/actions/linesman",
+		colour = { 255, 150, 150, 150 },
+	},
 
-	"neurotoxin_interval_buff",
-	"neurotoxin_interval_buff2",
-	"neurotoxin_interval_buff3",
-	"exploding_toxin_interval_buff",
+	bleed = {
+		icon = "content/ui/materials/icons/presets/preset_13",
+		colour = { 255, 255, 0, 0 },
+	},
+
+	fire = {
+		icon = "content/ui/materials/icons/presets/preset_20",
+		colour = { 255, 250, 150, 20 },
+	},
+
+	warp = {
+		icon = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
+		colour = { 255, 120, 200, 255 },
+	},
+
+	shock = {
+		icon = "content/ui/materials/icons/presets/preset_11",
+		colour = { 255, 255, 255, 0 },
+	},
+
+	toxin = {
+		icon = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
+		colour = { 255, 50, 255, 20 },
+	},
+
+	rending = {
+		icon = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
+		colour = { 255, 172, 115, 255 },
+	},
+
+	arbites = {
+		icon = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
+		colour = { 255, 0, 144, 255 },
+	},
+
+	rage = {
+		icon = "content/ui/materials/icons/presets/preset_18",
+		colour = { 255, 255, 117, 255 },
+	},
+
+	stagger = {
+		icon = "content/ui/materials/icons/throwables/hud/small/party_non_grenade",
+		colour = { 255, 100, 200, 255 },
+	},
+
+	blind = {
+		icon = "content/ui/materials/icons/circumstances/ventilation_purge_01",
+		colour = { 255, 200, 200, 200 },
+	},
+
+	damage_taken = {
+		icon = "content/ui/materials/icons/player_states/dead",
+		colour = { 255, 255, 185, 100 },
+	},
+
+	melee_damage_taken = {
+		icon = "content/ui/materials/icons/weapons/actions/melee",
+		colour = { 255, 255, 242, 99 },
+	},
+
+	stagger_damage = {
+		icon = "content/ui/materials/icons/weapons/actions/melee_hand",
+		colour = { 255, 124, 227, 187 },
+	},
+
+	bleed_damage = {
+		icon = "content/ui/materials/icons/presets/preset_13",
+		colour = { 255, 255, 40, 40 },
+	},
+
+	toxin_damage = {
+		icon = "content/ui/materials/icons/player_states/dead",
+		colour = { 255, 80, 255, 80 },
+	},
 }
 
-mod.utility_debuffs = {
-	-- Rending / “take more damage”, tags, etc.
-	"rending_debuff",
-	"rending_debuff_medium",
-	"rending_burn_debuff",
-	"saw_rending_debuff",
+mod.debuffs = {
+	-- DOT
+	bleed = { name = "bleed", type = "dot", group = "bleed" },
+	flamer_assault = { name = "flamer_assault", type = "dot", group = "fire" },
+	flame_grenade_liquid_area = { name = "flame_grenade_liquid_area", type = "dot", group = "fire" },
+	warp_fire = { name = "warp_fire", type = "dot", group = "warp" },
+	shock_effect = { name = "shock_effect", type = "dot", group = "shock" },
 
-	"increase_impact_received_while_staggered",
-	"increase_damage_received_while_staggered",
-	"power_maul_sticky_tick",
-	"increase_damage_taken",
-	"psyker_force_staff_quick_attack_debuff",
+	neurotoxin_interval_buff = { name = "neurotoxin_interval_buff", type = "dot", group = "toxin" },
+	neurotoxin_interval_buff2 = { name = "neurotoxin_interval_buff2", type = "dot", group = "toxin" },
+	neurotoxin_interval_buff3 = { name = "neurotoxin_interval_buff3", type = "dot", group = "toxin" },
+	exploding_toxin_interval_buff = { name = "exploding_toxin_interval_buff", type = "dot", group = "toxin" },
 
-	-- Psyker utility / chain lightning etc.
-	"psyker_heavy_swings_shock",
-	"psyker_heavy_swings_shock_improved",
-	"psyker_protectorate_spread_chain_lightning_interval",
-	"psyker_protectorate_spread_chain_lightning_interval_improved",
-	"psyker_protectorate_spread_charged_chain_lightning_interval",
-	"psyker_protectorate_spread_charged_chain_lightning_interval_improved",
-	"psyker_discharge_damage_debuff",
+	-- UTILITY
+	rending_debuff = { name = "rending_debuff", type = "utility", group = "rending" },
+	rending_debuff_medium = { name = "rending_debuff_medium", type = "utility", group = "rending" },
+	rending_burn_debuff = { name = "rending_burn_debuff", type = "utility", group = "rending" },
+	saw_rending_debuff = { name = "saw_rending_debuff", type = "utility", group = "rending" },
 
-	-- Ogryn
-	"ogryn_recieve_damage_taken_increase_debuff",
-	"ogryn_taunt_increased_damage_taken_buff",
-	"ogryn_staggering_damage_taken_increase",
+	increase_impact_received_while_staggered = {
+		name = "increase_impact_received_while_staggered",
+		type = "utility",
+		group = "rending",
+	},
+	increase_damage_received_while_staggered = {
+		name = "increase_damage_received_while_staggered",
+		type = "utility",
+		group = "stagger_damage",
+	},
 
-	-- Veteran
-	"veteran_improved_tag_debuff",
+	power_maul_sticky_tick = { name = "power_maul_sticky_tick", type = "utility", group = "generic" },
 
-	-- Zealot
-	"zealot_bled_enemies_take_more_damage_effect",
+	increase_damage_taken = { name = "increase_damage_taken", type = "utility", group = "damage_taken" },
+	psyker_force_staff_quick_attack_debuff = {
+		name = "psyker_force_staff_quick_attack_debuff",
+		type = "utility",
+		group = "warp",
+	},
 
-	-- Arbite
-	"adamant_drone_enemy_debuff",
-	"adamant_drone_talent_debuff",
-	"adamant_melee_weakspot_hits_count_as_stagger_debuff",
-	"adamant_staggered_enemies_deal_less_damage_debuff",
-	"adamant_staggering_increases_damage_taken",
+	psyker_heavy_swings_shock = { name = "psyker_heavy_swings_shock", type = "utility", group = "shock" },
+	psyker_heavy_swings_shock_improved = {
+		name = "psyker_heavy_swings_shock_improved",
+		type = "utility",
+		group = "shock",
+	},
+	psyker_protectorate_spread_chain_lightning_interval = {
+		name = "psyker_protectorate_spread_chain_lightning_interval",
+		type = "utility",
+		group = "shock",
+	},
+	psyker_protectorate_spread_chain_lightning_interval_improved = {
+		name = "psyker_protectorate_spread_chain_lightning_interval_improved",
+		type = "utility",
+		group = "shock",
+	},
+	psyker_protectorate_spread_charged_chain_lightning_interval = {
+		name = "psyker_protectorate_spread_charged_chain_lightning_interval",
+		type = "utility",
+		group = "shock",
+	},
+	psyker_protectorate_spread_charged_chain_lightning_interval_improved = {
+		name = "psyker_protectorate_spread_charged_chain_lightning_interval_improved",
+		type = "utility",
+		group = "shock",
+	},
 
-	-- Broker
-	"broker_punk_rage_improved_shout_debuff",
+	psyker_discharge_damage_debuff = {
+		name = "psyker_discharge_damage_debuff",
+		type = "utility",
+		group = "damage_taken",
+	},
 
-	-- Stagger
-	"shock_grenade_interval",
+	ogryn_recieve_damage_taken_increase_debuff = {
+		name = "ogryn_recieve_damage_taken_increase_debuff",
+		type = "utility",
+		group = "damage_taken",
+	},
+	ogryn_taunt_increased_damage_taken_buff = {
+		name = "ogryn_taunt_increased_damage_taken_buff",
+		type = "utility",
+		group = "damage_taken",
+	},
+	ogryn_staggering_damage_taken_increase = {
+		name = "ogryn_staggering_damage_taken_increase",
+		type = "utility",
+		group = "melee_damage_taken",
+	},
 
-	-- Blinded/smoke
-	"in_smoke_fog",
+	veteran_improved_tag_debuff = { name = "veteran_improved_tag_debuff", type = "utility", group = "damage_taken" },
 
-	-- Broker
-	"toxin_damage_debuff",
-	"toxin_damage_debuff_monster",
-	"broker_passive_toxin_infected_enemies_take_increased_damage_debuff",
+	zealot_bled_enemies_take_more_damage_effect = {
+		name = "zealot_bled_enemies_take_more_damage_effect",
+		type = "utility",
+		group = "bleed_damage",
+	},
+
+	adamant_drone_enemy_debuff = { name = "adamant_drone_enemy_debuff", type = "utility", group = "arbites" },
+	adamant_drone_talent_debuff = { name = "adamant_drone_talent_debuff", type = "utility", group = "arbites" },
+
+	adamant_melee_weakspot_hits_count_as_stagger_debuff = {
+		name = "adamant_melee_weakspot_hits_count_as_stagger_debuff",
+		type = "utility",
+		group = "rending",
+	},
+	adamant_staggered_enemies_deal_less_damage_debuff = {
+		name = "adamant_staggered_enemies_deal_less_damage_debuff",
+		type = "utility",
+		group = "rending",
+	},
+	adamant_staggering_increases_damage_taken = {
+		name = "adamant_staggering_increases_damage_taken",
+		type = "utility",
+		group = "stagger_damage",
+	},
+
+	broker_punk_rage_improved_shout_debuff = {
+		name = "broker_punk_rage_improved_shout_debuff",
+		type = "utility",
+		group = "rage",
+	},
+
+	shock_grenade_interval = { name = "shock_grenade_interval", type = "utility", group = "stagger" },
+
+	in_smoke_fog = { name = "in_smoke_fog", type = "utility", group = "blind" },
+
+	toxin_damage_debuff = { name = "toxin_damage_debuff", type = "utility", group = "toxin" },
+	toxin_damage_debuff_monster = { name = "toxin_damage_debuff_monster", type = "utility", group = "toxin" },
+	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = {
+		name = "broker_passive_toxin_infected_enemies_take_increased_damage_debuff",
+		type = "utility",
+		group = "toxin_damage",
+	},
 }
 
-mod.default_dot_debuffs = mod.dot_debuffs
-mod.default_utility_debuffs = mod.utility_debuffs
-
-mod.debuffs = {}
-for _, name in ipairs(mod.dot_debuffs) do
-	mod.debuffs[#mod.debuffs + 1] = name
-end
-for _, name in ipairs(mod.utility_debuffs) do
-	mod.debuffs[#mod.debuffs + 1] = name
-end
+mod.default_debuffs = table.clone(mod.debuffs)
 
 -- add debuff selector entries
 mod.debuff_list = {}
-for _, name in ipairs(mod.debuffs) do
-	mod.debuff_list[#mod.debuff_list + 1] = { text = name, value = name, sort = mod:localize(name) or name }
+
+for _, debuff in next, mod.debuffs do
+	mod.debuff_list[#mod.debuff_list + 1] =
+		{ text = debuff.name, value = debuff.name, sort = mod:localize(debuff.name) or debuff.name }
 end
+
 table.sort(mod.debuff_list, function(a, b)
 	return a.sort < b.sort
 end)
 
-mod.debuff_icons = {
-	-- Weaponry / generic damage types
-	melee = "content/ui/materials/icons/weapons/actions/linesman",
-	melee_headshot = "content/ui/materials/icons/weapons/actions/smiter",
-	headshot = "content/ui/materials/icons/weapons/actions/ads",
-	ranged = "content/ui/materials/icons/weapons/actions/hipfire",
+-- add debuff group selector entries
+mod.debuff_groups_list = {}
 
-	-- Bleeding
-	bleed = "content/ui/materials/icons/presets/preset_13",
+for group_name, debuff in next, mod.debuff_styles do
+	mod.debuff_groups_list[#mod.debuff_groups_list + 1] =
+		{ text = group_name, value = group_name, sort = mod:localize(group_name) or group_name }
+end
 
-	-- Rending / armor shred
-	rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	rending_debuff_medium = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	rending_burn_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-	saw_rending_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rotten_armor",
-
-	increase_impact_received_while_staggered = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
-
-	-- + damage taken
-	veteran_improved_tag_debuff = "content/ui/materials/icons/player_states/dead",
-	ogryn_recieve_damage_taken_increase_debuff = "content/ui/materials/icons/player_states/dead",
-	ogryn_taunt_increased_damage_taken_buff = "content/ui/materials/icons/player_states/dead",
-	psyker_discharge_damage_debuff = "content/ui/materials/icons/player_states/dead",
-	increase_damage_taken = "content/ui/materials/icons/player_states/dead",
-
-	-- + melee damage taken
-	ogryn_staggering_damage_taken_increase = "content/ui/materials/icons/weapons/actions/melee",
-
-	-- + damage if bleeding
-	zealot_bled_enemies_take_more_damage_effect = "content/ui/materials/icons/presets/preset_13",
-
-	-- + damage if staggered
-	increase_damage_received_while_staggered = "content/ui/materials/icons/weapons/actions/melee_hand",
-
-	-- + damage if toxin
-	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = "content/ui/materials/icons/player_states/dead",
-
-	-- Electricity / shock / chain lightning
-	electricity = "content/ui/materials/icons/presets/preset_11",
-	shock_effect = "content/ui/materials/icons/presets/preset_11",
-
-	psyker_heavy_swings_shock_improved = "content/ui/materials/icons/presets/preset_11",
-	psyker_heavy_swings_shock = "content/ui/materials/icons/presets/preset_11",
-
-	powermaul_p2_stun_interval = "content/ui/materials/icons/presets/preset_11",
-	powermaul_p2_stun_interval_basic = "content/ui/materials/icons/presets/preset_11",
-	shockmaul_stun_interval_damage = "content/ui/materials/icons/presets/preset_11",
-	shock_grenade_stun_interval = "content/ui/materials/icons/presets/preset_11",
-	protectorate_force_field = "content/ui/materials/icons/presets/preset_11",
-
-	psyker_protectorate_spread_chain_lightning_interval = "content/ui/materials/icons/presets/preset_11",
-	psyker_protectorate_spread_chain_lightning_interval_improved = "content/ui/materials/icons/presets/preset_11",
-	psyker_protectorate_spread_charged_chain_lightning_interval = "content/ui/materials/icons/presets/preset_11",
-	psyker_protectorate_spread_charged_chain_lightning_interval_improved = "content/ui/materials/icons/presets/preset_11",
-
-	-- Explosion
-	broker_flash_grenade_impact = "content/ui/materials/icons/presets/preset_19",
-	explosion = "content/ui/materials/icons/presets/preset_19",
-	barrel_explosion_close = "content/ui/materials/icons/presets/preset_19",
-	barrel_explosion = "content/ui/materials/icons/presets/preset_19",
-	poxwalker_explosion_close = "content/ui/materials/icons/presets/preset_19",
-	poxwalker_explosion = "content/ui/materials/icons/presets/preset_19",
-	default = "content/ui/materials/icons/presets/preset_19",
-
-	-- FIRE Burn
-	flame_grenade_liquid_area_fire_burning = "content/ui/materials/icons/presets/preset_20",
-	liquid_area_fire_burning_barrel = "content/ui/materials/icons/presets/preset_20",
-	liquid_area_fire_burning = "content/ui/materials/icons/presets/preset_20",
-	burning = "content/ui/materials/icons/presets/preset_20",
-	flamer_assault = "content/ui/materials/icons/presets/preset_20",
-	flame_grenade_liquid_area = "content/ui/materials/icons/presets/preset_20",
-
-	--  warp fire
-	warpfire = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
-	warp_fire = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
-	psyker_force_staff_quick_attack_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_ember",
-
-	-- Toxin / poison / chem
-	toxin_variant_1 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	toxin_variant_2 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	toxin_variant_3 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	chem_burning = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	chem_burning_fast = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	chem_burning_slow = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	broker_stimm_field = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	broker_stimm_field_close = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	broker_tox_grenade = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	broker_toxin_stacks_stun_interval = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	neurotoxin_interval_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	neurotoxin_interval_buff2 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	neurotoxin_interval_buff3 = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	exploding_toxin_interval_buff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	toxin_damage_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-	toxin_damage_debuff_monster = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_nurgle",
-
-	-- Arbite debuffs
-	adamant_drone_enemy_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
-	adamant_drone_talent_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_rampaging_enemies",
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
-	adamant_staggered_enemies_deal_less_damage_debuff = "content/ui/materials/icons/weapons/actions/melee_hand",
-	adamant_staggering_increases_damage_taken = "content/ui/materials/icons/weapons/actions/melee_hand",
-
-	-- Broker rage
-	broker_punk_rage_improved_shout_debuff = "content/ui/materials/icons/presets/preset_18",
-
-	-- "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin" good shield type icon
-
-	-- Stagger
-	shock_grenade_interval = "content/ui/materials/icons/throwables/hud/small/party_non_grenade",
-
-	-- Blinded/smoke
-	in_smoke_fog = "content/ui/materials/icons/circumstances/ventilation_purge_01",
-}
-
-mod.debuff_colours = {
-	-- Weaponry / generic
-	melee = { 255, 150, 150, 150 },
-	melee_headshot = { 255, 150, 150, 150 },
-	headshot = { 255, 150, 150, 150 },
-	ranged = { 255, 150, 150, 150 },
-
-	-- Bleeding
-	bleed = { 255, 255, 0, 0 },
-
-	-- Electricity
-	electricity = { 255, 255, 255, 0 },
-	shock_effect = { 255, 255, 255, 0 },
-	psyker_heavy_swings_shock = { 255, 255, 255, 0 },
-	psyker_heavy_swings_shock_improved = { 255, 255, 255, 0 },
-
-	powermaul_p2_stun_interval = { 255, 255, 255, 0 },
-	powermaul_p2_stun_interval_basic = { 255, 255, 255, 0 },
-	shockmaul_stun_interval_damage = { 255, 255, 255, 0 },
-	shock_grenade_stun_interval = { 255, 255, 255, 0 },
-	protectorate_force_field = { 255, 200, 230, 255 },
-
-	psyker_protectorate_spread_chain_lightning_interval = { 255, 255, 255, 0 },
-	psyker_protectorate_spread_chain_lightning_interval_improved = { 255, 255, 255, 0 },
-	psyker_protectorate_spread_charged_chain_lightning_interval = { 255, 255, 255, 0 },
-	psyker_protectorate_spread_charged_chain_lightning_interval_improved = { 255, 255, 255, 0 },
-
-	-- Explosion
-	broker_flash_grenade_impact = { 255, 250, 250, 20 },
-	explosion = { 255, 250, 250, 20 },
-	barrel_explosion_close = { 255, 250, 250, 20 },
-	barrel_explosion = { 255, 250, 250, 20 },
-	poxwalker_explosion_close = { 255, 250, 250, 20 },
-	poxwalker_explosion = { 255, 250, 250, 20 },
-	default = { 255, 250, 250, 20 },
-
-	-- Burn
-	flame_grenade_liquid_area_fire_burning = { 255, 250, 150, 20 },
-	flame_grenade_liquid_area = { 255, 250, 150, 20 },
-	liquid_area_fire_burning_barrel = { 255, 250, 150, 20 },
-	liquid_area_fire_burning = { 255, 250, 150, 20 },
-	burning = { 255, 250, 150, 20 },
-	flamer_assault = { 255, 250, 150, 20 },
-
-	-- Warpfire
-	warpfire = { 255, 120, 200, 255 },
-	warp_fire = { 255, 120, 200, 255 },
-	psyker_force_staff_quick_attack_debuff = { 255, 120, 200, 255 },
-
-	-- Toxin / poison
-	toxin_variant_1 = { 255, 50, 255, 20 },
-	toxin_variant_2 = { 255, 50, 255, 20 },
-	toxin_variant_3 = { 255, 50, 255, 20 },
-	chem_burning = { 255, 50, 255, 20 },
-	chem_burning_fast = { 255, 50, 255, 20 },
-	chem_burning_slow = { 255, 50, 255, 20 },
-	broker_stimm_field = { 255, 50, 255, 20 },
-	broker_stimm_field_close = { 255, 50, 255, 20 },
-	broker_tox_grenade = { 255, 50, 255, 20 },
-	broker_toxin_stacks_stun_interval = { 255, 50, 255, 20 },
-	neurotoxin_interval_buff = { 255, 80, 255, 80 },
-	neurotoxin_interval_buff2 = { 255, 80, 255, 80 },
-	neurotoxin_interval_buff3 = { 255, 80, 255, 80 },
-	exploding_toxin_interval_buff = { 255, 80, 255, 80 },
-	toxin_damage_debuff = { 255, 80, 255, 80 },
-	toxin_damage_debuff_monster = { 255, 80, 255, 80 },
-
-	-- Rending
-	rending_debuff = { 255, 172, 115, 255 },
-	rending_debuff_medium = { 255, 172, 115, 255 },
-	rending_burn_debuff = { 255, 172, 115, 255 },
-	saw_rending_debuff = { 255, 172, 115, 255 },
-
-	increase_impact_received_while_staggered = { 255, 172, 115, 255 },
-	adamant_melee_weakspot_hits_count_as_stagger_debuff = { 255, 172, 115, 255 },
-	adamant_staggered_enemies_deal_less_damage_debuff = { 255, 172, 115, 255 },
-
-	-- + damage taken
-	veteran_improved_tag_debuff = { 255, 255, 185, 100 },
-	ogryn_recieve_damage_taken_increase_debuff = { 255, 255, 185, 100 },
-	ogryn_taunt_increased_damage_taken_buff = { 255, 255, 185, 100 },
-	psyker_discharge_damage_debuff = { 255, 255, 185, 100 },
-	increase_damage_taken = { 255, 255, 185, 100 },
-
-	-- + melee damage taken
-	ogryn_staggering_damage_taken_increase = { 255, 255, 242, 99 },
-
-	-- + damage if bleeding
-	zealot_bled_enemies_take_more_damage_effect = { 255, 255, 40, 40 },
-
-	-- + damage if staggered
-	increase_damage_received_while_staggered = { 255, 124, 227, 187 },
-	adamant_staggering_increases_damage_taken = { 255, 124, 227, 187 },
-
-	-- + damage if toxin
-	broker_passive_toxin_infected_enemies_take_increased_damage_debuff = { 255, 80, 255, 80 },
-
-	-- Arbite
-	adamant_drone_enemy_debuff = { 255, 0, 144, 255 },
-	adamant_drone_talent_debuff = { 255, 0, 144, 255 },
-
-	-- Broker rage debuff
-	broker_punk_rage_improved_shout_debuff = { 255, 255, 117, 255 },
-
-	-- Stagger
-	shock_grenade_interval = { 255, 100, 200, 255 },
-
-	-- Blinded/smoke
-	in_smoke_fog = { 255, 200, 200, 200 },
-}
+table.sort(mod.debuff_groups_list, function(a, b)
+	return a.sort < b.sort
+end)
 
 mod.BREED_COLOURS = {
 	horde = { 255, 150, 60, 60 },
@@ -526,10 +455,10 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "draw_distance",
 			type = "numeric",
-			default_value = 50,
+			default_value = 30,
 			range = {
-				30,
-				200,
+				15,
+				100,
 			},
 			tooltip = "draw_distance_tooltip",
 		},
@@ -770,7 +699,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "marker_size",
 			type = "numeric",
-			default_value = 2.2,
+			default_value = 1.5,
 			decimals_number = 1,
 			step_size_value = 1,
 			range = {
@@ -779,7 +708,18 @@ table.insert(mod.settings_widgets, {
 			},
 			tooltip = "marker_size_tooltip",
 		},
-
+		{
+			setting_id = "marker_y_offset",
+			type = "numeric",
+			default_value = 0,
+			range = {
+				-1,
+				1,
+			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "marker_y_offset_tooltip",
+		},
 		{
 			setting_id = "markers_health_enable",
 			type = "checkbox",
@@ -895,6 +835,42 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_text_show_damage_tooltip",
 		},
 		{
+			setting_id = "hb_text_show_max_health",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_text_show_max_health_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_damage_show_only_latest_tooltip",
+		},
+		{
+			setting_id = "hb_damage_show_only_latest_value",
+			type = "numeric",
+			default_value = 3,
+			range = {
+				1,
+				10,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "hb_damage_show_only_latest_value_tooltip",
+		},
+		{
+			setting_id = "hb_gap_padding_scale",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.9,
+				1.2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "hb_gap_padding_scale_tooltip",
+		},
+		{
 			setting_id = "hb_frame",
 			type = "dropdown",
 			options = hb_frames,
@@ -912,6 +888,18 @@ table.insert(mod.settings_widgets, {
 			decimals_number = 2,
 			step_size_value = 0.1,
 			tooltip = "hb_padding_scale_tooltip",
+		},
+		{
+			setting_id = "hb_y_offset",
+			type = "numeric",
+			default_value = 0,
+			range = {
+				-1,
+				1,
+			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "hb_y_offset_tooltip",
 		},
 		{
 			setting_id = "hb_size_width",
@@ -986,24 +974,6 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_damage_numbers_add_total_tooltip",
-		},
-		{
-			setting_id = "hb_damage_show_only_latest",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "hb_damage_show_only_latest_tooltip",
-		},
-		{
-			setting_id = "hb_damage_show_only_latest_value",
-			type = "numeric",
-			default_value = 3,
-			range = {
-				1,
-				10,
-			},
-			decimals_number = 0,
-			step_size_value = 1,
-			tooltip = "hb_damage_show_only_latest_value_tooltip",
 		},
 		{
 			setting_id = "hb_damage_number_types",
@@ -1103,6 +1073,97 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "debuff_selected_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_max_stacks_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "debuff_max_stacks_scale",
+					type = "checkbox",
+					default_value = true,
+					tooltip = "debuff_max_stacks_scale_tooltip",
+				},
+				{
+					setting_id = "debuff_max_stacks_colour_toggle",
+					type = "checkbox",
+					default_value = true,
+					tooltip = "debuff_max_stacks_colour_toggle_tooltip",
+				},
+				{
+					setting_id = "debuff_max_stacks_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_max_stacks_colour_tooltip",
+				},
+				{
+					setting_id = "debuff_max_stacks_colour_G",
+					type = "numeric",
+					default_value = 200,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_max_stacks_colour_tooltip",
+				},
+				{
+					setting_id = "debuff_max_stacks_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_max_stacks_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "debuff_group_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "debuff_group_selected",
+					type = "dropdown",
+					options = mod.debuff_groups_list,
+					default_value = "generic",
+					tooltip = "debuff_group_selected_tooltip",
+				},
+				{
+					setting_id = "debuff_group_colour_R",
+					type = "numeric",
+					default_value = 50,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_group_colour_tooltip",
+				},
+				{
+					setting_id = "debuff_group_colour_G",
+					type = "numeric",
+					default_value = 10,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_group_colour_tooltip",
+				},
+				{
+					setting_id = "debuff_group_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "debuff_group_colour_tooltip",
+				},
+			},
 		},
 	},
 })
@@ -1309,6 +1370,13 @@ mod.individual_override_settings = {
 		tooltip = "individual_overrides_tooltip",
 	},
 
+	{
+		setting_id = "markers_individual_toggle",
+		type = "checkbox",
+		default_value = true,
+		tooltip = "markers_individual_toggle_tooltip",
+	},
+
 	--{
 	--	setting_id = "reset_individual_to_default",
 	--	type = "checkbox",
@@ -1317,15 +1385,15 @@ mod.individual_override_settings = {
 	--},
 
 	{
-		setting_id = "healthbar_individual_enable",
-		type = "checkbox",
-		default_value = false,
-		tooltip = "healthbar_individual_enable_tooltip",
-	},
-	{
 		setting_id = "healthbar_individual_colour",
 		type = "group",
 		sub_widgets = {
+			{
+				setting_id = "healthbar_individual_enable",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "healthbar_individual_enable_tooltip",
+			},
 			{
 				setting_id = "healthbar_individual_colour_R",
 				type = "numeric",
@@ -1359,17 +1427,17 @@ mod.individual_override_settings = {
 		},
 	},
 	-- outline
-	{
-		setting_id = "outline_individual_enable",
-		type = "checkbox",
-		default_value = true,
-		tooltip = "outline_individual_enable_tooltip",
-	},
 
 	{
 		setting_id = "outline_individual_colour",
 		type = "group",
 		sub_widgets = {
+			{
+				setting_id = "outline_individual_enable",
+				type = "checkbox",
+				default_value = true,
+				tooltip = "outline_individual_enable_tooltip",
+			},
 			{
 				setting_id = "outline_individual_colour_R",
 				type = "numeric",
@@ -1413,7 +1481,7 @@ table.insert(mod.settings_widgets, {
 return {
 	name = mod:localize("mod_name"),
 	description = mod:localize("mod_description"),
-	is_togglable = false,
+	is_togglable = true,
 	options = {
 		widgets = mod.settings_widgets,
 	},

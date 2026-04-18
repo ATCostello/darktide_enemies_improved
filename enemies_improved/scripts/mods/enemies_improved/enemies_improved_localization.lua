@@ -1,6 +1,8 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.3.01"
+mod.version = "1.4.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
+
+local next = next
 
 local colours = {
 	title = "200,140,20",
@@ -16,7 +18,7 @@ mod._get_font_options = function()
 	local options = {}
 	local i = 1
 
-	for font_name, _ in pairs(fonts) do
+	for font_name, _ in next, fonts do
 		options[i] = { text = font_name, value = font_name }
 		i = i + 1
 	end
@@ -37,7 +39,7 @@ end
 local insert_fonts = function(localisation_table)
 	local fonts_data = mod._get_font_options()
 
-	for _, data in pairs(fonts_data) do
+	for _, data in next, fonts_data do
 		-- Convert snake_case to Title Case for display (e.g. proxima_nova_bold -> Proxima Nova Bold)
 		local readable = data.text:gsub("_", " "):gsub("(%a)([%w]*)", function(first, rest)
 			return first:upper() .. rest
@@ -89,7 +91,7 @@ mod.gather_enemy_names_by_breed_types = function()
 
 	local i = 2
 
-	for name, options in pairs(minion_breeds) do
+	for name, options in next, minion_breeds do
 		-- skip things that shouldn't be here
 		if name ~= "attack_valkyrie" then
 			local tags = options.tags
@@ -119,7 +121,7 @@ end
 local insert_enemy_names = function(localisation_table)
 	local enemies_data = mod.gather_enemy_names_by_breed_types()
 
-	for _, data in pairs(enemies_data) do
+	for _, data in next, enemies_data do
 		if data.value ~= "select" then
 			local new_localised_readable_text = {
 				en = Localize(data.text),
@@ -198,8 +200,73 @@ mod.localisation = {
 -- Group localisations so they can be managed easier.
 local localisations_to_add = {}
 
--- debuff name localisations
+-- debuff names and groups localisations
 table.insert(localisations_to_add, {
+	-- Debuff Groups
+	generic = {
+		en = "Generic",
+	},
+
+	bleed = {
+		en = "Bleed",
+	},
+
+	fire = {
+		en = "Fire",
+	},
+
+	warp = {
+		en = "Warp",
+	},
+
+	shock = {
+		en = "Shock/Lightning",
+	},
+
+	toxin = {
+		en = "Toxin/Poison",
+	},
+
+	rending = {
+		en = "Rending",
+	},
+
+	damage_taken = {
+		en = "+ Damage",
+	},
+
+	melee_damage_taken = {
+		en = "+ Melee Damage",
+	},
+
+	stagger_damage = {
+		en = "+ Stagger Damage",
+	},
+
+	bleed_damage = {
+		en = "+ Bleeding Damage",
+	},
+
+	toxin_damage = {
+		en = "+ Toxin Damage",
+	},
+
+	arbites = {
+		en = "Arbites",
+	},
+
+	rage = {
+		en = "Hive Scum",
+	},
+
+	stagger = {
+		en = "Stagger",
+	},
+
+	blind = {
+		en = "Blind",
+	},
+
 	-- Debuffs Localisation
 	bleed = {
 		en = "Bleed",
@@ -709,7 +776,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "特殊攻击颜色（全局）",
 	},
 	outline_specials_colour_tooltip = {
-		en = "Adjust the colour to apply to all indicators for special attacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour to apply to all indicators for special attacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		["zh-cn"] = "设置所有特殊攻击预警的颜色，数值0~255。",
 	},
 	outline_specials_colour_R = {
@@ -760,7 +827,12 @@ table.insert(localisations_to_add, {
 	markers_health_enable_tooltip = {
 		en = "Toggles a simple quadrant-based (25, 50, 75, 100) health tracker on the overhead marker. \n\nUses the healthbar colours. \n\nCan be useful if you want a minimal way to get an insight on the health of enemies.",
 	},
-
+	marker_y_offset = {
+		en = "Adjust Y offset for overhead markers",
+	},
+	marker_y_offset_tooltip = {
+		en = "Sets the Y offset or height from the ground for the overhead markers.",
+	},
 	marker_bg_colour = {
 		en = "Colour for marker background",
 	},
@@ -798,6 +870,24 @@ table.insert(localisations_to_add, {
 	healthbar_enable_tooltip = {
 		en = "Globally toggles healthbars for enemies. Specific enemy types can be enabled/disabled further below.",
 		["zh-cn"] = "全局开关敌人血条，可在下方单独配置各类型。",
+	},
+	hb_y_offset = {
+		en = "Adjust Y offset for healthbars",
+	},
+	hb_y_offset_tooltip = {
+		en = "Sets the Y offset or height from the ground for the healthbars.",
+	},
+	hb_text_show_max_health = {
+		en = "Show Max Health?",
+	},
+	hb_text_show_max_health_tooltip = {
+		en = "Toggles displaying the max health on the current health text elements.",
+	},
+	hb_gap_padding_scale = {
+		en = "Healthbar widget gap scale",
+	},
+	hb_gap_padding_scale_tooltip = {
+		en = "Adjust the scale of the gap between the healthbar widgets. A lower number will make the text elements closer and 'tighter'.",
 	},
 	healthbar_type_icon_enable = {
 		en = "Enable healthbar enemy type icon?",
@@ -1130,6 +1220,55 @@ table.insert(localisations_to_add, {
 	debuff_stacks_icon_colour_tooltip = {
 		en = "Decide whether to use the debuff icon category colour on the stack/percentage display?",
 	},
+
+	debuff_group_colour = {
+		en = "Debuff Group Overrides",
+	},
+	debuff_group_selected = {
+		en = "Debuff Group",
+	},
+	debuff_group_selected_tooltip = {
+		en = "Select a debuff group to adjust settings for.",
+	},
+	debuff_group_colour_R = {
+		en = "Debuff Colour: Red",
+	},
+	debuff_group_colour_G = {
+		en = "Debuff Colour: Green",
+	},
+	debuff_group_colour_B = {
+		en = "Debuff Colour: Blue",
+	},
+	debuff_group_colour_tooltip = {
+		en = "Adjust the colour of the chosen debuff group above.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+	},
+	debuff_max_stacks_colour = {
+		en = "Debuff Max Stacks Settings",
+	},
+	debuff_max_stacks_colour_tooltip = {
+		en = "Adjust the colour of the stack text when at max stacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+	},
+	debuff_max_stacks_scale = {
+		en = "Increase text scale?",
+	},
+	debuff_max_stacks_scale_tooltip = {
+		en = "Increases the scale of the text for stacks that are at their max stacks value.",
+	},
+	debuff_max_stacks_colour_toggle = {
+		en = "Toggle max stacks colour?",
+	},
+	debuff_max_stacks_colour_toggle_tooltip = {
+		en = "Toggle to adjust the colour of the stacks when at max stacks.",
+	},
+	debuff_max_stacks_colour_R = {
+		en = "Debuff Max Stacks Colour: Red",
+	},
+	debuff_max_stacks_colour_G = {
+		en = "Debuff Max Stacks Colour: Green",
+	},
+	debuff_max_stacks_colour_B = {
+		en = "Debuff Max Stacks Colour: Blue",
+	},
 })
 
 -- Group settings
@@ -1174,7 +1313,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "轮廓颜色（类型专属）",
 	},
 	outline_type_colour_tooltip = {
-		en = "Adjust the colour of the enemy type specific outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of the enemy type specific outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		["zh-cn"] = "设置当前敌人类型的轮廓颜色，数值0~255。",
 	},
 
@@ -1205,7 +1344,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "血条颜色（类型专属）",
 	},
 	healthbar_type_colour_tooltip = {
-		en = "Adjust the colour of the enemy type specific healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of the enemy type specific healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		["zh-cn"] = "设置当前敌人类型的血条颜色，数值0~255。",
 	},
 	healthbar_type_colour_R = {
@@ -1262,7 +1401,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "图标颜色：蓝",
 	},
 	healthbar_icon_type_colour_tooltip = {
-		en = "Adjust the colour of the enemy type specific icon.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of the enemy type specific icon.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		["zh-cn"] = "设置当前敌人类型的图标颜色，数值0~255。",
 	},
 })
@@ -1310,7 +1449,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "血条颜色：蓝",
 	},
 	healthbar_individual_colour_tooltip = {
-		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 	},
 	outline_individual_enable = {
 		en = "Enable outline override?",
@@ -1331,14 +1470,20 @@ table.insert(localisations_to_add, {
 		en = "Outline Colour: Blue",
 	},
 	outline_individual_colour_tooltip = {
-		en = "Adjust the colour of the overrided enemy outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all. Check an RGB calculator to help pick exact colours.",
+		en = "Adjust the colour of the overrided enemy outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+	},
+	markers_individual_toggle = {
+		en = "Overhead markers override?",
+	},
+	markers_individual_toggle_tooltip = {
+		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
 	},
 })
 
 -- add localisations to main map
 for i = 1, #localisations_to_add do
 	if localisations_to_add[i] then
-		for key, value in pairs(localisations_to_add[i]) do
+		for key, value in next, localisations_to_add[i] do
 			if key and value then
 				mod.localisation[key] = value
 			end
@@ -1351,7 +1496,7 @@ local apply_color_to_text = function(text, r, g, b)
 end
 
 local apply_colours = function()
-	for key, values in pairs(mod.localisation) do
+	for key, values in next, mod.localisation do
 		-- apply rgb colours
 		if
 			string.find(key, "colour")
@@ -1364,7 +1509,7 @@ local apply_colours = function()
 			local b = mod:get(key .. "_B")
 
 			if r ~= nil and g ~= nil and b ~= nil then
-				for language, text in pairs(values) do
+				for language, text in next, values do
 					local clean = string.gsub(text, "{#.-}", "")
 					clean = string.gsub(clean, "{#reset%(%)%}", "")
 					text = apply_color_to_text(clean, r, g, b)
@@ -1376,7 +1521,7 @@ local apply_colours = function()
 
 		-- apply border colours
 		if key == "Gold" or key == "Silver" or key == "Steel" or key == "Tarnished" then
-			for language, text in pairs(values) do
+			for language, text in next, values do
 				local argb = mod.lookup_border_color(key)
 
 				if argb ~= nil then
@@ -1394,7 +1539,7 @@ local apply_colours = function()
 
 		-- adjust tooltip text opacity
 		if string.find(key, "_tooltip") then
-			for language, text in pairs(values) do
+			for language, text in next, values do
 				local rgb = { 144, 155, 136 }
 
 				if rgb ~= nil then
@@ -1415,9 +1560,9 @@ local apply_colours = function()
 end
 
 mod.toggle_pizazz = function()
-	for key, values in pairs(mod.localisation) do
+	for key, values in next, mod.localisation do
 		if key == "mod_name" then
-			for language, text in pairs(values) do
+			for language, text in next, values do
 				if mod:get("mod_name_pizazz_toggle") then
 					mod.localisation[key][language] = mod.localisation["mod_name_pizazz"][language]
 				else

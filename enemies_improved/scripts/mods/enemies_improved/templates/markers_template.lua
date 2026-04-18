@@ -19,32 +19,12 @@ local icon_size = { max_size_value / 2, max_size_value / 2 }
 local background_size = { max_size_value, max_size_value }
 local scale_fraction = 1
 
-local CHECK_LOS = mod:get("enemy_markers_require_line_of_sight") or true
-local SCREEN_CLAMP = mod:get("enemy_markers_keep_on_screen") or false
-local MAX_DISTANCE_SETTING = mod.frame_settings.draw_distance
-
------------------------------------------------------------------------
--- Specialist Tracking Settings
------------------------------------------------------------------------
-
-local TRACK_SPECIALISTS = mod:get("track_specialists") or true
-local SHOW_DISTANCE = mod:get("specialist_show_distance") or false
-local SPECIAL_PULSE = mod:get("specialist_special_move_flash") or true
-
 local ScriptUnit_extension = ScriptUnit.extension
-
-local TRACKED_ENEMY_TYPES = {
-	trapper = true,
-	bomber = true,
-	sniper = true,
-	mutant = true,
-	dog = true,
-}
 
 local math_min = math.min
 local math_max = math.max
 local math_sin = math.sin
-local Application_time_since_launch = Application.time_since_launch
+local math_floor = math.floor
 
 -----------------------------------------------------------------------
 -- Template static data
@@ -53,7 +33,7 @@ local Application_time_since_launch = Application.time_since_launch
 template.name = "enemy_markers"
 template.unit_node = "root_point"
 template.min_distance = 0
-template.position_offset = { 0, 0, 0 }
+	template.position_offset = { 0, 0, fs.marker_y_offset }
 
 template.size = size
 template.icon_size = icon_size
@@ -61,13 +41,11 @@ template.ping_size = ping_size
 
 template.alerted = false
 
-template.check_line_of_sight = mod.frame_settings.check_line_of_sight
+template.check_line_of_sight = fs.check_line_of_sight
 template.screen_clamp = true
-template.max_distance = MAX_DISTANCE_SETTING
+template.max_distance = fs.draw_distance
 
-template.data = {}
 template.scale = 1
-template.line_of_sight_speed = 15
 
 template.min_size = { size[1] * scale_fraction, size[2] * scale_fraction }
 template.max_size = { size[1], size[2] }
@@ -136,13 +114,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { 0, 0, 1 },
 				default_offset = { 0, 0, 1 },
 
-				color = { 200, 255, 255, 255 },
-				default_alpha = 200,
+				color = fs.marker_bg_colour,
+				default_alpha = fs.marker_bg_colour[1],
 			},
 
 			visibility_function = function(content, style)
-				return (content.special_attack_imminent and content.is_clamped)
-					or (not content.is_clamped and content.background ~= nil)
+				return content.m_built
 			end,
 		},
 
@@ -167,10 +144,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 			change_function = function(content, style)
 				local health_extension = content.health_extension
-				health_current = health_current or 0
-				health_max = health_max or 0
-				health_percent = health_percent or 0
-				is_dead = is_dead or true
+				local health_current = 0
+				local health_max = 0
+				local health_percent = 0
+				local is_dead = true
 				local unit = content.unit
 				local breed = content.breed
 
@@ -196,7 +173,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			end,
 
 			visibility_function = function(content, style)
-				return fs.markers_health_enable and not content.is_clamped and content.background ~= nil
+				return fs.markers_health_enable and content.m_built
 			end,
 		},
 
@@ -218,7 +195,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 0,
 			},
 			visibility_function = function(content, style)
-				return content.ring == nil
+				return false
 			end,
 		},
 		{
@@ -239,7 +216,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 255,
 			},
 			visibility_function = function(content, style)
-				return content.tagged
+				return false
 			end,
 		},
 		{
@@ -260,7 +237,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 0,
 			},
 			visibility_function = function(content, style)
-				return content.icon == nil
+				return false
 			end,
 		},
 		{
@@ -281,58 +258,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = 255,
 			},
 			visibility_function = function(content, style)
-				return content.special_attack_imminent and content.is_clamped
+				return content.special_attack_imminent and content.is_clamped and content.m_built
 			end,
 			change_function = function(content, style)
 				style.angle = content.angle
 			end,
 		},
-		{
-			pass_type = "text",
-			style_id = "distance_text",
-			value = "",
-			value_id = "distance_text",
-			style = {
-				horizontal_alignment = "left",
-				vertical_alignment = "center",
-				text_horizontal_alignment = "left",
-				text_vertical_alignment = "bottom",
-				offset = { 0, -2, 6 },
-				default_offset = { 0, -2, 6 },
-				font_type = mod.font_type,
-				font_size = 14,
-				default_font_size = 14,
-				text_color = { 220, 220, 220, 220 },
-				default_text_color = { 220, 220, 220, 220 },
-				size = { 100, 32 },
-				default_size = { 100, 32 },
-				default_alpha = 255,
-
-				drop_shadow = true,
-			},
-			visibility_function = function(content)
-				return content.is_clamped and content.show_distance
-			end,
-		},
 	}, scenegraph_id)
-end
-
------------------------------------------------------------------------
--- Specialist detection
------------------------------------------------------------------------
-
-local function is_tracked_enemy(marker)
-	if not TRACK_SPECIALISTS then
-		return false
-	end
-
-	local breed_name = marker.data and marker.data.breed_name
-
-	if not breed_name then
-		return false
-	end
-
-	return TRACKED_ENEMY_TYPES[breed_name] == true
 end
 
 -----------------------------------------------------------------------
@@ -340,11 +272,12 @@ end
 -----------------------------------------------------------------------
 
 template.on_enter = function(widget, marker, template)
+	template.position_offset = { 0, 0, fs.marker_y_offset }
+	widget.alpha_multiplier = 0
 	local content = widget.content
+	content.m_built = false
 
 	marker.draw = false -- force hidden until ready...
-
-	content.spawn_progress_timer = 0
 
 	local unit = marker.unit
 	content.unit = unit
@@ -354,18 +287,33 @@ template.on_enter = function(widget, marker, template)
 
 	content.breed = breed
 	content.breed_type = mod.find_breed_category(unit)
+	content.breed_settings = content.breed and minion_breeds[content.breed.name]
 
-	content.distance_text = ""
-	content.show_distance = false
+	if content.breed and content.breed.name then
+		content.healthbar_enabled = mod:get("healthbar_" .. content.breed.name .. "_enable")
+	end
+
+	content.m_allowed = true
+
+	local enemy_individual = content.breed and content.breed.name
+
+	if enemy_individual then
+		local enabled = mod:get("markers_" .. enemy_individual .. "_toggle")
+
+		if enabled ~= nil then
+			content.m_allowed = enabled
+		end
+	end
+
 	content.special_attack_imminent = false
 
 	local fs = mod.frame_settings
 	max_size_value = 32 * fs.marker_size
-	size = { max_size_value, max_size_value }
-	ping_size = { max_size_value, max_size_value }
-	arrow_size = { max_size_value * 8, max_size_value * 8 }
-	icon_size = { max_size_value / 2, max_size_value / 2 }
-	background_size = { max_size_value, max_size_value }
+	size[1], size[2] = max_size_value, max_size_value
+	ping_size[1], ping_size[2] = max_size_value, max_size_value
+	arrow_size[1], arrow_size[2] = max_size_value * 8, max_size_value * 8
+	icon_size[1], icon_size[2] = max_size_value / 2, max_size_value / 2
+	background_size[1], background_size[2] = max_size_value, max_size_value
 end
 
 -----------------------------------------------------------------------
@@ -374,6 +322,7 @@ end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	widget._next_update = widget._next_update or 0
+
 	if t < widget._next_update then
 		return
 	end
@@ -381,37 +330,42 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
 		widget._next_update = t + 0.25
-
+		return
 	-- distance based updates
 	elseif marker.distance < 30 then
 		widget._next_update = t + 0.02
 	elseif marker.distance < 50 then
-		widget._next_update = t + 0.03
+		widget._next_update = t + 0.04
 	elseif marker.distance < 70 then
-		widget._next_update = t + 0.05
+		widget._next_update = t + 0.06
 	else
-		widget._next_update = t + 0.08
+		widget._next_update = t + 0.1
 	end
 
 	local content = widget.content
 	local distance = content.distance or 0
 	local data = marker.data
 	local unit = marker.unit
+	local style = widget.style
+	local marker_scale = marker.scale
 
-	local evolve_distance = template.evolve_distance
 	local style = widget.style
 
-	local can_interact = false
+	if content.m_allowed == false then
+		marker.remove = true
+		return
+	end
 
-	local scale_speed = 8
-	local scale_progress = content.scale_progress or 0
-	local line_of_sight_progress = content.line_of_sight_progress or 0
+	if not mod.detect_alive(unit) then
+		marker.draw = false
+		marker.remove = true
+		return
+	end
 
-	-- scale anim
-	if distance <= evolve_distance and can_interact then
-		scale_progress = math_min(scale_progress + dt * scale_speed, 1)
-	else
-		scale_progress = math_max(scale_progress - dt * scale_speed, 0)
+	-- early out
+	if not marker.draw and not marker.is_inside_frustum and not template.check_line_of_sight then
+		marker.draw = false
+		return
 	end
 
 	-- marker height
@@ -431,70 +385,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- line-of-sight fade
-	if marker.raycast_initialized then
-		local raycast_result = marker.raycast_result
-		local line_of_sight_speed = 8
+	template.max_distance = fs.draw_distance
 
-		if raycast_result and not can_interact then
-			line_of_sight_progress = math_max(line_of_sight_progress - dt * line_of_sight_speed, 0)
-		else
-			line_of_sight_progress = math_min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+	local line_of_sight_progress = content.line_of_sight_progress or 0
+
+	-- line-of-sight fade
+	if template.check_line_of_sight then
+		if marker.raycast_initialized then
+			local raycast_result = marker.raycast_result
+			local line_of_sight_speed = 8
+
+			if raycast_result then
+				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+			else
+				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+			end
 		end
 	elseif not template.check_line_of_sight then
 		line_of_sight_progress = 1
 	end
-
-	-- ring scaling
-	local default_size = template.min_size
-	local max_size = template.max_size
-	local ring_size = style.ring.size
-
-	local sx = default_size[1] + (max_size[1] - default_size[1]) * scale_progress
-	local sy = default_size[2] + (max_size[2] - default_size[2]) * scale_progress
-	ring_size[1] = sx * marker.scale
-	ring_size[2] = sy * marker.scale
-
-	-- ping scaling + pulsing
-	local ping_min_size = template.ping_min_size
-	local ping_max_size = template.ping_max_size
-	local ping_style = style.ping
-	local ping_size_local = ping_style.size
-
-	local ping_speed = 2
-	local ping_anim_progress = 0.5 + math_sin(Application_time_since_launch() * ping_speed) * 0.5
-	local ping_pulse_size_increase = ping_anim_progress * 15
-
-	local p_sx = ping_min_size[1] + (ping_max_size[1] - ping_min_size[1]) * scale_progress + ping_pulse_size_increase
-	local p_sy = ping_min_size[2] + (ping_max_size[2] - ping_min_size[2]) * scale_progress + ping_pulse_size_increase
-
-	ping_size_local[1] = p_sx * marker.scale
-	ping_size_local[2] = p_sy * marker.scale
-
-	local ping_pivot = ping_style.pivot
-	ping_pivot[1] = ping_size_local[1] * 0.5
-	ping_pivot[2] = ping_size_local[2] * 0.5
-
-	-- icon & background scaling
-	local icon_max_size = template.icon_max_size
-	local icon_min_size = template.icon_min_size
-	local background_max_size = template.background_max_size
-	local background_min_size = template.background_min_size
-
-	local icon_style_size = style.icon.size
-	local bg_style_size = style.background.size
-
-	local i_sx = icon_min_size[1] + (icon_max_size[1] - icon_min_size[1]) * scale_progress
-	local i_sy = icon_min_size[2] + (icon_max_size[2] - icon_min_size[2]) * scale_progress
-	icon_style_size[1] = i_sx * marker.scale
-	icon_style_size[2] = i_sy * marker.scale
-
-	local b_sx = background_min_size[1] + (background_max_size[1] - background_min_size[1]) * scale_progress
-	local b_sy = background_min_size[2] + (background_max_size[2] - background_min_size[2]) * scale_progress
-	bg_style_size[1] = b_sx * marker.scale
-	bg_style_size[2] = b_sy * marker.scale
-
-	local animating = (scale_progress ~= content.scale_progress)
 
 	-----------------------------------------------------------------------
 	-- Special attack warning pulse
@@ -502,7 +411,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	mod.pulse_t = (mod.pulse_t or 0) + mod.frame_settings.dt
 
-	if SPECIAL_PULSE and marker.special_attack_imminent then
+	if marker.special_attack_imminent then
 		content.special_attack_imminent = true
 		--content.is_clamped = true
 
@@ -521,11 +430,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.color[3] = g
 		style.background.color[4] = b
 
-		--style.arrow.size[1] = arrow_size[1] * size_scale/2 * marker.scale
-		style.arrow.size[2] = arrow_size[2] * size_scale / 2 * marker.scale
+		style.arrow.size[2] = arrow_size[2] * size_scale / 2 * marker_scale
 
-		style.background.size[1] = background_size[1] * size_scale * marker.scale
-		style.background.size[2] = background_size[2] * size_scale * marker.scale
+		style.background.size[1] = background_size[1] * size_scale * marker_scale
+		style.background.size[2] = background_size[2] * size_scale * marker_scale
 	else
 		--content.is_clamped = false
 		content.special_attack_imminent = false
@@ -541,14 +449,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.arrow.color[3] = 255
 		style.arrow.color[4] = 255
 
-		style.arrow.size[1] = arrow_size[1] * marker.scale
-		style.arrow.size[2] = arrow_size[2] * marker.scale
+		style.arrow.size[1] = arrow_size[1] * marker_scale
+		style.arrow.size[2] = arrow_size[2] * marker_scale
 
-		style.background.size[1] = background_size[1] * marker.scale
-		style.background.size[2] = background_size[2] * marker.scale
+		style.background.size[1] = background_size[1] * marker_scale
+		style.background.size[2] = background_size[2] * marker_scale
 
-		style.marker_health.size[1] = (background_size[1] / 2) * marker.scale
-		style.marker_health.size[2] = (background_size[2] / 2) * marker.scale
+		style.marker_health.size[1] = (background_size[1] / 2) * marker_scale
+		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
 	end
 
 	local bar_color = mod.BREED_COLOURS[content.breed_type] or mod.BREED_COLOURS.horde
@@ -557,14 +465,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local enemy_individual = content.breed.name
 
 	if enemy_individual then
-		local breed_settings = minion_breeds[enemy_individual]
-
+		local breed_settings = content.breed_settings
 		if breed_settings then
 			local tags = breed_settings.tags
 			local individual_breed_type = mod.find_breed_category_by_tags(tags)
 
 			if individual_breed_type == content.breed_type then
-				if mod:get("healthbar_" .. enemy_individual .. "_enable") then
+				if content.healthbar_enabled then
 					bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
 				end
 			end
@@ -575,30 +482,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	style.marker_health.color[3] = bar_color[3]
 	style.marker_health.color[4] = bar_color[4]
 
-	local text_offset = style.distance_text.offset
-	text_offset[1] = 0
-	text_offset[2] = -(style.arrow.size[2] * 0.2)
-
 	content.line_of_sight_progress = line_of_sight_progress
-	content.scale_progress = scale_progress
+	widget.alpha_multiplier = marker.alpha_multiplier
 
-	widget.alpha_multiplier = line_of_sight_progress or 1
-	widget.visible = true
+	local draw = true
 
-	-- Distance text for specialists
-	if SHOW_DISTANCE then
-		content.show_distance = true
-		content.distance_text = string.format("%dm", math.floor(distance))
+	if not marker.is_inside_frustum then
+		marker.draw = false
+	end
+
+	if draw then
+		content.m_built = true
 	else
-		content.show_distance = false
-		content.distance_text = ""
+		content.m_built = false
 	end
-
-	if data then
-		data.distance = distance
-	end
-
-	return animating
 end
 
 return template
