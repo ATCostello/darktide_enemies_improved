@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.04"
+mod.version = "1.4.05"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1231,13 +1231,13 @@ table.insert(localisations_to_add, {
 		en = "Select a debuff group to adjust settings for.",
 	},
 	debuff_group_colour_R = {
-		en = "Debuff Colour: Red",
+		en = "Debuff Icon Colour: Red",
 	},
 	debuff_group_colour_G = {
-		en = "Debuff Colour: Green",
+		en = "Debuff Icon Colour: Green",
 	},
 	debuff_group_colour_B = {
-		en = "Debuff Colour: Blue",
+		en = "Debuff Icon Colour: Blue",
 	},
 	debuff_group_colour_tooltip = {
 		en = "Adjust the colour of the chosen debuff group above.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",

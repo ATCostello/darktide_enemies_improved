@@ -142,8 +142,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
-			size = { 30 * mod.text_scale, 30 * mod.text_scale },
-			default_size = { 30 * mod.text_scale, 30 * mod.text_scale },
+			size = { 27 * mod.text_scale, 27 * mod.text_scale },
+			default_size = { 27 * mod.text_scale, 27 * mod.text_scale },
 
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
@@ -921,16 +921,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_style.color[3] = colour[3] or 255
 				icon_style.color[4] = colour[4] or 255
 
-				if fs.debuff_stacks_icon_colour then
-					stack_text_style.text_color[2] = colour[2] or 255
-					stack_text_style.text_color[3] = colour[3] or 255
-					stack_text_style.text_color[4] = colour[4] or 255
-				end
-
 				if fs.debuff_max_stacks_colour_toggle and at_max_stacks then
 					stack_text_style.text_color[2] = fs.debuff_max_stacks_colour[2] or 255
 					stack_text_style.text_color[3] = fs.debuff_max_stacks_colour[3] or 255
 					stack_text_style.text_color[4] = fs.debuff_max_stacks_colour[4] or 255
+				elseif fs.debuff_stacks_icon_colour then
+					stack_text_style.text_color[2] = colour[2] or 255
+					stack_text_style.text_color[3] = colour[3] or 255
+					stack_text_style.text_color[4] = colour[4] or 255
 				else
 					stack_text_style.text_color[2] = fs.secondary_colour[2] or 255
 					stack_text_style.text_color[3] = fs.secondary_colour[3] or 255
