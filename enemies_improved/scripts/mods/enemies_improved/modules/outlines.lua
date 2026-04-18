@@ -18,19 +18,34 @@ local function get_outline_system()
 	local extension_manager = Managers.state.extension
 
 	if not extension_manager then
-		_outline_system = nil
 		return nil
 	end
 
-	if not _outline_system or not extension_manager:has_system("outline_system") then
-		_outline_system = extension_manager:system("outline_system")
+	if not extension_manager:has_system("outline_system") then
+		return nil
 	end
 
-	return _outline_system
+	return extension_manager:system("outline_system")
+end
+
+mod.remove_outline = function(unit, outline, outline_system)
+	if unit and outline and outline_system and Unit.alive(unit) then
+		outline_system:remove_outline(unit, outline)
+	end
+end
+
+mod.add_outline = function(unit, outline, outline_system)
+	if unit and outline and outline_system and Unit.alive(unit) then
+		outline_system:add_outline(unit, outline)
+	end
 end
 
 mod.enable_enemy_outlines = function(unit, entry)
 	if not Unit.alive(unit) then
+		return
+	end
+
+	if not entry or not entry.breed then
 		return
 	end
 
@@ -53,8 +68,9 @@ mod.enable_enemy_outlines = function(unit, entry)
 				entry._outline_name_individual = outline_name
 			end
 
-			outline_system:remove_outline(unit, outline_name)
-			outline_system:add_outline(unit, outline_name)
+			mod.remove_outline(unit, outline_name, outline_system)
+			mod.add_outline(unit, outline_name, outline_system)
+
 			return
 		end
 	end
@@ -67,8 +83,8 @@ mod.enable_enemy_outlines = function(unit, entry)
 			entry._outline_name_type = outline_name
 		end
 
-		outline_system:remove_outline(unit, outline_name)
-		outline_system:add_outline(unit, outline_name)
+		mod.remove_outline(unit, outline_name, outline_system)
+		mod.add_outline(unit, outline_name, outline_system)
 	end
 end
 
@@ -87,15 +103,11 @@ mod.disable_enemy_outlines = function(unit, entry)
 	local breed_name = breed and breed.name
 
 	local type_outline = entry._outline_name_type or ("enemies_" .. breed_type)
-	if outline_system and Unit.alive(unit) then
-		outline_system:remove_outline(unit, type_outline)
-	end
+	mod.remove_outline(unit, type_outline, outline_system)
 
 	if breed_name then
 		local individual_outline = entry._outline_name_individual or ("enemies_" .. breed_name)
-		if outline_system and Unit.alive(unit) then
-			outline_system:remove_outline(unit, individual_outline)
-		end
+		mod.remove_outline(unit, individual_outline, outline_system)
 	end
 end
 
@@ -106,18 +118,22 @@ mod.pulse_enemy_outline = function(entry)
 	end
 
 	local unit = entry.unit
+	if not unit or not Unit.alive(unit) then
+		return
+	end
+
 	local fs = mod.frame_settings
 
 	if entry.special_attack_imminent then
 		if not entry.alert_outline then
-			outline_system:add_outline(unit, "enemies_improved_alert")
+			mod.add_outline(unit, "enemies_improved_alert", outline_system)
 			entry.alert_outline = true
 		elseif fs.specials_flash then
-			outline_system:remove_outline(unit, "enemies_improved_alert")
+			mod.remove_outline(unit, "enemies_improved_alert", outline_system)
 			entry.alert_outline = false
 		end
 	else
-		outline_system:remove_outline(unit, "enemies_improved_alert")
+		mod.remove_outline(unit, "enemies_improved_alert", outline_system)
 		entry.alert_outline = false
 	end
 end
@@ -128,14 +144,30 @@ mod.remove_alert_outline = function(entry)
 		return
 	end
 
+	local unit = entry.unit
+	if not unit or not Unit.alive(unit) then
+		return
+	end
+
 	if entry.alert_outline then
-		outline_system:remove_outline(entry.unit, "enemies_improved_alert")
+		mod.remove_outline(unit, "enemies_improved_alert", outline_system)
 		entry.alert_outline = false
 	end
 end
 
 mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
-	local unit_data_extension = ScriptUnit.extension(player_unit, "unit_data_system")
+	if not player_unit or not enemy_unit then
+		return false
+	end
+
+	if not Unit.alive(player_unit) or not Unit.alive(enemy_unit) then
+		return false
+	end
+
+	local unit_data_extension = ScriptUnit.has_extension(player_unit, "unit_data_system")
+	if not unit_data_extension then
+		return false
+	end
 	local first_person_component = unit_data_extension:read_component("first_person")
 	local player_pos = first_person_component.position
 
@@ -183,6 +215,9 @@ mod.update_enemy_outlines = function(entry)
 	end
 
 	local unit = entry.unit
+	if not unit or not Unit.alive(unit) then
+		return
+	end
 
 	local player = Managers.player:local_player(1)
 	local player_unit = player and player.player_unit
