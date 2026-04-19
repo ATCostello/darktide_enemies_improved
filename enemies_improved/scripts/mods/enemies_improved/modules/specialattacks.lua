@@ -63,86 +63,79 @@ mod.special_attack_events = {
 	["wwise/events/minions/play_enemy_traitor_berzerker"] = true,
 }
 
-local _last_debug_lookup_t = 0
-local DEBUG_LOOKUP_COOLDOWN = 0.25
-
-local function extract_locals_throttled(level_base)
-	local now = mod.get_time()
-	if now - _last_debug_lookup_t < DEBUG_LOOKUP_COOLDOWN then
-		return nil
-	end
-
-	_last_debug_lookup_t = now
-
+local function extract_locals(level_base)
 	local level = level_base
+	local res = {}
+	local return_value = nil
 
-	while debug.getinfo(level) do
-		local i = 1
+	while debug.getinfo(level) ~= nil do
+		local v = 1
 
 		while true do
-			local name, value = debug.getlocal(level, i)
+			local name, value = debug.getlocal(level, v)
+
 			if not name then
 				break
 			end
 
-			if name == "unit" and type(value) == "userdata" then
-				return value
-			end
+			res[name] = value
 
-			i = i + 1
+			-- check for specifics...
+			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
+			if value and type(value) == "userdata" and name and name == "unit" then
+				return_value = value
+			end
+			v = v + 1
 		end
 
 		level = level + 1
 	end
+
+	return return_value
 end
 
 mod.handle_special_attacks = function(event_name, source_unit)
-	if not mod.special_attack_events[event_name] then
-		return
-	end
-	local unit = nil
+	if mod.special_attack_events[event_name] then
+		local unit = nil
 
-	-- Try to get uni from sourceunit
-	if type(source_unit) == "userdata" and Unit_alive(source_unit) then
-		unit = source_unit
-	else
-		local flow_unit = Application_flow_callback_context_unit()
-		if flow_unit and type(flow_unit) == "userdata" and Unit_alive(flow_unit) then
-			unit = flow_unit
+		-- Try to get uni from sourceunit
+		if type(source_unit) == "userdata" and Unit.alive(source_unit) then
+			unit = source_unit
+		else
+			local flow_unit = Application.flow_callback_context_unit()
+			if flow_unit and type(flow_unit) == "userdata" and Unit.alive(flow_unit) then
+				unit = flow_unit
+			end
 		end
-	end
 
-	-- If not, try to get from local debugs
-	if
-		not unit
-		and (
-			event_name == "wwise/events/minions/play_weapon_netgunner_wind_up"
-			or event_name == "wwise/events/weapon/play_special_sniper_flash"
-		)
-	then
-		local name, value = debug.getlocal(8, 1)
-		if value then
+		-- If not, try to get from local debugs
+		if
+			event_name
+				== ("wwise/events/minions/play_weapon_netgunner_wind_up" or "wwise/events/weapon/play_special_sniper_flash")
+			and not unit
+		then
+			local name, value = debug.getlocal(8, 1)
 			unit = value._unit
 		end
-	end
 
-	-- if not, try to get from all locals
-	if not unit then
-		unit = extract_locals_throttled(1)
-	end
+		-- if not, try to get from all locals
+		if not unit then
+			unit = extract_locals(1)
+		end
 
-	--extract_locals(1)
+		--extract_locals(1)
 
-	if unit and mod.detect_alive(unit) then
-		entry = mod.enemy_cache[unit]
+		if unit and mod.detect_alive(unit) then
+			entry = mod.enemy_cache[unit]
 
-		if entry then
-			entry.special_attack_event = event_name
-			entry.special_attack_imminent = true
+			if entry then
+				entry.special_attack_event = event_name
+				entry.special_attack_imminent = true
 
-			local now = mod.get_time()
+				local now = mod.get_time()
 
-			entry.special_attack_timer = now + 1.5
+				entry.special_attack_timer = now + 1.5
+			end
 		end
 	end
 end
