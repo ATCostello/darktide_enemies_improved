@@ -963,12 +963,12 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "hb_show_damage_numbers_tooltip",
 		},
-		{
+		--[[{
 			setting_id = "hb_damage_numbers_track_friendly",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_damage_numbers_track_friendly_tooltip",
-		},
+		},]]
 		{
 			setting_id = "hb_damage_numbers_add_total",
 			type = "checkbox",

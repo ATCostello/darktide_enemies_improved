@@ -565,3 +565,20 @@ mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
 		mod.build_frame_settings()
 	end
 end)
+
+--[[
+mod.dmf = get_mod("DMF")
+mod:hook_safe(mod.dmf, "create_mod_options_settings", function(self, options_templates)
+	dbg_self = self
+	dbg_opt = options_templates
+	for _, setting in ipairs(options_templates.settings or {}) do
+		if setting.on_activated then
+			local original = setting.on_activated
+
+			setting.on_activated = function(value, ...)
+				--mod:error("SETTING RESET: " .. setting.display_name .. tostring(value))
+				return original(value, ...)
+			end
+		end
+	end
+end)]]

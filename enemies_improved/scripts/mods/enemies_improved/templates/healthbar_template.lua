@@ -1566,18 +1566,20 @@ template.on_enter = function(widget, marker, template)
 	local bar_color = mod.BREED_COLOURS[breed_type] or mod.BREED_COLOURS.horde
 
 	-- INDIVIDUAL COLOUR OVERRIDES
-	local enemy_individual = breed.name
+	if breed then
+		local enemy_individual = breed.name
 
-	if enemy_individual then
-		local breed_settings = minion_breeds[enemy_individual]
+		if enemy_individual then
+			local breed_settings = minion_breeds[enemy_individual]
 
-		if breed_settings then
-			local tags = breed_settings.tags
-			local individual_breed_type = mod.find_breed_category_by_tags(tags)
+			if breed_settings then
+				local tags = breed_settings.tags
+				local individual_breed_type = mod.find_breed_category_by_tags(tags)
 
-			if individual_breed_type == breed_type then
-				if mod:get("healthbar_" .. enemy_individual .. "_enable") then
-					bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
+				if individual_breed_type == breed_type then
+					if mod:get("healthbar_" .. enemy_individual .. "_enable") then
+						bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
+					end
 				end
 			end
 		end
@@ -1603,6 +1605,14 @@ end
 -----------------------------------------------------------------------
 -- Main update
 -----------------------------------------------------------------------
+
+local DEBUG_DAMAGE = false
+
+local function debug_damage(msg)
+	if DEBUG_DAMAGE then
+		mod:echo("[DMG DEBUG] " .. tostring(msg))
+	end
+end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	widget._next_update = widget._next_update or 0
@@ -1940,11 +1950,34 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local local_player = Managers_player_local:local_player(1)
 	local local_player_unit = local_player and local_player.player_unit
 
-	template.skip_damage_from_others = fs.hb_damage_numbers_track_friendly
+	template.skip_damage_from_others = false --fs.hb_damage_numbers_track_friendly
 
 	local show_damage_number = true
-	local last_was_player_damage = content.last_damaging_unit and content.last_damaging_unit == local_player_unit
-		or false
+	local last_damaging_unit = content.last_damaging_unit
+	local last_was_player_damage = false
+
+	local owner_unit = nil
+
+	if last_damaging_unit and local_player_unit then
+		if last_damaging_unit == local_player_unit then
+			last_was_player_damage = true
+		else
+			owner_unit = Managers.state.unit_spawner:owner(last_damaging_unit)
+			if owner_unit == local_player_unit then
+				last_was_player_damage = true
+			end
+		end
+	end
+
+	-- DEBUG OUTPUT
+	if DEBUG_DAMAGE and damage_taken_since_last > 0 then
+		debug_damage("---- Damage Event ----")
+		debug_damage("Damage: " .. tostring(damage_taken_since_last))
+		debug_damage("Last damaging unit: " .. tostring(last_damaging_unit))
+		debug_damage("Local player unit: " .. tostring(local_player_unit))
+		debug_damage("Owner unit: " .. tostring(owner_unit))
+		debug_damage("Is player damage: " .. tostring(last_was_player_damage))
+	end
 
 	if template.skip_damage_from_others then
 		if last_was_player_damage then
@@ -1954,6 +1987,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	else
 		show_damage_number = true
+	end
+
+	if DEBUG_DAMAGE and damage_taken_since_last > 0 then
+		debug_damage("Skip others setting: " .. tostring(template.skip_damage_from_others))
+		debug_damage("Show damage number: " .. tostring(show_damage_number))
 	end
 
 	local damage_numbers = content.damage_numbers

@@ -125,6 +125,8 @@ local function check_selected_font()
 	end
 end
 
+mod.dmf = get_mod("DMF")
+
 mod.on_all_mods_loaded = function()
 	check_selected_font()
 
@@ -139,6 +141,8 @@ mod.on_all_mods_loaded = function()
 
 	mod.load_toggled_debuffs_state()
 	mod.load_debuff_colours()
+
+	mod.dmf = get_mod("DMF")
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
@@ -161,7 +165,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 	local update_interval
 
-	update_interval = 0.15
+	update_interval = 0.1
 
 	self._update_time = (self._update_time or 0) + dt
 
@@ -249,8 +253,8 @@ mod.scan_enemies = function()
 
 		local dist_sq = dx * dx + dy * dy + dz * dz
 
-		if dist_sq < 4 then -- ~2m movement threshold
-			return
+		if dist_sq < 1 then
+			--return
 		end
 	end
 
