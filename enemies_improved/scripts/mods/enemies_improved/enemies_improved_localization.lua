@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.09"
+mod.version = "1.4.10"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1268,6 +1268,18 @@ table.insert(localisations_to_add, {
 	},
 	debuff_max_stacks_colour_B = {
 		en = "Debuff Max Stacks Colour: Blue",
+	},
+	debuff_x_offset = {
+		en = "Debuffs X offset scale",
+	},
+	debuff_x_offset_tooltip = {
+		en = "Adjust the left + right position of the debuffs. A lower value moves right, a higher value moves left. Adjust to your liking, or to fit to your widget config.",
+	},
+	debuff_y_offset = {
+		en = "Debuffs Y offset scale",
+	},
+	debuff_y_offset_tooltip = {
+		en = "Adjust the up + down position of the debuffs. A lower value moves down/closer, a higher value moves up/apart. Adjust to your liking, or to fit to your widget config.",
 	},
 })
 

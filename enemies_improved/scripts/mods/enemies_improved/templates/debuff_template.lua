@@ -21,16 +21,16 @@ local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
 local draw_distance_setting = fs.draw_distance
 local size = {
-	hb_size_width,
+	200,
 	hb_size_height,
 }
 local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
 local row_step = (hb_size_height + 18) * mod.text_scale
-local base_offset = (-hb_size_width * 0.5) * mod.text_scale
+local base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
 local base_gap = -40 * mod.text_scale
-local icon_x = (hb_size_width - 5) * mod.text_scale + base_gap
-local name_x = (hb_size_width - 35) * mod.text_scale + base_gap
-local stack_x = (hb_size_width + 52) * mod.text_scale + base_gap
+local icon_x = (size[1] - 5) * mod.text_scale + base_gap
+local name_x = (size[1] - 35) * mod.text_scale + base_gap
+local stack_x = (size[1] + 100) * mod.text_scale + base_gap
 
 local active_pool = {}
 
@@ -180,8 +180,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			default_font_size = 16 * mod.text_scale,
 
 			text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-			size = { bar_width * 0.25 * mod.text_scale, 20 },
-			default_size = { bar_width * 0.25 * mod.text_scale, 20 },
+			size = { bar_width * 0.5 * mod.text_scale, 20 },
+			default_size = { bar_width * 0.5 * mod.text_scale, 20 },
 
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
@@ -265,16 +265,17 @@ template.on_enter = function(widget, marker, template)
 	hb_size_height = fs.hb_size_height
 	draw_distance_setting = fs.draw_distance
 	size = {
-		hb_size_width,
+		200,
 		hb_size_height,
 	}
-	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-	local row_step = (hb_size_height + 18) * mod.text_scale
-	base_offset = (-hb_size_width * 0.5) * mod.text_scale
+	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 80) * fs.debuff_y_offset
+		or (-hb_size_height - 16) * fs.debuff_y_offset
+	row_step = (hb_size_height + 18) * mod.text_scale
+	base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
 	base_gap = -40 * mod.text_scale
-	icon_x = (hb_size_width - 5) * mod.text_scale + base_gap
-	name_x = (hb_size_width - 35) * mod.text_scale + base_gap
-	stack_x = (hb_size_width + 52) * mod.text_scale + base_gap
+	icon_x = (size[1] - 5) * mod.text_scale + base_gap
+	name_x = (size[1] - 35) * mod.text_scale + base_gap
+	stack_x = (size[1] + 100) * mod.text_scale + base_gap
 
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension
@@ -631,11 +632,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if split_debuff_types then
 			if debuff.type == "dot" then
 				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-					y_base = (-hb_size_height - 16) * mod.text_scale
+					y_base = (-hb_size_height - 16) * fs.debuff_y_offset * mod.text_scale
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (-hb_size_height - (15 * fs.marker_size)) * mod.text_scale
+					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
 				else
-					y_base = (-hb_size_height - 30) * mod.text_scale
+					y_base = (-hb_size_height - 34) * fs.debuff_y_offset * mod.text_scale
 				end
 			elseif debuff.type == "utility" then
 				if
@@ -645,18 +646,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						and fs.hb_text_bottom_left_01 == "nothing"
 					) or fs.debuff_show_on_body
 				then
-					y_base = (hb_size_height + 16) * mod.text_scale
+					y_base = (hb_size_height + 16) * fs.debuff_y_offset * mod.text_scale
 				elseif
 					fs.healthbar_enable
 					and fs.hb_text_bottom_left_02 == "nothing"
 					and fs.hb_text_bottom_left_01 ~= "nothing"
 				then
-					y_base = (hb_size_height + 40) * mod.text_scale
+					y_base = (hb_size_height + 40) * fs.debuff_y_offset * mod.text_scale
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (hb_size_height + (15 * fs.marker_size)) * mod.text_scale
+					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
 				else
-					y_base = (hb_size_height + 60) * mod.text_scale
+					y_base = (hb_size_height + 60) * fs.debuff_y_offset * mod.text_scale
 				end
+			end
+		else
+			if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
+				y_base = (-hb_size_height - 16) * fs.debuff_y_offset * mod.text_scale
+			elseif fs.markers_enable and not fs.healthbar_enable then
+				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
+			else
+				y_base = (-hb_size_height - 34) * fs.debuff_y_offset * mod.text_scale
 			end
 		end
 

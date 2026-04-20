@@ -1062,6 +1062,30 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_horde_enable_tooltip",
 		},
 		{
+			setting_id = "debuff_x_offset",
+			type = "numeric",
+			default_value = 0.45,
+			range = {
+				0.1,
+				2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_x_offset_tooltip",
+		},
+		{
+			setting_id = "debuff_y_offset",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.1,
+				2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_y_offset_tooltip",
+		},
+		{
 			setting_id = "debuff_toggles",
 			type = "dropdown",
 			options = mod.debuff_list,
