@@ -1961,11 +1961,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if last_damaging_unit and local_player_unit then
 		if last_damaging_unit == local_player_unit then
 			last_was_player_damage = true
-		else
-			owner_unit = Managers.state.unit_spawner:owner(last_damaging_unit)
-			if owner_unit == local_player_unit then
-				last_was_player_damage = true
-			end
 		end
 	end
 
