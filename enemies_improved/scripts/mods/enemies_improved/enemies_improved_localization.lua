@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.10"
+mod.version = "1.4.11"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1280,6 +1280,18 @@ table.insert(localisations_to_add, {
 	},
 	debuff_y_offset_tooltip = {
 		en = "Adjust the up + down position of the debuffs. A lower value moves down/closer, a higher value moves up/apart. Adjust to your liking, or to fit to your widget config.",
+	},
+	debuff_gap_name_icon_offset = {
+		en = "Adjust the gap between the Name and Icon",
+	},
+	debuff_gap_name_icon_offset_tooltip = {
+		en = "Adjust the size of the gap between the debuff names and debuff icons. A lower value will be tighter together, a higher value will be further away. Adjust to your liking, or to fit to your widget config.",
+	},
+	debuff_gap_icon_stack_offset = {
+		en = "Adjust the gap between the Icon and Stacks",
+	},
+	debuff_gap_icon_stack_offset_tooltip = {
+		en = "Adjust the size of the gap between the debuff icon and debuff stacks. A lower value will be tighter together, a higher value will be further away. Adjust to your liking, or to fit to your widget config.",
 	},
 })
 

@@ -28,9 +28,9 @@ local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_he
 local row_step = (hb_size_height + 18) * mod.text_scale
 local base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
 local base_gap = -40 * mod.text_scale
-local icon_x = (size[1] - 5) * mod.text_scale + base_gap
-local name_x = (size[1] - 35) * mod.text_scale + base_gap
-local stack_x = (size[1] + 100) * mod.text_scale + base_gap
+local name_x = (size[1] - 25) * mod.text_scale + base_gap
+local icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * mod.text_scale + base_gap
+local stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * mod.text_scale + base_gap
 
 local active_pool = {}
 
@@ -273,9 +273,9 @@ template.on_enter = function(widget, marker, template)
 	row_step = (hb_size_height + 18) * mod.text_scale
 	base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
 	base_gap = -40 * mod.text_scale
-	icon_x = (size[1] - 5) * mod.text_scale + base_gap
-	name_x = (size[1] - 35) * mod.text_scale + base_gap
-	stack_x = (size[1] + 100) * mod.text_scale + base_gap
+	name_x = (size[1] - 25) * mod.text_scale + base_gap
+	icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * mod.text_scale + base_gap
+	stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * mod.text_scale + base_gap
 
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension

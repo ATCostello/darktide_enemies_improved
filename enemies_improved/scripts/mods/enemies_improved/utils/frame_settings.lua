@@ -136,6 +136,8 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_gap_padding_scale = mod:get("debuff_gap_padding_scale")
 	fs.debuff_y_offset = mod:get("debuff_y_offset")
 	fs.debuff_x_offset = mod:get("debuff_x_offset")
+	fs.debuff_gap_name_icon_offset = mod:get("debuff_gap_name_icon_offset")
+	fs.debuff_gap_icon_stack_offset = mod:get("debuff_gap_icon_stack_offset")
 
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")

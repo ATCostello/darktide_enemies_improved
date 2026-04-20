@@ -1062,6 +1062,30 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_horde_enable_tooltip",
 		},
 		{
+			setting_id = "debuff_gap_name_icon_offset",
+			type = "numeric",
+			default_value = 0.5,
+			range = {
+				0.1,
+				1.5,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_gap_name_icon_tooltip",
+		},
+		{
+			setting_id = "debuff_gap_icon_stack_offset",
+			type = "numeric",
+			default_value = 0.9,
+			range = {
+				0.8,
+				1.2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_gap_icon_stack_offset_tooltip",
+		},
+		{
 			setting_id = "debuff_x_offset",
 			type = "numeric",
 			default_value = 0.45,
