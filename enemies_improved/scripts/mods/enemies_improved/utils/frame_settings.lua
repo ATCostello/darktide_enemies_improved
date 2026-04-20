@@ -1,7 +1,6 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
-mod.text_scale = mod:get("text_scale") or 1
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
 
@@ -11,13 +10,14 @@ mod.build_frame_settings = function(dt)
 	fs.dt = dt or 0
 
 	fs.mod_enabled = mod:get("mod_enabled")
+	fs.global_scale = mod:get("global_scale") or 1
 
 	-- Draw distance
 	fs.draw_distance = mod:get("draw_distance")
 
 	-- GENERAL
 	fs.outlines_enable = mod:get("outlines_enable")
-	fs.text_scale = mod:get("text_scale")
+	fs.text_scale = mod:get("text_scale") * fs.global_scale
 	fs.font_type = mod:get("font_type")
 	fs.check_line_of_sight = true
 	fs.enable_depth_fading = mod:get("enable_depth_fading")
@@ -61,9 +61,9 @@ mod.build_frame_settings = function(dt)
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
 	fs.markers_horde_enable = mod:get("markers_horde_enable")
-	fs.marker_size = mod:get("marker_size")
+	fs.marker_size = mod:get("marker_size") * fs.global_scale
 	fs.markers_health_enable = mod:get("markers_health_enable")
-	fs.marker_y_offset = mod:get("marker_y_offset")
+	fs.marker_y_offset = mod:get("marker_y_offset") * fs.global_scale
 	local a = mod:get("marker_bg_colour_A")
 	local r = mod:get("marker_bg_colour_R")
 	local g = mod:get("marker_bg_colour_G")
@@ -97,19 +97,48 @@ mod.build_frame_settings = function(dt)
 	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
 	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
 	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
-	fs.hb_gap_padding_scale = mod:get("hb_gap_padding_scale")
-
+	fs.hb_gap_padding_scale = mod:get("hb_gap_padding_scale") * fs.global_scale
+	fs.healthbar_type_icon_scale = (mod:get("healthbar_type_icon_scale") or 1) * fs.global_scale
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
-	fs.hb_size_width = mod:get("hb_size_width")
-	fs.hb_size_height = mod:get("hb_size_height")
-	fs.hb_y_offset = mod:get("hb_y_offset")
+	fs.hb_size_width = mod:get("hb_size_width") * fs.global_scale
+	fs.hb_size_height = mod:get("hb_size_height") * fs.global_scale
+	fs.hb_y_offset = mod:get("hb_y_offset") 
 	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
 	fs.hb_damage_numbers_track_friendly = mod:get("hb_damage_numbers_track_friendly")
 	fs.hb_damage_numbers_add_total = mod:get("hb_damage_numbers_add_total")
 	fs.hb_damage_show_only_latest = mod:get("hb_damage_show_only_latest")
 	fs.hb_damage_show_only_latest_value = mod:get("hb_damage_show_only_latest_value")
+	fs.damage_number_duration = mod:get("damage_number_duration")
+	fs.hb_ghostbar_opacity = mod:get("hb_ghostbar_opacity")
+	fs.hb_toggle_ghostbar_colour = mod:get("hb_toggle_ghostbar_colour")
+	fs.readable_max_damage_numbers = mod:get("readable_max_damage_numbers")
+	fs.hb_show_dps = mod:get("hb_show_dps")
+	fs.damage_number_scale = mod:get("damage_number_scale")
+	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
+
+	-- TOUGHNESS
+	fs.toughness_enabled = mod:get("toughness_enabled")
+	fs.toughness_text_enabled = mod:get("toughness_text_enabled")
+	fs.toughness_text_colour_enabled = mod:get("toughness_text_colour_enabled")
+
+	local r = mod:get("toughness_colour_R")
+	local g = mod:get("toughness_colour_G")
+	local b = mod:get("toughness_colour_B")
+
+	if not r or not g or not b then
+		r = 220
+		g = 220
+		b = 220
+	end
+
+	fs.toughness_colour = {
+		255,
+		r,
+		g,
+		b,
+	}
 
 	-- SPECIAL ATTACKS
 	fs.marker_specials_enable = mod:get("marker_specials_enable")
@@ -138,7 +167,11 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_x_offset = mod:get("debuff_x_offset")
 	fs.debuff_gap_name_icon_offset = mod:get("debuff_gap_name_icon_offset")
 	fs.debuff_gap_icon_stack_offset = mod:get("debuff_gap_icon_stack_offset")
-
+	fs.debuff_stacks_show_x = mod:get("debuff_stacks_show_x")
+	fs.debuff_stacks_show_x_space = mod:get("debuff_stacks_show_x_space")
+	fs.debuff_icon_scale = mod:get("debuff_icon_scale")
+	fs.debuff_stack_on_icon = mod:get("debuff_stack_on_icon")
+	
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")
 	local b = mod:get("debuff_max_stacks_colour_B")

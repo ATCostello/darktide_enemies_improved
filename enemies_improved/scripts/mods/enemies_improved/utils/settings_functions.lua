@@ -455,6 +455,8 @@ mod.load_toggled_debuffs_state = function()
 end
 
 mod.on_setting_changed = function(setting_id)
+	local fs = mod.frame_settings
+
 	if setting_id == "debuff_toggles" then
 		local selected_option = mod:get("debuff_toggles")
 		local debuff_toggle_setting_string = selected_option .. "_toggle_state"
@@ -526,7 +528,7 @@ mod.on_setting_changed = function(setting_id)
 	mod.clear_caches()
 
 	mod.font_type = mod:get("font_type")
-	mod.text_scale = mod:get("text_scale")
+	fs.text_scale = mod:get("text_scale")
 
 	if mod:get(reset_setting_id) == true then
 		mod:set(reset_setting_id, false)

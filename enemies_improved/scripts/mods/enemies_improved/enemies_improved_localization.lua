@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.11"
+mod.version = "1.4.12"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1018,14 +1018,14 @@ table.insert(localisations_to_add, {
 		en = "Toggle hiding of healthbars for horde enemies after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
 	},
 	damage_number_settings = {
-		en = "{#color(" .. colours.title .. ")}Floating Damage Numbers{#reset()}",
+		en = "{#color(" .. colours.title .. ")}Damage Numbers{#reset()}",
 	},
 	hb_show_damage_numbers = {
-		en = "Show floating damage numbers?",
+		en = "Show damage numbers?",
 		["zh-cn"] = "显示浮动伤害数字",
 	},
 	hb_show_damage_numbers_tooltip = {
-		en = "Toggles damage numbers when attacking enemies showing how much damage you are dealing.\n\nSee 'Floating damage type' for more options.",
+		en = "Toggles damage numbers when attacking enemies showing how much damage you are dealing.\n\nSee 'Damage type' for more options.",
 		["zh-cn"] = "攻击敌人时显示伤害数值，可在下方选择样式。",
 	},
 	hb_damage_numbers_track_friendly = {
@@ -1069,7 +1069,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "在血量旁显示已承受伤害。",
 	},
 	hb_damage_number_types = {
-		en = "Floating damage type",
+		en = "Damage type",
 		["zh-cn"] = "伤害数字样式",
 	},
 	hb_damage_number_types_tooltip = {
@@ -1107,6 +1107,87 @@ table.insert(localisations_to_add, {
 	hb_size_height_tooltip = {
 		en = "The max height of the healthbar.\n\nThe information scales with this too, so try different sizes to see what suits you best.",
 		["zh-cn"] = "血条最大高度，文本会随高度自动适配。",
+	},
+	damage_number_duration = {
+		en = "Duration to show numbers",
+	},
+	damage_number_duration_tooltip = {
+		en = "Set a duration for damage numbers to show for.\n\nThe numbers will fade out after this amount of time.",
+	},
+	hb_ghostbar_opacity = {
+		en = "Ghostbar opacity",
+	},
+	hb_ghostbar_opacity_tooltip = {
+		en = "Adjust the opacity of the ghostbar. 0 = transparent, 1 = opaque.",
+	},
+	hb_toggle_ghostbar_colour = {
+		en = "Ghostbar uses colour?",
+	},
+	hb_toggle_ghostbar_colour_tooltip = {
+		en = "Should the ghostbar use the colour of the healthbar of the enemy?\n\nIf disabled, the ghostbar will be white.",
+	},
+	readable_max_damage_numbers = {
+		en = "Max numbers to show",
+	},
+	readable_max_damage_numbers_tooltip = {
+		en = "Set a cap for the max damage numbers to show for the Readable damage number type.",
+	},
+	toughness_colour = {
+		en = "Toughness Bar Settings",
+	},
+	toughness_enabled = {
+		en = "Toggle Toughness Features",
+	},
+	toughness_enabled_tooltip = {
+		en = "Overlays a toughness bar over the healthbar if the enemy has toughness.",
+	},
+	toughness_colour_tooltip = {
+		en = "Select a colour for the toughness bar.",
+	},
+	toughness_colour_R = {
+		en = "Toughness Bar: Red",
+	},
+	toughness_colour_G = {
+		en = "Toughness Bar: Green",
+	},
+	toughness_colour_B = {
+		en = "Toughness Bar: Blue",
+	},
+	toughness_text_enabled = {
+		en = "Adjust health text to show the toughness values?",
+	},
+	toughness_text_enabled_tooltip = {
+		en = "Swaps out the healtbar text 'health' options to their toughness, if the enemy has toughness.",
+	},
+	toughness_text_colour_enabled = {
+		en = "Change health text to use toughness colour?",
+	},
+	toughness_text_colour_enabled_tooltip = {
+		en = "Swaps out the healtbar text 'health' colour to the toughness colour, if the enemy has toughness.",
+	},
+	hb_show_dps = {
+		en = "Show DPS",
+	},
+	hb_show_dps_tooltip = {
+		en = "Displays a brief damage-per-second text element after you kill an enemy.\n\nUses the damage number duration as a timer for how long to display.",
+	},
+	damage_number_scale = {
+		en = "Damage number scale",
+	},
+	damage_number_scale_tooltip = {
+		en = "Adjust the scale of the damage numbers. Multiplies with the global text scale too...",
+	},
+	damage_number_y_offset = {
+		en = "Damage number y offset",
+	},
+	damage_number_y_offset_tooltip = {
+		en = "Adjust the up/down position of the damage numbers. \n\nA value of 0 will be close to the top of the enemy, the higher the value, the lower the position. Only effects the floating or flashy damage numbers.",
+	},
+	healthbar_type_icon_scale = {
+		en = "Type icon scale",
+	},
+	healthbar_type_icon_scale_tooltip = {
+		en = "Adjust the scale of the type icon.",
 	},
 })
 
@@ -1292,6 +1373,36 @@ table.insert(localisations_to_add, {
 	},
 	debuff_gap_icon_stack_offset_tooltip = {
 		en = "Adjust the size of the gap between the debuff icon and debuff stacks. A lower value will be tighter together, a higher value will be further away. Adjust to your liking, or to fit to your widget config.",
+	},
+	debuff_stacks_show_x = {
+		en = "Show 'X' on stacks?",
+	},
+	debuff_stacks_show_x_tooltip = {
+		en = "Toggle to show the 'X' on the debuff stacks, meaning the multiplier. If disabled, will just show the number.",
+	},
+	debuff_stacks_show_x_space = {
+		en = "Add a space after 'X' on stacks?",
+	},
+	debuff_stacks_show_x_space_tooltip = {
+		en = "Toggle to add a space between the 'X' and the stack counter on the debuff stacks, meaning the multiplier. If disabled, there will be no space.",
+	},
+	debuff_icon_scale = {
+		en = "Debuff Icon Scale",
+	},
+	debuff_icon_scale_tooltip = {
+		en = "Adjust the scale of the debuff icons. A lower value will be smaller, a higher value will be bigger. Adjust to your liking, or to fit to your widget config.",
+	},
+	debuff_stack_on_icon = {
+		en = "Show stacks on icon?",
+	},
+	debuff_stack_on_icon_tooltip = {
+		en = "Toggle to move the stacks on top of the debuff icon.",
+	},
+	debuff_gap_padding_scale = {
+		en = "Row padding scale",
+	},
+	debuff_gap_padding_scale_tooltip = {
+		en = "Adjust the padding gap between the rows of debuffs. A lower value will make the rows tighter together, a higher number will make them move apart.",
 	},
 })
 

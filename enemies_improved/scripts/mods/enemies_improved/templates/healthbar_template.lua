@@ -14,7 +14,6 @@ local fs = mod.frame_settings
 local size = { fs.hb_size_width, fs.hb_size_height }
 
 local min_size = { 0, 0 }
-mod.scale = 1
 
 template.size = size
 
@@ -104,7 +103,7 @@ end
 -----------------------------------------------------------------------
 
 local damage_number_types = table.enum("readable", "floating", "flashy")
-template.show_dps = true
+template.show_dps = fs.hb_show_dps
 template.skip_damage_from_others = true
 
 local hb_damage_number_type = fs.hb_damage_number_type
@@ -115,24 +114,24 @@ template.damage_number_settings = {
 	crit_color = "orange",
 	crit_hit_size_scale = 1.5,
 	default_color = "white",
-	default_font_size = 14,
-	dps_font_size = 14.4,
+	default_font_size = 16 * fs.text_scale ,
+	dps_font_size =  22 * fs.text_scale ,
 	dps_y_offset = -36,
-	duration = 3,
-	expand_bonus_scale = 30,
+	duration = fs.damage_number_duration,
+	expand_bonus_scale = 4,
 	expand_duration = 0.2,
 	fade_delay = 2,
 	first_hit_size_scale = 1.2,
 	has_taken_damage_timer_remove_after_time = 5,
 	has_taken_damage_timer_y_offset = 34,
-	hundreds_font_size = 14.4,
+	hundreds_font_size = 16 * fs.text_scale ,
 	max_float_y = 20,
 	shrink_duration = 0.5,
 	visibility_delay = 2,
 	weakspot_color = "yellow",
-	x_offset = (size[1] / 2) + 10,
-	x_offset_between_numbers = 40 * mod.text_scale,
-	y_offset = -30,
+	x_offset = 0,
+	x_offset_between_numbers = 14 * fs.text_scale * 3,
+	y_offset = 0,
 	flashy_font_size_dmg_multiplier = { 1, 1.5 },
 	flashy_font_size_dmg_scale_range = { 50, 300 },
 }
@@ -173,8 +172,8 @@ local function _readable_damage_number_function(
 	font_type
 )
 	local z_position = position[3]
-	local base_y = position[2]
-	local base_x = position[1]
+	local y_position = position[2]
+	local x_position = position[1]
 	local dt = ui_renderer.dt
 
 	for i = num_damage_numbers, 1, -1 do
@@ -182,9 +181,12 @@ local function _readable_damage_number_function(
 		local duration = damage_number.duration
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
+		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
 			table_remove(damage_numbers, i)
+		elseif i >= max_damage_numbers then
+			table_remove(damage_numbers, 1)
 		else
 			damage_number.time = time + dt
 		end
@@ -242,8 +244,8 @@ local function _readable_damage_number_function(
 		end
 
 		local draw_pos = Vector3(
-			base_x + current_order * damage_number_settings.x_offset_between_numbers,
-			base_y,
+			x_position + current_order * damage_number_settings.x_offset_between_numbers,
+			y_position,
 			z_position + current_order
 		)
 
@@ -251,8 +253,8 @@ local function _readable_damage_number_function(
 	end
 
 	position[3] = z_position
-	position[2] = base_y
-	position[1] = base_x
+	position[2] = y_position
+	position[1] = x_position
 end
 
 local function _floating_damage_number_function(
@@ -272,30 +274,21 @@ local function _floating_damage_number_function(
 	font_type
 )
 	local z_position = position[3]
-	local base_y = position[2] - damage_number_settings.y_offset * 3
-	local base_x = position[1] + damage_number_settings.x_offset
-	local dt = ui_renderer.dt
-
-	if ui_content.alpha_multiplier then
-		--text_color[1] = text_color[1] * ui_content.alpha_multiplier
-	end
+	local y_position = position[2]
+	local x_position = position[1]
 
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
 		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
-
-		if damage_number.hit_world_position then
-			local world_to_screen_position =
-				Camera.world_to_screen(ui_content.player_camera, damage_number.hit_world_position:unbox())
-
-			base_y = world_to_screen_position[2] + 60
-			base_x = world_to_screen_position[1] + 190
-		end
+		local dt = ui_renderer.dt
+		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
 			table_remove(damage_numbers, i)
+		elseif i >= max_damage_numbers then
+			table_remove(damage_numbers, 1)
 		else
 			damage_number.time = time + dt
 		end
@@ -353,15 +346,15 @@ local function _floating_damage_number_function(
 		end
 
 		position[3] = z_position + current_order * 2
-		position[2] = base_y - 35 * time
-		position[1] = base_x + current_order * damage_number_settings.x_offset_between_numbers
+		position[2] = y_position - 35 * time
+		position[1] = x_position + current_order * damage_number_settings.x_offset_between_numbers
 
 		UIRenderer.draw_text(ui_renderer, text, font_size, font_type, position, size, text_color, {})
 	end
 
 	position[3] = z_position
-	position[2] = base_y
-	position[1] = base_x
+	position[2] = y_position
+	position[1] = x_position
 end
 
 local function _flashy_damage_number_function(
@@ -381,8 +374,9 @@ local function _flashy_damage_number_function(
 	font_type
 )
 	local z_position = position[3]
-	local base_y = position[2] - damage_number_settings.y_offset * 3
-	local base_x = position[1]
+	local y_position = position[2]
+	local x_position = position[1]
+
 	local dt = ui_renderer.dt
 
 	if ui_content.alpha_multiplier then
@@ -394,26 +388,16 @@ local function _flashy_damage_number_function(
 
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
-		local y_position = base_y
-		local x_position = base_x
-
-		if damage_number.hit_world_position then
-			local world_to_screen_position =
-				Camera.world_to_screen(ui_content.player_camera, damage_number.hit_world_position:unbox())
-
-			y_position = world_to_screen_position[2] - 75
-			x_position = world_to_screen_position[1]
-		end
-
-		y_position = y_position + 100
-		x_position = x_position + 200
 
 		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
+		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
 			table_remove(damage_numbers, i)
+		elseif i >= max_damage_numbers then
+			table_remove(damage_numbers, 1)
 		else
 			damage_number.time = time + dt
 		end
@@ -498,8 +482,8 @@ local function _flashy_damage_number_function(
 	end
 
 	position[3] = z_position
-	position[2] = base_y
-	position[1] = base_x
+	position[2] = y_position
+	position[1] = x_position
 end
 
 -----------------------------------------------------------------------
@@ -510,301 +494,215 @@ template.damage_number_function = function(pass, ui_renderer, ui_style, ui_conte
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	if fs.hb_damage_number_type ~= damage_number_types.readable then
 
-	local damage_numbers = ui_content.damage_numbers
+		local damage_numbers = ui_content.damage_numbers
 
-	if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
-		ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
-		return
-	end
-
-	local damage_number_settings = template.damage_number_settings
-	local scale = RESOLUTION_LOOKUP.scale
-	if ui_content.scale then
-		scale = ui_content.scale
-	end
-	local default_font_size = damage_number_settings.default_font_size * scale
-	local dps_font_size = damage_number_settings.dps_font_size * scale
-	local hundreds_font_size = damage_number_settings.hundreds_font_size * scale
-	local font_type = mod.font_type
-
-	_init_damage_colors()
-
-	local default_color = CACHED_DAMAGE_COLORS.default
-	local crit_color = CACHED_DAMAGE_COLORS.crit
-	local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
-
-	-- reuse same table reference
-	local text_color = ui_style.text_color
-
-	local num_damage_numbers = #damage_numbers
-	local z_position = position[3]
-	local y_position = position[2]
-	local x_position = position[1]
-	local damage_has_started = ui_content.damage_has_started
-	local dt = ui_renderer.dt
-
-	if damage_has_started then
-		if not ui_content.damage_has_started_timer then
-			ui_content.damage_has_started_timer = dt
-		elseif not ui_content.dead then
-			ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
+		if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
+			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
+			return
 		end
 
-		if template.show_dps and ui_content.dead then
-			local dps_timer = ui_content.damage_has_started_timer or 0
-			local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
-			local text = string_format("%d DPS", dps_value)
-			local dps_y_offset = damage_number_settings.dps_y_offset
-			local damage_has_started_position
+		local damage_number_settings = template.damage_number_settings
+		local scale = ui_content.scale
+		local default_font_size = damage_number_settings.default_font_size * fs.damage_number_scale
+		local dps_font_size = damage_number_settings.dps_font_size * fs.damage_number_scale
+		local hundreds_font_size = damage_number_settings.hundreds_font_size * fs.damage_number_scale
+		local font_type = mod.font_type
 
-			if fs.hb_damage_number_type == damage_number_types.readable then
-				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
-			else
-				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
+		_init_damage_colors()
+
+		local default_color = CACHED_DAMAGE_COLORS.default
+		local crit_color = CACHED_DAMAGE_COLORS.crit
+		local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
+
+		-- reuse same table reference
+		local text_color = ui_style.text_color
+
+		local num_damage_numbers = #damage_numbers
+
+		position[1] = position[1] + (fs.hb_size_width * 0.4)
+		position[2] = position[2] + ((ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset)) * ui_content.scale
+
+		local z_position = position[3]
+		local y_position = position[2]
+		local x_position = position[1]
+		local damage_has_started = ui_content.damage_has_started
+		local dt = ui_renderer.dt
+
+		if damage_has_started then
+			if not ui_content.damage_has_started_timer then
+				ui_content.damage_has_started_timer = dt
+			elseif not ui_content.dead then
+				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			UIRenderer.draw_text(
-				ui_renderer,
-				text,
-				dps_font_size,
-				font_type,
-				damage_has_started_position,
-				size,
-				ui_style.text_color,
-				{}
-			)
-		end
-
-		if ui_content.last_hit_zone_name then
-			local hit_zone_name = ui_content.last_hit_zone_name
-			local breed = ui_content.breed
-			local armor_type = breed and breed.armor_type
-
-			if breed and breed.hitzone_armor_override and breed.hitzone_armor_override[hit_zone_name] then
-				--armor_type = breed.hitzone_armor_override[hit_zone_name]
-			end
-
-			if fs.show_armor_types then
-				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
-				local armor_type_text = Localize(armor_type_loc_string)
+			if template.show_dps and ui_content.dead then
+				local dps_timer = ui_content.damage_has_started_timer or 0
+				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
+				local text = string_format("%d DPS", dps_value)
+				local dps_y_offset = damage_number_settings.dps_y_offset
+				local damage_has_started_position
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
-					local armor_type_position = Vector3(x_position, y_position, z_position)
-
-					--[[UIRenderer.draw_text(
-						ui_renderer,
-						armor_type_text,
-						dps_font_size,
-						font_type,
-						armor_type_position,
-						size,
-						ui_style.text_color,
-						{},
-						"armour_type1"
-					)]]
-					--ui_content.armour_type = armor_type_text
+					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
 				else
-					local armor_type_position = Vector3(x_position, y_position, z_position)
-
-					--[[UIRenderer.draw_text(
-						ui_renderer,
-						armor_type_text,
-						dps_font_size,
-						font_type,
-						armor_type_position,
-						size,
-						ui_style.text_color,
-						{},
-						"armour_type1"
-					)]]
-					--ui_content.armour_type = armor_type_text
+					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
 				end
+
+				UIRenderer.draw_text(
+					ui_renderer,
+					text,
+					dps_font_size,
+					font_type,
+					damage_has_started_position,
+					size,
+					ui_style.text_color,
+					{}
+				)
+
+				return
 			end
 		end
-	end
 
-	if fs.show_damage_numbers and num_damage_numbers > 0 then
-		if fs.hb_damage_number_type == damage_number_types.floating then
-			_floating_damage_number_function(
-				ui_content,
-				ui_renderer,
-				ui_style,
-				damage_number_settings,
-				damage_numbers,
-				num_damage_numbers,
-				position,
-				default_color,
-				text_color,
-				crit_color,
-				weakspot_color,
-				default_font_size,
-				hundreds_font_size,
-				font_type
-			)
-		elseif fs.hb_damage_number_type == damage_number_types.flashy then
-			_flashy_damage_number_function(
-				ui_content,
-				ui_renderer,
-				ui_style,
-				damage_number_settings,
-				damage_numbers,
-				num_damage_numbers,
-				position,
-				default_color,
-				text_color,
-				crit_color,
-				weakspot_color,
-				default_font_size,
-				hundreds_font_size,
-				font_type
-			)
+		if fs.show_damage_numbers and num_damage_numbers > 0 then
+			if fs.hb_damage_number_type == damage_number_types.floating then
+				_floating_damage_number_function(
+					ui_content,
+					ui_renderer,
+					ui_style,
+					damage_number_settings,
+					damage_numbers,
+					num_damage_numbers,
+					position,
+					default_color,
+					text_color,
+					crit_color,
+					weakspot_color,
+					default_font_size,
+					hundreds_font_size,
+					font_type
+				)
+			elseif fs.hb_damage_number_type == damage_number_types.flashy then
+				_flashy_damage_number_function(
+					ui_content,
+					ui_renderer,
+					ui_style,
+					damage_number_settings,
+					damage_numbers,
+					num_damage_numbers,
+					position,
+					default_color,
+					text_color,
+					crit_color,
+					weakspot_color,
+					default_font_size,
+					hundreds_font_size,
+					font_type
+				)
+			end
 		end
-	end
 
-	ui_style.font_size = default_font_size
+		ui_style.font_size = default_font_size
+	end
 end
 
 template.readable_damage_number_function = function(pass, ui_renderer, ui_style, ui_content, position, size)
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	if fs.hb_damage_number_type == damage_number_types.readable then
 
-	local damage_numbers = ui_content.damage_numbers
+		local damage_numbers = ui_content.damage_numbers
 
-	if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
-		ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
-		return
-	end
-
-	local damage_number_settings = template.damage_number_settings
-	local scale = RESOLUTION_LOOKUP.scale
-	if ui_content.scale then
-		scale = ui_content.scale
-	end
-	local default_font_size = damage_number_settings.default_font_size * scale
-	local dps_font_size = damage_number_settings.dps_font_size * scale
-	local hundreds_font_size = damage_number_settings.hundreds_font_size * scale
-	local font_type = mod.font_type
-
-	_init_damage_colors()
-
-	local default_color = CACHED_DAMAGE_COLORS.default
-	local crit_color = CACHED_DAMAGE_COLORS.crit
-	local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
-
-	-- reuse same table reference
-	local text_color = ui_style.text_color
-
-	local num_damage_numbers = #damage_numbers
-	local z_position = position[3]
-	local y_position = position[2]
-	local x_position = position[1]
-	local damage_has_started = ui_content.damage_has_started
-	local dt = ui_renderer.dt
-
-	if damage_has_started then
-		if not ui_content.damage_has_started_timer then
-			ui_content.damage_has_started_timer = dt
-		elseif not ui_content.dead then
-			ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
+		if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
+			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
+			return
 		end
 
-		if template.show_dps and ui_content.dead then
-			local dps_timer = ui_content.damage_has_started_timer or 0
-			local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
-			local text = string_format("%d DPS", dps_value)
-			local dps_y_offset = damage_number_settings.dps_y_offset
-			local damage_has_started_position
-
-			if fs.hb_damage_number_type == damage_number_types.readable then
-				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
-			else
-				damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
-			end
-
-			UIRenderer.draw_text(
-				ui_renderer,
-				text,
-				dps_font_size,
-				font_type,
-				damage_has_started_position,
-				size,
-				ui_style.text_color,
-				{}
-			)
+		local damage_number_settings = template.damage_number_settings
+		local scale = RESOLUTION_LOOKUP.scale
+		if ui_content.scale then
+			scale = ui_content.scale
 		end
 
-		if ui_content.last_hit_zone_name then
-			local hit_zone_name = ui_content.last_hit_zone_name
-			local breed = ui_content.breed
-			local armor_type = breed and breed.armor_type
+		local default_font_size = damage_number_settings.default_font_size * scale * fs.damage_number_scale
+		local dps_font_size = damage_number_settings.dps_font_size * scale * fs.damage_number_scale
+		local hundreds_font_size = damage_number_settings.hundreds_font_size * scale * fs.damage_number_scale
+		local font_type = mod.font_type
 
-			if breed and breed.hitzone_armor_override and breed.hitzone_armor_override[hit_zone_name] then
-				--armor_type = breed.hitzone_armor_override[hit_zone_name]
+		_init_damage_colors()
+
+		local default_color = CACHED_DAMAGE_COLORS.default
+		local crit_color = CACHED_DAMAGE_COLORS.crit
+		local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
+
+		-- reuse same table reference
+		local text_color = ui_style.text_color
+
+		local num_damage_numbers = #damage_numbers
+		local z_position = position[3]
+		local y_position = position[2]
+		local x_position = position[1]
+		local damage_has_started = ui_content.damage_has_started
+		local dt = ui_renderer.dt
+
+		if damage_has_started then
+			if not ui_content.damage_has_started_timer then
+				ui_content.damage_has_started_timer = dt
+			elseif not ui_content.dead then
+				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			if fs.show_armor_types then
-				local armor_type_loc_string = armor_type and armor_type_string_lookup[armor_type] or ""
-				local armor_type_text = Localize(armor_type_loc_string)
+			if template.show_dps and ui_content.dead then
+				local dps_timer = ui_content.damage_has_started_timer or 0
+				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
+				local text = string_format("%d DPS", dps_value)
+				local dps_y_offset = damage_number_settings.dps_y_offset
+				local damage_has_started_position
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
-					local armor_type_position = Vector3(x_position, y_position, z_position)
-
-					--[[UIRenderer.draw_text(
-						ui_renderer,
-						armor_type_text,
-						dps_font_size,
-						font_type,
-						armor_type_position,
-						size,
-						ui_style.text_color,
-						{},
-						"armour_type1"
-					)]]
-					--ui_content.armour_type = armor_type_text
+					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
 				else
-					local armor_type_position = Vector3(x_position, y_position, z_position)
-
-					--[[UIRenderer.draw_text(
-						ui_renderer,
-						armor_type_text,
-						dps_font_size,
-						font_type,
-						armor_type_position,
-						size,
-						ui_style.text_color,
-						{},
-						"armour_type1"
-					)]]
-					--ui_content.armour_type = armor_type_text
+					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset * 0.6, z_position)
 				end
+
+				UIRenderer.draw_text(
+					ui_renderer,
+					text,
+					dps_font_size,
+					font_type,
+					damage_has_started_position,
+					size,
+					ui_style.text_color,
+					{}
+				)
 			end
 		end
-	end
 
-	if fs.show_damage_numbers and num_damage_numbers > 0 then
-		if fs.hb_damage_number_type == damage_number_types.readable then
-			_readable_damage_number_function(
-				ui_content,
-				ui_renderer,
-				ui_style,
-				damage_number_settings,
-				damage_numbers,
-				num_damage_numbers,
-				position,
-				default_color,
-				text_color,
-				crit_color,
-				weakspot_color,
-				default_font_size,
-				hundreds_font_size,
-				font_type
-			)
+		if fs.show_damage_numbers and num_damage_numbers > 0 then
+			if fs.hb_damage_number_type == damage_number_types.readable then
+				_readable_damage_number_function(
+					ui_content,
+					ui_renderer,
+					ui_style,
+					damage_number_settings,
+					damage_numbers,
+					num_damage_numbers,
+					position,
+					default_color,
+					text_color,
+					crit_color,
+					weakspot_color,
+					default_font_size,
+					hundreds_font_size,
+					font_type
+				)
+			end
 		end
-	end
 
-	ui_style.font_size = default_font_size
+		ui_style.font_size = default_font_size
+	end
 end
 
 -----------------------------------------------------------------------
@@ -821,10 +719,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local icon_style = {
 		vertical_alignment = "center",
 		horizontal_alignment = "center",
-		offset = { -bar_width * 0.5 - 24, 0, 6 },
-		default_offset = { -bar_width * 0.5 - 24, 0, 6 },
-		size = { 28, 28 },
-		default_size = { 28, 28 },
+		offset = { -bar_width * 0.5 - 8, 0, 10 },
+		default_offset = { -bar_width * 0.5 - 8, 0, 10 },
+		size = { 24, 24 },
+		default_size = { 24, 24 },
 		color = { 200, 255, 200, 0 },
 		default_alpha = 255,
 	}
@@ -890,8 +788,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_offset = { bar_offset[1], bar_offset[2], 2 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
-				color = { 200, 120, 40, 40 },
-				default_alpha = 200,
+				color = { 255, 120, 40, 40 },
+				default_alpha = 255,
 			},
 
 			change_function = function(content, style)
@@ -950,8 +848,42 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					return false
 				end
 			end,
-		},
+		}, -- CURRENT TOUGHNESS
+		{
+			pass_type = "rect",
+			style_id = "current_toughness",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 255, 50, 150, 255 },
+				default_alpha = 255,
+			},
+			change_function = function(content, style)
+				local toughness_fraction = content.toughness_fraction or 0
 
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_toughness_width = scaled_bar_width * toughness_fraction
+
+				style.size[1] = scaled_toughness_width
+				style.offset[1] = -scaled_bar_width * 0.5
+			end,
+
+			visibility_function = function(content)
+				if
+					content.hb_built
+					and fs.toughness_enabled
+					and (content.current_toughness and content.current_toughness > 0)
+				then
+					return true
+				else
+					return false
+				end
+			end,
+		},
 		-- SEGMENT BAR 25%
 		{
 			pass_type = "rect",
@@ -1074,14 +1006,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 24, 0, 0 },
-				default_offset = { -bar_width * 0.5 - 24, 0, 0 },
+				offset = { -bar_width * 0.5 - 8, 0, 8 },
+				default_offset = { -bar_width * 0.5 - 8, 0, 8 },
 
-				size = { 50, 50 },
-				default_size = { 50, 50 },
+				size = { 35, 35 },
+				default_size = { 35, 35 },
 
-				color = { 200, 15, 15, 15 },
-				default_alpha = 200,
+				color = { 255, 15, 15, 15 },
+				default_alpha = 255,
 
 				material_values = {
 					frame = "content/ui/textures/frames/horde/hex_frame_horde",
@@ -1101,11 +1033,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 24, 0, 8 },
-				default_offset = { -bar_width * 0.5 - 24, 0, 8 },
+				offset = { -bar_width * 0.5 - 8, 0, 7 },
+				default_offset = { -bar_width * 0.5 - 8, 0, 7 },
 
-				size = { 50, 50 },
-				default_size = { 50, 50 },
+				size = { 40, 40 },
+				default_size = { 40, 40 },
 
 				color = { 255, 255, 180, 80 },
 				default_alpha = 255,
@@ -1203,15 +1135,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "top",
-				offset = { -bar_width * 0.5, -bar_height - 10 * mod.text_scale * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, -bar_height - 10 * mod.text_scale * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
+				default_offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 - 2 * mod.text_scale, 20 },
-				default_size = { bar_width * 4 - 2 * mod.text_scale, 20 },
+				size = { bar_width * 4 - 2 * fs.text_scale, 20 },
+				default_size = { bar_width * 4 - 2 * fs.text_scale, 20 },
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -1233,15 +1165,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, ((bar_height + 16) * mod.text_scale) * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, ((bar_height + 16) * mod.text_scale) * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
+				default_offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * mod.text_scale, 20 },
-				default_size = { bar_width * 4 * mod.text_scale, 20 },
+				size = { bar_width * 4 * fs.text_scale, 20 },
+				default_size = { bar_width * 4 * fs.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -1264,15 +1196,15 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, ((bar_height + 34) * mod.text_scale) * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, ((bar_height + 34) * mod.text_scale) * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
+				default_offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * mod.text_scale, 20 },
-				default_size = { bar_width * 4 * mod.text_scale, 20 },
+				size = { bar_width * 4 * fs.text_scale, 20 },
+				default_size = { bar_width * 4 * fs.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -1295,19 +1227,30 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 50 * mod.text_scale * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 50 * mod.text_scale * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
+				default_offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * mod.text_scale, 20 },
-				default_size = { bar_width * 4 * mod.text_scale, 20 },
+				size = { bar_width * 4 * fs.text_scale, 20 },
+				default_size = { bar_width * 4 * fs.text_scale, 20 },
 
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			change_function = function(content, style)
+				if content.scale then
+					if fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 == "nothing" then
+						style.offset[2] = (size[2] + 12) * fs.hb_gap_padding_scale * content.scale
+					elseif fs.hb_text_bottom_left_02 == "nothing" and fs.hb_text_bottom_left_01 ~= "nothing" then
+						style.offset[2] = (size[2] + 34) * fs.hb_gap_padding_scale * content.scale
+					else
+						style.offset[2] = (size[2] + 50) * fs.hb_gap_padding_scale * content.scale
+					end
+				end
+			end,
 			visibility_function = function(content)
 				if content.dn_built then
 					return true
@@ -1322,20 +1265,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = "damage_numbers",
 			value = template.damage_number_function,
 			style = {
-				horizontal_alignment = "center",
+				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				text_horizontal_alignment = "center",
+				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { 0, bar_height + 100 * mod.text_scale, 6 },
-				default_offset = { 0, bar_height + 100 * mod.text_scale, 6 },
+				offset = {
+					-size[1] * 0.5,
+					-size[2],
+					2,
+				},
 				font_type = mod.font_type,
-				font_size = 16,
-				default_font_size = 16,
+				font_size = 30,
 				text_color = { 220, 220, 220, 220 },
 				default_text_color = { 220, 220, 220, 220 },
-				size = { bar_width * 2 * mod.text_scale, 20 },
-				default_size = { bar_width * 2 * mod.text_scale, 20 },
-				drop_shadow = true,
+				size = { 600, size[2] },
 				default_alpha = 255,
 			},
 			visibility_function = function(content)
@@ -1343,8 +1286,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					return true
 				else
 					return false
-				end
-			end,
+				end			end,
 		},
 	}, scenegraph_id)
 end
@@ -1412,34 +1354,72 @@ local function get_text_option(content, option)
 		local health_percent = content.health_percent
 		local is_dead = true
 		local new_text = ""
+		local show_toughness = fs.toughness_enabled
+			and fs.toughness_text_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
 
 		if content._last_health_current and content._last_health_max and content._last_damage_value then
 			if not fs.hb_text_show_damage then
 				if fs.hb_text_show_max_health then
-					new_text = math_floor(content._last_health_current) .. " / " .. math_floor(content._last_health_max)
+					if show_toughness then
+						new_text = " " .. math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
+					else
+						new_text = math_floor(content._last_health_current)
+							.. " / "
+							.. math_floor(content._last_health_max)
+					end
 				else
-					new_text = math_floor(content._last_health_current)
+					if show_toughness then
+						new_text = " " ..math_floor(content.current_toughness)
+					else
+						new_text = math_floor(content._last_health_current)
+					end
 				end
 			else
 				if fs.hb_text_show_max_health then
-					new_text = math_floor(content._last_health_current)
-						.. " / "
-						.. math_floor(content._last_health_max)
-						.. " ({#color(255, 255, 50)}-"
-						.. math_floor(content._last_damage_value)
-						.. "{#reset()})"
+					if show_toughness then
+						new_text = " " ..math_floor(content.current_toughness)
+							.. " / "
+							.. math_floor(content.max_toughness)
+							.. " ({#color(255, 255, 50)}-"
+							.. math_floor(content._last_damage_value)
+							.. "{#reset()})"
+					else
+						new_text = math_floor(content._last_health_current)
+							.. " / "
+							.. math_floor(content._last_health_max)
+							.. " ({#color(255, 255, 50)}-"
+							.. math_floor(content._last_damage_value)
+							.. "{#reset()})"
+					end
 				else
-					new_text = math_floor(content._last_health_current)
-						.. " ({#color(255, 255, 50)}-"
-						.. math_floor(content._last_damage_value)
-						.. "{#reset()})"
+					if show_toughness then
+						new_text = " " ..math_floor(content.current_toughness)
+							.. " ({#color(255, 255, 50)}-"
+							.. math_floor(content._last_damage_value)
+							.. "{#reset()})"
+					else
+						new_text = math_floor(content._last_health_current)
+							.. " ({#color(255, 255, 50)}-"
+							.. math_floor(content._last_damage_value)
+							.. "{#reset()})"
+					end
 				end
 			end
 		elseif health_current and health_max then
 			if fs.hb_text_show_max_health then
-				new_text = math_floor(health_current) .. " / " .. math_floor(health_max)
+				if show_toughness then
+					new_text = " " ..math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
+				else
+					new_text = math_floor(health_current) .. " / " .. math_floor(health_max)
+				end
 			else
-				new_text = math_floor(health_current)
+				if show_toughness then
+					new_text = " " ..math_floor(content.current_toughness)
+				else
+					new_text = math_floor(health_current)
+				end
 			end
 		end
 
@@ -1476,6 +1456,7 @@ template.on_enter = function(widget, marker, template)
 	content.special_attack_imminent = false
 
 	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
+	content.toughness_extension = ScriptUnit_has_extension(unit, "toughness_system")
 
 	-- set frame background
 	content.frame = fs.frame_type
@@ -1498,7 +1479,7 @@ template.on_enter = function(widget, marker, template)
 	-- get values from data store
 	local icon_color = mod.ICON_COLOURS[breed_type]
 	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
-	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale
+	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale * fs.healthbar_type_icon_scale
 	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
@@ -1527,6 +1508,20 @@ template.on_enter = function(widget, marker, template)
 		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale
 		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
 		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+
+		style_icon.default_size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale
+		style_icon.default_size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale
+		style.icon_background1.default_size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale
+		style.icon_background1.default_size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale
+		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
+		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+
+		style_icon.offset[1] = style_icon.default_offset[1] - ( 10 * icon_full_scale) * marker.scale
+		style_icon.default_offset[1] = style_icon.default_offset[1] - (  10 * icon_full_scale) * marker.scale
+		style.icon_background1.offset[1] = style.icon_background1.default_offset[1] - (  10* icon_full_scale) * marker.scale
+		style.icon_background1.default_offset[1] = style.icon_background1.default_offset[1] - ( 10* icon_full_scale) * marker.scale
+		style.icon_background.offset[1] = style.icon_background.default_offset[1] - ( 10* icon_full_scale) * marker.scale
+		style.icon_background.default_offset[1] = style.icon_background.default_offset[1] - ( 10* icon_full_scale) * marker.scale
 
 		return content_icon, style_icon
 	end
@@ -1563,6 +1558,11 @@ template.on_enter = function(widget, marker, template)
 		end
 	end
 
+	-- toughness bar colour
+	style.current_toughness.color[2] = fs.toughness_colour[2]
+	style.current_toughness.color[3] = fs.toughness_colour[3]
+	style.current_toughness.color[4] = fs.toughness_colour[4]
+
 	local bar_color = mod.BREED_COLOURS[breed_type] or mod.BREED_COLOURS.horde
 
 	-- INDIVIDUAL COLOUR OVERRIDES
@@ -1591,14 +1591,45 @@ template.on_enter = function(widget, marker, template)
 
 	local ghost_color = style.ghost_bar.color
 
-	ghost_color[2] = bar_color[2] * 0.7
-	ghost_color[3] = bar_color[3] * 0.7
-	ghost_color[4] = bar_color[4] * 0.7
+	if fs.hb_toggle_ghostbar_colour then
+		-- colourful
+		ghost_color[2] = bar_color[2] * fs.hb_ghostbar_opacity
+		ghost_color[3] = bar_color[3] * fs.hb_ghostbar_opacity
+		ghost_color[4] = bar_color[4] * fs.hb_ghostbar_opacity
+	else
+		-- white
+		ghost_color[2] = 255 * fs.hb_ghostbar_opacity
+		ghost_color[3] = 255 * fs.hb_ghostbar_opacity
+		ghost_color[4] = 255 * fs.hb_ghostbar_opacity
+	end
 
 	local icon_offset_y = 0
 
 	if style.icon_elite.color[1] > 0 then
 		style.icon_elite.offset[2] = icon_offset_y
+	end
+
+	-- update damage number settings
+	--template.damage_number_settings
+	template.damage_number_settings.duration = fs.damage_number_duration
+	template.damage_number_settings.x_offset = fs.hb_size_width * 0.35
+	template.damage_number_settings.y_offset = -content.breed.base_height * 0.7
+	template.damage_number_settings.x_offset_between_numbers = 16 * fs.text_scale * fs.damage_number_scale * 3
+	template.damage_number_settings.default_font_size = 16 * fs.text_scale * fs.damage_number_scale
+	template.damage_number_settings.hundreds_font_size = 16 * fs.text_scale * fs.damage_number_scale
+	template.damage_number_settings.dps_font_size = 18 * fs.text_scale * fs.damage_number_scale
+	template.damage_number_settings.expand_bonus_scale = 4 * fs.text_scale * fs.damage_number_scale
+	template.show_dps = fs.hb_show_dps
+
+	if content.breed and mod.detect_alive(unit) then
+		local root_position = Unit.world_position(unit, 1)
+		root_position.z = root_position.z + content.breed.base_height + 0.5
+
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
 	end
 end
 
@@ -1653,9 +1684,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if not mod.detect_alive(unit) then
-		marker.draw = false
-		marker.remove = true
-		return
+		if not fs.hb_show_dps then
+			marker.remove = true
+			return
+		else
+			content.dead = true
+			content.hb_built = false
+		end
 	end
 
 	template.max_distance = fs.draw_distance
@@ -1675,22 +1710,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	elseif not template.check_line_of_sight then
 		line_of_sight_progress = 1
-	end
-
-	-------------------------------------------------------------------
-	-- Health / alive
-	-------------------------------------------------------------------
-	local health_extension = content.health_extension
-	local health_current = 0
-	local health_max = 0
-	local health_percent = 0
-	local is_dead = true
-
-	if health_extension and mod.detect_alive(unit) then
-		health_current = health_extension:current_health() or 0
-		health_max = health_extension:max_health() or 0
-		health_percent = health_extension:current_health_percent() or 0
-		is_dead = not health_extension:is_alive()
 	end
 
 	-------------------------------------------------------------------
@@ -1715,6 +1734,44 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			return
 		end
 	end
+
+	-------------------------------------------------------------------
+	-- Health / Toughness
+	-------------------------------------------------------------------
+
+	local health_extension = content.health_extension
+	local health_current = 0
+	local health_max = 0
+	local health_percent = 0
+	local is_dead = true
+
+	if health_extension and mod.detect_alive(unit) then
+		health_current = health_extension:current_health() or 0
+		health_max = health_extension:max_health() or 0
+
+		if health_current > health_max then
+			health_max = health_current
+		end
+
+		health_percent = health_extension:current_health_percent() or 0
+		is_dead = not health_extension:is_alive()
+	end
+
+	local toughness_extension = content.toughness_extension
+	local toughness_max = 0
+	local toughness_current = 0
+	local toughness_fraction = 0
+
+	if toughness_extension and mod.detect_alive(unit) then
+		toughness_damage = toughness_extension:toughness_damage() or 0
+		toughness_max = toughness_extension:max_toughness() or 0
+		content.max_toughness = toughness_max
+		toughness_current = toughness_max - toughness_damage
+		content.current_toughness = toughness_current
+		toughness_fraction = toughness_extension:current_toughness_percent() or 0
+		content.toughness_fraction = toughness_fraction
+	end
+	
 
 	-------------------------------------------------------------------
 	-- Horde cluster: pooled HP + center position with stable max
@@ -1846,8 +1903,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		peak_cluster_max_by_rep[unit] = nil
 
-		if marker.world_position then
-			marker.world_position = nil
+		-- ADJUST POSITION (FOLLOW UNIT)
+		if content.breed and mod.detect_alive(unit) then
+			local root_position = Unit.world_position(unit, 1)
+			root_position.z = root_position.z + content.breed.base_height + 0.5
+
+			if not marker.world_position then
+				marker.world_position = Vector3Box(root_position)
+			else
+				marker.world_position:store(root_position)
+			end
 		end
 	end
 
@@ -2157,11 +2222,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	content.health_fraction = health_fraction
 	content.health_ghost_fraction = health_ghost_fraction
+	content.toughness_fraction = toughness_fraction
 
 	local icon_color = mod.ICON_COLOURS[breed_type]
 
 	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
-	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale
+	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale * fs.healthbar_type_icon_scale
 	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
 	local icon_glow_colour_default = mod.ICON_COLOURS["glow_default"]
@@ -2229,12 +2295,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		-- apply full scale:
 
-		style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale
-		style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale
-		style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale
-		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale
-		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
-		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+		--style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+		--style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+		--style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+		--style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+		--style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+		--style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
 
 		return content_icon, style_icon
 	end
@@ -2275,16 +2341,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
 
-	if in_horde_cluster == false and content.breed and mod.detect_alive(unit) then
-		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height + 0.5
-
-		if not marker.world_position then
-			marker.world_position = Vector3Box(root_position)
-		else
-			marker.world_position:store(root_position)
-		end
-	end
+	
 
 	content.health_current = health_current
 	content.health_max = health_max
@@ -2292,13 +2349,56 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.hb_text_top_left_01 then
 		content.header_text = get_text_option(content, fs.hb_text_top_left_01)
+		if
+			fs.hb_text_top_left_01 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.header_text.text_color[2] = fs.toughness_colour[2]
+			style.header_text.text_color[3] = fs.toughness_colour[3]
+			style.header_text.text_color[4] = fs.toughness_colour[4]
+		else
+			style.header_text.text_color[2] = fs.main_colour[2]
+			style.header_text.text_color[3] = fs.main_colour[3]
+			style.header_text.text_color[4] = fs.main_colour[4]
+		end
 	end
 	if fs.hb_text_bottom_left_01 then
 		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
+		if
+			fs.hb_text_bottom_left_01 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.health_counter.text_color[2] = fs.toughness_colour[2]
+			style.health_counter.text_color[3] = fs.toughness_colour[3]
+			style.health_counter.text_color[4] = fs.toughness_colour[4]
+		else
+			style.health_counter.text_color[2] = fs.main_colour[2]
+			style.health_counter.text_color[3] = fs.main_colour[3]
+			style.health_counter.text_color[4] = fs.main_colour[4]
+		end
 	end
 	if fs.hb_text_bottom_left_02 then
 		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
+		if
+			fs.hb_text_bottom_left_02 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.armour_type.text_color[2] = fs.toughness_colour[2]
+			style.armour_type.text_color[3] = fs.toughness_colour[3]
+			style.armour_type.text_color[4] = fs.toughness_colour[4]
+		else
+			style.armour_type.text_color[2] = fs.main_colour[2]
+			style.armour_type.text_color[3] = fs.main_colour[3]
+			style.armour_type.text_color[4] = fs.main_colour[4]
+		end
 	end
+
 	--end
 
 	-------------------------------------------------------------------
@@ -2308,7 +2408,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
 	if not mod.detect_alive(unit) and (not marker.health_fraction or marker.health_fraction == 0) then
-		marker.remove = true
+		if time_since_last_damage > fs.damage_number_duration then
+			marker.remove = true
+		end
 	end
 
 	-- only hide non-clustered horde units when horde disabled
@@ -2340,15 +2442,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local draw = marker.draw
 
 	if draw and line_of_sight_progress > 0 then
-		if fs.healthbar_enable then
+		if fs.healthbar_enable and not content.dead then
 			content.hb_built = true
 		end
 		if fs.show_damage_numbers then
 			content.dn_built = true
 		end
 
-		local scale = marker.scale * mod.text_scale
-		mod.scale = scale
+		local scale = marker.scale * fs.text_scale
+		content.scale = scale
 
 		local header_style = style.header_text
 		local health_counter = style.health_counter
@@ -2361,11 +2463,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if health_counter then
 			health_counter.font_size = health_counter.default_font_size * scale
 		end
-		if damage_numbers then
-			damage_numbers.font_size = damage_numbers.default_font_size * scale
-		end
 		if armour_type then
 			armour_type.font_size = armour_type.default_font_size * scale
+		end
+
+		if damage_numbers then
+			damage_numbers.font_size = damage_numbers.default_font_size * scale
 		end
 	else
 		content.hb_built = false

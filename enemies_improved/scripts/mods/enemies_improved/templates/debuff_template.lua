@@ -15,8 +15,16 @@ local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local max_visible_rows_setting = 10
-
 local fs = mod.frame_settings
+
+local function calculate_icon_size()
+	if fs.debuff_icon_scale < 1 then
+		return 0
+	else
+		return 13 * fs.debuff_icon_scale
+	end
+end
+
 local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
 local draw_distance_setting = fs.draw_distance
@@ -25,12 +33,15 @@ local size = {
 	hb_size_height,
 }
 local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-local row_step = (hb_size_height + 18) * mod.text_scale
-local base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
-local base_gap = -40 * mod.text_scale
-local name_x = (size[1] - 25) * mod.text_scale + base_gap
-local icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * mod.text_scale + base_gap
-local stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * mod.text_scale + base_gap
+local row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
+local base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
+local base_gap = -40 * fs.text_scale
+local name_x = (size[1] - 25) * fs.text_scale + base_gap
+local icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * fs.text_scale + base_gap
+local stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * fs.text_scale + base_gap
+if fs.debuff_stack_on_icon then
+	stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale + base_gap
+end
 
 local active_pool = {}
 
@@ -142,8 +153,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				row_offset_y,
 				6,
 			},
-			size = { 27 * mod.text_scale, 27 * mod.text_scale },
-			default_size = { 27 * mod.text_scale, 27 * mod.text_scale },
+			size = { 27 * fs.debuff_icon_scale * fs.text_scale, 27 * fs.debuff_icon_scale * fs.text_scale },
+			default_size = { 27 * fs.debuff_icon_scale * fs.text_scale, 27 * fs.debuff_icon_scale * fs.text_scale },
 
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
@@ -168,20 +179,20 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			offset = {
 				stack_x + base_offset,
 				row_offset_y,
-				6,
+				8,
 			},
 			default_offset = {
 				stack_x + base_offset,
 				row_offset_y,
-				6,
+				8,
 			},
 			font_type = mod.font_type,
-			font_size = 16 * mod.text_scale,
-			default_font_size = 16 * mod.text_scale,
+			font_size = 16 * fs.text_scale,
+			default_font_size = 16 * fs.text_scale,
 
 			text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-			size = { bar_width * 0.5 * mod.text_scale, 20 },
-			default_size = { bar_width * 0.5 * mod.text_scale, 20 },
+			size = { bar_width * 0.5 * fs.text_scale, 20 },
+			default_size = { bar_width * 0.5 * fs.text_scale, 20 },
 
 			drop_shadow = true,
 			shadow_offset = { 1, -1 },
@@ -220,12 +231,12 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 
 			font_type = mod.font_type,
-			font_size = 16 * mod.text_scale,
-			default_font_size = 16 * mod.text_scale,
+			font_size = 16 * fs.text_scale,
+			default_font_size = 16 * fs.text_scale,
 
 			text_color = fs.main_colour or { 220, 220, 220, 220 },
-			size = { (name_x * 2) * mod.text_scale, 22 },
-			default_size = { (name_x * 2) * mod.text_scale, 22 },
+			size = { (name_x * 2) * fs.text_scale, 22 },
+			default_size = { (name_x * 2) * fs.text_scale, 22 },
 
 			truncated = true,
 			max_lines = 1,
@@ -270,12 +281,18 @@ template.on_enter = function(widget, marker, template)
 	}
 	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 80) * fs.debuff_y_offset
 		or (-hb_size_height - 16) * fs.debuff_y_offset
-	row_step = (hb_size_height + 18) * mod.text_scale
-	base_offset = (-size[1] * fs.debuff_x_offset) * mod.text_scale
-	base_gap = -40 * mod.text_scale
-	name_x = (size[1] - 25) * mod.text_scale + base_gap
-	icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * mod.text_scale + base_gap
-	stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * mod.text_scale + base_gap
+	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
+	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
+	base_gap = -40 * fs.text_scale
+	name_x = (size[1] - 25) * fs.text_scale + base_gap
+	icon_x = ((size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) + (calculate_icon_size())) * fs.text_scale
+		+ base_gap
+	stack_x = ((size[1] + (120 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale + base_gap
+
+	if fs.debuff_stack_on_icon then
+		stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale
+			+ base_gap
+	end
 
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension
@@ -632,11 +649,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if split_debuff_types then
 			if debuff.type == "dot" then
 				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-					y_base = (-hb_size_height - 16) * fs.debuff_y_offset * mod.text_scale
+					y_base = (-hb_size_height - 16) * fs.debuff_y_offset * fs.text_scale
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
+					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
 				else
-					y_base = (-hb_size_height - 34) * fs.debuff_y_offset * mod.text_scale
+					y_base = (-hb_size_height - 34) * fs.debuff_y_offset * fs.text_scale
 				end
 			elseif debuff.type == "utility" then
 				if
@@ -646,26 +663,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						and fs.hb_text_bottom_left_01 == "nothing"
 					) or fs.debuff_show_on_body
 				then
-					y_base = (hb_size_height + 16) * fs.debuff_y_offset * mod.text_scale
+					y_base = (hb_size_height + 16) * fs.debuff_y_offset * fs.text_scale
 				elseif
 					fs.healthbar_enable
 					and fs.hb_text_bottom_left_02 == "nothing"
 					and fs.hb_text_bottom_left_01 ~= "nothing"
 				then
-					y_base = (hb_size_height + 40) * fs.debuff_y_offset * mod.text_scale
+					y_base = (hb_size_height + 40) * fs.debuff_y_offset * fs.text_scale
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
+					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
 				else
-					y_base = (hb_size_height + 60) * fs.debuff_y_offset * mod.text_scale
+					y_base = (hb_size_height + 60) * fs.debuff_y_offset * fs.text_scale
 				end
 			end
 		else
 			if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-				y_base = (-hb_size_height - 16) * fs.debuff_y_offset * mod.text_scale
+				y_base = (-hb_size_height - 16) * fs.debuff_y_offset * fs.text_scale
 			elseif fs.markers_enable and not fs.healthbar_enable then
-				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * mod.text_scale
+				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
 			else
-				y_base = (-hb_size_height - 34) * fs.debuff_y_offset * mod.text_scale
+				y_base = (-hb_size_height - 34) * fs.debuff_y_offset * fs.text_scale
 			end
 		end
 
@@ -811,12 +828,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					o[1] = icon_x + base_offset
 					o[2] = row_offset_y
 
-					local o = stack_text_style.offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
-					local o = stack_text_style.default_offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
+					if fs.debuff_stack_on_icon then
+						local o = stack_text_style.offset
+						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+						local o = stack_text_style.default_offset
+						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+					else
+						local o = stack_text_style.offset
+						o[1] = stack_x + base_offset
+						o[2] = row_offset_y
+						local o = stack_text_style.default_offset
+						o[1] = stack_x + base_offset
+						o[2] = row_offset_y
+					end
 
 					local o = name_text_style.offset
 					o[1] = name_x + base_offset
@@ -838,19 +862,33 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					o[1] = icon_x + base_offset
 					o[2] = row_offset_y
 
-					local o = stack_text_style.offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
-					local o = stack_text_style.default_offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
-
+					if fs.debuff_stack_on_icon then
+						local o = stack_text_style.offset
+						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+						local o = stack_text_style.default_offset
+						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+					else
+						local o = stack_text_style.offset
+						o[1] = stack_x + base_offset
+						o[2] = row_offset_y
+						local o = stack_text_style.default_offset
+						o[1] = stack_x + base_offset
+						o[2] = row_offset_y
+					end
 					local o = name_text_style.offset
 					o[1] = name_x + base_offset
 					o[2] = row_offset_y
 					local o = name_text_style.default_offset
 					o[1] = name_x + base_offset
 					o[2] = row_offset_y
+				end
+			else
+				if fs.debuff_stack_on_icon then
+					local row_offset_y = state.y + ((row_i - 1) * row_step)
+					local o = stack_text_style.offset
+					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+					local o = stack_text_style.default_offset
+					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
 				end
 			end
 
@@ -889,7 +927,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				if stack_buff_percentage ~= "" then
 					stack_str = stack_buff_percentage .. "%"
 				else
-					stack_str = "x " .. stacks
+					if fs.debuff_stacks_show_x then
+						if fs.debuff_stacks_show_x_space then
+							stack_str = "x " .. stacks
+						else
+							stack_str = "x" .. stacks
+						end
+					else
+						stack_str = tostring(stacks)
+					end
 				end
 
 				content[stack_text_id] = stack_str
@@ -965,9 +1011,21 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					icon_style.size[2] = icon_style.default_size[2] * scale
 
 					if fs.debuff_max_stacks_scale and at_max_stacks then
-						stack_text_style.font_size = (stack_text_style.default_font_size * scale) * 1.2
+						if fs.debuff_stack_on_icon then
+							stack_text_style.font_size = (
+								(stack_text_style.default_font_size * (fs.debuff_icon_scale * 0.6)) * scale
+							) * 1.1
+						else
+							stack_text_style.font_size = (stack_text_style.default_font_size * scale) * 1.1
+						end
 					else
-						stack_text_style.font_size = stack_text_style.default_font_size * scale
+						if fs.debuff_stack_on_icon then
+							stack_text_style.font_size = (
+								stack_text_style.default_font_size * (fs.debuff_icon_scale * 0.6)
+							) * scale
+						else
+							stack_text_style.font_size = stack_text_style.default_font_size * scale
+						end
 					end
 
 					name_text_style.font_size = name_text_style.default_font_size * scale

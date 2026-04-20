@@ -57,6 +57,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
+
 local MAX_ENEMIES_PER_FRAME = 300
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
@@ -254,7 +255,7 @@ mod.scan_enemies = function()
 		local dist_sq = dx * dx + dy * dy + dz * dz
 
 		if dist_sq < 1 then
-			--return
+			return
 		end
 	end
 
@@ -429,6 +430,7 @@ local function _build_horde_clusters(units, num_units)
 
 			local sum_x, sum_y, sum_z = 0, 0, 0
 			local count = 0
+			local max_z = 0
 
 			while #queue > 0 do
 				local current = queue[#queue]
@@ -444,6 +446,10 @@ local function _build_horde_clusters(units, num_units)
 				sum_y = sum_y + pos.y
 				sum_z = sum_z + pos.z
 				count = count + 1
+
+				if max_z < pos.z then
+					max_z = pos.z
+				end
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
@@ -487,7 +493,10 @@ local function _build_horde_clusters(units, num_units)
 				local cy = sum_y * inv
 				local avg_z = sum_z * inv
 
-				local target_z = avg_z + 2.0
+				-- average
+				--local target_z = avg_z + 2.0
+				--max
+				local target_z = max_z + 2.0
 
 				local cluster = {
 					breed_name = breed.name,
@@ -592,7 +601,7 @@ mod.remove_dead = function()
 
 		id = mod.enemy_healthbars[unit]
 		if id then
-			Managers.event:trigger("remove_world_marker", id)
+			--Managers.event:trigger("remove_world_marker", id)
 			mod.active_markers[id] = nil
 		end
 

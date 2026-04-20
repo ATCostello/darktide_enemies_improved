@@ -515,7 +515,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "text_scale",
 			type = "numeric",
-			default_value = 1.15,
+			default_value = 1,
 			decimals_number = 2,
 			step_size_value = 0.1,
 			range = {
@@ -524,6 +524,18 @@ table.insert(mod.settings_widgets, {
 			},
 			tooltip = "text_scale_tooltip",
 		},
+		--[[{
+			setting_id = "global_scale",
+			type = "numeric",
+			default_value = 1,
+			decimals_number = 2,
+			step_size_value = 0.1,
+			range = {
+				0.5,
+				1.5,
+			},
+			tooltip = "global_scale_tooltip",
+		},]]
 		{
 			setting_id = "main_font_colour",
 			type = "group",
@@ -793,6 +805,18 @@ table.insert(mod.settings_widgets, {
 			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
 		{
+			setting_id = "healthbar_type_icon_scale",
+			type = "numeric",
+			default_value = 1.3,
+			range = {
+				1,
+				3,
+			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "healthbar_type_icon_scale_tooltip",
+		},
+		{
 			setting_id = "healthbar_segments_enable",
 			type = "checkbox",
 			default_value = false,
@@ -827,6 +851,24 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_toggle_ghostbar_tooltip",
+		},
+		{
+			setting_id = "hb_ghostbar_opacity",
+			type = "numeric",
+			default_value = 0.7,
+			range = {
+				0.1,
+				1,
+			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "hb_ghostbar_opacity_tooltip",
+		},
+		{
+			setting_id = "hb_toggle_ghostbar_colour",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_toggle_ghostbar_colour_tooltip",
 		},
 		{
 			setting_id = "hb_text_show_damage",
@@ -895,7 +937,7 @@ table.insert(mod.settings_widgets, {
 			default_value = 0,
 			range = {
 				-1,
-				1,
+				2,
 			},
 			decimals_number = 1,
 			step_size_value = 0.1,
@@ -904,7 +946,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_width",
 			type = "numeric",
-			default_value = 220,
+			default_value = 180,
 			range = {
 				100,
 				400,
@@ -914,12 +956,68 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_height",
 			type = "numeric",
-			default_value = 6,
+			default_value = 7,
 			range = {
 				4,
 				25,
 			},
 			tooltip = "hb_size_height_tooltip",
+		},
+	},
+})
+
+-- TOUGHNESS
+table.insert(mod.settings_widgets, {
+	setting_id = "toughness_colour",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "toughness_enabled",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "toughness_enabled_tooltip",
+		},
+		{
+			setting_id = "toughness_text_enabled",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "toughness_text_enabled_tooltip",
+		},
+		{
+			setting_id = "toughness_text_colour_enabled",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "toughness_text_colour_enabled_tooltip",
+		},
+		{
+			setting_id = "toughness_colour_R",
+			type = "numeric",
+			default_value = 50,
+			range = {
+				0,
+				255,
+			},
+			tooltip = "toughness_colour_tooltip",
+		},
+		{
+			setting_id = "toughness_colour_G",
+			type = "numeric",
+			default_value = 225,
+			range = {
+				0,
+				255,
+			},
+			tooltip = "toughness_colour_tooltip",
+		},
+		{
+			setting_id = "toughness_colour_B",
+			type = "numeric",
+			default_value = 255,
+			range = {
+				0,
+				255,
+			},
+			tooltip = "toughness_colour_tooltip",
 		},
 	},
 })
@@ -946,7 +1044,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_text_bottom_left_02",
 			type = "dropdown",
 			options = table.clone(enemy_type_options),
-			default_value = "armour_type",
+			default_value = "nothing",
 			tooltip = "hb_text_bottom_left_02_tooltip",
 		},
 	},
@@ -970,6 +1068,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_damage_numbers_track_friendly_tooltip",
 		},]]
 		{
+			setting_id = "hb_show_dps",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_show_dps_tooltip",
+		},
+		{
 			setting_id = "hb_damage_numbers_add_total",
 			type = "checkbox",
 			default_value = true,
@@ -981,6 +1085,54 @@ table.insert(mod.settings_widgets, {
 			options = damage_number_types,
 			default_value = "floating",
 			tooltip = "hb_damage_number_types_tooltip",
+		},
+		{
+			setting_id = "damage_number_scale",
+			type = "numeric",
+			default_value = 1.2,
+			decimals_number = 2,
+			step_size_value = 0.25,
+			range = {
+				0.5,
+				3,
+			},
+			tooltip = "damage_number_scale_tooltip",
+		},
+		{
+			setting_id = "damage_number_y_offset",
+			type = "numeric",
+			default_value = 1.2,
+			decimals_number = 2,
+			step_size_value = 0.25,
+			range = {
+				0,
+				3,
+			},
+			tooltip = "damage_number_y_offset_tooltip",
+		},
+		{
+			setting_id = "damage_number_duration",
+			type = "numeric",
+			default_value = 2,
+			decimals_number = 2,
+			step_size_value = 0.25,
+			range = {
+				1,
+				5,
+			},
+			tooltip = "damage_number_duration_tooltip",
+		},
+		{
+			setting_id = "readable_max_damage_numbers",
+			type = "numeric",
+			default_value = 6,
+			decimals_number = 0,
+			step_size_value = 1,
+			range = {
+				1,
+				10,
+			},
+			tooltip = "readable_max_damage_numbers_tooltip",
 		},
 	},
 })
@@ -1006,6 +1158,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "debuff_utility_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_horde_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "debuff_horde_enable_tooltip",
 		},
 		{
 			setting_id = "split_debuff_types",
@@ -1038,6 +1196,24 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_icons_tooltip",
 		},
 		{
+			setting_id = "debuff_stacks_show_x",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_stacks_show_x_tooltip",
+		},
+		{
+			setting_id = "debuff_stacks_show_x_space",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_stacks_show_x_space_tooltip",
+		},
+		{
+			setting_id = "debuff_stack_on_icon",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "debuff_stack_on_icon_tooltip",
+		},
+		{
 			setting_id = "debuff_stacks_icon_colour",
 			type = "checkbox",
 			default_value = false,
@@ -1055,35 +1231,54 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "debuff_show_on_body_tooltip",
 		},
+
 		{
-			setting_id = "debuff_horde_enable",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "debuff_horde_enable_tooltip",
+			setting_id = "debuff_icon_scale",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.8,
+				2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_icon_scale_tooltip",
 		},
 		{
 			setting_id = "debuff_gap_name_icon_offset",
 			type = "numeric",
-			default_value = 0.5,
+			default_value = 0,
 			range = {
-				0.1,
+				-1.5,
 				1.5,
 			},
 			decimals_number = 2,
 			step_size_value = 0.1,
-			tooltip = "debuff_gap_name_icon_tooltip",
+			tooltip = "debuff_gap_name_icon_offset_tooltip",
 		},
 		{
 			setting_id = "debuff_gap_icon_stack_offset",
 			type = "numeric",
 			default_value = 0.9,
 			range = {
-				0.8,
-				1.2,
+				-1.5,
+				1.5,
 			},
 			decimals_number = 2,
 			step_size_value = 0.1,
 			tooltip = "debuff_gap_icon_stack_offset_tooltip",
+		},
+		{
+			setting_id = "debuff_gap_padding_scale",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.5,
+				2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "debuff_gap_padding_scale_tooltip",
 		},
 		{
 			setting_id = "debuff_x_offset",
