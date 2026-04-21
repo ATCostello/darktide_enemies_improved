@@ -13,6 +13,7 @@ local function _on_healthbar_created(marker_id, entry, unit)
 	mod.active_markers[marker_id] = true
 	entry._healthbar_created = true
 	entry._healthbar_pending = nil
+	--mod:echo("Healthbar created for " .. tostring(unit) .. " (" .. marker_id .. ")")
 end
 
 -----------------------------------------------------------------------

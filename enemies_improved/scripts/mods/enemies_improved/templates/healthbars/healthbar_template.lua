@@ -540,15 +540,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
-		widget._next_update = t + 0.1
+		widget._next_update = t + fs.off_screen_throttle_rate
 		return
 	-- distance based updates
 	elseif marker.distance < 50 then
-		widget._next_update = t + 0.02
+		widget._next_update = t + fs.general_throttle_rate
 	elseif marker.distance < 70 then
-		widget._next_update = t + 0.04
+		widget._next_update = t + fs.general_throttle_rate * 1.5
 	else
-		widget._next_update = t + 0.08
+		widget._next_update = t + fs.general_throttle_rate * 2
 	end
 
 	local content = widget.content

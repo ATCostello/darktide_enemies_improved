@@ -1615,6 +1615,24 @@ table.insert(localisations_to_add, {
 	},
 })
 
+table.insert(localisations_to_add, {
+	throttle_timings = {
+		en = "{#color(" .. colours.title .. ")}WARNING: Throttle Timings{#reset()}",
+	},
+	general_throttle_rate = {
+		en = "General Throttle Rate",
+	},
+	general_throttle_rate_tooltip = {
+		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
+	},
+	off_screen_throttle_rate = {
+		en = "Off Screen Throttle Rate",
+	},
+	off_screen_throttle_rate_tooltip = {
+		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
+	},
+})
+
 -- add localisations to main map
 for i = 1, #localisations_to_add do
 	if localisations_to_add[i] then

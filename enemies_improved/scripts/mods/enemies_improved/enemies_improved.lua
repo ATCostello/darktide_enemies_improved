@@ -165,7 +165,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 	local update_interval
 
-	update_interval = 0.05
+	update_interval = fs.general_throttle_rate
 
 	self._update_time = (self._update_time or 0) + dt
 
