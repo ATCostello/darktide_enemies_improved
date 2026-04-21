@@ -396,6 +396,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local split_debuff_types = fs.split_debuff_types
 
+	if content.unit_data_extension then
+		local buff_ext = ScriptUnit_has_extension(unit, "buff_system")
+		if buff_ext then
+			content.debuffs = buff_ext:buffs()
+			content.keywords = buff_ext:keywords()
+		end
+	end
+
 	-------------------------------------------------------------------
 	-- Breed / type
 	-------------------------------------------------------------------
@@ -475,8 +483,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	local POOL_MAX = 128
+
 	for i = active_count + 1, #active do
-		active_pool[#active_pool + 1] = active[i]
+		if #active_pool < POOL_MAX then
+			active_pool[#active_pool + 1] = active[i]
+		end
 		active[i] = nil
 	end
 
@@ -492,8 +504,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				active_count = active_count + 1
 				local entry = active_pool[#active_pool]
+
 				if entry then
 					active_pool[#active_pool] = nil
+
+					-- clear old references
+					entry.name = nil
+					entry.stacks = nil
+					entry.max_stacks = nil
+					entry.stat_buffs = nil
+					entry.conditional_stat_buffs = nil
+					entry.type = nil
 				else
 					entry = {}
 				end
@@ -576,15 +597,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			else
 				combined_count = combined_count + 1
 
-				local new_entry = {
-					name = name,
-					stacks = entry.stacks,
-					max_stacks = entry.max_stacks,
-					stat_buffs = entry.stat_buffs,
-					conditional_stat_buffs = entry.conditional_stat_buffs,
-					combined = true,
-					type = debuff_type,
-				}
+				local new_entry = active_pool[#active_pool]
+				if new_entry then
+					active_pool[#active_pool] = nil
+				else
+					new_entry = {}
+				end
+
+				new_entry.name = name
+				new_entry.stacks = entry.stacks
+				new_entry.max_stacks = entry.max_stacks
+				new_entry.stat_buffs = entry.stat_buffs
+				new_entry.conditional_stat_buffs = entry.conditional_stat_buffs
+				new_entry.combined = true
+				new_entry.type = debuff_type
 
 				combined[combined_count] = new_entry
 
@@ -598,6 +624,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		for i = 1, combined_count do
 			active[i] = combined[i]
+		end
+
+		for i = combined_count + 1, #combined do
+			combined[i] = nil
 		end
 
 		for i = combined_count + 1, active_count do
@@ -773,6 +803,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			else
 				state.alpha = alpha
 			end
+		end
+	end
+
+	-- hard safety cleanup
+	if next(state_table) and table_size and table_size(state_table) > 100 then
+		for k in next, state_table do
+			state_table[k] = nil
 		end
 	end
 

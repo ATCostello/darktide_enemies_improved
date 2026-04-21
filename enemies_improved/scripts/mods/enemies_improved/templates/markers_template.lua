@@ -144,19 +144,11 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 			change_function = function(content, style)
 				local health_extension = content.health_extension
-				local health_current = 0
-				local health_max = 0
 				local health_percent = 0
-				local is_dead = true
 				local unit = content.unit
 				local breed = content.breed
 
-				if unit and health_extension and mod.detect_alive(unit) then
-					health_current = health_extension:current_health() or 0
-					health_max = health_extension:max_health() or 0
-					health_percent = health_extension:current_health_percent() or 0
-					is_dead = not health_extension:is_alive()
-				end
+				local health_percent = health_extension and health_extension:current_health_percent() or 0
 
 				-- set styling depending on health percentage...
 				if health_percent then
@@ -272,7 +264,8 @@ end
 -----------------------------------------------------------------------
 
 template.on_enter = function(widget, marker, template)
-	template.position_offset = { 0, 0, fs.marker_y_offset }
+	local pos = template.position_offset
+	pos[1], pos[2], pos[3] = 0, 0, fs.marker_y_offset
 	widget.alpha_multiplier = 0
 	local content = widget.content
 	content.m_built = false
@@ -309,7 +302,6 @@ template.on_enter = function(widget, marker, template)
 
 	local fs = mod.frame_settings
 	max_size_value = 32 * fs.marker_size
-	size[1], size[2] = max_size_value, max_size_value
 	ping_size[1], ping_size[2] = max_size_value, max_size_value
 	arrow_size[1], arrow_size[2] = max_size_value * 8, max_size_value * 8
 	icon_size[1], icon_size[2] = max_size_value / 2, max_size_value / 2
@@ -344,9 +336,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local distance = content.distance or 0
 	local data = marker.data
 	local unit = marker.unit
-	local style = widget.style
 	local marker_scale = marker.scale
-
 	local style = widget.style
 
 	if content.m_allowed == false then
@@ -401,7 +391,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Special attack warning pulse
 	-----------------------------------------------------------------------
 
-	mod.pulse_t = (mod.pulse_t or 0) + mod.frame_settings.dt
+	mod.pulse_t = ((mod.pulse_t or 0) + mod.frame_settings.dt) % (math.pi * 2)
 
 	if marker.special_attack_imminent then
 		content.special_attack_imminent = true
@@ -486,6 +476,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		content.m_built = false
 	end
+end
+
+template.on_exit = function(widget, marker)
+	marker.world_position = nil
 end
 
 return template

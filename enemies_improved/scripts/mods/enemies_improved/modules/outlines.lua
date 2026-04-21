@@ -13,10 +13,20 @@ local next = next
 -- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
+local visibility_cache = {}
+
+local function visibility_always()
+	return true
+end
 
 local function get_outline_system()
-	local extension_manager = Managers.state.extension
+	if _outline_system_checked then
+		return _outline_system
+	end
 
+	_outline_system_checked = true
+
+	local extension_manager = Managers.state.extension
 	if not extension_manager then
 		return nil
 	end
@@ -25,7 +35,28 @@ local function get_outline_system()
 		return nil
 	end
 
-	return extension_manager:system("outline_system")
+	_outline_system = extension_manager:system("outline_system")
+	return _outline_system
+end
+
+local function make_visibility_check(enemy_name)
+	return function(unit)
+		if not Unit.alive(unit) then
+			return false
+		end
+
+		local unit_data = ScriptUnit.has_extension(unit, "unit_data_system")
+		if not unit_data then
+			return false
+		end
+
+		local breed = unit_data:breed()
+		if not breed or breed.name ~= enemy_name then
+			return false
+		end
+
+		return mod:get("outline_" .. enemy_name .. "_enable")
+	end
 end
 
 mod.remove_outline = function(unit, outline, outline_system)
@@ -62,7 +93,6 @@ mod.enable_enemy_outlines = function(unit, entry)
 	if breed_name then
 		local key = "outline_" .. breed_name .. "_enable"
 		if mod:get(key) then
-
 			local outline_name = entry._outline_name_individual
 			if not outline_name then
 				outline_name = "enemies_" .. breed_name
@@ -110,6 +140,9 @@ mod.disable_enemy_outlines = function(unit, entry)
 		local individual_outline = entry._outline_name_individual or ("enemies_" .. breed_name)
 		mod.remove_outline(unit, individual_outline, outline_system)
 	end
+
+	entry._outline_applied = false
+	entry.alert_outline = nil
 end
 
 mod.pulse_enemy_outline = function(entry)
@@ -261,6 +294,12 @@ mod.default_outline_enabled = {
 }
 
 mod.apply_enemy_outlines = function(settings)
+	for k in pairs(settings.MinionOutlineExtension) do
+		if string.find(k, "^enemies_") then
+			settings.MinionOutlineExtension[k] = nil
+		end
+	end
+
 	for _, entry in next, mod.breed_types do
 		local breed = entry.value
 
@@ -315,9 +354,7 @@ mod.apply_enemy_outlines = function(settings)
 						"minion_outline_reversed_depth",
 					},
 					color = { r, g, b },
-					visibility_check = function()
-						return true
-					end,
+					visibility_check = visibility_always,
 				}
 			else
 				-- remove if disabled
@@ -361,27 +398,7 @@ mod.apply_enemy_outlines = function(settings)
 					},
 					color = { r, g, b },
 
-					visibility_check = function(unit)
-						if not Unit.alive(unit) then
-							return false
-						end
-
-						local unit_data = ScriptUnit.has_extension(unit, "unit_data_system")
-						if not unit_data then
-							return false
-						end
-
-						local breed = unit_data:breed()
-						if not breed then
-							return false
-						end
-
-						if breed.name ~= enemy_individual then
-							return false
-						end
-
-						return mod:get("outline_" .. enemy_individual .. "_enable")
-					end,
+					visibility_check = make_visibility_check(enemy_individual),
 				}
 			end
 		end
@@ -413,9 +430,7 @@ mod.apply_enemy_outlines = function(settings)
 			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
-		visibility_check = function()
-			return true
-		end,
+		visibility_check = visibility_always,
 	}
 end
 

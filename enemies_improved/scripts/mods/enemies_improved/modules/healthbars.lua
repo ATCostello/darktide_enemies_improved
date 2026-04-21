@@ -28,8 +28,10 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
-		return
+	if entry.is_horde then
+		if not fs.horde_enable and not fs.horde_clusters_enable then
+			return
+		end
 	end
 
 	if entry._healthbar_created or entry._healthbar_pending then

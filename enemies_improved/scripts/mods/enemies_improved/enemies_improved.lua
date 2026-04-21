@@ -57,7 +57,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 300
+local MAX_ENEMIES_PER_FRAME = 250
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 
@@ -66,6 +66,8 @@ local _pos_vec = Vector3.zero()
 
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
+local _cluster_pool = {}
+local _cluster_pool_size = 0
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -365,18 +367,20 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 15
-
+local HORDE_MIN_UNITS_FOR_CLUSTER = 5
+local _spatial_hash = {}
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
+	_cluster_pool_size = 0
 
 	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
 	end
 
 	local clusters = _horde_clusters
-	local spatial = {}
+	local spatial = _spatial_hash
+	table_clear(spatial)
 
 	-- Step 1: build spatial hash
 	for i = 1, num_units do
@@ -390,9 +394,11 @@ local function _build_horde_clusters(units, num_units)
 			if tags and (tags.horde or tags.roamer) then
 				local pos = entry.pos
 				if not pos then
-					pos = Unit.world_position(unit, 1, _pos_vec)
-					entry.pos = Vector3(pos.x, pos.y, pos.z)
+					pos = Vector3(0, 0, 0)
+					entry.pos = pos
 				end
+
+				Unit.world_position(unit, 1, pos)
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
@@ -498,19 +504,32 @@ local function _build_horde_clusters(units, num_units)
 				--max
 				local target_z = max_z + 2.0
 
-				local cluster = {
-					breed_name = breed.name,
-					units = cluster_units,
-					count = count,
-					rep_unit = cluster_units[1],
-					center = {
-						x = cx,
-						y = cy,
-						z = target_z,
-					},
-					total_current = 0,
-					total_max = 0,
-				}
+				_cluster_pool_size = _cluster_pool_size + 1
+				local cluster = _cluster_pool[_cluster_pool_size]
+
+				if not cluster then
+					cluster = {}
+					_cluster_pool[_cluster_pool_size] = cluster
+				end
+
+				cluster.breed_name = breed.name
+				cluster.units = cluster.units or {}
+				table_clear(cluster.units)
+
+				for j = 1, #cluster_units do
+					cluster.units[j] = cluster_units[j]
+				end
+
+				cluster.count = count
+				cluster.rep_unit = cluster_units[1]
+
+				cluster.center = cluster.center or {}
+				cluster.center.x = cx
+				cluster.center.y = cy
+				cluster.center.z = target_z
+
+				cluster.total_current = 0
+				cluster.total_max = 0
 
 				local idx = #clusters + 1
 				clusters[idx] = cluster
@@ -666,12 +685,24 @@ mod.remove_dead = function()
 
 	-- Cleanup
 	for _, unit in next, units_to_remove do
-		mod.marked_dead[unit] = mark_dead
+		mod.marked_dead[unit] = true
 		mod.enemy_healthbars[unit] = nil
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_utility_debuffs[unit] = nil
 		mod.enemy_markers[unit] = nil
 		mod.enemy_cache[unit] = nil
+	end
+
+	-- cleanup marked_dead to prevent unbounded growth
+	local cleaned = 0
+	for unit in next, mod.marked_dead do
+		if not mod.detect_alive(unit) then
+			mod.marked_dead[unit] = nil
+			cleaned = cleaned + 1
+			if cleaned > 50 then
+				break
+			end
+		end
 	end
 end
 
@@ -771,6 +802,15 @@ mod.update_enemies = function(dt, t)
 		temp[i] = nil
 	end
 
+	-- hard reset if list shrank a lot
+	if _last_temp_count and count < _last_temp_count then
+		for i = count + 1, _last_temp_count do
+			temp[i] = nil
+		end
+	end
+
+	_last_temp_count = count
+
 	-- update horde clusters...
 	if fs.horde_clusters_enable then
 		mod.update_horde_clusters(temp, to_process)
@@ -788,9 +828,13 @@ mod.update_enemies = function(dt, t)
 		if player_pos and Unit_alive(unit) then
 			local entry = mod.enemy_cache[unit]
 
-			if not entry.pos then
-				entry.pos = Unit.world_position(unit, 1)
+			local pos = entry.pos
+			if not pos then
+				pos = Vector3(0, 0, 0)
+				entry.pos = pos
 			end
+
+			Unit.world_position(unit, 1, pos)
 
 			local pos = entry.pos
 

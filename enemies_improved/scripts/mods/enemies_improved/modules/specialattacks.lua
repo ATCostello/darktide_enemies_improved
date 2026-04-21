@@ -65,7 +65,6 @@ mod.special_attack_events = {
 
 local function extract_locals(level_base)
 	local level = level_base
-	local res = {}
 	local return_value = nil
 
 	while debug.getinfo(level) ~= nil do
@@ -78,20 +77,17 @@ local function extract_locals(level_base)
 				break
 			end
 
-			res[name] = value
-
-			-- check for specifics...
-			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
-			if value and type(value) == "userdata" and name and name == "unit" then
-				return_value = value
+			if value and type(value) == "userdata" and name == "unit" then
+				return value
 			end
+
 			v = v + 1
 		end
 
 		level = level + 1
 	end
 
-	return return_value
+	return nil
 end
 
 mod.handle_special_attacks = function(event_name, source_unit)
@@ -110,24 +106,24 @@ mod.handle_special_attacks = function(event_name, source_unit)
 
 		-- If not, try to get from local debugs
 		if
-			event_name
-				== ("wwise/events/minions/play_weapon_netgunner_wind_up" or "wwise/events/weapon/play_special_sniper_flash")
-			and not unit
+			(
+				event_name == "wwise/events/minions/play_weapon_netgunner_wind_up"
+				or event_name == "wwise/events/weapon/play_special_sniper_flash"
+			) and not unit
 		then
 			local name, value = debug.getlocal(8, 1)
 			unit = value._unit
 		end
 
 		-- if not, try to get from all locals
-		if not unit then
-			unit = extract_locals(1)
+		if not unit and event_name == "wwise/events/minions/play_weapon_netgunner_wind_up" then
+			unit = extract_locals(3)
 		end
 
 		--extract_locals(1)
 
 		if unit and mod.detect_alive(unit) then
-			entry = mod.enemy_cache[unit]
-
+			local entry = mod.enemy_cache[unit]
 			if entry then
 				entry.special_attack_event = event_name
 				entry.special_attack_imminent = true
@@ -507,13 +503,12 @@ local cached_world_markers = nil
 mod.update_special_attack_detection = function(entry)
 	local unit = entry.unit
 
-	if not cached_hud then
-		local ui_manager = Managers_ui
-		cached_hud = ui_manager and ui_manager:get_hud()
-	end
+	local ui_manager = Managers_ui
+	local hud = ui_manager and ui_manager:get_hud()
 
-	if not cached_world_markers and cached_hud then
-		cached_world_markers = cached_hud:element("HudElementWorldMarkers")
+	if hud ~= cached_hud then
+		cached_hud = hud
+		cached_world_markers = hud and hud:element("HudElementWorldMarkers")
 	end
 
 	local world_markers = cached_world_markers

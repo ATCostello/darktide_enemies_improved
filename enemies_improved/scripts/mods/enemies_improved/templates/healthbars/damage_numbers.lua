@@ -30,6 +30,8 @@ local table_remove = table.remove
 local table_clone = table.clone
 local next = next
 
+local temp_vec3 = Vector3(0, 0, 0)
+
 -- grab passed template values
 local function _init(passed_template)
     template = passed_template
@@ -71,7 +73,6 @@ local function _flashy_damage_number_function(
 	local z_position = position[3]
 	local y_position = position[2]
 	local x_position = position[1]
-
 	local dt = ui_renderer.dt
 
 	if ui_content.alpha_multiplier then
@@ -80,6 +81,15 @@ local function _flashy_damage_number_function(
 
 	local flashy_font_size_dmg_multiplier = damage_number_settings.flashy_font_size_dmg_multiplier
 	local flashy_font_size_dmg_scale_range = damage_number_settings.flashy_font_size_dmg_scale_range
+
+	local max_damage_numbers = fs.readable_max_damage_numbers
+	local dn_count = #damage_numbers
+
+	if dn_count > max_damage_numbers then
+		for j = max_damage_numbers + 1, dn_count do
+			damage_numbers[j] = nil
+		end
+	end
 
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
@@ -90,27 +100,23 @@ local function _flashy_damage_number_function(
 		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
-			table_remove(damage_numbers, i)
-		elseif i >= max_damage_numbers then
-			table_remove(damage_numbers, 1)
+			damage_numbers[i] = damage_numbers[#damage_numbers]
+			damage_numbers[#damage_numbers] = nil			
 		else
 			damage_number.time = time + dt
 		end
 
+		local c = default_color
+
 		if damage_number.was_critical then
-			text_color[2] = crit_color[2]
-			text_color[3] = crit_color[3]
-			text_color[4] = crit_color[4]
-			damage_number.expand_duration = damage_number_settings.expand_duration
+			c = crit_color
 		elseif damage_number.hit_weakspot then
-			text_color[2] = weakspot_color[2]
-			text_color[3] = weakspot_color[3]
-			text_color[4] = weakspot_color[4]
-		else
-			text_color[2] = default_color[2]
-			text_color[3] = default_color[3]
-			text_color[4] = default_color[4]
+			c = weakspot_color
 		end
+
+		text_color[2] = c[2]
+		text_color[3] = c[3]
+		text_color[4] = c[4]
 
 		local value = damage_number.value
 		local font_size = (value <= 99 and default_font_size) or hundreds_font_size
@@ -200,37 +206,43 @@ local function _floating_damage_number_function(
 	local z_position = position[3]
 	local y_position = position[2]
 	local x_position = position[1]
+	local dt = ui_renderer.dt
+
+	local max_damage_numbers = fs.readable_max_damage_numbers
+	local dn_count = #damage_numbers
+
+	if dn_count > max_damage_numbers then
+		for j = max_damage_numbers + 1, dn_count do
+			damage_numbers[j] = nil
+		end
+	end
+
 
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
 		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
-		local dt = ui_renderer.dt
 		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
-			table_remove(damage_numbers, i)
-		elseif i >= max_damage_numbers then
-			table_remove(damage_numbers, 1)
+			damage_numbers[i] = damage_numbers[#damage_numbers]
+			damage_numbers[#damage_numbers] = nil		
 		else
 			damage_number.time = time + dt
 		end
 
+		local c = default_color
+
 		if damage_number.was_critical then
-			text_color[2] = crit_color[2]
-			text_color[3] = crit_color[3]
-			text_color[4] = crit_color[4]
-			damage_number.expand_duration = damage_number_settings.expand_duration
+			c = crit_color
 		elseif damage_number.hit_weakspot then
-			text_color[2] = weakspot_color[2]
-			text_color[3] = weakspot_color[3]
-			text_color[4] = weakspot_color[4]
-		else
-			text_color[2] = default_color[2]
-			text_color[3] = default_color[3]
-			text_color[4] = default_color[4]
+			c = weakspot_color
 		end
+
+		text_color[2] = c[2]
+		text_color[3] = c[3]
+		text_color[4] = c[4]
 
 		local value = damage_number.value
 		local font_size = (value <= 99 and default_font_size) or hundreds_font_size
@@ -302,6 +314,16 @@ local function _readable_damage_number_function(
 	local x_position = position[1]
 	local dt = ui_renderer.dt
 
+	local max_damage_numbers = fs.readable_max_damage_numbers
+	local dn_count = #damage_numbers
+
+	if dn_count > max_damage_numbers then
+		for j = max_damage_numbers + 1, dn_count do
+			damage_numbers[j] = nil
+		end
+	end
+
+
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
 		local duration = damage_number.duration
@@ -310,27 +332,23 @@ local function _readable_damage_number_function(
 		local max_damage_numbers = fs.readable_max_damage_numbers
 
 		if progress >= 1 then
-			table_remove(damage_numbers, i)
-		elseif i >= max_damage_numbers then
-			table_remove(damage_numbers, 1)
+			damage_numbers[i] = damage_numbers[#damage_numbers]
+			damage_numbers[#damage_numbers] = nil	
 		else
 			damage_number.time = time + dt
 		end
 
+		local c = default_color
+
 		if damage_number.was_critical then
-			text_color[2] = crit_color[2]
-			text_color[3] = crit_color[3]
-			text_color[4] = crit_color[4]
-			damage_number.expand_duration = damage_number_settings.expand_duration
+			c = crit_color
 		elseif damage_number.hit_weakspot then
-			text_color[2] = weakspot_color[2]
-			text_color[3] = weakspot_color[3]
-			text_color[4] = weakspot_color[4]
-		else
-			text_color[2] = default_color[2]
-			text_color[3] = default_color[3]
-			text_color[4] = default_color[4]
+			c = weakspot_color
 		end
+
+		text_color[2] = c[2]
+		text_color[3] = c[3]
+		text_color[4] = c[4]
 
 		local value = damage_number.value
 		local font_size = (value <= 99 and default_font_size) or hundreds_font_size
@@ -369,13 +387,11 @@ local function _readable_damage_number_function(
 			font_size = font_size * scale_size
 		end
 
-		local draw_pos = Vector3(
-			x_position + current_order * damage_number_settings.x_offset_between_numbers,
-			y_position,
-			z_position + current_order
-		)
+		temp_vec3.x = x_position + current_order * damage_number_settings.x_offset_between_numbers
+		temp_vec3.y = y_position
+		temp_vec3.z = z_position + current_order
 
-		UIRenderer.draw_text(ui_renderer, text, font_size, font_type, draw_pos, size, text_color, {})
+		UIRenderer.draw_text(ui_renderer, text, font_size, font_type, temp_vec3, size, text_color, {})
 	end
 
 	position[3] = z_position
@@ -387,7 +403,15 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	if fs.hb_damage_number_type == damage_number_types.readable then
+		return
+	end
+
 	if fs.hb_damage_number_type ~= damage_number_types.readable then
+
+		if not ui_content.damage_numbers or #ui_content.damage_numbers == 0 then
+			return
+		end
 
 		local damage_numbers = ui_content.damage_numbers
 
@@ -430,12 +454,20 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
+			
+
 			if template.show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
-				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				local damage_has_started_position
+
+				if ui_content._last_dps_value ~= dps_value then
+					ui_content._last_dps_value = dps_value
+					ui_content._last_dps_text = string_format("%d DPS", dps_value)
+				end
+
+				local text = ui_content._last_dps_text
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
 					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
@@ -504,7 +536,16 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	-- in _readable_damage_number_function
+	if fs.hb_damage_number_type ~= damage_number_types.readable then
+		return
+	end
+
 	if fs.hb_damage_number_type == damage_number_types.readable then
+
+		if not ui_content.damage_numbers or #ui_content.damage_numbers == 0 then
+			return
+		end
 
 		local damage_numbers = ui_content.damage_numbers
 
@@ -547,12 +588,20 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
+			
+
 			if template.show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
-				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				local damage_has_started_position
+
+				if ui_content._last_dps_value ~= dps_value then
+					ui_content._last_dps_value = dps_value
+					ui_content._last_dps_text = string_format("%d DPS", dps_value)
+				end
+
+				local text = ui_content._last_dps_text
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
 					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)

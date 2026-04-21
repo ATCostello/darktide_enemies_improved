@@ -16,7 +16,6 @@ mod.build_frame_settings = function(dt)
 	fs.draw_distance = mod:get("draw_distance")
 
 	fs.general_throttle_rate = mod:get("general_throttle_rate") / 1000
-	mod:echo("General throttle rate: " .. fs.general_throttle_rate)
 	fs.off_screen_throttle_rate = mod:get("off_screen_throttle_rate") / 1000
 
 	-- GENERAL
