@@ -367,14 +367,15 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 5
+mod.HORDE_MIN_UNITS_FOR_CLUSTER = 15
 local _spatial_hash = {}
+
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 	_cluster_pool_size = 0
 
-	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
+	if num_units < mod.HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
 	end
 
@@ -394,11 +395,9 @@ local function _build_horde_clusters(units, num_units)
 			if tags and (tags.horde or tags.roamer) then
 				local pos = entry.pos
 				if not pos then
-					pos = Vector3(0, 0, 0)
-					entry.pos = pos
+					pos = Unit.world_position(unit, 1, _pos_vec)
+					entry.pos = Vector3(pos.x, pos.y, pos.z)
 				end
-
-				Unit.world_position(unit, 1, pos)
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
@@ -492,7 +491,7 @@ local function _build_horde_clusters(units, num_units)
 				end
 			end
 
-			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
+			if count >= mod.HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
 
 				local cx = sum_x * inv
@@ -500,9 +499,9 @@ local function _build_horde_clusters(units, num_units)
 				local avg_z = sum_z * inv
 
 				-- average
-				--local target_z = avg_z + 2.0
+				local target_z = avg_z + 2.0
 				--max
-				local target_z = max_z + 2.0
+				--local target_z = max_z + 2.0
 
 				_cluster_pool_size = _cluster_pool_size + 1
 				local cluster = _cluster_pool[_cluster_pool_size]
@@ -657,11 +656,10 @@ mod.remove_dead = function()
 
 		-- Distance check
 		if not remove and player_pos then
-			local pos = entry.pos
-			if not pos then
-				pos = Unit.world_position(unit, 1)
-				entry.pos = pos
+			if not entry.pos then
+				entry.pos = Unit.world_position(unit, 1)
 			end
+			local pos = entry.pos
 
 			local dx = pos.x - player_pos.x
 			local dy = pos.y - player_pos.y

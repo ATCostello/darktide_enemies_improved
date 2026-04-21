@@ -710,7 +710,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Only the cluster representative should ever have a bar marker, because
 		-- enemy_markers.lua only spawns a bar for cluster.rep_unit.
 		-- Still, guard and bail out if somehow non-rep gets here.
-		if cluster.rep_unit ~= unit then
+		if cluster.rep_unit ~= unit or cluster.units and #cluster.units < mod.HORDE_MIN_UNITS_FOR_CLUSTER then
 			marker.draw = false
 			marker.remove = true
 			content.in_horde_cluster = false
