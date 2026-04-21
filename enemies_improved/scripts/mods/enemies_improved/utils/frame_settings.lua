@@ -15,6 +15,9 @@ mod.build_frame_settings = function(dt)
 	-- Draw distance
 	fs.draw_distance = mod:get("draw_distance")
 
+	fs.general_throttle_rate = mod:get("general_throttle_rate") / 1000
+	fs.off_screen_throttle_rate = mod:get("off_screen_throttle_rate") / 1000
+
 	-- GENERAL
 	fs.outlines_enable = mod:get("outlines_enable")
 	fs.text_scale = mod:get("text_scale") * fs.global_scale
@@ -104,7 +107,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
 	fs.hb_size_width = mod:get("hb_size_width") * fs.global_scale
 	fs.hb_size_height = mod:get("hb_size_height") * fs.global_scale
-	fs.hb_y_offset = mod:get("hb_y_offset") 
+	fs.hb_y_offset = mod:get("hb_y_offset")
 	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
 	fs.hb_damage_numbers_track_friendly = mod:get("hb_damage_numbers_track_friendly")
 	fs.hb_damage_numbers_add_total = mod:get("hb_damage_numbers_add_total")
@@ -171,7 +174,7 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_stacks_show_x_space = mod:get("debuff_stacks_show_x_space")
 	fs.debuff_icon_scale = mod:get("debuff_icon_scale")
 	fs.debuff_stack_on_icon = mod:get("debuff_stack_on_icon")
-	
+
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")
 	local b = mod:get("debuff_max_stacks_colour_B")

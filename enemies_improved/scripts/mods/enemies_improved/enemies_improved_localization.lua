@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.13"
+mod.version = "1.4.14"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1360,7 +1360,7 @@ table.insert(localisations_to_add, {
 		en = "Debuffs Y offset scale",
 	},
 	debuff_y_offset_tooltip = {
-		en = "Adjust the up + down position of the debuffs. A lower value moves down/closer, a higher value moves up/apart. Adjust to your liking, or to fit to your widget config.",
+		en = "Adjust the up + down position of the debuffs.\n\nOnly applies if debuffs are shown on the body, not stuck to the healthbar.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
 	},
 	debuff_gap_name_icon_offset = {
 		en = "Adjust the gap between the Name and Icon",
@@ -1612,6 +1612,24 @@ table.insert(localisations_to_add, {
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
+	},
+})
+
+table.insert(localisations_to_add, {
+	throttle_timings = {
+		en = "{#color(" .. colours.title .. ")}WARNING: Throttle Timings{#reset()}",
+	},
+	general_throttle_rate = {
+		en = "General Throttle Rate",
+	},
+	general_throttle_rate_tooltip = {
+		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
+	},
+	off_screen_throttle_rate = {
+		en = "Off Screen Throttle Rate",
+	},
+	off_screen_throttle_rate_tooltip = {
+		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
 	},
 })
 

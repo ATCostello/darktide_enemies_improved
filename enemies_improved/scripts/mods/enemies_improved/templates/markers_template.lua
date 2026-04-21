@@ -33,7 +33,7 @@ local math_floor = math.floor
 template.name = "enemy_markers"
 template.unit_node = "root_point"
 template.min_distance = 0
-	template.position_offset = { 0, 0, fs.marker_y_offset }
+template.position_offset = { 0, 0, fs.marker_y_offset }
 
 template.size = size
 template.icon_size = icon_size
@@ -329,17 +329,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
-		widget._next_update = t + 0.25
+		widget._next_update = t + fs.off_screen_throttle_rate
 		return
 	-- distance based updates
-	elseif marker.distance < 30 then
-		widget._next_update = t + 0.02
 	elseif marker.distance < 50 then
-		widget._next_update = t + 0.04
+		widget._next_update = t + fs.general_throttle_rate
 	elseif marker.distance < 70 then
-		widget._next_update = t + 0.06
+		widget._next_update = t + fs.general_throttle_rate * 1.5
 	else
-		widget._next_update = t + 0.1
+		widget._next_update = t + fs.general_throttle_rate * 2
 	end
 
 	local content = widget.content
@@ -359,12 +357,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not mod.detect_alive(unit) then
 		marker.draw = false
 		marker.remove = true
-		return
-	end
-
-	-- early out
-	if not marker.draw and not marker.is_inside_frustum and not template.check_line_of_sight then
-		marker.draw = false
 		return
 	end
 
@@ -483,15 +475,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	style.marker_health.color[4] = bar_color[4]
 
 	content.line_of_sight_progress = line_of_sight_progress
-	widget.alpha_multiplier = marker.alpha_multiplier
-
-	local draw = true
+	widget.alpha_multiplier = line_of_sight_progress or 1
 
 	if not marker.is_inside_frustum then
 		marker.draw = false
 	end
 
-	if draw then
+	if marker.draw then
 		content.m_built = true
 	else
 		content.m_built = false

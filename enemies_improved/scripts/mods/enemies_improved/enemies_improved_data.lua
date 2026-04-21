@@ -1721,6 +1721,38 @@ table.insert(mod.settings_widgets, {
 	sub_widgets = mod.individual_override_settings,
 })
 
+-- THROTTLE TIMINGS
+table.insert(mod.settings_widgets, {
+	setting_id = "throttle_timings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "general_throttle_rate",
+			type = "numeric",
+			default_value = 20,
+			range = {
+				10,
+				100,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "general_throttle_rate_tooltip",
+		},
+		{
+			setting_id = "off_screen_throttle_rate",
+			type = "numeric",
+			default_value = 120,
+			range = {
+				10,
+				300,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "off_screen_throttle_rate_tooltip",
+		},
+	},
+})
+
 return {
 	name = mod:localize("mod_name"),
 	description = mod:localize("mod_description"),
