@@ -26,7 +26,7 @@ local DistanceFade = mod:io_dofile("enemies_improved/scripts/mods/enemies_improv
 
 local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
 local EnemyHealthbarTemplate =
-	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbar_template")
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
 
 local Outlines = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/outlines")
@@ -56,7 +56,6 @@ mod.active_markers = mod.active_markers or {}
 
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
-
 
 local MAX_ENEMIES_PER_FRAME = 300
 local _enemy_units_temp = {}
@@ -166,7 +165,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 	local update_interval
 
-	update_interval = 0.1
+	update_interval = 0.05
 
 	self._update_time = (self._update_time or 0) + dt
 
@@ -243,10 +242,11 @@ mod.scan_enemies = function()
 		return
 	end
 
-	-- Skip scan if player hasn't moved enough (Optimisation)
 	local current_pos = Unit.world_position(player_unit, 1, _player_pos_vec)
-	local last_pos = mod._last_scan_pos
 
+	--[[local last_pos = mod._last_scan_pos
+
+	-- Skip scan if player hasn't moved enough
 	if last_pos then
 		local dx = current_pos.x - last_pos.x
 		local dy = current_pos.y - last_pos.y
@@ -259,7 +259,7 @@ mod.scan_enemies = function()
 		end
 	end
 
-	mod._last_scan_pos = current_pos
+	mod._last_scan_pos = current_pos]]
 
 	local extension_manager = Managers_state.extension
 	if not extension_manager then

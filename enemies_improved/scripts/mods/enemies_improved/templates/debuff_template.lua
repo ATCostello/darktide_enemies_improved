@@ -48,13 +48,13 @@ local active_pool = {}
 template.size = size
 template.name = "enemy_debuff"
 
-if fs.debuff_show_on_body then
-	template.unit_node = "root_point"
-	template.position_offset = { 0, 0, 0 }
-else
-	template.unit_node = "root_point"
-	template.position_offset = { 0, 0, fs.hb_y_offset }
-end
+--if fs.debuff_show_on_body then
+--	template.unit_node = "root_point"
+--	template.position_offset = { 0, 0, 0 }
+--else
+template.unit_node = "root_point"
+template.position_offset = { 0, 0, fs.hb_y_offset }
+--end
 
 template.max_visible_rows = max_visible_rows_setting
 
@@ -259,11 +259,11 @@ end
 template.on_enter = function(widget, marker, template)
 	local fs = mod.frame_settings
 
-	if fs.debuff_show_on_body then
-		template.position_offset = { 0, 0, 0 }
-	else
-		template.position_offset = { 0, 0, fs.hb_y_offset }
-	end
+	--if fs.debuff_show_on_body then
+	--	template.position_offset = { 0, 0, 0 }
+	--else
+	template.position_offset = { 0, 0, fs.hb_y_offset }
+	--end
 
 	local content = widget.content
 	local style = widget.style
@@ -333,7 +333,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum then
-		widget._next_update = t + 0.25
+		widget._next_update = t + 0.1
 		return
 	-- distance based updates
 	elseif marker.distance < 30 then
@@ -646,43 +646,61 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local stacks = debuff.stacks
 		local y_base = 0
 
+		if fs.debuff_show_on_body then
+			y_base = 0
+		end
+
 		if split_debuff_types then
 			if debuff.type == "dot" then
-				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-					y_base = (-hb_size_height - 16) * fs.debuff_y_offset * fs.text_scale
+				if fs.debuff_show_on_body then
+					y_base = (-hb_size_height - 8 * fs.debuff_gap_padding_scale)
+						+ (calculate_icon_size()) * fs.text_scale
+				elseif fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing" then
+					y_base = (-hb_size_height - 16) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
+					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				else
-					y_base = (-hb_size_height - 34) * fs.debuff_y_offset * fs.text_scale
+					y_base = (-hb_size_height - 34) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				end
 			elseif debuff.type == "utility" then
-				if
-					(
-						fs.healthbar_enable
-						and fs.hb_text_bottom_left_02 == "nothing"
-						and fs.hb_text_bottom_left_01 == "nothing"
-					) or fs.debuff_show_on_body
+				if fs.debuff_show_on_body then
+					y_base = (hb_size_height + 8 * fs.debuff_gap_padding_scale)
+						+ (calculate_icon_size()) * fs.text_scale
+				elseif
+					fs.healthbar_enable
+					and fs.hb_text_bottom_left_02 == "nothing"
+					and fs.hb_text_bottom_left_01 == "nothing"
 				then
-					y_base = (hb_size_height + 16) * fs.debuff_y_offset * fs.text_scale
+					y_base = (hb_size_height + 16) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				elseif
 					fs.healthbar_enable
 					and fs.hb_text_bottom_left_02 == "nothing"
 					and fs.hb_text_bottom_left_01 ~= "nothing"
 				then
-					y_base = (hb_size_height + 40) * fs.debuff_y_offset * fs.text_scale
+					y_base = (hb_size_height + 40) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
+					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				else
-					y_base = (hb_size_height + 60) * fs.debuff_y_offset * fs.text_scale
+					y_base = (hb_size_height + 60) * fs.text_scale
+					--y_base = y_base * fs.debuff_y_offset
 				end
 			end
 		else
 			if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-				y_base = (-hb_size_height - 16) * fs.debuff_y_offset * fs.text_scale
+				y_base = (-hb_size_height - 16) * fs.text_scale
+				--y_base = y_base * fs.debuff_y_offset
 			elseif fs.markers_enable and not fs.healthbar_enable then
-				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.debuff_y_offset * fs.text_scale
+				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
+				--y_base = y_base * fs.debuff_y_offset
 			else
-				y_base = (-hb_size_height - 34) * fs.debuff_y_offset * fs.text_scale
+				y_base = (-hb_size_height - 34) * fs.text_scale
+				--y_base = y_base * fs.debuff_y_offset
 			end
 		end
 
@@ -768,7 +786,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if not fs.debuff_show_on_body then
 			root_position.z = root_position.z + content.breed.base_height + 0.5
 		else
-			root_position.z = root_position.z + content.breed.base_height / 1.5
+			root_position.z = root_position.z + (content.breed.base_height * 0.5 * fs.debuff_y_offset)
 		end
 
 		if not marker.world_position then
@@ -883,13 +901,35 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					o[2] = row_offset_y
 				end
 			else
+				local row_offset_y = state.y - ((row_i - 1) * row_step)
+
+				local o = icon_style.offset
+				o[1] = icon_x + base_offset
+				o[2] = row_offset_y
+				local o = icon_style.default_offset
+				o[1] = icon_x + base_offset
+				o[2] = row_offset_y
+
 				if fs.debuff_stack_on_icon then
-					local row_offset_y = state.y + ((row_i - 1) * row_step)
 					local o = stack_text_style.offset
 					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
 					local o = stack_text_style.default_offset
 					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+				else
+					local o = stack_text_style.offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
+					local o = stack_text_style.default_offset
+					o[1] = stack_x + base_offset
+					o[2] = row_offset_y
 				end
+
+				local o = name_text_style.offset
+				o[1] = name_x + base_offset
+				o[2] = row_offset_y
+				local o = name_text_style.default_offset
+				o[1] = name_x + base_offset
+				o[2] = row_offset_y
 			end
 
 			local at_max_stacks = false

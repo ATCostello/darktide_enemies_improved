@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.13"
+mod.version = "1.4.14"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1360,7 +1360,7 @@ table.insert(localisations_to_add, {
 		en = "Debuffs Y offset scale",
 	},
 	debuff_y_offset_tooltip = {
-		en = "Adjust the up + down position of the debuffs. A lower value moves down/closer, a higher value moves up/apart. Adjust to your liking, or to fit to your widget config.",
+		en = "Adjust the up + down position of the debuffs.\n\nOnly applies if debuffs are shown on the body, not stuck to the healthbar.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
 	},
 	debuff_gap_name_icon_offset = {
 		en = "Adjust the gap between the Name and Icon",
