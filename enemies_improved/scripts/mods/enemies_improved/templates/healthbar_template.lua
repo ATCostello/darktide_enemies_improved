@@ -1363,7 +1363,7 @@ local function get_text_option(content, option)
 			if not fs.hb_text_show_damage then
 				if fs.hb_text_show_max_health then
 					if show_toughness then
-						new_text = " " .. math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
+						new_text = "" .. math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
 					else
 						new_text = math_floor(content._last_health_current)
 							.. " / "
@@ -1371,7 +1371,7 @@ local function get_text_option(content, option)
 					end
 				else
 					if show_toughness then
-						new_text = " " ..math_floor(content.current_toughness)
+						new_text = "" ..math_floor(content.current_toughness)
 					else
 						new_text = math_floor(content._last_health_current)
 					end
@@ -1379,7 +1379,7 @@ local function get_text_option(content, option)
 			else
 				if fs.hb_text_show_max_health then
 					if show_toughness then
-						new_text = " " ..math_floor(content.current_toughness)
+						new_text = "" ..math_floor(content.current_toughness)
 							.. " / "
 							.. math_floor(content.max_toughness)
 							.. " ({#color(255, 255, 50)}-"
@@ -1395,7 +1395,7 @@ local function get_text_option(content, option)
 					end
 				else
 					if show_toughness then
-						new_text = " " ..math_floor(content.current_toughness)
+						new_text = "" ..math_floor(content.current_toughness)
 							.. " ({#color(255, 255, 50)}-"
 							.. math_floor(content._last_damage_value)
 							.. "{#reset()})"
@@ -1410,13 +1410,13 @@ local function get_text_option(content, option)
 		elseif health_current and health_max then
 			if fs.hb_text_show_max_health then
 				if show_toughness then
-					new_text = " " ..math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
+					new_text = "" ..math_floor(content.current_toughness) .. " / " .. math_floor(content.max_toughness)
 				else
 					new_text = math_floor(health_current) .. " / " .. math_floor(health_max)
 				end
 			else
 				if show_toughness then
-					new_text = " " ..math_floor(content.current_toughness)
+					new_text = "" ..math_floor(content.current_toughness)
 				else
 					new_text = math_floor(health_current)
 				end
@@ -1633,6 +1633,13 @@ template.on_enter = function(widget, marker, template)
 	end
 end
 
+local function _get_network_values(game_session, game_object_id)
+	local toughness_damage = GameSession.game_object_field(game_session, game_object_id, "toughness_damage")
+	local max_toughness = GameSession.game_object_field(game_session, game_object_id, "toughness")
+
+	return toughness_damage, max_toughness
+end
+
 -----------------------------------------------------------------------
 -- Main update
 -----------------------------------------------------------------------
@@ -1762,16 +1769,32 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local toughness_current = 0
 	local toughness_fraction = 0
 
-	if toughness_extension and mod.detect_alive(unit) then
-		toughness_damage = toughness_extension:toughness_damage() or 0
-		toughness_max = toughness_extension:max_toughness() or 0
-		content.max_toughness = toughness_max
-		toughness_current = toughness_max - toughness_damage
-		content.current_toughness = toughness_current
-		toughness_fraction = toughness_extension:current_toughness_percent() or 0
-		content.toughness_fraction = toughness_fraction
-	end
 	
+
+	if toughness_extension and mod.detect_alive(unit) then
+		if toughness_extension.max_toughness then
+			-- MinionToughnessExtension
+			toughness_max = toughness_extension:max_toughness()
+			toughness_damage = toughness_extension:toughness_damage()
+			toughness_current = toughness_max - toughness_damage
+		else
+			-- MinionToughnessHuskExtension
+			toughness_damage, toughness_max = _get_network_values(
+				toughness_extension._game_session,
+				toughness_extension._game_object_id
+			)
+			toughness_current = toughness_max - toughness_damage
+		end		
+		if toughness_extension.current_toughness_percent then
+			toughness_fraction = toughness_extension:current_toughness_percent() or 0
+		else
+			toughness_fraction = toughness_current / toughness_max
+		end	
+	end
+
+	content.max_toughness = toughness_max
+	content.current_toughness = toughness_current
+	content.toughness_fraction = toughness_fraction
 
 	-------------------------------------------------------------------
 	-- Horde cluster: pooled HP + center position with stable max
