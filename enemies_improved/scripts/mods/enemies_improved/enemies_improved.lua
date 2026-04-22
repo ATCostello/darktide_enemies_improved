@@ -445,7 +445,7 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 5
+local HORDE_MIN_UNITS_FOR_CLUSTER = 15
 
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
