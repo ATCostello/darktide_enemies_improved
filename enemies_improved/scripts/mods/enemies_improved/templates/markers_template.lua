@@ -355,6 +355,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local style = widget.style
 	local marker_scale = marker.scale
 
+	if not unit then
+		marker.draw = false
+		return
+	end
+
 	local health_extension = content.health_extension
 	if not health_extension then
 		health_extension = ScriptUnit_has_extension(unit, "health_system")
@@ -449,7 +454,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-----------------------	------------------------------------------------
 	local entry = mod.enemy_cache[unit]
 
-	if fs.marker_specials_enable and entry.alert_outline then
+	if entry and fs.marker_specials_enable and entry.alert_outline then
 		content.special_attack_imminent = true
 
 		local sr = (mod:get("outline_specials_colour_R"))

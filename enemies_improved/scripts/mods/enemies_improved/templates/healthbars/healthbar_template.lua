@@ -1130,7 +1130,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- apply values to relevant icon
 	--local function icon_special_attack(content_icon, style_icon)
-	if fs.healthbar_specials_enable and entry.alert_outline then
+	if entry and fs.healthbar_specials_enable and entry.alert_outline then
 		-- get special colour
 		local sr = mod:get("outline_specials_colour_R")
 		local sg = mod:get("outline_specials_colour_G")
