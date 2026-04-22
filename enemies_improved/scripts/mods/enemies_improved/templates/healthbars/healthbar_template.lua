@@ -523,10 +523,8 @@ end
 -- Main update
 -----------------------------------------------------------------------
 
-local DEBUG_DAMAGE = false
-
 local function debug_damage(msg)
-	if DEBUG_DAMAGE then
+	if mod.DEBUG then
 		mod:echo("[DMG DEBUG] " .. tostring(msg))
 	end
 end
@@ -541,14 +539,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or marker.draw == false then
 		widget._next_update = t + fs.off_screen_throttle_rate
-		return
 	-- distance based updates
 	elseif marker.distance < 50 then
 		widget._next_update = t + fs.general_throttle_rate
 	elseif marker.distance < 70 then
-		widget._next_update = t + fs.general_throttle_rate * 1.5
-	else
 		widget._next_update = t + fs.general_throttle_rate * 2
+	else
+		widget._next_update = t + fs.general_throttle_rate * 3
 	end
 
 	local content = widget.content
@@ -564,12 +561,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local entry = mod.enemy_cache[unit]
 
 	-- early out
-	if not marker.draw and not marker.is_inside_frustum and not template.check_line_of_sight then
+	if not marker.draw and not marker.is_inside_frustum then
 		marker.draw = false
 		return
 	end
 
-	if not mod.detect_alive(unit) then
+	local is_alive = mod.detect_alive(unit)
+
+	if not is_alive then
 		if not fs.hb_show_dps then
 			marker.remove = true
 			return
@@ -631,7 +630,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local health_percent = 0
 	local is_dead = true
 
-	if health_extension and mod.detect_alive(unit) then
+	if health_extension and is_alive then
 		health_current = health_extension:current_health() or 0
 		health_max = health_extension:max_health() or 0
 
@@ -648,7 +647,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local toughness_current = 0
 	local toughness_fraction = 0
 
-	if toughness_extension and mod.detect_alive(unit) then
+	if toughness_extension and is_alive then
 		if toughness_extension.max_toughness then
 			-- MinionToughnessExtension
 			toughness_max = toughness_extension:max_toughness()
@@ -802,7 +801,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		peak_cluster_max_by_rep[unit] = nil
 
 		-- ADJUST POSITION (FOLLOW UNIT)
-		if content.breed and mod.detect_alive(unit) then
+		if content.breed and is_alive then
 			local root_position = Unit.world_position(unit, 1)
 			root_position.z = root_position.z + content.breed.base_height + 0.5
 
@@ -928,7 +927,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- DEBUG OUTPUT
-	if DEBUG_DAMAGE and damage_taken_since_last > 0 then
+	if mod.DEBUG and damage_taken_since_last > 0 then
 		debug_damage("---- Damage Event ----")
 		debug_damage("Damage: " .. tostring(damage_taken_since_last))
 		debug_damage("Last damaging unit: " .. tostring(last_damaging_unit))
@@ -947,7 +946,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		show_damage_number = true
 	end
 
-	if DEBUG_DAMAGE and damage_taken_since_last > 0 then
+	if mod.DEBUG and damage_taken_since_last > 0 then
 		debug_damage("Skip others setting: " .. tostring(template.skip_damage_from_others))
 		debug_damage("Show damage number: " .. tostring(show_damage_number))
 	end
@@ -1303,9 +1302,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
-	if not mod.detect_alive(unit) and (not marker.health_fraction or marker.health_fraction == 0) then
+	if not is_alive and (not marker.health_fraction or marker.health_fraction == 0) then
 		if time_since_last_damage > fs.damage_number_duration then
-			marker.remove = true
+			marker.draw = false
 		end
 	end
 

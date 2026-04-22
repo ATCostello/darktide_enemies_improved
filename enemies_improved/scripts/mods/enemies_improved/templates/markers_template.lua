@@ -151,7 +151,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				local unit = content.unit
 				local breed = content.breed
 
-				if unit and health_extension and mod.detect_alive(unit) then
+				if unit and health_extension and is_alive then
 					health_current = health_extension:current_health() or 0
 					health_max = health_extension:max_health() or 0
 					health_percent = health_extension:current_health_percent() or 0
@@ -354,14 +354,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
-	if not mod.detect_alive(unit) then
+	local is_alive = mod.detect_alive(unit)
+
+	if not is_alive then
 		marker.draw = false
 		marker.remove = true
 		return
 	end
 
 	-- marker height
-	if content.breed and mod.detect_alive(unit) then
+	if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
 
 		if mod.frame_settings.healthbar_enable then

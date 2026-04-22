@@ -15,6 +15,9 @@ local next = next
 local math_floor = math.floor
 local Unit_alive = Unit.alive
 
+-- debug mode toggle!!!
+mod.DEBUG = false
+
 mod.detect_alive = function(unit)
 	return unit and HEALTH_ALIVE[unit] and Unit_alive(unit)
 end
@@ -220,6 +223,11 @@ mod.get_marker_by_id = function(id)
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	local markers_by_id = world_markers and world_markers._markers_by_id
 
+	-- DEBUG TO CREATE MARKER LIST
+	if mod.DEBUG then
+		dbg_markers = world_markers._markers_by_type
+	end
+
 	if markers_by_id then
 		return markers_by_id[id]
 	else
@@ -365,7 +373,7 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 15
+local HORDE_MIN_UNITS_FOR_CLUSTER = 5
 
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
@@ -430,7 +438,18 @@ local function _build_horde_clusters(units, num_units)
 
 			local sum_x, sum_y, sum_z = 0, 0, 0
 			local count = 0
+
 			local max_z = 0
+
+			-- Bounds for midpoint center
+			local min_x = math.huge
+			local max_x = -math.huge
+			local min_y = math.huge
+			local max_y = -math.huge
+
+			-- Track top 2 heights
+			local highest_z = -math.huge
+			local second_highest_z = -math.huge
 
 			while #queue > 0 do
 				local current = queue[#queue]
@@ -442,13 +461,44 @@ local function _build_horde_clusters(units, num_units)
 
 				cluster_units[#cluster_units + 1] = current
 
-				sum_x = sum_x + pos.x
+				-- avg/max
+				--[[sum_x = sum_x + pos.x
 				sum_y = sum_y + pos.y
 				sum_z = sum_z + pos.z
 				count = count + 1
 
 				if max_z < pos.z then
 					max_z = pos.z
+				end	
+
+				sum_x = sum_x + pos.x]]
+
+				-- tallest & second tallest
+				sum_x = sum_x + pos.x
+				sum_y = sum_y + pos.y
+				count = count + 1
+
+				-- Bounds tracking (X/Y center)
+				if pos.x < min_x then
+					min_x = pos.x
+				end
+				if pos.x > max_x then
+					max_x = pos.x
+				end
+				if pos.y < min_y then
+					min_y = pos.y
+				end
+				if pos.y > max_y then
+					max_y = pos.y
+				end
+
+				local z = pos.z
+
+				if z > highest_z then
+					second_highest_z = highest_z
+					highest_z = z
+				elseif z > second_highest_z then
+					second_highest_z = z
 				end
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
@@ -489,14 +539,50 @@ local function _build_horde_clusters(units, num_units)
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
 				local inv = 1 / count
 
-				local cx = sum_x * inv
-				local cy = sum_y * inv
+				local cx = (min_x + max_x) * 0.5
+				local cy = (min_y + max_y) * 0.5
 				local avg_z = sum_z * inv
+
+				local width = max_x - min_x
+				local height = max_y - min_y
+
+				-- If cluster is too thin, fall back slightly toward centroid feel
+				if width < 1.5 or height < 1.5 then
+					-- small bias toward first unit
+					local rep = cluster_units[1]
+					if rep then
+						local pos = mod.enemy_cache[rep].pos
+						cx = cx * 0.7 + pos.x * 0.3
+						cy = cy * 0.7 + pos.y * 0.3
+					end
+				end
 
 				-- average
 				--local target_z = avg_z + 2.0
+
 				--max
-				local target_z = max_z + 2.0
+				--local target_z = max_z + 2.0
+
+				-- tallest / second tallest
+				-- Fallback if cluster is tiny or something went weird
+				local base_z
+				if second_highest_z > -math.huge then
+					base_z = (highest_z + second_highest_z) * 0.5
+				else
+					base_z = highest_z
+				end
+
+				local target_z = base_z + 2.0
+
+				local idx = #clusters + 1
+
+				-- smooth
+				local prev = clusters[idx] and clusters[idx].center
+
+				local smooth_z = target_z
+				if prev then
+					smooth_z = prev.z + (target_z - prev.z) * 0.2
+				end
 
 				local cluster = {
 					breed_name = breed.name,
@@ -506,13 +592,12 @@ local function _build_horde_clusters(units, num_units)
 					center = {
 						x = cx,
 						y = cy,
-						z = target_z,
+						z = smooth_z,
 					},
 					total_current = 0,
 					total_max = 0,
 				}
 
-				local idx = #clusters + 1
 				clusters[idx] = cluster
 
 				for j = 1, #cluster_units do
@@ -659,6 +744,13 @@ mod.remove_dead = function()
 			end
 		end
 
+		-- If this unit was a cluster rep, clear cluster healthbar state
+		local cluster = mod.get_horde_cluster_for_unit(unit)
+		if cluster and cluster.rep_unit == unit then
+			cluster._healthbar_created = false
+			cluster._healthbar_marker_id = nil
+		end
+
 		if remove then
 			iterate_types_removal(unit)
 		end
@@ -773,7 +865,7 @@ mod.update_enemies = function(dt, t)
 
 	-- update horde clusters...
 	if fs.horde_clusters_enable then
-		mod.update_horde_clusters(temp, to_process)
+		mod.update_horde_clusters(temp, count)
 	end
 
 	local player = Managers.player:local_player(1)

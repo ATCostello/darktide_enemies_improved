@@ -355,6 +355,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	local is_alive = mod.detect_alive(unit) 
+
+	if not is_alive then
+		marker.draw = false
+		marker.remove = true
+		return
+	end
+
 	-- dont draw or do calculations if there are no debuffs applied..
 	if not content.debuffs then
 		marker.draw = false
@@ -779,7 +787,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
 	-------------------------------------------------------------------
-	if content.breed and mod.detect_alive(unit) then
+	if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
 		if not fs.debuff_show_on_body then
 			root_position.z = root_position.z + content.breed.base_height + 0.5
