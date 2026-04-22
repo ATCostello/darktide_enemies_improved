@@ -1300,9 +1300,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
+	-- remove after dps check!
 	if not is_alive and (not marker.health_fraction or marker.health_fraction == 0) then
 		if time_since_last_damage > fs.damage_number_duration then
 			marker.draw = false
+			mod.active_markers[marker.id] = nil
+			mod.enemy_healthbars[unit] = nil
+			Managers.event:trigger("remove_world_marker", marker.id)
 		end
 	end
 

@@ -756,8 +756,10 @@ mod.remove_dead = function()
 			mod.active_markers[id] = nil
 		end
 
+		local fs = mod.frame_settings
+
 		id = mod.enemy_healthbars[unit]
-		if id then
+		if id and not fs.hb_show_dps then
 			Managers.event:trigger("remove_world_marker", id)
 			mod.active_markers[id] = nil
 		end
@@ -835,7 +837,11 @@ mod.remove_dead = function()
 		else
 			mod.marked_dead[unit] = nil
 		end
-		mod.enemy_healthbars[unit] = nil
+		local fs = mod.frame_settings
+
+		if not fs.hb_show_dps then
+			mod.enemy_healthbars[unit] = nil
+		end
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_utility_debuffs[unit] = nil
 		mod.enemy_markers[unit] = nil

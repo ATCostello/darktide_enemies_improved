@@ -391,7 +391,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 
 		local damage_numbers = ui_content.damage_numbers
 
-		if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
+		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
 			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
 			return
 		end
@@ -430,7 +430,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			if template.show_dps and ui_content.dead then
+			if fs.hb_show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
 				local text = string_format("%d DPS", dps_value)
@@ -508,7 +508,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 
 		local damage_numbers = ui_content.damage_numbers
 
-		if (not damage_numbers or #damage_numbers == 0) and not (template.show_dps and ui_content.damage_has_started) then
+		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
 			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
 			return
 		end
@@ -547,7 +547,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			if template.show_dps and ui_content.dead then
+			if fs.hb_show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
 				local text = string_format("%d DPS", dps_value)
