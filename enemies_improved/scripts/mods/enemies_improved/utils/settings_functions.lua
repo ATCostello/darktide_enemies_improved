@@ -618,8 +618,8 @@ mod:hook_safe(CLASS.BaseView, "update", function(self)
 
 	--  Always track scroll while inside my mod
 	if in_my_category then
-		if scrollbar_widget.content.scroll_value and last_scroll_amount ~= scrollbar_widget.content.scroll_value then
-			last_scroll_amount = scrollbar_widget.content.scroll_value
+		if grid[2]._scroll_progress and last_scroll_amount ~= grid[2]._scroll_progress then
+			last_scroll_amount = grid[2]._scroll_progress
 		end
 	end
 
