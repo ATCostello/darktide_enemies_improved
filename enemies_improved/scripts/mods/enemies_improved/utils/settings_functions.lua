@@ -568,19 +568,60 @@ mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
 	end
 end)
 
---[[
-mod.dmf = get_mod("DMF")
-mod:hook_safe(mod.dmf, "create_mod_options_settings", function(self, options_templates)
-	dbg_self = self
-	dbg_opt = options_templates
-	for _, setting in ipairs(options_templates.settings or {}) do
-		if setting.on_activated then
-			local original = setting.on_activated
+local strip_color_codes_and_glyphs = function(s)
+	if type(s) ~= "string" then
+		return s
+	end
 
-			setting.on_activated = function(value, ...)
-				--mod:error("SETTING RESET: " .. setting.display_name .. tostring(value))
-				return original(value, ...)
-			end
+	s = s:gsub("{#[^}]+}", "")
+	s = s:gsub("{#reset%(%)}", "")
+	s = s:gsub("[^\1-\127]", "")
+	s = s:gsub("%s%s+", " ")
+	s = s:match("^%s*(.-)%s*$")
+
+	return s
+end
+
+-- save scroll position
+-- Author: Alfthebigheaded
+local last_scroll_amount = 0
+local last_category = nil
+
+local function is_my_category(self)
+	return self._selected_category == mod:localize("mod_name")
+		or self._selected_category == mod:localize("mod_name_pizazz")
+end
+
+mod:hook_safe(CLASS.BaseView, "on_exit", function(self)
+	last_category = nil
+end)
+
+mod:hook_safe(CLASS.BaseView, "update", function(self)
+	if self.view_name ~= "dmf_options_view" then
+		return
+	end
+
+	local grid = self._navigation_grids
+	if not (grid and grid[2] and grid[2]._scrollbar_widget) then
+		return
+	end
+
+	local scrollbar_widget = grid[2]._scrollbar_widget
+	local current_category = self._selected_category
+	local in_my_category = is_my_category(self)
+
+	--  Detect category switch into my mod
+	if in_my_category and (last_category ~= current_category or last_category == nil) then
+		scrollbar_widget.content.scroll_value = last_scroll_amount
+		scrollbar_widget.content.value = last_scroll_amount
+	end
+
+	--  Always track scroll while inside my mod
+	if in_my_category then
+		if scrollbar_widget.content.scroll_value and last_scroll_amount ~= scrollbar_widget.content.scroll_value then
+			last_scroll_amount = scrollbar_widget.content.scroll_value
 		end
 	end
-end)]]
+
+	last_category = current_category
+end)
