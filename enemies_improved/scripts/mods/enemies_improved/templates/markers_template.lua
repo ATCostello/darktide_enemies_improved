@@ -350,7 +350,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local style = widget.style
 
 	if content.m_allowed == false then
-		marker.remove = true
+		marker.draw = false
 		return
 	end
 
@@ -358,7 +358,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		marker.draw = false
-		marker.remove = true
 		return
 	end
 

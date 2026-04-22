@@ -39,7 +39,12 @@ mod.update_enemy_debuffs = function(entry, t)
 	local enemy_debuffs = mod.enemy_debuffs
 	local marked_dead = mod.marked_dead
 
-	if enemy_debuffs[unit] or marked_dead[unit] then
+	if enemy_debuffs[unit] then
+		return
+	end
+
+	-- Only block if ACTUALLY dead
+	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 

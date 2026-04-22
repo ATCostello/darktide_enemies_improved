@@ -23,6 +23,13 @@ local Managers_event = Managers.event
 mod.update_enemy_healthbars = function(entry, t)
 	local fs = mod.frame_settings
 
+	-- Safety: clear stuck pending state after short time
+	if entry._healthbar_pending and entry._healthbar_pending_t then
+		if t - entry._healthbar_pending_t > 2 then
+			entry._healthbar_pending = nil
+		end
+	end
+
 	if not fs.healthbar_enable and not fs.show_damage_numbers then
 		return
 	end
@@ -82,11 +89,17 @@ mod.update_enemy_healthbars = function(entry, t)
 	local enemy_healthbars = mod.enemy_healthbars
 	local marked_dead = mod.marked_dead
 
-	if enemy_healthbars[unit] or marked_dead[unit] then
+	if enemy_healthbars[unit] then
+		return
+	end
+
+	-- Only block if ACTUALLY dead
+	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 
 	entry._healthbar_pending = true
+	entry._healthbar_pending_t = t
 
 	Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
 		_on_healthbar_created(marker_id, entry, unit)

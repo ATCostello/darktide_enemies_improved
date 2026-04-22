@@ -9,6 +9,8 @@ local PhysicsWorld = PhysicsWorld
 local ScriptUnit = ScriptUnit
 local Vector3 = Vector3
 local next = next
+local Unit_alive = Unit.alive
+local Managers_ui = Managers.ui
 
 -- Cached systems
 local _outline_system = nil
@@ -62,7 +64,6 @@ mod.enable_enemy_outlines = function(unit, entry)
 	if breed_name then
 		local key = "outline_" .. breed_name .. "_enable"
 		if mod:get(key) then
-
 			local outline_name = entry._outline_name_individual
 			if not outline_name then
 				outline_name = "enemies_" .. breed_name
@@ -207,6 +208,56 @@ mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 	end
 
 	return false
+end
+
+mod.is_in_front_of_player = function(player_unit, enemy_unit)
+	if not player_unit or not enemy_unit then
+		return false
+	end
+
+	if not Unit_alive(player_unit) or not Unit_alive(enemy_unit) then
+		return false
+	end
+
+	local ui_manager = Managers_ui
+	local hud = ui_manager and ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	if not world_markers then
+		return true
+	end
+
+	local camera = world_markers:_get_camera()
+	if not camera then
+		return true
+	end
+
+	local camera_position = Camera.local_position(camera)
+	local camera_rotation = Camera.local_rotation(camera)
+	local forward = Quaternion.forward(camera_rotation)
+
+	--local forward = Quaternion.forward(Unit.local_rotation(player_unit, 1))
+
+	-- Positions
+	local player_pos = POSITION_LOOKUP[player_unit]
+	local enemy_pos = POSITION_LOOKUP[enemy_unit]
+
+	if not player_pos or not enemy_pos then
+		return false
+	end
+
+	-- Flattened direction
+	local to_enemy = Vector3.flat(enemy_pos - player_pos)
+
+	local len_sq = Vector3.length_squared(to_enemy)
+	if len_sq == 0 then
+		return true
+	end
+
+	to_enemy = to_enemy / math.sqrt(len_sq)
+
+	local dot = Vector3.dot(forward, to_enemy)
+
+	return dot > 0
 end
 
 mod.update_enemy_outlines = function(entry)

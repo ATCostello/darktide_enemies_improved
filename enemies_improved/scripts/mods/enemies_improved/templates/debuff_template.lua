@@ -359,20 +359,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		marker.draw = false
-		marker.remove = true
 		return
 	end
 
 	-- dont draw or do calculations if there are no debuffs applied..
 	if not content.debuffs then
 		marker.draw = false
-		widget.alpha_multiplier = 0
 		return
 	end
 
 	if content.debuffs and #content.debuffs < 1 then
 		marker.draw = false
-		widget.alpha_multiplier = 0
 		return
 	end
 

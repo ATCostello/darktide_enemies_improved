@@ -554,7 +554,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	fs = mod.frame_settings
 
 	if not unit then
-		marker.remove = true
+		marker.draw = false
 		return
 	end
 
@@ -570,7 +570,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		if not fs.hb_show_dps then
-			marker.remove = true
+			marker.draw = false
 			return
 		else
 			content.dead = true
@@ -615,7 +615,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if group_hb_enabled ~= nil then
 		if not group_hb_enabled then
 			marker.draw = false
-			marker.remove = true
 			return
 		end
 	end
@@ -684,7 +683,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Still, guard and bail out if somehow non-rep gets here.
 		if cluster.rep_unit ~= unit then
 			marker.draw = false
-			marker.remove = true
 			content.in_horde_cluster = false
 			return
 		end

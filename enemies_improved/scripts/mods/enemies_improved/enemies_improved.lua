@@ -235,6 +235,46 @@ mod.get_marker_by_id = function(id)
 	end
 end
 
+mod.force_remove_unit_markers = function(unit)
+	if not unit then
+		return
+	end
+
+	local function remove(id)
+		if id then
+			Managers.event:trigger("remove_world_marker", id)
+			mod.active_markers[id] = nil
+		end
+	end
+
+	remove(mod.enemy_markers[unit])
+	remove(mod.enemy_healthbars[unit])
+	remove(mod.enemy_debuffs[unit])
+	remove(mod.enemy_utility_debuffs[unit])
+
+	mod.enemy_markers[unit] = nil
+	mod.enemy_healthbars[unit] = nil
+	mod.enemy_debuffs[unit] = nil
+	mod.enemy_utility_debuffs[unit] = nil
+
+	-- reset cluster state if this unit was a rep
+	local cluster = mod.get_horde_cluster_for_unit(unit)
+	if cluster and cluster.rep_unit == unit then
+		cluster._healthbar_created = false
+		cluster._healthbar_marker_id = nil
+	end
+
+	local entry = mod.enemy_cache[unit]
+	if entry then
+		entry._healthbar_created = false
+		entry._healthbar_pending = nil
+		entry._marker_created = false
+
+		mod.disable_enemy_outlines(unit, entry)
+		entry._outline_applied = false
+	end
+end
+
 -----------------------------------------------------------------------
 -- Enemy scanning
 -----------------------------------------------------------------------
@@ -310,6 +350,35 @@ mod.scan_enemies = function()
 		local unit = results[i]
 
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
+			-- VIEW CONE FILTER (cheap, do first)
+			if not mod.is_in_front_of_player(player_unit, unit) then
+				mod.force_remove_unit_markers(unit)
+
+				-- also mark cache entry as unseen so it doesn't get updated this frame
+				local entry = cache[unit]
+				if entry then
+					entry.seen = false
+				end
+
+				goto skip_breed
+			end
+
+			-- LOS FILTER (expensive, do second)
+			local world = Managers.world:world("level_world")
+			local physics_world = World.get_data(world, "physics_world")
+			if physics_world then
+				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
+					mod.force_remove_unit_markers(unit)
+
+					local entry = cache[unit]
+					if entry then
+						entry.seen = false
+					end
+
+					goto skip_breed
+				end
+			end
+
 			local entry = cache[unit]
 			local unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system")
 			if not unit_data_ext then
@@ -355,8 +424,11 @@ mod.scan_enemies = function()
 					_last_marker_update = 0,
 					_last_healthbar_update = 0,
 				}
+
+				mod.marked_dead[unit] = nil
 			else
 				entry.seen = true
+				mod.marked_dead[unit] = nil
 			end
 
 			::skip_breed::
@@ -686,7 +758,7 @@ mod.remove_dead = function()
 
 		id = mod.enemy_healthbars[unit]
 		if id then
-			--Managers.event:trigger("remove_world_marker", id)
+			Managers.event:trigger("remove_world_marker", id)
 			mod.active_markers[id] = nil
 		end
 
@@ -758,7 +830,11 @@ mod.remove_dead = function()
 
 	-- Cleanup
 	for _, unit in next, units_to_remove do
-		mod.marked_dead[unit] = mark_dead
+		if mark_dead then
+			mod.marked_dead[unit] = true
+		else
+			mod.marked_dead[unit] = nil
+		end
 		mod.enemy_healthbars[unit] = nil
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_utility_debuffs[unit] = nil

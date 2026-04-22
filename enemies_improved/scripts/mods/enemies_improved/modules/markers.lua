@@ -56,7 +56,12 @@ mod.update_enemy_markers = function(entry, t)
 	local enemy_markers = mod.enemy_markers
 	local marked_dead = mod.marked_dead
 
-	if enemy_markers[unit] or marked_dead[unit] then
+	if enemy_markers[unit] then
+		return
+	end
+
+	-- Only block if ACTUALLY dead
+	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 
