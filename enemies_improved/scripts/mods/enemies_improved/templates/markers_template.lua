@@ -20,6 +20,7 @@ local background_size = { max_size_value, max_size_value }
 local scale_fraction = 1
 
 local ScriptUnit_extension = ScriptUnit.extension
+local ScriptUnit_has_extension = ScriptUnit.has_extension
 
 local math_min = math.min
 local math_max = math.max
@@ -117,7 +118,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				color = fs.marker_bg_colour,
 				default_alpha = fs.marker_bg_colour[1],
 			},
-
+			change_function = function(content, style)
+				if not fs.markers_health_enable then
+					content.background = "content/ui/materials/icons/system/page_indicator_02_idle"
+				else
+					content.background = "content/ui/materials/hud/interactions/frames/point_of_interest_back"
+				end
+			end,
 			visibility_function = function(content, style)
 				return content.m_built
 			end,
@@ -127,7 +134,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		{
 			pass_type = "rotated_texture",
 			style_id = "marker_health",
-			value = "content/ui/materials/icons/system/page_indicator_02_idle",
+			value = "content/ui/materials/icons/perks/perk_level_05",
 			value_id = "marker_health",
 			style = {
 				horizontal_alignment = "center",
@@ -138,7 +145,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				offset = { 0, 0, 2 },
 				default_offset = { 0, 0, 2 },
 
-				color = { 200, 255, 0, 0 },
+				color = { 200, 220, 0, 0 },
 				default_alpha = 200,
 			},
 
@@ -151,11 +158,13 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				local unit = content.unit
 				local breed = content.breed
 
-				if unit and health_extension and is_alive then
+				if unit and health_extension and mod.detect_alive(unit) then
 					health_current = health_extension:current_health() or 0
 					health_max = health_extension:max_health() or 0
 					health_percent = health_extension:current_health_percent() or 0
-					is_dead = not health_extension:is_alive()
+					if health_percent == 0 then
+						health_percent = health_current / health_max
+					end
 				end
 
 				-- set styling depending on health percentage...
@@ -283,8 +292,7 @@ template.on_enter = function(widget, marker, template)
 	content.unit = unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
-	content.health_extension = ScriptUnit_extension(unit, "health_system")
-
+	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
 	content.breed = breed
 	content.breed_type = mod.find_breed_category(unit)
 	content.breed_settings = content.breed and minion_breeds[content.breed.name]
@@ -347,6 +355,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local style = widget.style
 	local marker_scale = marker.scale
 
+	local health_extension = content.health_extension
+	if not health_extension then
+		health_extension = ScriptUnit_has_extension(unit, "health_system")
+		content.health_extension = health_extension
+	end
+
 	local style = widget.style
 
 	if content.m_allowed == false then
@@ -398,60 +412,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		line_of_sight_progress = 1
 	end
 
-	-----------------------------------------------------------------------
-	-- Special attack warning pulse
-	-----------------------------------------------------------------------
-
-	mod.pulse_t = (mod.pulse_t or 0) + mod.frame_settings.dt
-
-	if marker.special_attack_imminent then
-		content.special_attack_imminent = true
-		--content.is_clamped = true
-
-		local pulse = math.abs(math.sin(mod.pulse_t * 2))
-
-		local flash = math.min(255, 150 + pulse * 100)
-		local size_scale = 1 + pulse * 0.5
-
-		local r, g, b = flash, 50, 50
-
-		style.arrow.color[2] = r
-		style.arrow.color[3] = g
-		style.arrow.color[4] = b
-
-		style.background.color[2] = r
-		style.background.color[3] = g
-		style.background.color[4] = b
-
-		style.arrow.size[2] = arrow_size[2] * size_scale / 2 * marker_scale
-
-		style.background.size[1] = background_size[1] * size_scale * marker_scale
-		style.background.size[2] = background_size[2] * size_scale * marker_scale
-	else
-		--content.is_clamped = false
-		content.special_attack_imminent = false
-
-		style.background.color[1] = fs.marker_bg_colour[1]
-		style.background.default_alpha = fs.marker_bg_colour[1]
-
-		style.background.color[2] = fs.marker_bg_colour[2]
-		style.background.color[3] = fs.marker_bg_colour[3]
-		style.background.color[4] = fs.marker_bg_colour[4]
-
-		style.arrow.color[2] = 255
-		style.arrow.color[3] = 255
-		style.arrow.color[4] = 255
-
-		style.arrow.size[1] = arrow_size[1] * marker_scale
-		style.arrow.size[2] = arrow_size[2] * marker_scale
-
-		style.background.size[1] = background_size[1] * marker_scale
-		style.background.size[2] = background_size[2] * marker_scale
-
-		style.marker_health.size[1] = (background_size[1] / 2) * marker_scale
-		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
-	end
-
 	local bar_color = mod.BREED_COLOURS[content.breed_type] or mod.BREED_COLOURS.horde
 
 	-- INDIVIDUAL COLOUR OVERRIDES
@@ -471,9 +431,59 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	style.marker_health.color[2] = bar_color[2]
-	style.marker_health.color[3] = bar_color[3]
-	style.marker_health.color[4] = bar_color[4]
+	-- adjust colour of overhead marker to healthbar colour
+	if fs.overhead_marker_uses_healthbar_colour then
+		if fs.markers_health_enable then
+			style.marker_health.color[2] = bar_color[2]
+			style.marker_health.color[3] = bar_color[3]
+			style.marker_health.color[4] = bar_color[4]
+		else
+			style.background.color[2] = bar_color[2]
+			style.background.color[3] = bar_color[3]
+			style.background.color[4] = bar_color[4]
+		end
+	end
+
+	-----------------------------------------------------------------------
+	-- Special attack warning pulse
+	-----------------------	------------------------------------------------
+	local entry = mod.enemy_cache[unit]
+
+	if fs.marker_specials_enable and entry.alert_outline then
+		content.special_attack_imminent = true
+
+		local sr = (mod:get("outline_specials_colour_R"))
+		local sg = (mod:get("outline_specials_colour_G"))
+		local sb = (mod:get("outline_specials_colour_B"))
+
+		if not sr then
+			sr = 255
+		end
+		if not sg then
+			sg = 0
+		end
+		if not sb then
+			sb = 0
+		end
+
+		style.arrow.color[2] = sr
+		style.arrow.color[3] = sg
+		style.arrow.color[4] = sb
+
+		style.background.color[2] = sr
+		style.background.color[3] = sg
+		style.background.color[4] = sb
+	else
+		--content.is_clamped = false
+		content.special_attack_imminent = false
+
+		style.arrow.color[2] = 255
+		style.arrow.color[3] = 255
+		style.arrow.color[4] = 255
+
+		style.marker_health.size[1] = (background_size[1] / 2) * marker_scale
+		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
+	end
 
 	content.line_of_sight_progress = line_of_sight_progress
 	widget.alpha_multiplier = line_of_sight_progress or 1

@@ -82,8 +82,8 @@ local function extract_locals(level_base)
 
 			-- check for specifics...
 			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
-			if value and type(value) == "userdata" and name and name == "unit" then
-				return_value = value
+			if type(value) == "userdata" and name == "unit" and Unit_alive(value) then
+				return value -- early return
 			end
 			v = v + 1
 		end
@@ -98,24 +98,33 @@ mod.handle_special_attacks = function(event_name, source_unit)
 	if mod.special_attack_events[event_name] then
 		local unit = nil
 
-		-- Try to get uni from sourceunit
-		if type(source_unit) == "userdata" and Unit.alive(source_unit) then
+		-- Try to get unit from sourceunit
+		if type(source_unit) == "userdata" and Unit_alive(source_unit) then
 			unit = source_unit
 		else
 			local flow_unit = Application.flow_callback_context_unit()
-			if flow_unit and type(flow_unit) == "userdata" and Unit.alive(flow_unit) then
+			if flow_unit and type(flow_unit) == "userdata" and Unit_alive(flow_unit) then
 				unit = flow_unit
 			end
 		end
 
 		-- If not, try to get from local debugs
 		if
-			event_name
-				== ("wwise/events/minions/play_weapon_netgunner_wind_up" or "wwise/events/weapon/play_special_sniper_flash")
-			and not unit
+			(
+				event_name == "wwise/events/minions/play_weapon_netgunner_wind_up"
+				or event_name == "wwise/events/weapon/play_special_sniper_flash"
+			) and not unit
 		then
-			local name, value = debug.getlocal(8, 1)
-			unit = value._unit
+			for i = 6, 12 do
+				local _, value = debug.getlocal(i, 1)
+				if type(value) == "table" then
+					local u = rawget(value, "_unit")
+					if u and Unit.alive(u) then
+						unit = u
+						break
+					end
+				end
+			end
 		end
 
 		-- if not, try to get from all locals
@@ -123,10 +132,8 @@ mod.handle_special_attacks = function(event_name, source_unit)
 			unit = extract_locals(1)
 		end
 
-		--extract_locals(1)
-
 		if unit and mod.detect_alive(unit) then
-			entry = mod.enemy_cache[unit]
+			local entry = mod.enemy_cache[unit]
 
 			if entry then
 				entry.special_attack_event = event_name

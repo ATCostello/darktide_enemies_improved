@@ -178,7 +178,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	-- pulse special attacks (Outside of global throttle)
-	if fs.outline_specials_enable then
+	if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
 		local interval = fs.special_attack_pulse_speed or 0.5
 
 		for _, entry in next, mod.enemy_cache do

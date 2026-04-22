@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.15"
+mod.version = "1.4.16"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -814,6 +814,12 @@ table.insert(localisations_to_add, {
 	markers_horde_enable_tooltip = {
 		en = "Enables the overhead marker for horde enemies, such as poxwalkers.",
 		["zh-cn"] = "为疫变步行者等尸潮怪显示头顶标记。",
+	},
+	overhead_marker_uses_healthbar_colour = {
+		en = "Use healthbar colours for overhead markers?",
+	},
+	overhead_marker_uses_healthbar_colour_tooltip = {
+		en = "Toggles the overhead markers to use the enemies' healthbar colour instead of the default colour.",
 	},
 	marker_size = {
 		en = "Marker Scale",

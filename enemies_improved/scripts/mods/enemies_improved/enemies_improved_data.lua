@@ -739,6 +739,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "markers_health_enable_tooltip",
 		},
 		{
+			setting_id = "overhead_marker_uses_healthbar_colour",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "overhead_marker_uses_healthbar_colour_tooltip",
+		},
+		{
 			setting_id = "marker_bg_colour",
 			type = "group",
 			sub_widgets = {

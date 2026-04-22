@@ -67,6 +67,7 @@ mod.build_frame_settings = function(dt)
 	fs.marker_size = mod:get("marker_size") * fs.global_scale
 	fs.markers_health_enable = mod:get("markers_health_enable")
 	fs.marker_y_offset = mod:get("marker_y_offset") * fs.global_scale
+	fs.overhead_marker_uses_healthbar_colour = mod:get("overhead_marker_uses_healthbar_colour")
 	local a = mod:get("marker_bg_colour_A")
 	local r = mod:get("marker_bg_colour_R")
 	local g = mod:get("marker_bg_colour_G")

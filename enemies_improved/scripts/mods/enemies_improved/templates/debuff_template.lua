@@ -265,6 +265,8 @@ template.on_enter = function(widget, marker, template)
 	template.position_offset = { 0, 0, fs.hb_y_offset }
 	--end
 
+	marker.draw = false
+
 	local content = widget.content
 	local style = widget.style
 	local unit = marker.unit
@@ -352,24 +354,28 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not unit then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
-	local is_alive = mod.detect_alive(unit) 
+	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
 	-- dont draw or do calculations if there are no debuffs applied..
 	if not content.debuffs then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
 	if content.debuffs and #content.debuffs < 1 then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 

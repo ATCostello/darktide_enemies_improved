@@ -128,7 +128,9 @@ mod.pulse_enemy_outline = function(entry)
 
 	if entry.special_attack_imminent then
 		if not entry.alert_outline then
-			mod.add_outline(unit, "enemies_improved_alert", outline_system)
+			if fs.outline_specials_enable then
+				mod.add_outline(unit, "enemies_improved_alert", outline_system)
+			end
 			entry.alert_outline = true
 		elseif fs.specials_flash then
 			mod.remove_outline(unit, "enemies_improved_alert", outline_system)

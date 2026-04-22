@@ -1129,79 +1129,63 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
 
 	-- apply values to relevant icon
-	local function icon_special_attack(content_icon, style_icon)
-		local update_interval = fs.special_attack_pulse_speed
-		content._attack_update_time = (content._attack_update_time or 0) + dt
+	--local function icon_special_attack(content_icon, style_icon)
+	if fs.healthbar_specials_enable and entry.alert_outline then
+		-- get special colour
+		local sr = mod:get("outline_specials_colour_R")
+		local sg = mod:get("outline_specials_colour_G")
+		local sb = mod:get("outline_specials_colour_B")
 
-		if content._attack_update_time > update_interval then
-			if fs.healthbar_specials_enable and marker.special_attack_imminent then
-				-- get special colour
-				local sr = mod:get("outline_specials_colour_R")
-				local sg = mod:get("outline_specials_colour_G")
-				local sb = mod:get("outline_specials_colour_B")
-
-				if not sr then
-					sr = 255
-				end
-				if not sg then
-					sg = 0
-				end
-				if not sb then
-					sb = 0
-				end
-
-				if not content.alert_healthbar then
-					----- TURN ON
-					-- set alert glow intensity
-					style.icon_background1.default_alpha = 255
-
-					-- set alert glow colour
-					style.icon_background1.color[2] = sr
-					style.icon_background1.color[3] = sg
-					style.icon_background1.color[4] = sb
-					content.alert_healthbar = true
-				elseif content.alert_healthbar and fs.specials_flash then
-					----- TURN OFF
-					-- set alert glow intensity
-					style.icon_background1.default_alpha = 0
-
-					content.alert_healthbar = false
-				end
-			else
-				if content.alert_healthbar then
-					content.alert_healthbar = false
-				end
-
-				-- set alert glow colour
-				style.icon_background1.default_alpha = icon_glow_intensity * 2.5
-				style.icon_background1.color[2] = icon_glow_colour[2]
-				style.icon_background1.color[3] = icon_glow_colour[3]
-				style.icon_background1.color[4] = icon_glow_colour[4]
-
-				if icon_glow_intensity > 0 then
-					content.glow_enabled = true
-				else
-					content.glow_enabled = false
-				end
-			end
-
-			content._attack_update_time = 0
+		if not sr then
+			sr = 255
+		end
+		if not sg then
+			sg = 0
+		end
+		if not sb then
+			sb = 0
 		end
 
-		-- apply full scale:
+		if not content.alert_healthbar then
+			----- TURN ON
+			-- set alert glow intensity
+			style.icon_background1.default_alpha = 255
 
-		--style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
-		--style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
-		--style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
-		--style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
-		--style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
-		--style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale * fs.healthbar_type_icon_scale
+			-- set alert glow colour
+			style.icon_background1.color[2] = sr
+			style.icon_background1.color[3] = sg
+			style.icon_background1.color[4] = sb
+			content.alert_healthbar = true
+		elseif content.alert_healthbar and fs.specials_flash then
+			----- TURN OFF
+			-- set alert glow intensity
+			style.icon_background1.default_alpha = 0
 
-		return content_icon, style_icon
+			content.alert_healthbar = false
+		end
+	else
+		if content.alert_healthbar then
+			content.alert_healthbar = false
+		end
+
+		-- set alert glow colour
+		style.icon_background1.default_alpha = icon_glow_intensity * 2.5
+		style.icon_background1.color[2] = icon_glow_colour[2]
+		style.icon_background1.color[3] = icon_glow_colour[3]
+		style.icon_background1.color[4] = icon_glow_colour[4]
+
+		if icon_glow_intensity > 0 then
+			content.glow_enabled = true
+		else
+			content.glow_enabled = false
+		end
 	end
 
+	--return content_icon, style_icon
+	--end
+
 	-- do stuff per breed type
-	if fs.healthbar_type_icon_enable then
+	--[[if fs.healthbar_type_icon_enable then
 		if breed_type == "far" then
 			content.icon_elite_ranged, style.icon_elite_ranged =
 				icon_special_attack(content.icon_elite_ranged, style.icon_elite_ranged)
@@ -1230,7 +1214,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if breed_type == "horde" then
 			content.icon_enabled = false
 		end
-	end
+	end]]
 
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
