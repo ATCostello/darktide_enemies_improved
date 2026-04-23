@@ -332,7 +332,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not marker or not widget then
 		return
 	end
-	
+
 	widget._next_update = widget._next_update or 0
 
 	if t < widget._next_update then
@@ -449,16 +449,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	style.background.color[1] = fs.marker_bg_colour[1]
+	style.background.color[2] = fs.marker_bg_colour[2]
+	style.background.color[3] = fs.marker_bg_colour[3]
+	style.background.color[4] = fs.marker_bg_colour[4]
+
 	-- adjust colour of overhead marker to healthbar colour
 	if fs.overhead_marker_uses_healthbar_colour then
 		if fs.markers_health_enable then
 			style.marker_health.color[2] = bar_color[2]
 			style.marker_health.color[3] = bar_color[3]
 			style.marker_health.color[4] = bar_color[4]
-		else
-			style.background.color[2] = bar_color[2]
-			style.background.color[3] = bar_color[3]
-			style.background.color[4] = bar_color[4]
 		end
 	end
 

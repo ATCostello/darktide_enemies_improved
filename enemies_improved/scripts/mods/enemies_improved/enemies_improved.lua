@@ -37,6 +37,7 @@ local Healthbars = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved
 local Markers = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/markers")
 local Debuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/debuffs")
 local SpecialAttacks = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/specialattacks")
+local AnimationHandler = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animationhandler")
 
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
@@ -454,6 +455,9 @@ mod.scan_enemies = function()
 
 			local breed = unit_data_ext:breed()
 			local breed_type = mod.find_breed_category(unit)
+
+			-- build animation map for this enemy
+			mod.build_event_map(unit, breed and breed.name)
 
 			-- collect ALL horde units BEFORE culling
 			if breed and breed.tags and (breed.tags.horde or breed.tags.roamer) then
