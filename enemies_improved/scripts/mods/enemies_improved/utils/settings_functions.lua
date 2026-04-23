@@ -32,8 +32,8 @@ local enemy_type_settings = {
 -- REQUIRES "_individual_" AS THAT IS WHERE THE SPECIFIC ENEMY NAME IS PLACED...
 local enemy_override_settings = {
 
-	["markers_individual_toggle"] = true,
-	["healthbar_individual_enable"] = true,
+	["markers_individual_toggle"] = false,
+	["healthbar_individual_enable"] = false,
 	["healthbar_individual_colour_R"] = 255,
 	["healthbar_individual_colour_G"] = 0,
 	["healthbar_individual_colour_B"] = 0,

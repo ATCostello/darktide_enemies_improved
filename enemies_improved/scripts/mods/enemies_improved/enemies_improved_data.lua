@@ -1628,7 +1628,7 @@ mod.individual_override_settings = {
 	{
 		setting_id = "markers_individual_toggle",
 		type = "checkbox",
-		default_value = true,
+		default_value = false,
 		tooltip = "markers_individual_toggle_tooltip",
 	},
 
@@ -1690,7 +1690,7 @@ mod.individual_override_settings = {
 			{
 				setting_id = "outline_individual_enable",
 				type = "checkbox",
-				default_value = true,
+				default_value = false,
 				tooltip = "outline_individual_enable_tooltip",
 			},
 			{
