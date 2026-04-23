@@ -331,7 +331,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not marker or not widget then
 		return
 	end
-	
+
 	widget._next_update = widget._next_update or 0
 	if t < widget._next_update then
 		return
@@ -379,7 +379,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -387,7 +386,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -399,7 +397,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -1064,14 +1061,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					marker.draw = false
 					marker.alpha_multiplier = 0
 					widget.alpha_multiplier = 0
-					marker.remove = true
 				end
 
 				if not marker.is_inside_frustum then
 					marker.draw = false
 					marker.alpha_multiplier = 0
 					widget.alpha_multiplier = 0
-					marker.remove = true
 				end
 
 				-- apply scaling
