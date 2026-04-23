@@ -328,6 +328,10 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	if not marker or not widget then
+		return
+	end
+	
 	widget._next_update = widget._next_update or 0
 	if t < widget._next_update then
 		return
@@ -355,6 +359,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not unit then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -363,6 +369,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not is_alive then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -370,12 +378,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not content.debuffs then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
 	if content.debuffs and #content.debuffs < 1 then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -386,6 +398,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -1042,17 +1056,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				content.line_of_sight_progress = line_of_sight_progress
 				widget.alpha_multiplier = line_of_sight_progress or 1
+				marker.alpha_multiplier = line_of_sight_progress or 1
 
 				if #widget._active > 0 then
 					marker.draw = true
 				else
 					marker.draw = false
 					marker.alpha_multiplier = 0
+					widget.alpha_multiplier = 0
+					marker.remove = true
 				end
 
 				if not marker.is_inside_frustum then
 					marker.draw = false
 					marker.alpha_multiplier = 0
+					widget.alpha_multiplier = 0
+					marker.remove = true
 				end
 
 				-- apply scaling

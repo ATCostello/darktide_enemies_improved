@@ -530,6 +530,10 @@ local function debug_damage(msg)
 end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	if not marker or not widget then
+		return
+	end
+	
 	widget._next_update = widget._next_update or 0
 
 	if t < widget._next_update then
@@ -556,6 +560,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not unit then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -565,6 +570,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not marker.draw and not marker.is_inside_frustum then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -574,6 +580,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if not fs.hb_show_dps then
 			marker.draw = false
 			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
 			return
 		else
 			content.dead = true
@@ -619,6 +626,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if not group_hb_enabled then
 			marker.draw = false
 			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
 			return
 		end
 	end
@@ -688,6 +696,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if cluster.rep_unit ~= unit then
 			marker.draw = false
 			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
 			content.in_horde_cluster = false
 			return
 		end
@@ -820,6 +829,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if entry and entry.is_horde and not fs.horde_enable and fs.horde_clusters_enable and not in_horde_cluster then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -851,6 +861,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		health_max_fraction = 1
 	end
 
+	-------------------------------------------------------------------
+	-- DAMAGE NUMBERS LOGIC
+	-------------------------------------------------------------------
+
 	local damage_taken_since_last = 0
 	local prev_hp = previous_health[unit]
 
@@ -860,9 +874,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	previous_health[unit] = health_current
 
-	-------------------------------------------------------------------
-	-- DAMAGE NUMBERS LOGIC
-	-------------------------------------------------------------------
+	-- toughness (boss shield damage)
+	if content.current_toughness and content.current_toughness > 0 then
+		if content.previous_toughness == nil then
+			content.previous_toughness = content.current_toughness
+		end
+
+		if content.previous_toughness < content.current_toughness then
+			content.previous_toughness = content.current_toughness
+		elseif content.previous_toughness > content.current_toughness then
+			damage_taken_since_last = math_max(content.previous_toughness - content.current_toughness, 0)
+			content.previous_toughness = content.current_toughness
+		end
+	end
 
 	local max_health_setting = health_max
 	max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
@@ -1295,6 +1319,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if time_since_last_damage > fs.damage_number_duration then
 			marker.draw = false
 			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
 			mod.active_markers[marker.id] = nil
 			mod.enemy_healthbars[unit] = nil
 			Managers.event:trigger("remove_world_marker", marker.id)
@@ -1305,32 +1330,38 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 	end
 
 	if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 	end
 
 	if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 	end
 
 	if not marker.is_inside_frustum then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 	end
 
 	if fs.hb_damage_show_only_latest then
 		if not table.contains(mod.latest_damaged_enemies, unit) then
 			marker.draw = false
 			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
 		end
 	end
 
 	content.line_of_sight_progress = line_of_sight_progress
 	widget.alpha_multiplier = line_of_sight_progress or 1
+	marker.alpha_multiplier = line_of_sight_progress or 1
 
 	local draw = marker.draw
 

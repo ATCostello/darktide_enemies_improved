@@ -160,6 +160,7 @@ mod.on_game_state_changed = function(state, state_name)
 
 	-- empty caches
 	mod.clear_caches()
+	table_clear(mod.marked_dead)
 end
 
 local function check_selected_font()
@@ -1112,7 +1113,7 @@ mod.clear_caches = function()
 	table_clear(mod.active_markers)
 
 	table_clear(mod.enemy_cache)
-	table_clear(mod.marked_dead)
+	--table_clear(mod.marked_dead)
 
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)

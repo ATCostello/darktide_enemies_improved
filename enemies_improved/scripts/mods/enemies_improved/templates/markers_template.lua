@@ -329,6 +329,10 @@ end
 -----------------------------------------------------------------------
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	if not marker or not widget then
+		return
+	end
+	
 	widget._next_update = widget._next_update or 0
 
 	if t < widget._next_update then
@@ -358,6 +362,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not unit then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -372,6 +378,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if content.m_allowed == false then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -380,6 +388,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not is_alive then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
@@ -495,10 +505,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	content.line_of_sight_progress = line_of_sight_progress
 	widget.alpha_multiplier = line_of_sight_progress or 1
+	marker.alpha_multiplier = line_of_sight_progress or 1
 
 	if not marker.is_inside_frustum then
 		marker.draw = false
 		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
 	end
 
 	if marker.draw then

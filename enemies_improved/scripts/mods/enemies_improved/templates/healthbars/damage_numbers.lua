@@ -13,7 +13,7 @@ local ScriptUnit_extension = ScriptUnit.extension
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local Managers_state = Managers.state
 local Managers_player = Managers.player
-local Color_color = Color
+local Color = Color
 local Vector3 = Vector3
 local Vector3Box = Vector3Box
 
@@ -47,9 +47,13 @@ local function _init_damage_colors()
 
 	local settings = template.damage_number_settings
 
-	CACHED_DAMAGE_COLORS.default = Color_color[settings.default_color](255, true)
-	CACHED_DAMAGE_COLORS.crit = Color_color[settings.crit_color](255, true)
-	CACHED_DAMAGE_COLORS.weakspot = Color_color[settings.weakspot_color](255, true)
+	-- normal colours
+	CACHED_DAMAGE_COLORS.default = fs.main_colour
+	CACHED_DAMAGE_COLORS.crit = {255, 247, 158, 13}
+	CACHED_DAMAGE_COLORS.weakspot = {255, 255, 245, 107}
+	-- toughness colours
+	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
+
 end
 
 local function _flashy_damage_number_function(
@@ -405,9 +409,14 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 
 		_init_damage_colors()
 
-		local default_color = CACHED_DAMAGE_COLORS.default
+		local default_color = fs.main_colour
 		local crit_color = CACHED_DAMAGE_COLORS.crit
 		local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
+
+		-- change colours to toughness colours if toughness damage!
+		if ui_content.current_toughness and ui_content.current_toughness > 0 then
+			default_color = fs.toughness_colour
+		end
 
 		-- reuse same table reference
 		local text_color = ui_style.text_color
@@ -422,7 +431,6 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 		local x_position = position[1]
 		local damage_has_started = ui_content.damage_has_started
 		local dt = ui_renderer.dt
-
 		if damage_has_started then
 			if not ui_content.damage_has_started_timer then
 				ui_content.damage_has_started_timer = dt
@@ -526,9 +534,14 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 
 		_init_damage_colors()
 
-		local default_color = CACHED_DAMAGE_COLORS.default
+		local default_color = fs.main_colour
 		local crit_color = CACHED_DAMAGE_COLORS.crit
 		local weakspot_color = CACHED_DAMAGE_COLORS.weakspot
+
+		-- change colours to toughness colours if toughness damage!
+		if ui_content.current_toughness and ui_content.current_toughness > 0 then
+			default_color = fs.toughness_colour
+		end
 
 		-- reuse same table reference
 		local text_color = ui_style.text_color
