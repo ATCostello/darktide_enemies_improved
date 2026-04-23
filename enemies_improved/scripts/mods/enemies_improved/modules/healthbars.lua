@@ -112,11 +112,5 @@ mod.update_enemy_healthbars = function(entry, t)
 				cluster._healthbar_marker_id = marker_id
 			end
 		end
-		-- DEBUG
-		if mod.DEBUG then
-			-- debug to add outlines to enemies that have been processed, and should have a healthbar...
-			local extension_manager = Managers.state.extension
-			mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
-		end
 	end)
 end

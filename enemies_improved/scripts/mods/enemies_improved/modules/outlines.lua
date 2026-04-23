@@ -212,25 +212,25 @@ mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 	return false
 end
 
-mod.is_in_front_of_player = function(player_unit, enemy_unit)
+mod.get_forward_dot = function(player_unit, enemy_unit)
 	if not player_unit or not enemy_unit then
-		return false
+		return 0
 	end
 
 	if not Unit_alive(player_unit) or not Unit_alive(enemy_unit) then
-		return false
+		return 0
 	end
 
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
 	if not world_markers then
-		return true
+		return 1
 	end
 
 	local camera = world_markers:_get_camera()
 	if not camera then
-		return true
+		return 1
 	end
 
 	local camera_position = Camera.local_position(camera)
@@ -244,7 +244,7 @@ mod.is_in_front_of_player = function(player_unit, enemy_unit)
 	local enemy_pos = POSITION_LOOKUP[enemy_unit]
 
 	if not player_pos or not enemy_pos then
-		return false
+		return 0
 	end
 
 	-- Flattened direction
@@ -252,14 +252,14 @@ mod.is_in_front_of_player = function(player_unit, enemy_unit)
 
 	local len_sq = Vector3.length_squared(to_enemy)
 	if len_sq == 0 then
-		return true
+		return 1
 	end
 
 	to_enemy = to_enemy / math.sqrt(len_sq)
 
 	local dot = Vector3.dot(forward, to_enemy)
 
-	return dot > 0
+	return dot 
 end
 
 mod.update_enemy_outlines = function(entry)

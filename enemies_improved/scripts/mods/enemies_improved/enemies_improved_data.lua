@@ -480,6 +480,12 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "enable_depth_fading_tooltip",
 		},
+		{
+			setting_id = "spatial_culling",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "spatial_culling_tooltip",
+		},
 		--[[{
 			setting_id = "check_line_of_sight",
 			type = "checkbox",
@@ -843,13 +849,13 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_hide_after_no_damage",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "hb_hide_after_no_damage_tooltip",
 		},
 		{
 			setting_id = "hb_horde_hide_after_no_damage",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "hb_horde_hide_after_no_damage_tooltip",
 		},
 		{

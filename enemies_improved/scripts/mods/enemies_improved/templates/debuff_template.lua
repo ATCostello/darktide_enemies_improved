@@ -385,6 +385,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -1046,10 +1047,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					marker.draw = true
 				else
 					marker.draw = false
+					marker.alpha_multiplier = 0
 				end
 
 				if not marker.is_inside_frustum then
 					marker.draw = false
+					marker.alpha_multiplier = 0
 				end
 
 				-- apply scaling

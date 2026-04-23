@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.4.17"
+mod.version = "1.5.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -641,12 +641,18 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "设置模组UI全局透明度。所有元素透明度将按此比例缩放（0.1~1）。",
 	},
 	enable_depth_fading = {
-		en = "Distance Fading?",
+		en = "Enable Distance Fading?",
 		["zh-cn"] = "距离渐隐",
 	},
 	enable_depth_fading_tooltip = {
 		en = "Toggle distance fading for all Enemies Improved UI elements, so that enemies far away will be more transparent than closer ones. Also includes 'stack fading' which fades out UI elements for enemies that are behind other enemies, so that the closer enemy is easier to see.",
 		["zh-cn"] = "开启后远处敌人UI会更透明，同时后方敌人UI会渐隐，优先显示近处敌人。",
+	},
+	spatial_culling = {
+		en = "Enable Spatial Culling?",
+	},
+	spatial_culling_tooltip = {
+		en = "Toggle spatial culling for Enemies Improved UI elements.\n\nThe culling essentially gives each enemy a priority based on their distance to the player, their class, and if you're looking close to them… and then hides ones that are further/less priority. So in a dense cluster, you'll see all the front running enemies, and important elites like disablers, snipers, daemonhosts etc. But the others at the back/in the middle of the group won't even get counted/included until they become at the front.\n\nShould help FPS in dense elite hordes.",
 	},
 	check_line_of_sight = {
 		en = "Check for line of sight?",
@@ -1629,13 +1635,13 @@ table.insert(localisations_to_add, {
 		en = "General Throttle Rate",
 	},
 	general_throttle_rate_tooltip = {
-		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nShouldn't really need to touch this, I recommend between 20-40 for a smooth experience. \n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
 	},
 	off_screen_throttle_rate = {
 		en = "Off Screen Throttle Rate",
 	},
 	off_screen_throttle_rate_tooltip = {
-		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
 	},
 })
 

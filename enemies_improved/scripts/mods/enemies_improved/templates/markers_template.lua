@@ -357,6 +357,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not unit then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -370,6 +371,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if content.m_allowed == false then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -377,6 +379,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -495,6 +498,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not marker.is_inside_frustum then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 	end
 
 	if marker.draw then

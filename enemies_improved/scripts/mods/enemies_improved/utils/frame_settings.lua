@@ -24,7 +24,8 @@ mod.build_frame_settings = function(dt)
 	fs.font_type = mod:get("font_type")
 	fs.check_line_of_sight = true
 	fs.enable_depth_fading = mod:get("enable_depth_fading")
-
+	fs.spatial_culling = mod:get("spatial_culling")
+	
 	local r = mod:get("main_font_colour_R")
 	local g = mod:get("main_font_colour_G")
 	local b = mod:get("main_font_colour_B")

@@ -63,6 +63,7 @@ mod.source_unit_cache = mod.source_unit_cache or {}
 local MAX_ENEMIES_PER_FRAME = 300
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
+local _horde_units_all = {}
 
 local _player_pos_vec = Vector3.zero()
 local _pos_vec = Vector3.zero()
@@ -79,6 +80,56 @@ local COLOUR_LOOKUP = {
 	Terminal = Color.terminal_background(200, true),
 	Default = { 255, 161, 166, 169 },
 }
+
+-- Soft culling grid
+local CULL_CELL_SIZE = 5
+local INV_CULL_CELL = 1 / CULL_CELL_SIZE
+local _cull_cells = {}
+local MAX_PER_CELL = 3
+
+local DEPTH_LAYERS = {
+	{ max = 4, min_score = -math.huge }, -- front row ALWAYS visible
+	{ max = 6, min_score = 200 }, -- mid row
+	{ max = 8, min_score = 400 }, -- back row
+	{ max = 100, min_score = 750 }, -- far away...
+}
+
+-- priority weights
+local PRIORITY = {
+	monster = 500,
+	captain = 500,
+	witch = 500,
+	sniper = 500,
+	disabler = 200,
+	far = 100,
+	special = 100,
+	elite = 100,
+	horde = 20,
+	enemy = 20,
+}
+
+local function _get_priority(entry, dist_sq, forward_bonus)
+	local base = PRIORITY[entry.breed_type] or 0
+
+	-- distance bias (closer = higher priority)
+	local dist_bias = 1 / (1 + dist_sq * 0.05)
+
+	if mod.DEBUG then
+		mod:echo(
+			"Priority for "
+				.. entry.breed_type
+				.. " = "
+				.. base
+				.. " + "
+				.. dist_bias * 100
+				.. " + "
+				.. forward_bonus * 50
+				.. " = "
+				.. base + (dist_bias * 100) + (forward_bonus * 50)
+		)
+	end
+	return base + (dist_bias * 200) + (forward_bonus * 20)
+end
 
 -----------------------------------------------------------------------
 -- preload resources + reset caches on game state change
@@ -227,6 +278,7 @@ mod.get_marker_by_id = function(id)
 	if mod.DEBUG then
 		dbg_markers = world_markers._markers_by_type
 	end
+	dbg_markers = world_markers._markers_by_type
 
 	if markers_by_id then
 		return markers_by_id[id]
@@ -280,6 +332,8 @@ end
 -----------------------------------------------------------------------
 
 mod.scan_enemies = function()
+	local fs = mod.frame_settings
+
 	local local_player = Managers_player:local_player(1)
 	if not local_player then
 		return
@@ -346,92 +400,237 @@ mod.scan_enemies = function()
 		data.seen = false
 	end
 
+	table_clear(_horde_units_all)
+	table_clear(_cull_cells)
+
 	for i = 1, num_hits do
 		local unit = results[i]
 
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
-			-- VIEW CONE FILTER (cheap, do first)
-			if not mod.is_in_front_of_player(player_unit, unit) then
+			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
+
+			-- VIEW CONE FILTER (HARD REJECT)
+			if forward_bonus <= 0 then
 				mod.force_remove_unit_markers(unit)
 
-				-- also mark cache entry as unseen so it doesn't get updated this frame
-				local entry = cache[unit]
-				if entry then
-					entry.seen = false
-				end
+				cache[unit] = nil
+				mod.marked_dead[unit] = nil
 
 				goto skip_breed
 			end
 
-			-- LOS FILTER (expensive, do second)
+			-- LOS FILTER (HARD REJECT)
 			local world = Managers.world:world("level_world")
 			local physics_world = World.get_data(world, "physics_world")
+
 			if physics_world then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
 					mod.force_remove_unit_markers(unit)
 
-					local entry = cache[unit]
-					if entry then
-						entry.seen = false
-					end
+					cache[unit] = nil
+					mod.marked_dead[unit] = nil
 
 					goto skip_breed
 				end
 			end
 
 			local entry = cache[unit]
+
+			local pos = Unit.world_position(unit, 1, _pos_vec)
+			if entry then
+				entry.pos = Vector3(pos.x, pos.y, pos.z)
+			end
+
+			local dx = pos.x - current_pos.x
+			local dy = pos.y - current_pos.y
+			local dz = pos.z - current_pos.z
+			local dist_sq = dx * dx + dy * dy + dz * dz
+
 			local unit_data_ext = ScriptUnit_has_extension(unit, "unit_data_system")
 			if not unit_data_ext then
 				goto skip_breed
 			end
 
 			local breed = unit_data_ext:breed()
+			local breed_type = mod.find_breed_category(unit)
+
+			-- collect ALL horde units BEFORE culling
+			if breed and breed.tags and (breed.tags.horde or breed.tags.roamer) then
+				_horde_units_all[#_horde_units_all + 1] = unit
+			end
 
 			-- DO NOT ADD WIDGETS FOR THESE BREEDS:
 			if breed.name == "sand_vortex" or breed.name == "nurgle_flies" or breed.name == "attack_valkyrie" then
 				goto skip_breed
 			end
 
-			if not entry then
-				cache[unit] = {
+			if fs.spatial_culling then
+				local gx = math_floor(pos.x * INV_CULL_CELL)
+				local gy = math_floor(pos.y * INV_CULL_CELL)
+
+				local temp_entry = entry or {
 					unit = unit,
-					seen = true,
-
-					dead = false,
-
-					-- cache extensions
-					health_ext = ScriptUnit_has_extension(unit, "health_system"),
-					unit_data_ext = unit_data_ext,
-					behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
-
-					is_horde = mod.is_horde(unit),
-
 					breed = breed,
-					breed_type = mod.find_breed_category(unit),
-
-					special_attack_event = nil,
-					special_attack_imminent = false,
-					special_attack_timer = 0,
-
-					-- outlines
-					alert_outline = false,
-					outline_name = nil,
-
-					alert_healthbar = false,
-
-					_marker_created = false,
-					_healthbar_created = false,
-					_last_marker_update = 0,
-					_last_healthbar_update = 0,
+					breed_type = breed_type,
 				}
 
-				mod.marked_dead[unit] = nil
-			else
-				entry.seen = true
-				mod.marked_dead[unit] = nil
-			end
+				local score = _get_priority(temp_entry, dist_sq, forward_bonus)
 
+				if entry then
+					score = score + 10
+				end
+
+				temp_entry._priority_score = score
+
+				local key = gx * 73856093 + gy * 19349663
+				local list = _cull_cells[key]
+
+				if not list then
+					list = {}
+					_cull_cells[key] = list
+				end
+
+				list[#list + 1] = {
+					unit = unit,
+					score = score,
+					dist_sq = dist_sq,
+					entry = entry,
+					unit_data_ext = unit_data_ext,
+					breed = breed,
+					breed_type = breed_type,
+					pos = Vector3(pos.x, pos.y, pos.z),
+				}
+
+				goto skip_breed
+			else
+				if not entry then
+					cache[unit] = {
+						unit = unit,
+						seen = true,
+
+						dead = false,
+
+						-- cache extensions
+						health_ext = ScriptUnit_has_extension(unit, "health_system"),
+						unit_data_ext = unit_data_ext,
+						behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
+
+						is_horde = mod.is_horde(unit),
+
+						breed = breed,
+						breed_type = mod.find_breed_category(unit),
+
+						special_attack_event = nil,
+						special_attack_imminent = false,
+						special_attack_timer = 0,
+
+						-- outlines
+						alert_outline = false,
+						outline_name = nil,
+
+						alert_healthbar = false,
+
+						_marker_created = false,
+						_healthbar_created = false,
+						_last_marker_update = 0,
+						_last_healthbar_update = 0,
+					}
+
+					mod.marked_dead[unit] = nil
+				else
+					entry.seen = true
+					mod.marked_dead[unit] = nil
+				end
+
+				-- DEBUG
+				if mod.DEBUG then
+					-- debug to add outlines to enemies that have been processed, and should have a healthbar...
+					local extension_manager = Managers.state.extension
+					mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+				end
+			end
 			::skip_breed::
+		end
+	end
+
+	if fs.spatial_culling then
+		for _, list in pairs(_cull_cells) do
+			table.sort(list, function(a, b)
+				if a.score == b.score then
+					return a.dist_sq < b.dist_sq
+				end
+				return a.score > b.score
+			end)
+
+			for i = 1, #list do
+				local data = list[i]
+				local unit = data.unit
+
+				local keep = false
+
+				for l = 1, #DEPTH_LAYERS do
+					local layer = DEPTH_LAYERS[l]
+
+					if i <= layer.max then
+						if data.score >= layer.min_score then
+							keep = true
+						end
+						break
+					end
+				end
+
+				if keep then
+					local entry = mod.enemy_cache[unit]
+
+					if not entry then
+						mod.enemy_cache[unit] = {
+							unit = unit,
+							seen = true,
+							dead = false,
+
+							health_ext = ScriptUnit_has_extension(unit, "health_system"),
+							unit_data_ext = data.unit_data_ext,
+							behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
+
+							is_horde = mod.is_horde(unit),
+
+							breed = data.breed,
+							breed_type = data.breed_type,
+
+							_priority_score = data.score,
+							pos = data.pos,
+						}
+					else
+						entry.seen = true
+						entry._priority_score = data.score
+						entry.pos = data.pos
+					end
+
+					mod.marked_dead[unit] = nil
+
+					-- DEBUG
+					if mod.DEBUG then
+						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
+						local extension_manager = Managers.state.extension
+						mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+					end
+				else
+					-- culled
+					mod.force_remove_unit_markers(unit)
+
+					local entry = mod.enemy_cache[unit]
+					if entry then
+						entry.seen = false
+					end
+
+					-- DEBUG
+					if mod.DEBUG then
+						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
+						local extension_manager = Managers.state.extension
+						mod.remove_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+					end
+				end
+			end
 		end
 	end
 end
@@ -464,14 +663,27 @@ local function _build_horde_clusters(units, num_units)
 
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local entry = mod.enemy_cache[unit]
-			local breed = entry and entry.breed
+
+			local breed
+			if entry then
+				breed = entry.breed
+			else
+				local ext = ScriptUnit_has_extension(unit, "unit_data_system")
+				breed = ext and ext:breed()
+			end
+
 			local tags = breed and breed.tags
 
 			if tags and (tags.horde or tags.roamer) then
-				local pos = entry.pos
-				if not pos then
+				local pos
+
+				if entry and entry.pos then
+					pos = entry.pos
+				else
 					pos = Unit.world_position(unit, 1, _pos_vec)
-					entry.pos = Vector3(pos.x, pos.y, pos.z)
+					if entry then
+						entry.pos = Vector3(pos.x, pos.y, pos.z)
+					end
 				end
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
@@ -494,6 +706,7 @@ local function _build_horde_clusters(units, num_units)
 	-- Step 2: cluster via BFS
 	for i = 1, num_units do
 		local unit = units[i]
+		local z_samples = {}
 
 		if not visited[unit] and mod.detect_alive(unit) then
 			local entry = mod.enemy_cache[unit]
@@ -520,8 +733,8 @@ local function _build_horde_clusters(units, num_units)
 			local max_y = -math.huge
 
 			-- Track top 2 heights
-			local highest_z = -math.huge
-			local second_highest_z = -math.huge
+			--local highest_z = -math.huge
+			--local second_highest_z = -math.huge
 
 			while #queue > 0 do
 				local current = queue[#queue]
@@ -546,9 +759,16 @@ local function _build_horde_clusters(units, num_units)
 				sum_x = sum_x + pos.x]]
 
 				-- tallest & second tallest
+				--sum_x = sum_x + pos.x
+				--sum_y = sum_y + pos.y
+				--count = count + 1
+
+				-- Proper centroid accumulation (X, Y, Z)
 				sum_x = sum_x + pos.x
 				sum_y = sum_y + pos.y
+				sum_z = sum_z + pos.z
 				count = count + 1
+				z_samples[#z_samples + 1] = pos.z
 
 				-- Bounds tracking (X/Y center)
 				if pos.x < min_x then
@@ -564,14 +784,14 @@ local function _build_horde_clusters(units, num_units)
 					max_y = pos.y
 				end
 
-				local z = pos.z
+				--local z = pos.z
 
-				if z > highest_z then
-					second_highest_z = highest_z
-					highest_z = z
-				elseif z > second_highest_z then
-					second_highest_z = z
-				end
+				--if z > highest_z then
+				--	second_highest_z = highest_z
+				--	highest_z = z
+				--elseif z > second_highest_z then
+				--	second_highest_z = z
+				--end
 
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
@@ -637,14 +857,31 @@ local function _build_horde_clusters(units, num_units)
 
 				-- tallest / second tallest
 				-- Fallback if cluster is tiny or something went weird
-				local base_z
-				if second_highest_z > -math.huge then
-					base_z = (highest_z + second_highest_z) * 0.5
-				else
-					base_z = highest_z
+				--local base_z
+				--if second_highest_z > -math.huge then
+				--	base_z = (highest_z + second_highest_z) * 0.5
+				--else
+				--	base_z = highest_z
+				--end
+
+				--local target_z = base_z + 2.0
+
+				table.sort(z_samples)
+
+				local trim = math.floor(#z_samples * 0.2) -- trim 20% top/bottom
+				local start_i = 1 + trim
+				local end_i = #z_samples - trim
+
+				local trimmed_sum = 0
+				local trimmed_count = 0
+
+				for i = start_i, end_i do
+					trimmed_sum = trimmed_sum + z_samples[i]
+					trimmed_count = trimmed_count + 1
 				end
 
-				local target_z = base_z + 2.0
+				local avg_z = trimmed_count > 0 and (trimmed_sum / trimmed_count) or (sum_z * inv)
+				local target_z = avg_z + 2.0
 
 				local idx = #clusters + 1
 
@@ -947,7 +1184,7 @@ mod.update_enemies = function(dt, t)
 
 	-- update horde clusters...
 	if fs.horde_clusters_enable then
-		mod.update_horde_clusters(temp, count)
+		mod.update_horde_clusters(_horde_units_all, #_horde_units_all)
 	end
 
 	local player = Managers.player:local_player(1)

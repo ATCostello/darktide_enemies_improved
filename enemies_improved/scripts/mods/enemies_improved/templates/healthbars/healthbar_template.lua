@@ -555,6 +555,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not unit then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -563,6 +564,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- early out
 	if not marker.draw and not marker.is_inside_frustum then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -571,6 +573,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not is_alive then
 		if not fs.hb_show_dps then
 			marker.draw = false
+			marker.alpha_multiplier = 0
 			return
 		else
 			content.dead = true
@@ -615,6 +618,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if group_hb_enabled ~= nil then
 		if not group_hb_enabled then
 			marker.draw = false
+			marker.alpha_multiplier = 0
 			return
 		end
 	end
@@ -683,6 +687,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Still, guard and bail out if somehow non-rep gets here.
 		if cluster.rep_unit ~= unit then
 			marker.draw = false
+			marker.alpha_multiplier = 0
 			content.in_horde_cluster = false
 			return
 		end
@@ -814,6 +819,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- if horde individual bars is disabled, but clustered is enabled, only show clustered...
 	if entry and entry.is_horde and not fs.horde_enable and fs.horde_clusters_enable and not in_horde_cluster then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 		return
 	end
 
@@ -1288,6 +1294,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if not is_alive and (not marker.health_fraction or marker.health_fraction == 0) then
 		if time_since_last_damage > fs.damage_number_duration then
 			marker.draw = false
+			marker.alpha_multiplier = 0
 			mod.active_markers[marker.id] = nil
 			mod.enemy_healthbars[unit] = nil
 			Managers.event:trigger("remove_world_marker", marker.id)
@@ -1297,23 +1304,28 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- only hide non-clustered horde units when horde disabled
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 	end
 
 	if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 	end
 
 	if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 	end
 
 	if not marker.is_inside_frustum then
 		marker.draw = false
+		marker.alpha_multiplier = 0
 	end
 
 	if fs.hb_damage_show_only_latest then
 		if not table.contains(mod.latest_damaged_enemies, unit) then
 			marker.draw = false
+			marker.alpha_multiplier = 0
 		end
 	end
 
