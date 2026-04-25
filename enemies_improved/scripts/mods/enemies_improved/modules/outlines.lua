@@ -15,6 +15,7 @@ local Managers_ui = Managers.ui
 -- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
+local fs = mod.frame_settings
 
 local function get_outline_system()
 	local extension_manager = Managers.state.extension
@@ -124,8 +125,6 @@ mod.pulse_enemy_outline = function(entry)
 		return
 	end
 
-	local fs = mod.frame_settings
-
 	if entry.special_attack_imminent then
 		if not entry.alert_outline then
 			if fs.outline_specials_enable then
@@ -136,9 +135,40 @@ mod.pulse_enemy_outline = function(entry)
 			mod.remove_outline(unit, "enemies_improved_alert", outline_system)
 			entry.alert_outline = false
 		end
+	elseif entry.staggered then
+		if
+			(entry.is_horde and fs.outline_stagger_horde_enable) or (not entry.is_horde and fs.outline_stagger_enable)
+		then
+			if not entry.stagger_outline then
+				mod.add_outline(unit, "enemies_improved_staggered", outline_system)
+				entry.stagger_outline = true
+			elseif fs.stagger_flash then
+				mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
+				entry.stagger_outline = false
+			end
+		end
 	else
 		mod.remove_outline(unit, "enemies_improved_alert", outline_system)
+		mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
 		entry.alert_outline = false
+		entry.stagger_outline = false
+	end
+end
+
+mod.remove_stagger_outline = function(entry)
+	local outline_system = get_outline_system()
+	if not outline_system then
+		return
+	end
+
+	local unit = entry.unit
+	if not unit or not Unit.alive(unit) then
+		return
+	end
+
+	if entry.stagger_outline then
+		mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
+		entry.stagger_outline = false
 	end
 end
 
@@ -259,11 +289,10 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 
 	local dot = Vector3.dot(forward, to_enemy)
 
-	return dot 
+	return dot
 end
 
 mod.update_enemy_outlines = function(entry)
-	local fs = mod.frame_settings
 	if not fs.outlines_enable then
 		return
 	end
@@ -288,13 +317,24 @@ mod.update_enemy_outlines = function(entry)
 		entry._outline_applied = false
 	end
 
+	--local is_tagged = mod.tagged_units[unit]
+
+	local smart_tag_system = Managers.state.extension:system("smart_tag_system")
+	local tag_id = smart_tag_system:unit_tag_id(unit)
+	local is_tagged = tag_id ~= nil
+
 	if has_los then
-		if not entry._outline_applied then
+		if not entry._outline_applied and not is_tagged then
 			mod.enable_enemy_outlines(unit, entry)
 			entry._outline_applied = true
 		end
 	elseif entry._outline_applied then
 		mod.disable_enemy_outlines(unit, entry)
+		entry._outline_applied = false
+	end
+
+	-- reapply after tagged
+	if is_tagged then
 		entry._outline_applied = false
 	end
 end
@@ -362,7 +402,7 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
-					priority = 2,
+					priority = 4,
 					material_layers = {
 						"minion_outline",
 						"minion_outline_reversed_depth",
@@ -407,7 +447,7 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
-					priority = 2,
+					priority = 3,
 					material_layers = {
 						"minion_outline",
 						"minion_outline_reversed_depth",
@@ -461,6 +501,24 @@ mod.apply_enemy_outlines = function(settings)
 
 	settings.MinionOutlineExtension.enemies_improved_alert = {
 		priority = 1,
+		material_layers = {
+			"minion_outline",
+			"minion_outline_reversed_depth",
+		},
+		color = { sr, sg, sb },
+		visibility_check = function()
+			return true
+		end,
+	}
+
+	-- STAGGERED OUTLINE
+
+	sr = fs.outline_stagger_colour[2] / 255
+	sg = fs.outline_stagger_colour[3] / 255
+	sb = fs.outline_stagger_colour[4] / 255
+
+	settings.MinionOutlineExtension.enemies_improved_staggered = {
+		priority = 2,
 		material_layers = {
 			"minion_outline",
 			"minion_outline_reversed_depth",

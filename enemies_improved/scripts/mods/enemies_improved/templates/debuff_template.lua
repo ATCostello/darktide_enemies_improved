@@ -5,6 +5,7 @@ local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 local BuffSettings = require("scripts/settings/buff/buff_settings")
 local stat_buff_types = BuffSettings.stat_buff_types
+local MinionState = require("scripts/utilities/minion_state")
 
 -----------------------------------------------------------------------
 -- Cached settings
@@ -338,7 +339,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- if not on screen or draw == false, throttle heavily....
-	if not marker.is_inside_frustum or marker.draw == false then
+	if not marker.is_inside_frustum then
 		widget._next_update = t + fs.off_screen_throttle_rate
 		return
 	-- distance based updates
@@ -371,21 +372,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
 		marker.remove = true
-		return
-	end
-
-	-- dont draw or do calculations if there are no debuffs applied..
-	if not content.debuffs then
-		marker.draw = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
-		return
-	end
-
-	if content.debuffs and #content.debuffs < 1 then
-		marker.draw = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -435,6 +421,48 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- clear without reallocating
 	for i = 1, #active do
 		active[i] = nil
+	end
+
+	-- CUSTOM STAGGER DEBUFF
+	local enemyentry = mod.enemy_cache[unit]
+
+	if enemyentry and fs.debuff_stagger_enable then
+		if enemyentry.staggered then
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			local now = mod.get_time()
+
+			local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 100) / 100
+			if stagger_time_rounded <= 0 then
+				stagger_time_rounded = 0.00
+			end
+
+			-- set the stack timer to the amount of time the enemy is staggered if available...
+			entry.name = "staggered"
+			entry.stacks = 1
+			entry.duration = stagger_time_rounded
+			entry.max_stacks = 1
+			entry.stat_buffs = {}
+			entry.conditional_stat_buffs = {}
+			entry.type = "utility"
+
+			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
+				enemyentry.staggered = false
+				enemyentry.stagger_type = nil
+				enemyentry.stagger_duration = 0
+				enemyentry.stagger_timer = 0
+			end
+		end
 	end
 
 	for i = 1, #debuffs do
@@ -549,6 +577,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	-- dont draw or do calculations if there are no debuffs applied..
+	if #active < 1 then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		return
+	end
+
 	for i = active_count + 1, #active do
 		active[i] = nil
 	end
@@ -593,7 +629,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			if existing then
 				existing.stacks = (existing.stacks or 0) + (entry.stacks or 0)
 				existing.max_stacks = (existing.max_stacks or 0) + (entry.max_stacks or 0)
-
+				existing.duration = (existing.duration or 0) + (entry.duration or 0)
 				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
 				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
 			else
@@ -603,6 +639,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					name = name,
 					stacks = entry.stacks,
 					max_stacks = entry.max_stacks,
+					duration = entry.duration,
 					stat_buffs = entry.stat_buffs,
 					conditional_stat_buffs = entry.conditional_stat_buffs,
 					combined = true,
@@ -665,6 +702,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local debuff = active[index]
 		local name = debuff.name
 		local stacks = debuff.stacks
+		local duration = debuff.duration
 		local y_base = 0
 
 		if fs.debuff_show_on_body then
@@ -851,6 +889,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local name = debuff.name
 			local state = state_table[name]
 			local stacks = debuff.stacks
+			local duration = debuff.duration
 			local max_stacks = debuff.max_stacks
 			local stat_buffs = debuff.stat_buffs
 			local conditional_stat_buffs = debuff.conditional_stat_buffs
@@ -985,7 +1024,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- Update stack text
 				local stack_str = ""
 
-				if stack_buff_percentage ~= "" then
+				if duration then
+					stack_str = duration .. "s"
+				elseif stack_buff_percentage ~= "" then
 					stack_str = stack_buff_percentage .. "%"
 				else
 					if fs.debuff_stacks_show_x then
@@ -1036,6 +1077,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_style.color[2] = colour[2] or 255
 				icon_style.color[3] = colour[3] or 255
 				icon_style.color[4] = colour[4] or 255
+
+				-- Staggered colour should follow the stagger colour specifically
+				if fs.debuff_stagger_enable and mod.debuffs[name].group == "stagger" then
+					icon_style.color[2] = fs.outline_stagger_colour[2] or 255
+					icon_style.color[3] = fs.outline_stagger_colour[3] or 255
+					icon_style.color[4] = fs.outline_stagger_colour[4] or 255
+				end
 
 				if fs.debuff_max_stacks_colour_toggle and at_max_stacks then
 					stack_text_style.text_color[2] = fs.debuff_max_stacks_colour[2] or 255

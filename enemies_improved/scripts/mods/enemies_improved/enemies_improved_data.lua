@@ -205,6 +205,7 @@ mod.debuffs = {
 	},
 
 	shock_grenade_interval = { name = "shock_grenade_interval", type = "utility", group = "stagger" },
+	staggered = { name = "staggered", type = "utility", group = "stagger" },
 
 	in_smoke_fog = { name = "in_smoke_fog", type = "utility", group = "blind" },
 
@@ -697,6 +698,86 @@ table.insert(mod.settings_widgets, {
 	},
 })
 
+-- STAGGER
+table.insert(mod.settings_widgets, {
+	setting_id = "stagger_settings",
+	type = "group",
+	sub_widgets = {
+		{
+			setting_id = "debuff_stagger_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_stagger_enable_tooltip",
+		},
+		{
+			setting_id = "outline_stagger_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "outline_stagger_enable_tooltip",
+		},
+		{
+			setting_id = "outline_stagger_horde_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "outline_stagger_horde_enable_tooltip",
+		},
+		{
+			setting_id = "stagger_flash",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "stagger_flash_tooltip",
+		},
+		{
+			setting_id = "stagger_pulse_speed",
+			type = "numeric",
+			default_value = 0.1,
+			range = {
+				0.05,
+				0.5,
+			},
+			decimals_number = 2,
+			step_size_value = 0.05,
+			tooltip = "stagger_pulse_speed_tooltip",
+		},
+		{
+			setting_id = "outline_stagger_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_stagger_colour_R",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_stagger_colour_tooltip",
+				},
+				{
+					setting_id = "outline_stagger_colour_G",
+					type = "numeric",
+					default_value = 110,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_stagger_colour_tooltip",
+				},
+				{
+					setting_id = "outline_stagger_colour_B",
+					type = "numeric",
+					default_value = 150,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_stagger_colour_tooltip",
+				},
+			},
+		},
+	},
+})
+
 -- MARKERS
 table.insert(mod.settings_widgets, {
 	setting_id = "markers_settings",
@@ -1072,6 +1153,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_show_damage_numbers_tooltip",
+		},
+		{
+			setting_id = "show_dn_in_range_only",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "show_dn_in_range_only_tooltip",
 		},
 		--[[{
 			setting_id = "hb_damage_numbers_track_friendly",

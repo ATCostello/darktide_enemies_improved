@@ -17,6 +17,9 @@ local Unit_alive = Unit.alive
 
 -- debug mode toggle!!!
 mod.DEBUG = false
+if mod.DEBUG then
+	dbg_mod = mod
+end
 
 mod.detect_alive = function(unit)
 	return unit and HEALTH_ALIVE[unit] and Unit_alive(unit)
@@ -37,7 +40,8 @@ local Healthbars = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved
 local Markers = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/markers")
 local Debuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/debuffs")
 local SpecialAttacks = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/specialattacks")
-local AnimationHandler = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animationhandler")
+local AnimationHandler =
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animations/animationhandler")
 
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
@@ -115,22 +119,10 @@ local function _get_priority(entry, dist_sq, forward_bonus)
 	-- distance bias (closer = higher priority)
 	local dist_bias = 1 / (1 + dist_sq * 0.05)
 
-	if mod.DEBUG then
-		mod:echo(
-			"Priority for "
-				.. entry.breed_type
-				.. " = "
-				.. base
-				.. " + "
-				.. dist_bias * 100
-				.. " + "
-				.. forward_bonus * 50
-				.. " = "
-				.. base + (dist_bias * 100) + (forward_bonus * 50)
-		)
-	end
 	return base + (dist_bias * 200) + (forward_bonus * 20)
 end
+
+local fs = mod.frame_settings
 
 -----------------------------------------------------------------------
 -- preload resources + reset caches on game state change
@@ -162,6 +154,11 @@ mod.on_game_state_changed = function(state, state_name)
 	-- empty caches
 	mod.clear_caches()
 	table_clear(mod.marked_dead)
+
+	-- mark animation database as dirty
+	if mod.DEBUG and mod.anim_db_dirty then
+		mod.save_anim_db()
+	end
 end
 
 local function check_selected_font()
@@ -197,15 +194,22 @@ mod.on_all_mods_loaded = function()
 
 	mod.load_toggled_debuffs_state()
 	mod.load_debuff_colours()
+	mod.load_anim_db()
 
 	mod.dmf = get_mod("DMF")
 end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	-- add new marker templates to templates table
-	self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
-	self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
-	self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+	if EnemyMarkersTemplate then
+		self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
+	end
+	if EnemyHealthbarTemplate then
+		self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
+	end
+	if EnemyDebuffTemplate then
+		self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+	end
 end)
 
 -----------------------------------------------------------------------
@@ -217,7 +221,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	for _ in next, mod.enemy_cache do
 		enemy_count = enemy_count + 1
 	end
-	local fs = mod.frame_settings
 
 	local update_interval
 
@@ -232,7 +235,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 	-- pulse special attacks (Outside of global throttle)
 	if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
-		local interval = fs.special_attack_pulse_speed or 0.5
+		local interval = fs.special_attack_pulse_speed or 0.2
 
 		for _, entry in next, mod.enemy_cache do
 			if entry.special_attack_imminent then
@@ -244,6 +247,29 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 				end
 			else
 				mod.remove_alert_outline(entry)
+			end
+		end
+	end
+
+	-- STAGGER OUTLINES
+	if fs.outline_stagger_horde_enable or fs.outline_stagger_enable then
+		local interval = fs.stagger_pulse_speed or 0.2
+
+		for _, entry in next, mod.enemy_cache do
+			if
+				(entry.is_horde and fs.outline_stagger_horde_enable)
+				or (not entry.is_horde and fs.outline_stagger_enable)
+			then
+				entry._pulse_timer = (entry._pulse_timer or 0) + dt
+
+				if entry.staggered then
+					if entry._pulse_timer >= interval then
+						mod.pulse_enemy_outline(entry)
+						entry._pulse_timer = 0
+					end
+				else
+					mod.remove_stagger_outline(entry)
+				end
 			end
 		end
 	end
@@ -278,9 +304,8 @@ mod.get_marker_by_id = function(id)
 
 	-- DEBUG TO CREATE MARKER LIST
 	if mod.DEBUG then
-		dbg_markers = world_markers._markers_by_type
+		mod.dbg_markers = world_markers._markers_by_type
 	end
-	dbg_markers = world_markers._markers_by_type
 
 	if markers_by_id then
 		return markers_by_id[id]
@@ -334,8 +359,6 @@ end
 -----------------------------------------------------------------------
 
 mod.scan_enemies = function()
-	local fs = mod.frame_settings
-
 	local local_player = Managers_player:local_player(1)
 	if not local_player then
 		return
@@ -457,7 +480,9 @@ mod.scan_enemies = function()
 			local breed_type = mod.find_breed_category(unit)
 
 			-- build animation map for this enemy
-			mod.build_event_map(unit, breed and breed.name)
+			if mod.DEBUG then
+				mod.init_breed_anim_db(unit, breed, breed.name)
+			end
 
 			-- collect ALL horde units BEFORE culling
 			if breed and breed.tags and (breed.tags.horde or breed.tags.roamer) then
@@ -523,6 +548,7 @@ mod.scan_enemies = function()
 						is_horde = mod.is_horde(unit),
 
 						breed = breed,
+						breed_name = breed and breed.name,
 						breed_type = mod.find_breed_category(unit),
 
 						special_attack_event = nil,
@@ -551,7 +577,7 @@ mod.scan_enemies = function()
 				if mod.DEBUG then
 					-- debug to add outlines to enemies that have been processed, and should have a healthbar...
 					local extension_manager = Managers.state.extension
-					mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+					--mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
 				end
 			end
 			::skip_breed::
@@ -617,7 +643,7 @@ mod.scan_enemies = function()
 					if mod.DEBUG then
 						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
 						local extension_manager = Managers.state.extension
-						mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+						--mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
 					end
 				else
 					-- culled
@@ -632,7 +658,7 @@ mod.scan_enemies = function()
 					if mod.DEBUG then
 						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
 						local extension_manager = Managers.state.extension
-						mod.remove_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+						--mod.remove_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
 					end
 				end
 			end
@@ -998,8 +1024,6 @@ mod.remove_dead = function()
 			mod.active_markers[id] = nil
 		end
 
-		local fs = mod.frame_settings
-
 		id = mod.enemy_healthbars[unit]
 		if id and not fs.hb_show_dps then
 			Managers.event:trigger("remove_world_marker", id)
@@ -1079,7 +1103,6 @@ mod.remove_dead = function()
 		else
 			mod.marked_dead[unit] = nil
 		end
-		local fs = mod.frame_settings
 
 		if not fs.hb_show_dps then
 			mod.enemy_healthbars[unit] = nil
@@ -1125,8 +1148,6 @@ mod.clear_caches = function()
 end
 
 mod.update_horde_clusters = function(temp, to_process)
-	local fs = mod.frame_settings
-
 	if fs.horde_clusters_enable then
 		_build_horde_clusters(temp, to_process)
 	else
@@ -1140,8 +1161,6 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	local fs = mod.frame_settings
-
 	for _, entry in next, mod.enemy_cache do
 		entry.pos = nil
 	end

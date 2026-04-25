@@ -25,7 +25,7 @@ mod.build_frame_settings = function(dt)
 	fs.check_line_of_sight = true
 	fs.enable_depth_fading = mod:get("enable_depth_fading")
 	fs.spatial_culling = mod:get("spatial_culling")
-	
+
 	local r = mod:get("main_font_colour_R")
 	local g = mod:get("main_font_colour_G")
 	local b = mod:get("main_font_colour_B")
@@ -122,6 +122,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_show_dps = mod:get("hb_show_dps")
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
+	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
 
 	-- TOUGHNESS
 	fs.toughness_enabled = mod:get("toughness_enabled")
@@ -151,6 +152,29 @@ mod.build_frame_settings = function(dt)
 	fs.outline_specials_enable = mod:get("outline_specials_enable")
 	fs.specials_flash = mod:get("specials_flash")
 	fs.special_attack_pulse_speed = mod:get("special_attack_pulse_speed")
+
+	-- STAGGER SETTINGS
+	fs.debuff_stagger_enable = mod:get("debuff_stagger_enable")
+	fs.outline_stagger_enable = mod:get("outline_stagger_enable")
+	fs.outline_stagger_horde_enable = mod:get("outline_stagger_horde_enable")
+	fs.stagger_flash = mod:get("stagger_flash")
+	fs.stagger_pulse_speed = mod:get("stagger_pulse_speed")
+	local r = mod:get("outline_stagger_colour_R")
+	local g = mod:get("outline_stagger_colour_G")
+	local b = mod:get("outline_stagger_colour_B")
+
+	if not r or not g or not b then
+		r = 220
+		g = 220
+		b = 220
+	end
+
+	fs.outline_stagger_colour = {
+		255,
+		r,
+		g,
+		b,
+	}
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")

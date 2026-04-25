@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.02"
+mod.version = "1.5.03"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -260,9 +260,11 @@ table.insert(localisations_to_add, {
 	},
 
 	stagger = {
-		en = "Stagger",
+		en = "Staggered",
 	},
-
+	staggered = {
+		en = "Staggered",
+	},
 	blind = {
 		en = "Blind",
 	},
@@ -865,6 +867,58 @@ table.insert(localisations_to_add, {
 	},
 })
 
+-- stagger settings localisations
+table.insert(localisations_to_add, {
+	stagger_settings = {
+		en = "{#color(" .. colours.title .. ")}Stagger Detection{#reset()}",
+	},
+	debuff_stagger_enable = {
+		en = "Enable custom stagger debuff?",
+	},
+	debuff_stagger_enable_tooltip = {
+		en = "Adds a new custom debuff to the debuff widgets to show 'staggered'.",
+	},
+	outline_stagger_enable = {
+		en = "Enable stagger outlines for non-horde enemies?",
+	},
+	outline_stagger_enable_tooltip = {
+		en = "Adds an outline to all non-horde enemies that are staggered.",
+	},
+	outline_stagger_horde_enable = {
+		en = "Enable stagger outlines for horde enemies?",
+	},
+	outline_stagger_horde_enable_tooltip = {
+		en = "Adds an outline to all horde enemies that are staggered",
+	},
+	stagger_flash = {
+		en = "Enable flashing for stagger outlines (Global)",
+	},
+	stagger_flash_tooltip = {
+		en = "Applies a flashing effect to stagger outline. \n\nDisable for a solid colour instead.",
+	},
+	stagger_pulse_speed = {
+		en = "Stagger Pulse Speed",
+	},
+	stagger_pulse_speed_tooltip = {
+		en = "Set a speed for the flashing of the stagger flash. With a lower value being faster flashing.",
+	},
+	outline_stagger_colour = {
+		en = "Stagger Colour",
+	},
+	outline_stagger_colour_tooltip = {
+		en = "Adjust the colour to apply to all indicators for staggers.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+	},
+	outline_stagger_colour_R = {
+		en = "Stagger Colour: Red",
+	},
+	outline_stagger_colour_G = {
+		en = "Stagger Colour: Green",
+	},
+	outline_stagger_colour_B = {
+		en = "Stagger Colour: Blue",
+	},
+})
+
 -- Healthbar settings
 table.insert(localisations_to_add, {
 	healthbar_settings = {
@@ -1200,6 +1254,12 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_type_icon_scale_tooltip = {
 		en = "Adjust the scale of the type icon.",
+	},
+	show_dn_in_range_only = {
+		en = "Only show damage numbers in Meat Grinder?",
+	},
+	show_dn_in_range_only_tooltip = {
+		en = "Toggle to only show damage numbers in the Meat Grinder. Requires damage numbers to be enabled.",
 	},
 })
 

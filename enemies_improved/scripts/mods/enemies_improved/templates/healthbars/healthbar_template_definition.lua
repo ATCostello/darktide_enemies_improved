@@ -547,7 +547,10 @@ local _create_definition = function(template, scenegraph_id)
 				end
 			end,
 			visibility_function = function(content)
-				if content.dn_built then
+				if
+					content.dn_built
+					and (fs.show_dn_in_range_only and content.is_in_shooting_range or not fs.show_dn_in_range_only)
+				then
 					return true
 				else
 					return false
@@ -577,7 +580,10 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 255,
 			},
 			visibility_function = function(content)
-				if content.dn_built then
+				if
+					content.dn_built
+					and (fs.show_dn_in_range_only and content.is_in_shooting_range or not fs.show_dn_in_range_only)
+				then
 					return true
 				else
 					return false

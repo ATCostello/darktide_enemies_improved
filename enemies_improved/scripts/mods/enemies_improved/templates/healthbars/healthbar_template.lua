@@ -333,6 +333,14 @@ template.on_enter = function(widget, marker, template)
 	-- set frame background
 	content.frame = fs.frame_type
 
+	local current_level = Managers.state.mission and Managers.state.mission:mission()
+
+	if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
+		content.is_in_shooting_range = true
+	else
+		content.is_in_shooting_range = false
+	end
+
 	-------------------------------------------------------------------
 	-- Icon logic / colors
 	-------------------------------------------------------------------
@@ -523,17 +531,11 @@ end
 -- Main update
 -----------------------------------------------------------------------
 
-local function debug_damage(msg)
-	if mod.DEBUG then
-		mod:echo("[DMG DEBUG] " .. tostring(msg))
-	end
-end
-
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
 	if not marker or not widget then
 		return
 	end
-	
+
 	widget._next_update = widget._next_update or 0
 
 	if t < widget._next_update then
@@ -954,16 +956,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- DEBUG OUTPUT
-	if mod.DEBUG and damage_taken_since_last > 0 then
-		debug_damage("---- Damage Event ----")
-		debug_damage("Damage: " .. tostring(damage_taken_since_last))
-		debug_damage("Last damaging unit: " .. tostring(last_damaging_unit))
-		debug_damage("Local player unit: " .. tostring(local_player_unit))
-		debug_damage("Owner unit: " .. tostring(owner_unit))
-		debug_damage("Is player damage: " .. tostring(last_was_player_damage))
-	end
-
 	if template.skip_damage_from_others then
 		if last_was_player_damage then
 			show_damage_number = true
@@ -972,11 +964,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	else
 		show_damage_number = true
-	end
-
-	if mod.DEBUG and damage_taken_since_last > 0 then
-		debug_damage("Skip others setting: " .. tostring(template.skip_damage_from_others))
-		debug_damage("Show damage number: " .. tostring(show_damage_number))
 	end
 
 	local damage_numbers = content.damage_numbers
