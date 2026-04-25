@@ -461,8 +461,6 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 					ui_style.text_color,
 					{}
 				)
-
-				return
 			end
 		end
 

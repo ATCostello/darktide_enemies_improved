@@ -58,7 +58,6 @@ mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
-mod.enemy_utility_debuffs = {}
 
 mod.active_markers = mod.active_markers or {}
 
@@ -329,12 +328,10 @@ mod.force_remove_unit_markers = function(unit)
 	remove(mod.enemy_markers[unit])
 	remove(mod.enemy_healthbars[unit])
 	remove(mod.enemy_debuffs[unit])
-	remove(mod.enemy_utility_debuffs[unit])
 
 	mod.enemy_markers[unit] = nil
 	mod.enemy_healthbars[unit] = nil
 	mod.enemy_debuffs[unit] = nil
-	mod.enemy_utility_debuffs[unit] = nil
 
 	-- reset cluster state if this unit was a rep
 	local cluster = mod.get_horde_cluster_for_unit(unit)
@@ -1036,12 +1033,6 @@ mod.remove_dead = function()
 			mod.active_markers[id] = nil
 		end
 
-		id = mod.enemy_utility_debuffs[unit]
-		if id then
-			Managers.event:trigger("remove_world_marker", id)
-			mod.active_markers[id] = nil
-		end
-
 		units_to_remove[#units_to_remove + 1] = unit
 	end
 
@@ -1108,7 +1099,6 @@ mod.remove_dead = function()
 			mod.enemy_healthbars[unit] = nil
 		end
 		mod.enemy_debuffs[unit] = nil
-		mod.enemy_utility_debuffs[unit] = nil
 		mod.enemy_markers[unit] = nil
 		mod.enemy_cache[unit] = nil
 	end
@@ -1136,7 +1126,6 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
-	table_clear(mod.enemy_utility_debuffs)
 	table_clear(mod.active_markers)
 
 	table_clear(mod.enemy_cache)

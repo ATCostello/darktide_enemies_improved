@@ -212,10 +212,6 @@ local function get_text_option(content, option)
 		return armor_type_text
 	elseif option == "health" then
 		local health_extension = content.health_extension
-		if not health_extension then
-			health_extension = ScriptUnit_has_extension(unit, "health_system")
-			content.health_extension = health_extension
-		end
 		local health_current = content.health_current
 		local health_max = content.health_max
 		local health_percent = content.health_percent
@@ -1309,7 +1305,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			widget.alpha_multiplier = 0
 			mod.active_markers[marker.id] = nil
 			mod.enemy_healthbars[unit] = nil
-			Managers.event:trigger("remove_world_marker", marker.id)
+			marker.remove = true
+			--Managers.event:trigger("remove_world_marker", marker.id)
 		end
 	end
 
