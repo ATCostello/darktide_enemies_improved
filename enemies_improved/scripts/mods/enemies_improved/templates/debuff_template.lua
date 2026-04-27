@@ -952,11 +952,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- STACK
 				if fs.debuff_stack_on_icon then
 					local o = stack_text_style.offset
-					o[1] = stack_x + col_offset_x + base_offset
+					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size()) 
 					o[2] = base_y_fixed * fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
 
 					local o = stack_text_style.default_offset
-					o[1] = stack_x + col_offset_x + base_offset
+					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size()) 
 					o[2] = base_y_fixed	* fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
 				else
 					local o = stack_text_style.offset
