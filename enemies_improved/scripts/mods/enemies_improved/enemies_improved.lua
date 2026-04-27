@@ -211,6 +211,13 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	end
 end)
 
+-- toggle boss healthbar
+mod:hook_safe("HudElementBossHealth", "update", function(self)
+	if not fs.hb_toggle_base_boss_healthbar then
+		self:_set_active(false)
+	end
+end)
+
 -----------------------------------------------------------------------
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
@@ -504,7 +511,7 @@ mod.scan_enemies = function()
 				local score = _get_priority(temp_entry, dist_sq, forward_bonus)
 
 				if entry then
-					score = score + 10
+					score = score + 5 -- small boost if already has a marker. Just to make hordes act a little more stable.
 				end
 
 				temp_entry._priority_score = score
@@ -646,10 +653,10 @@ mod.scan_enemies = function()
 					-- culled
 					mod.force_remove_unit_markers(unit)
 
-					local entry = mod.enemy_cache[unit]
-					if entry then
-						entry.seen = false
-					end
+					--local entry = mod.enemy_cache[unit]
+					--if entry then
+					--	entry.seen = false
+					--end
 
 					-- DEBUG
 					if mod.DEBUG then

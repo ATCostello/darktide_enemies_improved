@@ -14,8 +14,8 @@ local _create_definition = function(template, scenegraph_id)
 	local icon_style = {
 		vertical_alignment = "center",
 		horizontal_alignment = "center",
-		offset = { -bar_width * 0.5 - 8, 0, 10 },
-		default_offset = { -bar_width * 0.5 - 8, 0, 10 },
+		offset = { -bar_width * 0.5 - 8, 0, 4 },
+		default_offset = { -bar_width * 0.5 - 8, 0, 4 },
 		size = { 24, 24 },
 		default_size = { 24, 24 },
 		color = { 200, 255, 200, 0 },
@@ -31,19 +31,26 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1] - 6, bar_offset[2], 0 },
-				default_offset = { bar_offset[1] - 6, bar_offset[2], 0 },
+				offset = { bar_offset[1] - 2 - (1 * fs.hb_padding_scale), bar_offset[2], 0 },
+				default_offset = { bar_offset[1] - 2 - (1 * fs.hb_padding_scale), bar_offset[2], 0 },
 				size = {
-					bar_width + (10 * fs.hb_padding_scale),
-					bar_height + (6 * fs.hb_padding_scale),
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 				default_size = {
-					bar_width + (10 * fs.hb_padding_scale),
-					bar_height + (6 * fs.hb_padding_scale),
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 				color = { 185, 180, 180, 180 },
 				default_alpha = 185,
 			},
+			change_function = function(content, style)
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_bar_height = content.scaled_bar_height or 0
+
+				--style.size[1] = scaled_bar_width + 10 + 1 * fs.hb_padding_scale
+				--style.size[2] = scaled_bar_height + 6 + 1 * fs.hb_padding_scale
+			end,
 			visibility_function = function(content)
 				if content.hb_built then
 					return true
@@ -65,6 +72,13 @@ local _create_definition = function(template, scenegraph_id)
 				color = { 200, 0, 0, 0 },
 				default_alpha = 200,
 			},
+			change_function = function(content, style)
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_bar_height = content.scaled_bar_height or 0
+
+				style.size[1] = scaled_bar_width
+				style.size[2] = scaled_bar_height
+			end,
 			visibility_function = function(content)
 				if content.hb_built then
 					return true
@@ -114,7 +128,8 @@ local _create_definition = function(template, scenegraph_id)
 			end,
 		}, -- CURRENT HEALTH (main bar)
 		{
-			pass_type = "rect",
+			pass_type = "texture",
+			value = "content/ui/materials/hud/backgrounds/default_square",
 			style_id = "current_health",
 			style = {
 				horizontal_alignment = "left",
@@ -145,7 +160,8 @@ local _create_definition = function(template, scenegraph_id)
 			end,
 		}, -- CURRENT TOUGHNESS
 		{
-			pass_type = "rect",
+			pass_type = "texture",
+			value = "content/ui/materials/hud/backgrounds/boss_toughness_fill", --boss_health_fill, boss_toughness_fill
 			style_id = "current_toughness",
 			style = {
 				horizontal_alignment = "left",
@@ -179,6 +195,159 @@ local _create_definition = function(template, scenegraph_id)
 				end
 			end,
 		},
+		{
+			pass_type = "texture_uv",
+			value = "content/ui/materials/bars/heavy/fill_electric", --boss_health_fill, boss_toughness_fill
+			style_id = "current_toughness_electric",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 255, 50, 150, 255 },
+				default_alpha = 255,
+				material_values = {
+					progression = 0,
+				},
+			},
+			change_function = function(content, style)
+				local toughness_fraction = content.toughness_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_toughness_width = scaled_bar_width * toughness_fraction
+
+				style.size[1] = scaled_toughness_width
+				style.offset[1] = -scaled_bar_width * 0.5
+			end,
+
+			visibility_function = function(content)
+				if
+					fs.toughness_electric
+					and content.hb_built
+					and fs.toughness_enabled
+					and (content.current_toughness and content.current_toughness > 0)
+				then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+		{
+			pass_type = "texture_uv",
+			value = "content/ui/materials/bars/heavy/frame_effect_electric", --boss_health_fill, boss_toughness_fill
+			style_id = "current_toughness_electric2",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { bar_width, bar_height },
+				default_size = { bar_width, bar_height },
+				color = { 255, 255, 255, 255 },
+				default_alpha = 255,
+				material_values = {
+					progression = 0,
+				},
+			},
+			change_function = function(content, style)
+				local toughness_fraction = content.toughness_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_toughness_width = scaled_bar_width * toughness_fraction
+
+				style.size[1] = scaled_toughness_width
+				style.offset[1] = -scaled_bar_width * 0.5
+
+				style.material_values.progression = content.progress or 0
+			end,
+
+			visibility_function = function(content)
+				if
+					fs.toughness_electric
+					and content.hb_built
+					and fs.toughness_enabled
+					and (content.current_toughness and content.current_toughness > 0)
+				then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+		-- toughness end cap bar
+		{
+			pass_type = "rect",
+			style_id = "toughness_end",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { 2, bar_height },
+				default_size = { 2, bar_height },
+				color = { 225, 255, 255, 255 },
+				default_alpha = 225,
+			},
+			change_function = function(content, style)
+				local toughness_fraction = content.toughness_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_toughness_width = scaled_bar_width * toughness_fraction
+
+				style.offset[1] = -scaled_bar_width * 0.5 + scaled_toughness_width
+			end,
+			visibility_function = function(content)
+				if
+					fs.hb_endcaps_enabled
+					and content.hb_built
+					and fs.toughness_enabled
+					and (content.current_toughness and content.current_toughness > 0)
+				then
+					return true
+				else
+					return false
+				end
+			end,
+		},
+		-- health end cap bar
+		{
+			pass_type = "rect",
+			style_id = "health_end",
+			style = {
+				horizontal_alignment = "left",
+				vertical_alignment = "center",
+				offset = { bar_offset[1], bar_offset[2], 3 },
+				default_offset = { bar_offset[1], bar_offset[2], 3 },
+				size = { 2, bar_height },
+				default_size = { 2, bar_height },
+				color = { 225, 255, 255, 255 },
+				default_alpha = 225,
+			},
+			change_function = function(content, style)
+				local health_fraction = content.health_fraction or 0
+
+				local scaled_bar_width = content.scaled_bar_width or 0
+				local scaled_health_width = scaled_bar_width * health_fraction
+
+				style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
+			end,
+			visibility_function = function(content)
+				if
+					fs.hb_endcaps_enabled
+						and content.hb_built
+						and (content.health_fraction and content.health_fraction < 1)
+						and (fs.toughness_enabled and (content.current_toughness and content.current_toughness <= 0))
+					or not fs.toughness_enabled
+				then
+					return true
+				else
+					return false
+				end
+			end,
+		},
 		-- SEGMENT BAR 25%
 		{
 			pass_type = "rect",
@@ -186,8 +355,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 3 },
-				default_offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 3 },
+				offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 4 },
+				default_offset = { bar_offset[1] + (bar_width * 0.25) - 5, bar_offset[2], 4 },
 				size = { 5, bar_height },
 				default_size = { 5, bar_height },
 				color = { 200, 0, 0, 0 },
@@ -209,8 +378,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 3 },
-				default_offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 3 },
+				offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 4 },
+				default_offset = { bar_offset[1] + (bar_width * 0.50) - 2.5, bar_offset[2], 4 },
 				size = { 5, bar_height },
 				default_size = { 5, bar_height },
 				color = { 200, 0, 0, 0 },
@@ -231,8 +400,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 3 },
-				default_offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 3 },
+				offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 4 },
+				default_offset = { bar_offset[1] + (bar_width * 0.75) - 2.5, bar_offset[2], 4 },
 				size = { 5, bar_height },
 				default_size = { 5, bar_height },
 				color = { 200, 0, 0, 0 },
@@ -256,8 +425,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				horizontal_alignment = "left",
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 4 },
-				default_offset = { bar_offset[1], bar_offset[2], 4 },
+				offset = { bar_offset[1], bar_offset[2], 5 },
+				default_offset = { bar_offset[1], bar_offset[2], 5 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 200, 80, 80, 80 },
@@ -278,8 +447,8 @@ local _create_definition = function(template, scenegraph_id)
 			value_id = "highlight1",
 			style = {
 				vertical_alignment = "center",
-				offset = { bar_offset[1], bar_offset[2], 5 },
-				default_offset = { bar_offset[1], bar_offset[2], 5 },
+				offset = { bar_offset[1], bar_offset[2], 6 },
+				default_offset = { bar_offset[1], bar_offset[2], 6 },
 				size = { bar_width, bar_height },
 				default_size = { bar_width, bar_height },
 				color = { 100, 255, 255, 255 },
@@ -301,8 +470,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 8, 0, 8 },
-				default_offset = { -bar_width * 0.5 - 8, 0, 8 },
+				offset = { -bar_width * 0.5 - 8, 0, 3 },
+				default_offset = { -bar_width * 0.5 - 8, 0, 3 },
 
 				size = { 35, 35 },
 				default_size = { 35, 35 },
@@ -328,8 +497,8 @@ local _create_definition = function(template, scenegraph_id)
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
-				offset = { -bar_width * 0.5 - 8, 0, 7 },
-				default_offset = { -bar_width * 0.5 - 8, 0, 7 },
+				offset = { -bar_width * 0.5 - 8, 0, 2 },
+				default_offset = { -bar_width * 0.5 - 8, 0, 2 },
 
 				size = { 40, 40 },
 				default_size = { 40, 40 },
@@ -430,8 +599,8 @@ local _create_definition = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "top",
-				offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
+				default_offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -460,8 +629,8 @@ local _create_definition = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
+				default_offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -491,8 +660,8 @@ local _create_definition = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
+				default_offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -522,8 +691,8 @@ local _create_definition = function(template, scenegraph_id)
 				vertical_alignment = "center",
 				text_horizontal_alignment = "left",
 				text_vertical_alignment = "bottom",
-				offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
-				default_offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 6 },
+				offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
+				default_offset = { -bar_width * 0.5, bar_height + 50 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
 				font_size = 16,
 				default_font_size = 16,
@@ -570,7 +739,7 @@ local _create_definition = function(template, scenegraph_id)
 				offset = {
 					-size[1] * 0.5,
 					-size[2],
-					2,
+					1,
 				},
 				font_type = mod.font_type,
 				font_size = 30,

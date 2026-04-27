@@ -58,28 +58,28 @@ mod.debuff_styles = {
 	},
 
 	damage_taken = {
-		icon = "content/ui/materials/icons/player_states/dead",
+		icon = "content/ui/materials/hud/interactions/icons/enemy",
 		colour = { 255, 255, 185, 100 },
 	},
 
 	melee_damage_taken = {
-		icon = "content/ui/materials/icons/weapons/actions/melee",
+		icon = "content/ui/materials/hud/interactions/icons/enemy_priority",
 		colour = { 255, 255, 242, 99 },
 	},
 
 	stagger_damage = {
-		icon = "content/ui/materials/icons/weapons/actions/melee_hand",
-		colour = { 255, 124, 227, 187 },
+		icon = "content/ui/materials/hud/interactions/icons/enemy",
+		colour = { 255, 255, 185, 100 },
 	},
 
 	bleed_damage = {
-		icon = "content/ui/materials/icons/presets/preset_13",
-		colour = { 255, 255, 40, 40 },
+		icon = "content/ui/materials/hud/interactions/icons/enemy",
+		colour = { 255, 255, 185, 100 },
 	},
 
 	toxin_damage = {
-		icon = "content/ui/materials/icons/player_states/dead",
-		colour = { 255, 80, 255, 80 },
+		icon = "content/ui/materials/hud/interactions/icons/enemy",
+		colour = { 255, 255, 185, 100 },
 	},
 }
 
@@ -179,7 +179,7 @@ mod.debuffs = {
 		group = "bleed_damage",
 	},
 
-	adamant_drone_enemy_debuff = { name = "adamant_drone_enemy_debuff", type = "utility", group = "arbites" },
+	adamant_drone_enemy_debuff = { name = "adamant_drone_enemy_debuff", type = "utility", group = "damage_taken" },
 	adamant_drone_talent_debuff = { name = "adamant_drone_talent_debuff", type = "utility", group = "arbites" },
 
 	adamant_melee_weakspot_hits_count_as_stagger_debuff = {
@@ -382,10 +382,6 @@ local hb_frames = {
 	{
 		text = "contracts_progress_overall_fill",
 		value = "content/ui/materials/bars/contracts_progress_overall_fill",
-	},
-	{
-		text = "heavy_frame_back",
-		value = "content/ui/materials/bars/heavy/frame_back",
 	},
 }
 
@@ -910,6 +906,18 @@ table.insert(mod.settings_widgets, {
 			tooltip = "healthbar_type_icon_scale_tooltip",
 		},
 		{
+			setting_id = "hb_toggle_base_boss_healthbar",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_toggle_base_boss_healthbar_tooltip",
+		},
+		{
+			setting_id = "hb_endcaps_enabled",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_endcaps_enabled_tooltip",
+		},
+		{
 			setting_id = "healthbar_segments_enable",
 			type = "checkbox",
 			default_value = false,
@@ -1018,7 +1026,7 @@ table.insert(mod.settings_widgets, {
 			default_value = 1.25,
 			range = {
 				0.5,
-				3,
+				10,
 			},
 			decimals_number = 2,
 			step_size_value = 0.1,
@@ -1069,6 +1077,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "toughness_enabled_tooltip",
+		},
+		{
+			setting_id = "toughness_electric",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "toughness_electric_tooltip",
 		},
 		{
 			setting_id = "toughness_text_enabled",
@@ -1263,6 +1277,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "debuff_horde_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_horizontal",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "debuff_horizontal_tooltip",
 		},
 		{
 			setting_id = "split_debuff_types",

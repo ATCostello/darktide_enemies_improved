@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.04"
+mod.version = "1.5.05"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -138,6 +138,7 @@ end
 mod.localisation = {
 	mod_name = {
 		en = "Enemies Improved",
+		["zh-cn"] = "敌人增强",
 	},
 	mod_name_pizazz = {
 		en = "{#color("
@@ -149,6 +150,7 @@ mod.localisation = {
 	},
 	mod_name_boring = {
 		en = "Enemies Improved",
+		["zh-cn"] = "敌人增强",
 	},
 	mod_description = {
 		en = "{#color("
@@ -191,9 +193,11 @@ mod.localisation = {
 	},
 	mod_name_pizazz_toggle = {
 		en = "Enable Name Pizazz",
+		["zh-cn"] = "启用彩色标题",
 	},
 	mod_name_pizazz_tooltip = {
 		en = "Toggles the rainbow colours effect on the mod name text. Requires a reload.\nIf enabled, you will get a small euphoric experience everytime you scroll through the mod menu, \nIf disabled - you will be a John Darktide and have no rainbow sprinkles (but I'll love you anyway).",
+		["zh-cn"] = "切换模组名称的彩虹彩色效果，需要重新加载。\n启用后在模组菜单中会更美观，关闭则显示普通文本。",
 	},
 }
 
@@ -205,68 +209,85 @@ table.insert(localisations_to_add, {
 	-- Debuff Groups
 	generic = {
 		en = "Generic",
+		["zh-cn"] = "通用",
 	},
 
 	bleed = {
 		en = "Bleed",
+		["zh-cn"] = "流血",
 	},
 
 	fire = {
 		en = "Fire",
+		["zh-cn"] = "火焰",
 	},
 
 	warp = {
 		en = "Warp",
+		["zh-cn"] = "亚空间",
 	},
 
 	shock = {
 		en = "Shock/Lightning",
+		["zh-cn"] = "电击/闪电",
 	},
 
 	toxin = {
 		en = "Toxin/Poison",
+		["zh-cn"] = "毒素/剧毒",
 	},
 
 	rending = {
 		en = "Rending",
+		["zh-cn"] = "碎裂",
 	},
 
 	damage_taken = {
 		en = "+ Damage",
+		["zh-cn"] = "+伤害",
 	},
 
 	melee_damage_taken = {
 		en = "+ Melee Damage",
+		["zh-cn"] = "+近战伤害",
 	},
 
 	stagger_damage = {
 		en = "+ Stagger Damage",
+		["zh-cn"] = "+硬直伤害",
 	},
 
 	bleed_damage = {
 		en = "+ Bleeding Damage",
+		["zh-cn"] = "+流血伤害",
 	},
 
 	toxin_damage = {
 		en = "+ Toxin Damage",
+		["zh-cn"] = "+毒素伤害",
 	},
 
 	arbites = {
 		en = "Arbites",
+		["zh-cn"] = "法务官",
 	},
 
 	rage = {
 		en = "Hive Scum",
+		["zh-cn"] = "巢都渣滓",
 	},
 
 	stagger = {
 		en = "Staggered",
+		["zh-cn"] = "踉跄",
 	},
 	staggered = {
 		en = "Staggered",
+		["zh-cn"] = "踉跄",
 	},
 	blind = {
 		en = "Blind",
+		["zh-cn"] = "致盲",
 	},
 
 	-- Debuffs Localisation
@@ -468,7 +489,11 @@ table.insert(localisations_to_add, {
 
 	-- Arbite
 	adamant_drone_enemy_debuff = {
-		en = "Drone Marked",
+		en = "Increased Damage Taken (Drone Marked)",
+		["zh-cn"] = "无人机标记",
+	},
+	adamant_drone_enemy_debuff_abrv = {
+		en = "+ Damage",
 		["zh-cn"] = "无人机标记",
 	},
 	adamant_drone_talent_debuff = {
@@ -591,7 +616,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "简约黑框",
 	},
 	contracts_progress_overall_fill = {
-		en = "White box",
+		en = "Colourful box",
 		["zh-cn"] = "白色框体",
 	},
 })
@@ -652,9 +677,11 @@ table.insert(localisations_to_add, {
 	},
 	spatial_culling = {
 		en = "Enable Spatial Culling?",
+		["zh-cn"] = "启用空间筛选",
 	},
 	spatial_culling_tooltip = {
 		en = "Toggle spatial culling for Enemies Improved UI elements.\n\nThe culling essentially gives each enemy a priority based on their distance to the player, their class, and if you're looking close to them… and then hides ones that are further/less priority. So in a dense cluster, you'll see all the front running enemies, and important elites like disablers, snipers, daemonhosts etc. But the others at the back/in the middle of the group won't even get counted/included until they become at the front.\n\nShould help FPS in dense elite hordes.",
+		["zh-cn"] = "为UI元素启用空间筛选，根据距离、类型优先级隐藏远处敌人，提升密集怪群时的帧率。",
 	},
 	check_line_of_sight = {
 		en = "Check for line of sight?",
@@ -682,6 +709,7 @@ table.insert(localisations_to_add, {
 	},
 	font_no_longer_available = {
 		en = "Selected font type is no longer available, resetting to a default option.",
+		["zh-cn"] = "选中的字体不可用，已重置为默认选项。",
 	},
 	text_scale = {
 		en = "Scale the text sizes (Global)",
@@ -716,15 +744,15 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "次要文本颜色（全局）",
 	},
 	secondary_font_colour_R = {
-		en = "Main Font: Red",
+		en = "Secondary Font: Red",
 		["zh-cn"] = "次要文本：红",
 	},
 	secondary_font_colour_G = {
-		en = "Main Font: Green",
+		en = "Secondary Font: Green",
 		["zh-cn"] = "次要文本：绿",
 	},
 	secondary_font_colour_B = {
-		en = "Main Font: Blue",
+		en = "Secondary Font: Blue",
 		["zh-cn"] = "次要文本：蓝",
 	},
 	secondary_font_colour_tooltip = {
@@ -825,45 +853,59 @@ table.insert(localisations_to_add, {
 	},
 	overhead_marker_uses_healthbar_colour = {
 		en = "Use healthbar colours for overhead markers?",
+		["zh-cn"] = "头顶标记使用血条颜色？",
 	},
 	overhead_marker_uses_healthbar_colour_tooltip = {
 		en = "Toggles the overhead markers to use the enemies' healthbar colour instead of the default colour.",
+		["zh-cn"] = "开启后头顶标记使用敌人血条颜色，而非默认颜色。",
 	},
 	marker_size = {
 		en = "Marker Scale",
+		["zh-cn"] = "标记大小",
 	},
 	marker_size_tooltip = {
 		en = "Adjust the scale of the overhead marker.",
+		["zh-cn"] = "调整头顶标记的缩放比例。",
 	},
 	markers_health_enable = {
 		en = "Toggle simple health tracker",
+		["zh-cn"] = "启用简易血量显示",
 	},
 	markers_health_enable_tooltip = {
 		en = "Toggles a simple quadrant-based (25, 50, 75, 100) health tracker on the overhead marker. \n\nUses the healthbar colours. \n\nCan be useful if you want a minimal way to get an insight on the health of enemies.",
+		["zh-cn"] = "在头顶标记上显示简易血量（25/50/75/100），使用血条颜色。",
 	},
 	marker_y_offset = {
 		en = "Adjust Y offset for overhead markers",
+		["zh-cn"] = "标记垂直偏移",
 	},
 	marker_y_offset_tooltip = {
 		en = "Sets the Y offset or height from the ground for the overhead markers.",
+		["zh-cn"] = "设置头顶标记的高度偏移。",
 	},
 	marker_bg_colour = {
 		en = "Colour for marker background",
+		["zh-cn"] = "标记背景颜色",
 	},
 	marker_bg_colour_A = {
 		en = "Alpha",
+		["zh-cn"] = "透明度",
 	},
 	marker_bg_colour_R = {
 		en = "Red",
+		["zh-cn"] = "红",
 	},
 	marker_bg_colour_G = {
 		en = "Green",
+		["zh-cn"] = "绿",
 	},
 	marker_bg_colour_B = {
 		en = "Blue",
+		["zh-cn"] = "蓝",
 	},
 	marker_bg_colour_tooltip = {
 		en = "Select a colour for the background of the overhead markers.",
+		["zh-cn"] = "设置头顶标记的背景颜色。",
 	},
 })
 
@@ -871,51 +913,67 @@ table.insert(localisations_to_add, {
 table.insert(localisations_to_add, {
 	stagger_settings = {
 		en = "{#color(" .. colours.title .. ")}Stagger Detection{#reset()}",
+		["zh-cn"] = "{#color(" .. colours.title .. ")}硬直检测{#reset()}",
 	},
 	debuff_stagger_enable = {
 		en = "Enable custom stagger debuff?",
+		["zh-cn"] = "启用自定义硬直减益？",
 	},
 	debuff_stagger_enable_tooltip = {
 		en = "Adds a new custom debuff to the debuff widgets to show 'staggered'.",
+		["zh-cn"] = "在减益组件中添加硬直状态显示。",
 	},
 	outline_stagger_enable = {
 		en = "Enable stagger outlines for non-horde enemies?",
+		["zh-cn"] = "非尸潮怪启用硬直轮廓？",
 	},
 	outline_stagger_enable_tooltip = {
 		en = "Adds an outline to all non-horde enemies that are staggered.",
+		["zh-cn"] = "为处于硬直状态的非尸潮敌人显示轮廓。",
 	},
 	outline_stagger_horde_enable = {
 		en = "Enable stagger outlines for horde enemies?",
+		["zh-cn"] = "尸潮怪启用硬直轮廓？",
 	},
 	outline_stagger_horde_enable_tooltip = {
 		en = "Adds an outline to all horde enemies that are staggered",
+		["zh-cn"] = "为处于硬直状态的尸潮敌人显示轮廓。",
 	},
 	stagger_flash = {
 		en = "Enable flashing for stagger outlines (Global)",
+		["zh-cn"] = "硬直轮廓闪烁（全局）",
 	},
 	stagger_flash_tooltip = {
 		en = "Applies a flashing effect to stagger outline. \n\nDisable for a solid colour instead.",
+		["zh-cn"] = "硬直轮廓启用闪烁效果，关闭则为纯色。",
 	},
 	stagger_pulse_speed = {
 		en = "Stagger Pulse Speed",
+		["zh-cn"] = "硬直闪烁速度",
 	},
 	stagger_pulse_speed_tooltip = {
 		en = "Set a speed for the flashing of the stagger flash. With a lower value being faster flashing.",
+		["zh-cn"] = "设置硬直闪烁速度，数值越低越快。",
 	},
 	outline_stagger_colour = {
 		en = "Stagger Colour",
+		["zh-cn"] = "硬直颜色",
 	},
 	outline_stagger_colour_tooltip = {
 		en = "Adjust the colour to apply to all indicators for staggers.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置硬直提示颜色，数值0~255。",
 	},
 	outline_stagger_colour_R = {
 		en = "Stagger Colour: Red",
+		["zh-cn"] = "硬直颜色：红",
 	},
 	outline_stagger_colour_G = {
 		en = "Stagger Colour: Green",
+		["zh-cn"] = "硬直颜色：绿",
 	},
 	outline_stagger_colour_B = {
 		en = "Stagger Colour: Blue",
+		["zh-cn"] = "硬直颜色：蓝",
 	},
 })
 
@@ -939,21 +997,27 @@ table.insert(localisations_to_add, {
 	},
 	hb_y_offset = {
 		en = "Adjust Y offset for healthbars",
+		["zh-cn"] = "血条垂直偏移",
 	},
 	hb_y_offset_tooltip = {
 		en = "Sets the Y offset or height from the ground for the healthbars.",
+		["zh-cn"] = "设置血条的高度偏移。",
 	},
 	hb_text_show_max_health = {
 		en = "Show Max Health?",
+		["zh-cn"] = "显示最大血量？",
 	},
 	hb_text_show_max_health_tooltip = {
 		en = "Toggles displaying the max health on the current health text elements.",
+		["zh-cn"] = "在当前血量旁显示最大血量。",
 	},
 	hb_gap_padding_scale = {
 		en = "Healthbar widget gap scale",
+		["zh-cn"] = "血条组件间距缩放",
 	},
 	hb_gap_padding_scale_tooltip = {
 		en = "Adjust the scale of the gap between the healthbar widgets. A lower number will make the text elements closer and 'tighter'.",
+		["zh-cn"] = "调整血条组件之间的间距，数值越小越紧凑。",
 	},
 	healthbar_type_icon_enable = {
 		en = "Enable healthbar enemy type icon?",
@@ -965,9 +1029,11 @@ table.insert(localisations_to_add, {
 	},
 	hb_toggle_ghostbar = {
 		en = "Enable Ghost Healthbar?",
+		["zh-cn"] = "启用伤害延迟血条",
 	},
 	hb_toggle_ghostbar_tooltip = {
 		en = "Toggles a dark 'ghost' bar next to the current health bar, when you deal large amounts of damage to an enemy.",
+		["zh-cn"] = "造成大额伤害时，显示灰色延迟伤害条。",
 	},
 	hb_padding_scale = {
 		en = "Scale for the decorative frame around the healthbar (Global)",
@@ -1049,9 +1115,11 @@ table.insert(localisations_to_add, {
 
 	healthbar_segments_enable = {
 		en = "Toggle Healthbar Segments",
+		["zh-cn"] = "启用血条分段",
 	},
 	healthbar_segments_enable_tooltip = {
 		en = "Adds small lines to the healthbar to indicate percentages of 25, 50 and 75.",
+		["zh-cn"] = "在血条上添加刻度线，标记25%/50%/75%血量。",
 	},
 	hb_horde_enable = {
 		en = "Enable individual horde healthbars?",
@@ -1079,12 +1147,15 @@ table.insert(localisations_to_add, {
 	},
 	hb_horde_hide_after_no_damage = {
 		en = "Hide horde healthbars after no damage received?",
+		["zh-cn"] = "尸潮怪无伤害后隐藏血条",
 	},
 	hb_horde_hide_after_no_damage_tooltip = {
 		en = "Toggle hiding of healthbars for horde enemies after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
+		["zh-cn"] = "尸潮怪在无伤害后自动隐藏血条。",
 	},
 	damage_number_settings = {
 		en = "{#color(" .. colours.title .. ")}Damage Numbers{#reset()}",
+		["zh-cn"] = "{#color(" .. colours.title .. ")}伤害数字{#reset()}",
 	},
 	hb_show_damage_numbers = {
 		en = "Show damage numbers?",
@@ -1096,27 +1167,35 @@ table.insert(localisations_to_add, {
 	},
 	hb_damage_numbers_track_friendly = {
 		en = "Show Friendly Damage?",
+		["zh-cn"] = "显示队友伤害",
 	},
 	hb_damage_numbers_track_friendly_tooltip = {
 		en = "Whether damage on enemies will be shown if friendly players harm them, or if damage should only show if you are the one to damage the enemy.",
+		["zh-cn"] = "是否显示队友对敌人造成的伤害。",
 	},
 	hb_damage_numbers_add_total = {
 		en = "Add together damage numbers",
+		["zh-cn"] = "伤害数字合并",
 	},
 	hb_damage_numbers_add_total_tooltip = {
 		en = "Whether the damage numbers in a small timeframe should be added together into one larger number, or if each damage should be shown individually.",
+		["zh-cn"] = "短时间内的伤害合并为一个总数值显示。",
 	},
 	hb_damage_show_only_latest = {
 		en = "Only show last damaged enemies?",
+		["zh-cn"] = "仅显示最近攻击的敌人",
 	},
 	hb_damage_show_only_latest_tooltip = {
 		en = "Toggle showing the healthbars of only the last damaged enemies. See below for a slider to control how many last damaged enemies to track.",
+		["zh-cn"] = "仅显示最近受到伤害的敌人血条。",
 	},
 	hb_damage_show_only_latest_value = {
 		en = "Number of last damaged enemies to track",
+		["zh-cn"] = "最近攻击敌人追踪数量",
 	},
 	hb_damage_show_only_latest_value_tooltip = {
 		en = "Set the amount of last damaged enemies to track for the 'Only show last damaged enemies' setting.\n\nSetting this too low may cause a flickering effect, as damage-over-time effects still count as player damage.",
+		["zh-cn"] = "设置追踪的最近伤害敌人数量，过低可能导致闪烁。",
 	},
 	hb_text_show_health = {
 		en = "Show current health on healthbar?",
@@ -1176,90 +1255,137 @@ table.insert(localisations_to_add, {
 	},
 	damage_number_duration = {
 		en = "Duration to show numbers",
+		["zh-cn"] = "伤害数字显示时长",
 	},
 	damage_number_duration_tooltip = {
 		en = "Set a duration for damage numbers to show for.\n\nThe numbers will fade out after this amount of time.",
+		["zh-cn"] = "设置伤害数字的显示时长，超时后淡出。",
 	},
 	hb_ghostbar_opacity = {
 		en = "Ghostbar opacity",
+		["zh-cn"] = "延迟血条透明度",
 	},
 	hb_ghostbar_opacity_tooltip = {
 		en = "Adjust the opacity of the ghostbar. 0 = transparent, 1 = opaque.",
+		["zh-cn"] = "调整延迟伤害条的透明度，0=全透明，1=不透明。",
 	},
 	hb_toggle_ghostbar_colour = {
 		en = "Ghostbar uses colour?",
+		["zh-cn"] = "延迟血条使用彩色？",
 	},
 	hb_toggle_ghostbar_colour_tooltip = {
 		en = "Should the ghostbar use the colour of the healthbar of the enemy?\n\nIf disabled, the ghostbar will be white.",
+		["zh-cn"] = "延迟血条使用敌人血条颜色，关闭则为白色。",
 	},
 	readable_max_damage_numbers = {
 		en = "Max numbers to show",
+		["zh-cn"] = "最大显示数字",
 	},
 	readable_max_damage_numbers_tooltip = {
 		en = "Set a cap for the max damage numbers to show for the Readable damage number type.",
+		["zh-cn"] = "设置清晰样式伤害数字的最大显示值。",
 	},
 	toughness_colour = {
 		en = "Toughness Bar Settings",
+		["zh-cn"] = "坚韧条设置",
 	},
 	toughness_enabled = {
 		en = "Toggle Toughness Features",
+		["zh-cn"] = "启用坚韧条功能",
 	},
 	toughness_enabled_tooltip = {
 		en = "Overlays a toughness bar over the healthbar if the enemy has toughness.",
+		["zh-cn"] = "为拥有坚韧值的敌人显示坚韧条。",
 	},
 	toughness_colour_tooltip = {
 		en = "Select a colour for the toughness bar.",
+		["zh-cn"] = "设置坚韧条颜色。",
 	},
 	toughness_colour_R = {
 		en = "Toughness Bar: Red",
+		["zh-cn"] = "坚韧条：红",
 	},
 	toughness_colour_G = {
 		en = "Toughness Bar: Green",
+		["zh-cn"] = "坚韧条：绿",
 	},
 	toughness_colour_B = {
 		en = "Toughness Bar: Blue",
+		["zh-cn"] = "坚韧条：蓝",
 	},
 	toughness_text_enabled = {
 		en = "Adjust health text to show the toughness values?",
+		["zh-cn"] = "血量文本显示坚韧值",
 	},
 	toughness_text_enabled_tooltip = {
 		en = "Swaps out the healtbar text 'health' options to their toughness, if the enemy has toughness.",
+		["zh-cn"] = "敌人拥有坚韧值时，文本显示坚韧而非血量。",
 	},
 	toughness_text_colour_enabled = {
 		en = "Change health text to use toughness colour?",
+		["zh-cn"] = "血量文本使用坚韧颜色",
 	},
 	toughness_text_colour_enabled_tooltip = {
 		en = "Swaps out the healtbar text 'health' colour to the toughness colour, if the enemy has toughness.",
+		["zh-cn"] = "敌人拥有坚韧值时，文本使用坚韧条颜色。",
 	},
 	hb_show_dps = {
 		en = "Show DPS",
+		["zh-cn"] = "显示每秒伤害",
 	},
 	hb_show_dps_tooltip = {
 		en = "Displays a brief damage-per-second text element after you kill an enemy.\n\nUses the damage number duration as a timer for how long to display.",
+		["zh-cn"] = "击杀敌人后短暂显示DPS，显示时长同伤害数字。",
 	},
 	damage_number_scale = {
 		en = "Damage number scale",
+		["zh-cn"] = "伤害数字大小",
 	},
 	damage_number_scale_tooltip = {
 		en = "Adjust the scale of the damage numbers. Multiplies with the global text scale too...",
+		["zh-cn"] = "调整伤害数字缩放，会与全局文本缩放相乘。",
 	},
 	damage_number_y_offset = {
 		en = "Damage number y offset",
+		["zh-cn"] = "伤害数字垂直偏移",
 	},
 	damage_number_y_offset_tooltip = {
 		en = "Adjust the up/down position of the damage numbers. \n\nA value of 0 will be close to the top of the enemy, the higher the value, the lower the position. Only effects the floating or flashy damage numbers.",
+		["zh-cn"] = "调整伤害数字的上下位置，仅影响浮动/炫丽样式。",
 	},
 	healthbar_type_icon_scale = {
 		en = "Type icon scale",
+		["zh-cn"] = "类型图标大小",
 	},
 	healthbar_type_icon_scale_tooltip = {
 		en = "Adjust the scale of the type icon.",
+		["zh-cn"] = "调整敌人类型图标的缩放。",
 	},
 	show_dn_in_range_only = {
 		en = "Only show damage numbers in Meat Grinder?",
+		["zh-cn"] = "仅在靶场显示伤害数字",
 	},
 	show_dn_in_range_only_tooltip = {
 		en = "Toggle to only show damage numbers in the Meat Grinder. Requires damage numbers to be enabled.",
+		["zh-cn"] = "仅在练靶场显示伤害数字，需要先启用伤害数字。",
+	},
+	hb_toggle_base_boss_healthbar = {
+		en = "Show default boss healthbars?",
+	},
+	hb_toggle_base_boss_healthbar_tooltip = {
+		en = "Toggles the base-game boss healthbars at the top of the screen. If disabled, the boss healthbars will be hidden.",
+	},
+	hb_endcaps_enabled = {
+		en = "Toggle endcaps on healthbars?",
+	},
+	hb_endcaps_enabled_tooltip = {
+		en = "Toggles a small white rectangle at the end of the current health/toughness to help distinguish current health against the background.",
+	},
+	toughness_electric = {
+		en = "Toggle 'lightning' effect on toughness bar?",
+	},
+	toughness_electric_tooltip = {
+		en = "Toggles a lightning effect that is overlayed on the current toughness bar.",
 	},
 })
 
@@ -1351,130 +1477,178 @@ table.insert(localisations_to_add, {
 	},
 	debuff_toggles = {
 		en = "Choose a debuff to toggle",
+		["zh-cn"] = "选择要开关的减益",
 	},
 	debuff_toggles_tooltip = {
 		en = "Pick a debuff here to be able to toggle it on or off in the option below.",
+		["zh-cn"] = "选择一个减益，在下方选项中开启或关闭。",
 	},
 	debuff_selected_enable = {
 		en = "Selected debuff toggle",
+		["zh-cn"] = "选中减益开关",
 	},
 	debuff_selected_enable_tooltip = {
 		en = "Toggle the selected debuff on or off.",
+		["zh-cn"] = "开启或关闭选中的减益效果。",
 	},
 	debuff_icons = {
 		en = "Toggle Debuff Icons",
+		["zh-cn"] = "显示减益图标",
 	},
 	debuff_icons_tooltip = {
 		en = "Decide whether to show the debuff icons or not.",
+		["zh-cn"] = "选择是否显示减益效果图标。",
 	},
 	debuff_stacks_icon_colour = {
 		en = "Debuff Stacks use Icon Colour?",
+		["zh-cn"] = "层数使用图标颜色",
 	},
 	debuff_stacks_icon_colour_tooltip = {
 		en = "Decide whether to use the debuff icon category colour on the stack/percentage display?",
+		["zh-cn"] = "减益层数/百分比使用图标分类颜色。",
 	},
 
 	debuff_group_colour = {
 		en = "Debuff Group Overrides",
+		["zh-cn"] = "减益分组颜色覆盖",
 	},
 	debuff_group_selected = {
 		en = "Debuff Group",
+		["zh-cn"] = "减益分组",
 	},
 	debuff_group_selected_tooltip = {
 		en = "Select a debuff group to adjust settings for.",
+		["zh-cn"] = "选择一个减益分组进行设置。",
 	},
 	debuff_group_colour_R = {
 		en = "Debuff Icon Colour: Red",
+		["zh-cn"] = "减益图标：红",
 	},
 	debuff_group_colour_G = {
 		en = "Debuff Icon Colour: Green",
+		["zh-cn"] = "减益图标：绿",
 	},
 	debuff_group_colour_B = {
 		en = "Debuff Icon Colour: Blue",
+		["zh-cn"] = "减益图标：蓝",
 	},
 	debuff_group_colour_tooltip = {
 		en = "Adjust the colour of the chosen debuff group above.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "调整所选减益分组的图标颜色，数值0~255。",
 	},
 	debuff_max_stacks_colour = {
 		en = "Debuff Max Stacks Settings",
+		["zh-cn"] = "减益最大层数设置",
 	},
 	debuff_max_stacks_colour_tooltip = {
 		en = "Adjust the colour of the stack text when at max stacks.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置减益达到最大层数时的文字颜色。",
 	},
 	debuff_max_stacks_scale = {
 		en = "Increase text scale?",
+		["zh-cn"] = "放大层数文本",
 	},
 	debuff_max_stacks_scale_tooltip = {
 		en = "Increases the scale of the text for stacks that are at their max stacks value.",
+		["zh-cn"] = "最大层数时放大文本显示。",
 	},
 	debuff_max_stacks_colour_toggle = {
 		en = "Toggle max stacks colour?",
+		["zh-cn"] = "启用最大层数颜色",
 	},
 	debuff_max_stacks_colour_toggle_tooltip = {
 		en = "Toggle to adjust the colour of the stacks when at max stacks.",
+		["zh-cn"] = "开启后最大层数使用自定义颜色。",
 	},
 	debuff_max_stacks_colour_R = {
 		en = "Debuff Max Stacks Colour: Red",
+		["zh-cn"] = "最大层数：红",
 	},
 	debuff_max_stacks_colour_G = {
 		en = "Debuff Max Stacks Colour: Green",
+		["zh-cn"] = "最大层数：绿",
 	},
 	debuff_max_stacks_colour_B = {
 		en = "Debuff Max Stacks Colour: Blue",
+		["zh-cn"] = "最大层数：蓝",
 	},
 	debuff_x_offset = {
 		en = "Debuffs X offset scale",
+		["zh-cn"] = "减益水平偏移",
 	},
 	debuff_x_offset_tooltip = {
 		en = "Adjust the left + right position of the debuffs. A lower value moves right, a higher value moves left. Adjust to your liking, or to fit to your widget config.",
+		["zh-cn"] = "调整减益的左右位置，数值小右移，大左移。",
 	},
 	debuff_y_offset = {
 		en = "Debuffs Y offset scale",
+		["zh-cn"] = "减益垂直偏移",
 	},
 	debuff_y_offset_tooltip = {
 		en = "Adjust the up + down position of the debuffs.\n\nOnly applies if debuffs are shown on the body, not stuck to the healthbar.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
+		["zh-cn"] = "调整减益的上下位置，仅在显示在身体上时生效。",
 	},
 	debuff_gap_name_icon_offset = {
 		en = "Adjust the gap between the Name and Icon",
+		["zh-cn"] = "名称与图标间距",
 	},
 	debuff_gap_name_icon_offset_tooltip = {
 		en = "Adjust the size of the gap between the debuff names and debuff icons. A lower value will be tighter together, a higher value will be further away. Adjust to your liking, or to fit to your widget config.",
+		["zh-cn"] = "调整减益名称与图标之间的距离。",
 	},
 	debuff_gap_icon_stack_offset = {
 		en = "Adjust the gap between the Icon and Stacks",
+		["zh-cn"] = "图标与层数间距",
 	},
 	debuff_gap_icon_stack_offset_tooltip = {
 		en = "Adjust the size of the gap between the debuff icon and debuff stacks. A lower value will be tighter together, a higher value will be further away. Adjust to your liking, or to fit to your widget config.",
+		["zh-cn"] = "调整减益图标与层数之间的距离。",
 	},
 	debuff_stacks_show_x = {
 		en = "Show 'X' on stacks?",
+		["zh-cn"] = "层数显示X",
 	},
 	debuff_stacks_show_x_tooltip = {
 		en = "Toggle to show the 'X' on the debuff stacks, meaning the multiplier. If disabled, will just show the number.",
+		["zh-cn"] = "层数前显示X（如X3），关闭则只显示数字。",
 	},
 	debuff_stacks_show_x_space = {
 		en = "Add a space after 'X' on stacks?",
+		["zh-cn"] = "X后添加空格",
 	},
 	debuff_stacks_show_x_space_tooltip = {
 		en = "Toggle to add a space between the 'X' and the stack counter on the debuff stacks, meaning the multiplier. If disabled, there will be no space.",
+		["zh-cn"] = "在X和数字之间添加空格。",
 	},
 	debuff_icon_scale = {
 		en = "Debuff Icon Scale",
+		["zh-cn"] = "减益图标大小",
 	},
 	debuff_icon_scale_tooltip = {
 		en = "Adjust the scale of the debuff icons. A lower value will be smaller, a higher value will be bigger. Adjust to your liking, or to fit to your widget config.",
+		["zh-cn"] = "调整减益图标的缩放大小。",
 	},
 	debuff_stack_on_icon = {
 		en = "Show stacks on icon?",
+		["zh-cn"] = "层数显示在图标上",
 	},
 	debuff_stack_on_icon_tooltip = {
 		en = "Toggle to move the stacks on top of the debuff icon.",
+		["zh-cn"] = "将层数数字显示在减益图标上方。",
 	},
 	debuff_gap_padding_scale = {
 		en = "Row padding scale",
+		["zh-cn"] = "行间距缩放",
 	},
 	debuff_gap_padding_scale_tooltip = {
 		en = "Adjust the padding gap between the rows of debuffs. A lower value will make the rows tighter together, a higher number will make them move apart.",
+		["zh-cn"] = "调整减益行之间的间距，数值越小越紧凑。",
+	},
+	debuff_horizontal = {
+		en = "Toggle Horizontal Debuff Mode?",
+	},
+	debuff_horizontal_tooltip = {
+		en = "Toggles a horizontal mode, instead of the default vertical list. Force hides names, but shows icons and stacks in a horizontal layout instead.",
 	},
 })
 
@@ -1617,15 +1791,19 @@ table.insert(localisations_to_add, {
 table.insert(localisations_to_add, {
 	["SELECT ENEMY"] = {
 		en = "SELECT AN ENEMY",
+		["zh-cn"] = "选择单个敌人",
 	},
 	individual_override_settings = {
 		en = "OVERRIDE SPECIFIC ENEMIES",
+		["zh-cn"] = "单独敌人设置覆盖",
 	},
 	individual_overrides = {
 		en = "Selected Enemy",
+		["zh-cn"] = "选中敌人",
 	},
 	individual_overrides_tooltip = {
 		en = "Selectively override specific enemy settings. These settings override the group settings above.",
+		["zh-cn"] = "为特定敌人单独覆盖设置，优先级高于分组设置。",
 	},
 	reset_individual_to_default = {
 		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
@@ -1633,15 +1811,19 @@ table.insert(localisations_to_add, {
 	},
 	reset_individual_to_default_tooltip = {
 		en = "Reset settings for individual '_individual_' to default.",
+		["zh-cn"] = "重置选中敌人的设置为默认值。",
 	},
 	healthbar_individual_enable = {
 		en = "Enable healthbars override?",
+		["zh-cn"] = "覆盖血条设置",
 	},
 	healthbar_individual_enable_tooltip = {
 		en = "Toggle healthbars overriding for your selected enemy",
+		["zh-cn"] = "为选中敌人覆盖血条显示设置。",
 	},
 	healthbar_individual_colour = {
 		en = "Healthbar colour (Enemy Specific)",
+		["zh-cn"] = "血条颜色（敌人专属）",
 	},
 	healthbar_individual_colour_R = {
 		en = "Healthbar Colour: Red",
@@ -1657,51 +1839,66 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置该敌人专属血条颜色，数值0~255。",
 	},
 	outline_individual_enable = {
 		en = "Enable outline override?",
+		["zh-cn"] = "覆盖轮廓设置",
 	},
 	outline_individual_enable_tooltip = {
 		en = "Toggle outline overriding for your selected enemy. Note: Only enables or changes colours, disabling will not override the group settings.",
+		["zh-cn"] = "为选中敌人覆盖轮廓设置，仅支持开启/改色。",
 	},
 	outline_individual_colour = {
 		en = "Outline colour (Enemy Specific)",
+		["zh-cn"] = "轮廓颜色（敌人专属）",
 	},
 	outline_individual_colour_R = {
 		en = "Outline Colour: Red",
+		["zh-cn"] = "轮廓颜色：红",
 	},
 	outline_individual_colour_G = {
 		en = "Outline Colour: Green",
+		["zh-cn"] = "轮廓颜色：绿",
 	},
 	outline_individual_colour_B = {
 		en = "Outline Colour: Blue",
+		["zh-cn"] = "轮廓颜色：蓝",
 	},
 	outline_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置该敌人专属轮廓颜色，数值0~255。",
 	},
 	markers_individual_toggle = {
 		en = "Overhead markers override?",
+		["zh-cn"] = "覆盖头顶标记",
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
+		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设置。",
 	},
 })
 
 table.insert(localisations_to_add, {
 	throttle_timings = {
 		en = "{#color(" .. colours.title .. ")}WARNING: Throttle Timings{#reset()}",
+		["zh-cn"] = "{#color(" .. colours.title .. ")}警告：性能节流时序{#reset()}",
 	},
 	general_throttle_rate = {
 		en = "General Throttle Rate",
+		["zh-cn"] = "常规更新速率",
 	},
 	general_throttle_rate_tooltip = {
 		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nShouldn't really need to touch this, I recommend between 20-40 for a smooth experience. \n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		["zh-cn"] = "调整屏幕内所有UI的更新速率，单位毫秒。数值越大越省性能，但可能卡顿。推荐20-40。",
 	},
 	off_screen_throttle_rate = {
 		en = "Off Screen Throttle Rate",
+		["zh-cn"] = "屏幕外更新速率",
 	},
 	off_screen_throttle_rate_tooltip = {
 		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		["zh-cn"] = "调整屏幕外敌人UI的更新速率，节省性能。推荐150-200。",
 	},
 })
 

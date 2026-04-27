@@ -35,6 +35,7 @@ local size = {
 }
 local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
 local row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
+local col_step = (calculate_icon_size() + (20 * fs.debuff_gap_padding_scale)) * fs.text_scale
 local base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
 local base_gap = -40 * fs.text_scale
 local name_x = (size[1] - 25) * fs.text_scale + base_gap
@@ -207,6 +208,9 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = name_text_id,
 			value_id = name_text_id,
 			visibility_function = function(content, style)
+				if fs.debuff_horizontal then
+					return false
+				end
 				if not fs.debuff_names then
 					return false
 				end
@@ -285,16 +289,27 @@ template.on_enter = function(widget, marker, template)
 	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 80) * fs.debuff_y_offset
 		or (-hb_size_height - 16) * fs.debuff_y_offset
 	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
+
 	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
+
+	if fs.debuff_horizontal then
+		base_offset = (-hb_size_width * 3 * fs.debuff_x_offset) * fs.text_scale
+	end
+
 	base_gap = -40 * fs.text_scale
-	name_x = (size[1] - 25) * fs.text_scale + base_gap
-	icon_x = ((size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) + (calculate_icon_size())) * fs.text_scale
+	name_x = (size[1] - 15) * fs.text_scale + base_gap
+	icon_x = ((size[1] + (1 * (fs.debuff_gap_name_icon_offset * 15))) + (calculate_icon_size())) * fs.text_scale
 		+ base_gap
-	stack_x = ((size[1] + (120 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale + base_gap
+	stack_x = ((size[1] + (fs.debuff_gap_icon_stack_offset * 20)) + (calculate_icon_size())) * fs.text_scale - base_gap
 
 	if fs.debuff_stack_on_icon then
-		stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale
-			+ base_gap
+		stack_x = ((size[1] + ((fs.debuff_gap_name_icon_offset * 10))) + (calculate_icon_size() * 2)) * fs.text_scale - base_gap
+	end
+
+	if fs.debuff_stack_on_icon then
+		col_step = ((calculate_icon_size() + (30 * fs.debuff_gap_padding_scale))) * fs.text_scale
+	else
+		col_step = ((calculate_icon_size() + (60 * fs.debuff_gap_padding_scale))) * fs.text_scale
 	end
 
 	content.breed_tags = mod.get_breed_tags(unit)
@@ -423,47 +438,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active[i] = nil
 	end
 
-	-- CUSTOM STAGGER DEBUFF
-	local enemyentry = mod.enemy_cache[unit]
-
-	if enemyentry and fs.debuff_stagger_enable then
-		if enemyentry.staggered then
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
-			local now = mod.get_time()
-
-			local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 100) / 100
-			if stagger_time_rounded <= 0 then
-				stagger_time_rounded = 0.00
-			end
-
-			-- set the stack timer to the amount of time the enemy is staggered if available...
-			entry.name = "staggered"
-			entry.stacks = 1
-			entry.duration = stagger_time_rounded
-			entry.max_stacks = 1
-			entry.stat_buffs = {}
-			entry.conditional_stat_buffs = {}
-			entry.type = "utility"
-
-			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
-				enemyentry.staggered = false
-				enemyentry.stagger_type = nil
-				enemyentry.stagger_duration = 0
-				enemyentry.stagger_timer = 0
-			end
-		end
-	end
+	
 
 	for i = 1, #debuffs do
 		local buff = debuffs[i]
@@ -577,6 +552,48 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	-- CUSTOM STAGGER DEBUFF
+	local enemyentry = mod.enemy_cache[unit]
+
+	if enemyentry and fs.debuff_stagger_enable then
+		if enemyentry.staggered then
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			local now = mod.get_time()
+
+			local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 10) / 10
+			if stagger_time_rounded <= 0 then
+				stagger_time_rounded = 0.00
+			end
+
+			-- set the stack timer to the amount of time the enemy is staggered if available...
+			entry.name = "staggered"
+			entry.stacks = 1
+			entry.duration = stagger_time_rounded
+			entry.max_stacks = 1
+			entry.stat_buffs = {}
+			entry.conditional_stat_buffs = {}
+			entry.type = "utility"
+
+			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
+				enemyentry.staggered = false
+				enemyentry.stagger_type = nil
+				enemyentry.stagger_duration = 0
+				enemyentry.stagger_timer = 0
+			end
+		end
+	end
+
 	-- dont draw or do calculations if there are no debuffs applied..
 	if #active < 1 then
 		marker.draw = false
@@ -629,7 +646,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			if existing then
 				existing.stacks = (existing.stacks or 0) + (entry.stacks or 0)
 				existing.max_stacks = (existing.max_stacks or 0) + (entry.max_stacks or 0)
-				existing.duration = (existing.duration or 0) + (entry.duration or 0)
+
+				-- calculate duration
+				local duration = nil
+				if existing.duration or entry.duration then
+					duration = (existing.duration or 0) + (entry.duration or 0)
+				end
+
+				existing.duration = duration
 				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
 				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
 			else
@@ -871,6 +895,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local name_text_style = style[name_text_id]
 
 		local debuff = active[i]
+
 		local row_i = 0
 
 		if debuff then
@@ -894,9 +919,126 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local stat_buffs = debuff.stat_buffs
 			local conditional_stat_buffs = debuff.conditional_stat_buffs
 
-			-- split different debuff types (one goes up, one goes down ;))
-			if split_debuff_types then
-				if debuff.type == "dot" then
+			if fs.debuff_horizontal then
+				-- HORIZONTAL DEBUFFS
+				local name = debuff.name
+				local state = state_table[name]
+
+				local col_i = (row_i - 1)
+				local col_offset_x = col_i * col_step
+
+				local base_y_fixed = state.y
+
+				if split_debuff_types then
+					if debuff.type == "dot" then
+						base_y_fixed = state.y - (calculate_icon_size() * fs.text_scale)
+					elseif debuff.type == "utility" then
+						base_y_fixed = state.y + (calculate_icon_size() * 1.1 * fs.text_scale)
+						if fs.hb_damage_number_type == "readable" then
+							base_y_fixed = base_y_fixed + 16
+						end
+					end
+				end				
+
+				-- ICON
+				local o = icon_style.offset
+				o[1] = icon_x + col_offset_x + base_offset
+				o[2] = base_y_fixed * fs.debuff_y_offset
+
+				local o = icon_style.default_offset
+				o[1] = icon_x + col_offset_x + base_offset
+				o[2] = base_y_fixed * fs.debuff_y_offset
+
+				-- STACK
+				if fs.debuff_stack_on_icon then
+					local o = stack_text_style.offset
+					o[1] = stack_x + col_offset_x + base_offset
+					o[2] = base_y_fixed * fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
+
+					local o = stack_text_style.default_offset
+					o[1] = stack_x + col_offset_x + base_offset
+					o[2] = base_y_fixed	* fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
+				else
+					local o = stack_text_style.offset
+					o[1] = stack_x + col_offset_x + base_offset
+					o[2] = base_y_fixed * fs.debuff_y_offset
+
+					local o = stack_text_style.default_offset
+					o[1] = stack_x + col_offset_x + base_offset
+					o[2] = base_y_fixed * fs.debuff_y_offset
+				end
+
+				-- FORCE NO NAME
+				content[name_text_id] = ""
+			else
+				-- VERTICAL DEBUFFS
+				-- split different debuff types (one goes up, one goes down ;))
+				if split_debuff_types then
+					if debuff.type == "dot" then
+						local row_offset_y = state.y - ((row_i - 1) * row_step)
+
+						local o = icon_style.offset
+						o[1] = icon_x + base_offset
+						o[2] = row_offset_y
+						local o = icon_style.default_offset
+						o[1] = icon_x + base_offset
+						o[2] = row_offset_y
+
+						if fs.debuff_stack_on_icon then
+							local o = stack_text_style.offset
+							o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+							local o = stack_text_style.default_offset
+							o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+						else
+							local o = stack_text_style.offset
+							o[1] = stack_x + base_offset
+							o[2] = row_offset_y
+							local o = stack_text_style.default_offset
+							o[1] = stack_x + base_offset
+							o[2] = row_offset_y
+						end
+
+						local o = name_text_style.offset
+						o[1] = name_x + base_offset
+						o[2] = row_offset_y
+						local o = name_text_style.default_offset
+						o[1] = name_x + base_offset
+						o[2] = row_offset_y
+					elseif debuff.type == "utility" then
+						local row_offset_y = state.y + ((row_i - 1) * row_step)
+
+						if fs.hb_damage_number_type == "readable" then
+							row_offset_y = state.y + 16 + ((row_i - 1) * row_step)
+						end
+
+						local o = icon_style.offset
+						o[1] = icon_x + base_offset
+						o[2] = row_offset_y
+						local o = icon_style.default_offset
+						o[1] = icon_x + base_offset
+						o[2] = row_offset_y
+
+						if fs.debuff_stack_on_icon then
+							local o = stack_text_style.offset
+							o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+							local o = stack_text_style.default_offset
+							o[2] = row_offset_y + (calculate_icon_size() / 1.5)
+						else
+							local o = stack_text_style.offset
+							o[1] = stack_x + base_offset
+							o[2] = row_offset_y
+							local o = stack_text_style.default_offset
+							o[1] = stack_x + base_offset
+							o[2] = row_offset_y
+						end
+						local o = name_text_style.offset
+						o[1] = name_x + base_offset
+						o[2] = row_offset_y
+						local o = name_text_style.default_offset
+						o[1] = name_x + base_offset
+						o[2] = row_offset_y
+					end
+				else
 					local row_offset_y = state.y - ((row_i - 1) * row_step)
 
 					local o = icon_style.offset
@@ -926,74 +1068,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					local o = name_text_style.default_offset
 					o[1] = name_x + base_offset
 					o[2] = row_offset_y
-				elseif debuff.type == "utility" then
-					local row_offset_y = state.y + ((row_i - 1) * row_step)
-
-					if fs.hb_damage_number_type == "readable" then
-						row_offset_y = state.y + 16 + ((row_i - 1) * row_step)
-					end
-
-					local o = icon_style.offset
-					o[1] = icon_x + base_offset
-					o[2] = row_offset_y
-					local o = icon_style.default_offset
-					o[1] = icon_x + base_offset
-					o[2] = row_offset_y
-
-					if fs.debuff_stack_on_icon then
-						local o = stack_text_style.offset
-						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
-						local o = stack_text_style.default_offset
-						o[2] = row_offset_y + (calculate_icon_size() / 1.5)
-					else
-						local o = stack_text_style.offset
-						o[1] = stack_x + base_offset
-						o[2] = row_offset_y
-						local o = stack_text_style.default_offset
-						o[1] = stack_x + base_offset
-						o[2] = row_offset_y
-					end
-					local o = name_text_style.offset
-					o[1] = name_x + base_offset
-					o[2] = row_offset_y
-					local o = name_text_style.default_offset
-					o[1] = name_x + base_offset
-					o[2] = row_offset_y
 				end
-			else
-				local row_offset_y = state.y - ((row_i - 1) * row_step)
-
-				local o = icon_style.offset
-				o[1] = icon_x + base_offset
-				o[2] = row_offset_y
-				local o = icon_style.default_offset
-				o[1] = icon_x + base_offset
-				o[2] = row_offset_y
-
-				if fs.debuff_stack_on_icon then
-					local o = stack_text_style.offset
-					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
-					local o = stack_text_style.default_offset
-					o[2] = row_offset_y + (calculate_icon_size() / 1.5)
-				else
-					local o = stack_text_style.offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
-					local o = stack_text_style.default_offset
-					o[1] = stack_x + base_offset
-					o[2] = row_offset_y
-				end
-
-				local o = name_text_style.offset
-				o[1] = name_x + base_offset
-				o[2] = row_offset_y
-				local o = name_text_style.default_offset
-				o[1] = name_x + base_offset
-				o[2] = row_offset_y
 			end
 
 			local at_max_stacks = false
-			if max_stacks and stacks >= max_stacks then
+
+			if not duration and max_stacks and stacks >= max_stacks then
 				stacks = max_stacks
 				at_max_stacks = true
 			end

@@ -444,6 +444,9 @@ template.on_enter = function(widget, marker, template)
 	style.current_toughness.color[2] = fs.toughness_colour[2]
 	style.current_toughness.color[3] = fs.toughness_colour[3]
 	style.current_toughness.color[4] = fs.toughness_colour[4]
+	style.current_toughness_electric.color[2] = fs.toughness_colour[2]
+	style.current_toughness_electric.color[3] = fs.toughness_colour[3]
+	style.current_toughness_electric.color[4] = fs.toughness_colour[4]
 
 	local bar_color = mod.BREED_COLOURS[breed_type] or mod.BREED_COLOURS.horde
 
@@ -1109,20 +1112,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		local health_max_style = style.health_max
 		--health_max_style.default_size[1] = bar_width * scale
-		health_max_style.size[1] = bar_width * scale
-
-		health_max_style.size[2] = bar_height * scale
+		--health_max_style.size[1] = bar_width * scale
+		--health_max_style.size[2] = bar_height * scale
 
 		local current_health_style = style.current_health
 		local ghost_bar_style = style.ghost_bar
 
-		local scaled_bar_width = health_max_style.size[1]
+		local scaled_bar_width = bar_width * scale
 		content.scaled_bar_width = scaled_bar_width
+		content.scaled_bar_height = bar_height * scale
 
 		local scaled_health_width = scaled_bar_width * health_fraction
 
 		local frame_style = style.frame
-		frame_style.size[1] = (bar_width + 12) * scale
+		--frame_style.size[1] = (bar_width + 12) * scale
 
 		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
 		local scaled_ghost_width = scaled_bar_width * ghost_fraction

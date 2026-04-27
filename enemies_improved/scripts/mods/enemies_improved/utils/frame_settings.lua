@@ -123,11 +123,14 @@ mod.build_frame_settings = function(dt)
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
 	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
+	fs.hb_toggle_base_boss_healthbar = mod:get("hb_toggle_base_boss_healthbar")
+	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
 
 	-- TOUGHNESS
 	fs.toughness_enabled = mod:get("toughness_enabled")
 	fs.toughness_text_enabled = mod:get("toughness_text_enabled")
 	fs.toughness_text_colour_enabled = mod:get("toughness_text_colour_enabled")
+	fs.toughness_electric = mod:get("toughness_electric")
 
 	local r = mod:get("toughness_colour_R")
 	local g = mod:get("toughness_colour_G")
@@ -200,6 +203,7 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_stacks_show_x_space = mod:get("debuff_stacks_show_x_space")
 	fs.debuff_icon_scale = mod:get("debuff_icon_scale")
 	fs.debuff_stack_on_icon = mod:get("debuff_stack_on_icon")
+	fs.debuff_horizontal = mod:get("debuff_horizontal")
 
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")
