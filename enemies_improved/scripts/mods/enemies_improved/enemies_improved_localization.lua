@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.05"
+mod.version = "1.5.06"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -758,6 +758,12 @@ table.insert(localisations_to_add, {
 	secondary_font_colour_tooltip = {
 		en = "Pick a colour to apply as the 'secondary' font colour throughout enemies improved elements.",
 		["zh-cn"] = "选择用于敌人增强模组所有元素的次要字体颜色。",
+	},
+	only_in_meatgrinder = {
+		en = "Only show in Meat Grinder?",
+	},
+	only_in_meatgrinder_tooltip = {
+		en = "Toggle to show Enemies Improved widgets in the meat grinder ONLY. This means that in live matches, or anywhere outside the meat grinder - you will not see any enemies improved changes.",
 	},
 })
 

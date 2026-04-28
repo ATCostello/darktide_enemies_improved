@@ -61,7 +61,7 @@ mod.build_frame_settings = function(dt)
 	}
 
 	fs.global_opacity = mod:get("global_opacity") or 1
-
+	fs.only_in_meatgrinder = mod:get("only_in_meatgrinder")
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
 	fs.markers_horde_enable = mod:get("markers_horde_enable")

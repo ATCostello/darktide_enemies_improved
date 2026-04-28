@@ -328,7 +328,7 @@ template.on_enter = function(widget, marker, template)
 
 	-- set frame background
 	content.frame = fs.frame_type
-
+	
 	local current_level = Managers.state.mission and Managers.state.mission:mission()
 
 	if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then

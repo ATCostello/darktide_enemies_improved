@@ -383,6 +383,10 @@ local hb_frames = {
 		text = "contracts_progress_overall_fill",
 		value = "content/ui/materials/bars/contracts_progress_overall_fill",
 	},
+	{
+		text = "nothing",
+		value = "",
+	},
 }
 
 local damage_number_types = {
@@ -482,6 +486,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "spatial_culling_tooltip",
+		},
+		{
+			setting_id = "only_in_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "only_in_meatgrinder_tooltip",
 		},
 		--[[{
 			setting_id = "check_line_of_sight",
@@ -785,6 +795,7 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "markers_enable_tooltip",
 		},
+
 		{
 			setting_id = "markers_horde_enable",
 			type = "checkbox",
@@ -887,6 +898,7 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "healthbar_enable_tooltip",
 		},
+
 		{
 			setting_id = "healthbar_type_icon_enable",
 			type = "checkbox",

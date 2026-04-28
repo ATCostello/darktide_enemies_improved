@@ -52,7 +52,7 @@ local _create_definition = function(template, scenegraph_id)
 				--style.size[2] = scaled_bar_height + 6 + 1 * fs.hb_padding_scale
 			end,
 			visibility_function = function(content)
-				if content.hb_built then
+				if content.hb_built and fs.frame_type ~= "" then
 					return true
 				else
 					return false

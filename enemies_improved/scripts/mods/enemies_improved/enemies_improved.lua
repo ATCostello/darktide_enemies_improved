@@ -222,6 +222,10 @@ end)
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
+	if fs.only_in_meatgrinder and self._level and self._level.game_mode_name ~= "shooting_range" then
+		return
+	end
+
 	-- throttle updates according to enemy amounts to help keep performance in check...
 	local enemy_count = 0
 	for _ in next, mod.enemy_cache do
