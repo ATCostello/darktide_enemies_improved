@@ -460,6 +460,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			style.marker_health.color[2] = bar_color[2]
 			style.marker_health.color[3] = bar_color[3]
 			style.marker_health.color[4] = bar_color[4]
+		else
+			style.background.color[2] = bar_color[2]
+			style.background.color[3] = bar_color[3]
+			style.background.color[4] = bar_color[4]
 		end
 	end
 

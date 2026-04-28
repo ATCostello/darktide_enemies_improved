@@ -64,7 +64,7 @@ mod.active_markers = mod.active_markers or {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 
-local MAX_ENEMIES_PER_FRAME = 300
+local MAX_ENEMIES_PER_FRAME = 100
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 local _horde_units_all = {}
@@ -154,9 +154,8 @@ mod.on_game_state_changed = function(state, state_name)
 	mod.clear_caches()
 	table_clear(mod.marked_dead)
 
-	-- mark animation database as dirty
 	if mod.DEBUG and mod.anim_db_dirty then
-		mod.save_anim_db()
+		--mod.save_anim_db()
 	end
 end
 
@@ -580,13 +579,6 @@ mod.scan_enemies = function()
 					entry.seen = true
 					mod.marked_dead[unit] = nil
 				end
-
-				-- DEBUG
-				if mod.DEBUG then
-					-- debug to add outlines to enemies that have been processed, and should have a healthbar...
-					local extension_manager = Managers.state.extension
-					--mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
-				end
 			end
 			::skip_breed::
 		end
@@ -649,9 +641,9 @@ mod.scan_enemies = function()
 
 					-- DEBUG
 					if mod.DEBUG then
-						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
 						local extension_manager = Managers.state.extension
-						--mod.add_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+						local outline_system = extension_manager:system("outline_system")
+						outline_system:add_outline(unit, "enemies_improved_staggered")
 					end
 				else
 					-- culled
@@ -666,7 +658,8 @@ mod.scan_enemies = function()
 					if mod.DEBUG then
 						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
 						local extension_manager = Managers.state.extension
-						--mod.remove_outline(unit, "enemies_improved_alert", extension_manager:system("outline_system"))
+						local outline_system = extension_manager:system("outline_system")
+						outline_system:remove_outline(unit, "enemies_improved_staggered")
 					end
 				end
 			end
@@ -683,7 +676,7 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 15
+local HORDE_MIN_UNITS_FOR_CLUSTER = 8
 
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)

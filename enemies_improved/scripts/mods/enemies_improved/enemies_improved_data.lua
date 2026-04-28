@@ -682,7 +682,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_specials_colour_G",
 					type = "numeric",
-					default_value = 0,
+					default_value = 100,
 					range = {
 						0,
 						255,
@@ -762,7 +762,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_G",
 					type = "numeric",
-					default_value = 110,
+					default_value = 200,
 					range = {
 						0,
 						255,
@@ -772,7 +772,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_B",
 					type = "numeric",
-					default_value = 150,
+					default_value = 200,
 					range = {
 						0,
 						255,
@@ -902,7 +902,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "healthbar_type_icon_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
 		{
@@ -932,7 +932,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "healthbar_segments_enable",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "healthbar_segments_enable_tooltip",
 		},
 		{
@@ -950,13 +950,13 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_hide_after_no_damage",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "hb_hide_after_no_damage_tooltip",
 		},
 		{
 			setting_id = "hb_horde_hide_after_no_damage",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "hb_horde_hide_after_no_damage_tooltip",
 		},
 		{
@@ -1029,7 +1029,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_frame",
 			type = "dropdown",
 			options = hb_frames,
-			default_value = "content/ui/materials/frames/masteries/panel_main_lower_frame",
+			default_value = "content/ui/materials/bars/simple/frame",
 			tooltip = "hb_frame_tooltip",
 		},
 		{
@@ -1069,7 +1069,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_height",
 			type = "numeric",
-			default_value = 7,
+			default_value = 8,
 			range = {
 				4,
 				25,
@@ -1105,7 +1105,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "toughness_text_colour_enabled",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "toughness_text_colour_enabled_tooltip",
 		},
 		{
@@ -1208,7 +1208,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "floating",
+			default_value = "readable",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{
@@ -1293,7 +1293,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_horizontal",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "debuff_horizontal_tooltip",
 		},
 		{

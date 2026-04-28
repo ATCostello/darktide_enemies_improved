@@ -571,7 +571,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 				mod.anim_db_dirty = true
 
 				if mod.DEBUG then
-					mod:echo(string.format("[DISCOVERED][%s] %s -> %d", breed_name, event_name, id))
+					--mod:echo(string.format("[DISCOVERED][%s] %s -> %d", breed_name, event_name, id))
 				end
 			end
 		end
@@ -629,7 +629,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 			mod.anim_db_dirty = true
 
 			if mod.DEBUG then
-				mod:echo(string.format("[STAGGER MAP][%s] %s -> %d", tostring(stagger_type), anim_name, id))
+				--mod:echo(string.format("[STAGGER MAP][%s] %s -> %d", tostring(stagger_type), anim_name, id))
 			end
 		end
 	end
@@ -707,7 +707,7 @@ local function handle_animation_event(unit, event_index)
 
 	if mod.DEBUG then
 		if db.id_to_name[event_index] then
-			mod:echo(breed_name .. " : " .. db.id_to_name[event_index])
+			--mod:echo(breed_name .. " : " .. db.id_to_name[event_index])
 		end
 	end
 	-------------------------------------------------
@@ -723,7 +723,7 @@ local function handle_animation_event(unit, event_index)
 		entry.special_attack_timer = now + attack_data.duration
 
 		if mod.DEBUG then
-			mod:echo(string.format("[SPECIAL][%s] %s", breed_name, entry.special_attack_event))
+			--mod:echo(string.format("[SPECIAL][%s] %s", breed_name, entry.special_attack_event))
 		end
 	end
 
@@ -741,14 +741,14 @@ local function handle_animation_event(unit, event_index)
 		mod.get_stagger_calculation_results()
 
 		if mod.DEBUG then
-			mod:echo(
-				string.format(
-					"[STAGGER][%s] type=%s duration=%.2f",
-					breed_name,
-					tostring(stagger.type),
-					stagger.duration
-				)
-			)
+			--mod:echo(
+			--	string.format(
+			--		"[STAGGER][%s] type=%s duration=%.2f",
+			--		breed_name,
+			--		tostring(stagger.type),
+			--		stagger.duration
+			--	)
+			--)
 		end
 	end
 end
