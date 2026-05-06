@@ -5,12 +5,10 @@ mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_l
 local Managers = Managers
 mod.enemy_debuffs = mod.enemy_debuffs or {}
 mod.marked_dead = mod.marked_dead or {}
-mod.active_markers = mod.active_markers or {}
 
 local function _on_debuff_created(debuff_id, entry, unit)
 	entry.dot_debuffs = mod.get_marker_by_id(debuff_id)
 	mod.enemy_debuffs[unit] = debuff_id
-	mod.active_markers[debuff_id] = true
 	entry._debuff_pending = nil
 end
 

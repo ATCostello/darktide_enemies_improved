@@ -98,10 +98,12 @@ mod.apply_marker_fade = function(self)
 	for i = #marker_list, 1, -1 do
 		marker_list[i] = nil
 	end
+	if mod.DEBUG then
+		mod.markers_by_id = markers_by_id
+	end
 
 	-- BUILD MARKER LIST
-	for marker_id in next, mod.active_markers do
-		local marker = markers_by_id[marker_id]
+	for marker_id, marker in next, markers_by_id do
 		if marker and marker.unit and mod.detect_alive(marker.unit) then
 			local t = marker.type
 			if t == "enemy_healthbar" or t == "enemy_markers" or t == "enemy_debuff" or t == "enemy_utility_debuff" then

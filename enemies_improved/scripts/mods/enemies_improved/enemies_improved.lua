@@ -8,6 +8,8 @@ local Managers_time = Managers.time
 local ScriptUnit_extension = ScriptUnit.extension
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local table_clear = table.clear
+local table_remove = table.remove
+local table_index_of = table.index_of
 local math_lerp = math.lerp
 local math_min = math.min
 local math_max = math.max
@@ -59,10 +61,9 @@ mod.enemy_markers = {}
 mod.enemy_healthbars = {}
 mod.enemy_debuffs = {}
 
-mod.active_markers = mod.active_markers or {}
-
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
+mod.enabled = true
 
 local MAX_ENEMIES_PER_FRAME = 100
 local _enemy_units_temp = {}
@@ -221,84 +222,101 @@ end)
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
-	if fs.only_in_meatgrinder and self._level and self._level.game_mode_name ~= "shooting_range" then
-		return
-	end
+	if fs.only_in_meatgrinder then
+		local current_level = Managers.state.mission and Managers.state.mission:mission()
 
-	-- throttle updates according to enemy amounts to help keep performance in check...
-	local enemy_count = 0
-	for _ in next, mod.enemy_cache do
-		enemy_count = enemy_count + 1
-	end
-
-	local update_interval
-
-	update_interval = fs.general_throttle_rate
-
-	self._update_time = (self._update_time or 0) + dt
-
-	if self._update_time > update_interval then
-		self._update_time = 0
-		mod.update_enemies(dt, t)
-	end
-
-	-- pulse special attacks (Outside of global throttle)
-	if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
-		local interval = fs.special_attack_pulse_speed or 0.2
-
-		for _, entry in next, mod.enemy_cache do
-			if entry.special_attack_imminent then
-				entry._pulse_timer = (entry._pulse_timer or 0) + dt
-
-				if entry._pulse_timer >= interval then
-					mod.pulse_enemy_outline(entry)
-					entry._pulse_timer = 0
-				end
-			else
-				mod.remove_alert_outline(entry)
-			end
+		if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
+			mod.enabled = true
+		else
+			mod.enabled = false
 		end
+	else
+		mod.enabled = true
 	end
 
-	-- STAGGER OUTLINES
-	if fs.outline_stagger_horde_enable or fs.outline_stagger_enable then
-		local interval = fs.stagger_pulse_speed or 0.2
+	if mod.enabled then
+		-- throttle updates according to enemy amounts to help keep performance in check...
+		local enemy_count = 0
+		for _ in next, mod.enemy_cache do
+			enemy_count = enemy_count + 1
+		end
 
-		for _, entry in next, mod.enemy_cache do
-			if
-				(entry.is_horde and fs.outline_stagger_horde_enable)
-				or (not entry.is_horde and fs.outline_stagger_enable)
-			then
-				entry._pulse_timer = (entry._pulse_timer or 0) + dt
+		local update_interval
 
-				if entry.staggered then
+		update_interval = fs.general_throttle_rate
+
+		self._update_time = (self._update_time or 0) + dt
+		self._total_update_time = (self._total_update_time or 0) + dt
+
+		if self._update_time > update_interval then
+			self._update_time = 0
+			mod.update_enemies(dt, t)
+		end
+
+		-- force refresh cache every 2 minutes (ish) to help mid-mission memory build up...
+		if self._total_update_time > 120 then
+			self._total_update_time = 0
+			mod.clear_caches()
+		end
+
+		-- pulse special attacks (Outside of global throttle)
+		if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
+			local interval = fs.special_attack_pulse_speed or 0.2
+
+			for _, entry in next, mod.enemy_cache do
+				if entry.special_attack_imminent then
+					entry._pulse_timer = (entry._pulse_timer or 0) + dt
+
 					if entry._pulse_timer >= interval then
 						mod.pulse_enemy_outline(entry)
 						entry._pulse_timer = 0
 					end
 				else
-					mod.remove_stagger_outline(entry)
+					mod.remove_alert_outline(entry)
 				end
 			end
 		end
-	end
 
-	-- Hide default health bars if custom healthbars are enabled!
-	if fs.healthbar_enable then
-		local markers = self._markers
-		if not markers or #markers == 0 then
-			return
+		-- STAGGER OUTLINES
+		if fs.outline_stagger_horde_enable or fs.outline_stagger_enable then
+			local interval = fs.stagger_pulse_speed or 0.2
+
+			for _, entry in next, mod.enemy_cache do
+				if
+					(entry.is_horde and fs.outline_stagger_horde_enable)
+					or (not entry.is_horde and fs.outline_stagger_enable)
+				then
+					entry._pulse_timer = (entry._pulse_timer or 0) + dt
+
+					if entry.staggered then
+						if entry._pulse_timer >= interval then
+							mod.pulse_enemy_outline(entry)
+							entry._pulse_timer = 0
+						end
+					else
+						mod.remove_stagger_outline(entry)
+					end
+				end
+			end
 		end
 
-		for i = 1, #markers do
-			local marker = markers[i]
-			local template = marker and marker.template
+		-- Hide default health bars if custom healthbars are enabled!
+		if fs.healthbar_enable then
+			local markers = self._markers
+			if not markers or #markers == 0 then
+				return
+			end
 
-			if template then
-				local name = template.name
-				if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
-					marker.draw = false
-					marker.alpha_multiplier = 0
+			for i = 1, #markers do
+				local marker = markers[i]
+				local template = marker and marker.template
+
+				if template then
+					local name = template.name
+					if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
+						marker.draw = false
+						marker.alpha_multiplier = 0
+					end
 				end
 			end
 		end
@@ -331,7 +349,6 @@ mod.force_remove_unit_markers = function(unit)
 	local function remove(id)
 		if id then
 			Managers.event:trigger("remove_world_marker", id)
-			mod.active_markers[id] = nil
 		end
 	end
 
@@ -339,9 +356,9 @@ mod.force_remove_unit_markers = function(unit)
 	remove(mod.enemy_healthbars[unit])
 	remove(mod.enemy_debuffs[unit])
 
-	mod.enemy_markers[unit] = nil
-	mod.enemy_healthbars[unit] = nil
-	mod.enemy_debuffs[unit] = nil
+	table_remove(mod.enemy_markers, table_index_of(mod.enemy_markers, unit))
+	table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
+	table_remove(mod.enemy_debuffs, table_index_of(mod.enemy_debuffs, unit))
 
 	-- reset cluster state if this unit was a rep
 	local cluster = mod.get_horde_cluster_for_unit(unit)
@@ -445,8 +462,8 @@ mod.scan_enemies = function()
 			if forward_bonus <= 0 then
 				mod.force_remove_unit_markers(unit)
 
-				cache[unit] = nil
-				mod.marked_dead[unit] = nil
+				table_remove(cache, table_index_of(cache, unit))
+				table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
 
 				goto skip_breed
 			end
@@ -459,8 +476,8 @@ mod.scan_enemies = function()
 				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
 					mod.force_remove_unit_markers(unit)
 
-					cache[unit] = nil
-					mod.marked_dead[unit] = nil
+					table_remove(cache, table_index_of(cache, unit))
+					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
 
 					goto skip_breed
 				end
@@ -574,10 +591,10 @@ mod.scan_enemies = function()
 						_last_healthbar_update = 0,
 					}
 
-					mod.marked_dead[unit] = nil
+					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
 				else
 					entry.seen = true
-					mod.marked_dead[unit] = nil
+					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
 				end
 			end
 			::skip_breed::
@@ -1020,21 +1037,19 @@ mod.remove_dead = function()
 		local id
 
 		id = mod.enemy_markers[unit]
+
 		if id then
 			Managers.event:trigger("remove_world_marker", id)
-			mod.active_markers[id] = nil
 		end
 
 		id = mod.enemy_healthbars[unit]
 		if id and not fs.hb_show_dps then
 			Managers.event:trigger("remove_world_marker", id)
-			mod.active_markers[id] = nil
 		end
 
 		id = mod.enemy_debuffs[unit]
 		if id then
 			Managers.event:trigger("remove_world_marker", id)
-			mod.active_markers[id] = nil
 		end
 
 		units_to_remove[#units_to_remove + 1] = unit
@@ -1100,11 +1115,11 @@ mod.remove_dead = function()
 		end
 
 		if not fs.hb_show_dps then
-			mod.enemy_healthbars[unit] = nil
+			table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
 		end
-		mod.enemy_debuffs[unit] = nil
-		mod.enemy_markers[unit] = nil
-		mod.enemy_cache[unit] = nil
+		table_remove(mod.enemy_debuffs, table_index_of(mod.enemy_debuffs, unit))
+		table_remove(mod.enemy_markers, table_index_of(mod.enemy_markers, unit))
+		table_remove(mod.enemy_cache, table_index_of(mod.enemy_cache, unit))
 	end
 end
 
@@ -1130,7 +1145,6 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
-	table_clear(mod.active_markers)
 
 	table_clear(mod.enemy_cache)
 	--table_clear(mod.marked_dead)

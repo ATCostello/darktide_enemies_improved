@@ -1,16 +1,17 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
+local table_remove = table.remove
+local table_index_of = table.index_of
+
 -- Cache
 local Managers = Managers
 mod.enemy_healthbars = mod.enemy_healthbars or {}
 mod.marked_dead = mod.marked_dead or {}
-mod.active_markers = mod.active_markers or {}
 
 local function _on_healthbar_created(marker_id, entry, unit)
 	entry.healthbar = mod.get_marker_by_id(marker_id)
 	mod.enemy_healthbars[unit] = marker_id
-	mod.active_markers[marker_id] = true
 	entry._healthbar_created = true
 	entry._healthbar_pending = nil
 end
@@ -51,8 +52,7 @@ mod.update_enemy_healthbars = function(entry, t)
 
 				if marker_id then
 					Managers.event:trigger("remove_world_marker", marker_id)
-					mod.active_markers[marker_id] = nil
-					mod.enemy_healthbars[unit] = nil
+					table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
 				end
 
 				entry._healthbar_created = false

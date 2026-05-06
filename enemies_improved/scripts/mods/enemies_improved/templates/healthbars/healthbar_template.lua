@@ -77,6 +77,7 @@ local math_floor = math.floor
 
 local string_format = string.format
 local table_remove = table.remove
+local table_index_of = table.index_of
 local table_clone = table.clone
 local next = next
 
@@ -983,7 +984,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- remove oldest entries if we exceed the limit
 				while #mod.latest_damaged_enemies > fs.hb_damage_show_only_latest_value do
-					table.remove(mod.latest_damaged_enemies, 1)
+					table_remove(mod.latest_damaged_enemies, 1)
 				end
 			end
 
@@ -1034,7 +1035,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 					-- Prevent runaway memory usage
 					if #damage_numbers > 20 then
-						table.remove(damage_numbers, 1)
+						table_remove(damage_numbers, 1)
 					end
 
 					if content.add_on_next_number then
@@ -1306,8 +1307,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			marker.draw = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
-			mod.active_markers[marker.id] = nil
-			mod.enemy_healthbars[unit] = nil
+			table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
 			marker.remove = true
 			--Managers.event:trigger("remove_world_marker", marker.id)
 		end

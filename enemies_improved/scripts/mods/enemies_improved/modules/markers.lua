@@ -5,12 +5,10 @@ mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_l
 local Managers = Managers
 mod.enemy_markers = mod.enemy_markers or {}
 mod.marked_dead = mod.marked_dead or {}
-mod.active_markers = mod.active_markers or {}
 
 local function _on_marker_created(marker_id, entry, unit)
 	entry.marker = mod.get_marker_by_id(marker_id)
 	mod.enemy_markers[unit] = marker_id
-	mod.active_markers[marker_id] = true
 	entry._marker_created = true
 	entry._marker_pending = nil
 end
