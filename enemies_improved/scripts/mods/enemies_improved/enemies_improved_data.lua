@@ -245,16 +245,16 @@ table.sort(mod.debuff_groups_list, function(a, b)
 end)
 
 mod.BREED_COLOURS = {
-	horde = { 255, 150, 60, 60 },
-	elite = { 255, 0, 120, 255 },
-	captain = { 255, 255, 140, 0 },
-	disabler = { 255, 255, 255, 0 },
-	witch = { 255, 255, 0, 180 },
-	monster = { 255, 180, 0, 255 },
-	sniper = { 255, 255, 0, 0 },
-	far = { 255, 0, 255, 120 },
-	special = { 255, 255, 0, 255 },
-	enemy = { 255, 200, 200, 200 },
+	horde = { 255, 255, 40, 40 },
+	elite = { 255, 255, 40, 40 },
+	captain = { 255, 255, 40, 40 },
+	disabler = { 255, 255, 40, 40 },
+	witch = { 255, 255, 40, 40 },
+	monster = { 255, 255, 40, 40 },
+	sniper = { 255, 255, 40, 40 },
+	far = { 255, 255, 40, 40 },
+	special = { 255, 255, 40, 40 },
+	enemy = { 255, 255, 40, 40 },
 }
 
 mod.ICON_COLOURS = {
@@ -529,7 +529,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "text_scale",
 			type = "numeric",
-			default_value = 1,
+			default_value = 0.9,
 			decimals_number = 2,
 			step_size_value = 0.1,
 			range = {
@@ -719,7 +719,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "outline_stagger_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "outline_stagger_enable_tooltip",
 		},
 		{
@@ -731,7 +731,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "stagger_flash",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "stagger_flash_tooltip",
 		},
 		{
@@ -763,7 +763,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_G",
 					type = "numeric",
-					default_value = 200,
+					default_value = 100,
 					range = {
 						0,
 						255,
@@ -773,7 +773,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_B",
 					type = "numeric",
-					default_value = 200,
+					default_value = 150,
 					range = {
 						0,
 						255,
@@ -904,13 +904,13 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "healthbar_type_icon_enable",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "healthbar_type_icon_enable_tooltip",
 		},
 		{
 			setting_id = "healthbar_type_icon_scale",
 			type = "numeric",
-			default_value = 1.3,
+			default_value = 1.05,
 			range = {
 				1,
 				3,
@@ -934,7 +934,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "healthbar_segments_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "healthbar_segments_enable_tooltip",
 		},
 		{
@@ -1049,7 +1049,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_y_offset",
 			type = "numeric",
-			default_value = 0,
+			default_value = 0.4,
 			range = {
 				-1,
 				2,
@@ -1061,7 +1061,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_width",
 			type = "numeric",
-			default_value = 180,
+			default_value = 140,
 			range = {
 				100,
 				400,
@@ -1071,7 +1071,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_size_height",
 			type = "numeric",
-			default_value = 8,
+			default_value = 6,
 			range = {
 				4,
 				25,
@@ -1210,13 +1210,13 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "readable",
+			default_value = "floating",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{
 			setting_id = "damage_number_scale",
 			type = "numeric",
-			default_value = 1.2,
+			default_value = 1,
 			decimals_number = 2,
 			step_size_value = 0.25,
 			range = {
@@ -1228,7 +1228,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "damage_number_y_offset",
 			type = "numeric",
-			default_value = 1.2,
+			default_value = 2,
 			decimals_number = 2,
 			step_size_value = 0.25,
 			range = {
@@ -1416,7 +1416,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_x_offset",
 			type = "numeric",
-			default_value = 0.45,
+			default_value = 0.56,
 			range = {
 				0.1,
 				2,
@@ -1428,7 +1428,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_y_offset",
 			type = "numeric",
-			default_value = 1,
+			default_value = 0.8,
 			range = {
 				0.1,
 				2,

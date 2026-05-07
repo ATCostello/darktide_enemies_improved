@@ -274,7 +274,7 @@ local function _floating_damage_number_function(
 		end
 
 		position[3] = z_position + current_order * 2
-		position[2] = y_position - 35 * time
+		position[2] = y_position - 15 * time
 		position[1] = x_position + current_order * damage_number_settings.x_offset_between_numbers
 
 		UIRenderer.draw_text(ui_renderer, text, font_size, font_type, position, size, text_color, {})
@@ -402,9 +402,9 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 
 		local damage_number_settings = template.damage_number_settings
 		local scale = ui_content.scale
-		local default_font_size = damage_number_settings.default_font_size * fs.damage_number_scale
-		local dps_font_size = damage_number_settings.dps_font_size * fs.damage_number_scale
-		local hundreds_font_size = damage_number_settings.hundreds_font_size * fs.damage_number_scale
+		local default_font_size = damage_number_settings.default_font_size * fs.damage_number_scale * scale
+		local dps_font_size = damage_number_settings.dps_font_size * fs.damage_number_scale * scale
+		local hundreds_font_size = damage_number_settings.hundreds_font_size * fs.damage_number_scale * scale
 		local font_type = mod.font_type
 
 		_init_damage_colors()
@@ -464,6 +464,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 			end
 		end
 
+		mod.num_damage_numbers = num_damage_numbers
 		if fs.show_damage_numbers and num_damage_numbers > 0 then
 			if fs.hb_damage_number_type == damage_number_types.floating then
 				_floating_damage_number_function(
@@ -583,6 +584,8 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				)
 			end
 		end
+
+		mod.num_damage_numbers = num_damage_numbers
 
 		if fs.show_damage_numbers and num_damage_numbers > 0 then
 			if fs.hb_damage_number_type == damage_number_types.readable then

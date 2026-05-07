@@ -934,8 +934,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						base_y_fixed = state.y - (calculate_icon_size() * fs.text_scale)
 					elseif debuff.type == "utility" then
 						base_y_fixed = state.y + (calculate_icon_size() * 1.1 * fs.text_scale)
-						if fs.hb_damage_number_type == "readable" then
-							base_y_fixed = base_y_fixed + 16
+						if fs.hb_damage_number_type == "readable" and mod.num_damage_numbers and mod.num_damage_numbers > 0 then
+							base_y_fixed = base_y_fixed + 16 * fs.debuff_y_offset
 						end
 					end
 				end				
@@ -1007,8 +1007,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					elseif debuff.type == "utility" then
 						local row_offset_y = state.y + ((row_i - 1) * row_step)
 
-						if fs.hb_damage_number_type == "readable" then
-							row_offset_y = state.y + 16 + ((row_i - 1) * row_step)
+						if fs.hb_damage_number_type == "readable" and mod.num_damage_numbers and mod.num_damage_numbers > 0 then
+							row_offset_y = state.y + 16 * fs.debuff_y_offset + ((row_i - 1) * row_step)
 						end
 
 						local o = icon_style.offset

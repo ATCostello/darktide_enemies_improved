@@ -395,16 +395,16 @@ template.on_enter = function(widget, marker, template)
 		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
 		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
 
-		style_icon.offset[1] = style_icon.default_offset[1] - (10 * icon_full_scale) * marker.scale
-		style_icon.default_offset[1] = style_icon.default_offset[1] - (10 * icon_full_scale) * marker.scale
+		style_icon.offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * marker.scale
+		style_icon.default_offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * marker.scale
 		style.icon_background1.offset[1] = style.icon_background1.default_offset[1]
-			- (10 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * marker.scale
 		style.icon_background1.default_offset[1] = style.icon_background1.default_offset[1]
-			- (10 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * marker.scale
 		style.icon_background.offset[1] = style.icon_background.default_offset[1]
-			- (10 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * marker.scale
 		style.icon_background.default_offset[1] = style.icon_background.default_offset[1]
-			- (10 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * marker.scale
 
 		return content_icon, style_icon
 	end
