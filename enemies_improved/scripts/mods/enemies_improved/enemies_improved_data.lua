@@ -1,5 +1,6 @@
 local mod = get_mod("enemies_improved")
 local next = next
+local fs = mod.frame_settings
 
 mod.debuff_styles = {
 	generic = {
@@ -244,17 +245,15 @@ table.sort(mod.debuff_groups_list, function(a, b)
 	return a.sort < b.sort
 end)
 
-mod.BREED_COLOURS = {
-	horde = { 255, 255, 40, 40 },
-	elite = { 255, 255, 40, 40 },
-	captain = { 255, 255, 40, 40 },
-	disabler = { 255, 255, 40, 40 },
-	witch = { 255, 255, 40, 40 },
-	monster = { 255, 255, 40, 40 },
-	sniper = { 255, 255, 40, 40 },
-	far = { 255, 255, 40, 40 },
-	special = { 255, 255, 40, 40 },
-	enemy = { 255, 255, 40, 40 },
+local healthbar_colour_presets = {
+	{
+		text = "red",
+		value = "red",
+	},
+	{
+		text = "colourful",
+		value = "colourful",
+	},
 }
 
 mod.ICON_COLOURS = {
@@ -358,7 +357,6 @@ mod.OUTLINE_COLOURS = {
 	enemy = { 255, 50, 10, 0 },
 }
 
-mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
 mod.ICON_SETTINGS_DEFAULT = table.clone(mod.ICON_SETTINGS)
 mod.OUTLINE_COLOURS_DEFAULT = table.clone(mod.OUTLINE_COLOURS)
@@ -789,7 +787,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "markers_settings",
 	type = "group",
-	tab = "markers",
+	tab = "Markers",
 	sub_widgets = {
 		{
 			setting_id = "markers_enable",
@@ -900,7 +898,13 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "healthbar_enable_tooltip",
 		},
-
+		{
+			setting_id = "healthbar_colour_preset",
+			type = "dropdown",
+			options = healthbar_colour_presets,
+			default_value = "colourful",
+			tooltip = "healthbar_colour_preset_tooltip",
+		},
 		{
 			setting_id = "healthbar_type_icon_enable",
 			type = "checkbox",

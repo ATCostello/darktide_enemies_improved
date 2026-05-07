@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.10"
+mod.version = "1.5.11"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1393,6 +1393,18 @@ table.insert(localisations_to_add, {
 	toughness_electric_tooltip = {
 		en = "Toggles a lightning effect that is overlayed on the current toughness bar.",
 	},
+	healthbar_colour_preset = {
+		en = "Healthbar Colour Preset",
+	},
+	healthbar_colour_preset_tooltip = {
+		en = "Pick a preset to apply to all enemy healthbars. Note that the individual overrides will override this.\n\nWARNING: This WILL reset your group overrides to these colours.",
+	},
+	red = {
+		en = "Full Red",
+	},
+	colourful = {
+		en = "Colourful (Enemy Type Dependent)",
+	},
 })
 
 -- Debuff settings
@@ -1881,7 +1893,7 @@ table.insert(localisations_to_add, {
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
-		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设置。",
+		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设��。",
 	},
 })
 

@@ -530,7 +530,6 @@ local function collect_anim_events_recursive(t, results)
 end
 
 mod.anim_db = mod.anim_db or {}
-mod.dbg_stagger = Stagger
 mod.get_stagger_calculation_results = function() end
 
 mod.init_breed_anim_db = function(unit, breed, breed_name)

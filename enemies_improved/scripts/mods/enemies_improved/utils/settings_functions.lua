@@ -78,7 +78,66 @@ end
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
+mod.set_breed_colours = function()
+	if mod:get("healthbar_colour_preset") == "red" then
+		mod.BREED_COLOURS = {
+			horde = { 255, 255, 40, 40 },
+			elite = { 255, 255, 40, 40 },
+			captain = { 255, 255, 40, 40 },
+			disabler = { 255, 255, 40, 40 },
+			witch = { 255, 255, 40, 40 },
+			monster = { 255, 255, 40, 40 },
+			sniper = { 255, 255, 40, 40 },
+			far = { 255, 255, 40, 40 },
+			special = { 255, 255, 40, 40 },
+			enemy = { 255, 255, 40, 40 },
+		}
+	elseif mod:get("healthbar_colour_preset") == "colourful" then
+		mod.BREED_COLOURS = {
+			horde = { 255, 150, 60, 60 },
+			elite = { 255, 0, 120, 255 },
+			captain = { 255, 255, 140, 0 },
+			disabler = { 255, 255, 255, 0 },
+			witch = { 255, 255, 0, 180 },
+			monster = { 255, 180, 0, 255 },
+			sniper = { 255, 255, 0, 0 },
+			far = { 255, 0, 255, 120 },
+			special = { 255, 255, 0, 255 },
+			enemy = { 255, 200, 200, 200 },
+		}
+	else
+		mod.BREED_COLOURS = {
+			horde = { 255, 150, 60, 60 },
+			elite = { 255, 0, 120, 255 },
+			captain = { 255, 255, 140, 0 },
+			disabler = { 255, 255, 255, 0 },
+			witch = { 255, 255, 0, 180 },
+			monster = { 255, 180, 0, 255 },
+			sniper = { 255, 255, 0, 0 },
+			far = { 255, 0, 255, 120 },
+			special = { 255, 255, 0, 255 },
+			enemy = { 255, 200, 200, 200 },
+		}
+	end
+	mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+end
+
+mod.healthbar_colour_preset_changed = function()
+	mod.set_breed_colours()
+	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
+		local r = color[2]
+		local g = color[3]
+		local b = color[4]
+
+		-- only set if not already saved
+		mod:set("healthbar_" .. breed .. "_colour_R", r)
+		mod:set("healthbar_" .. breed .. "_colour_G", g)
+		mod:set("healthbar_" .. breed .. "_colour_B", b)
+	end
+end
+
 mod.init_healthbar_defaults = function()
+	mod.set_breed_colours()
 	-- bar colours
 	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
 		local r = color[2]
@@ -168,6 +227,8 @@ mod.init_healthbar_defaults = function()
 end
 
 mod.update_breed_colours = function()
+	mod.set_breed_colours()
+
 	-- BREED GROUPS
 	for breed, default_color in next, mod.BREED_COLOURS do
 		local r = mod:get("healthbar_" .. breed .. "_colour_R")
@@ -515,6 +576,11 @@ mod.on_setting_changed = function(setting_id)
 		--mod.reset_individual_to_default(selected_enemy_individual)
 		--mod.update_settings_values(reset_setting_id_individual)
 	end
+
+	if setting_id == "healthbar_colour_preset" then
+		mod.healthbar_colour_preset_changed()
+	end
+
 	mod.update_breed_colours()
 
 	-- rebuild outlines

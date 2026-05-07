@@ -125,6 +125,7 @@ mod.build_frame_settings = function(dt)
 	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
 	fs.hb_toggle_base_boss_healthbar = mod:get("hb_toggle_base_boss_healthbar")
 	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
+	fs.healthbar_colour_preset = mod:get("healthbar_colour_preset")
 
 	-- TOUGHNESS
 	fs.toughness_enabled = mod:get("toughness_enabled")
