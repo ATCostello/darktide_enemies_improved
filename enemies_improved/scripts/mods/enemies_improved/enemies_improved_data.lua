@@ -452,6 +452,7 @@ local fonts = mod._get_font_options()
 table.insert(mod.settings_widgets, {
 	setting_id = "general_settings",
 	type = "group",
+	tab = "General",
 	sub_widgets = {
 		{
 			setting_id = "draw_distance",
@@ -788,6 +789,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "markers_settings",
 	type = "group",
+	tab = "markers",
 	sub_widgets = {
 		{
 			setting_id = "markers_enable",

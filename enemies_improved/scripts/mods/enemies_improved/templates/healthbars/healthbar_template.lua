@@ -329,7 +329,7 @@ template.on_enter = function(widget, marker, template)
 
 	-- set frame background
 	content.frame = fs.frame_type
-	
+
 	local current_level = Managers.state.mission and Managers.state.mission:mission()
 
 	if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
@@ -1307,7 +1307,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			marker.draw = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
-			table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
+			mod.enemy_healthbars[unit] = nil
 			marker.remove = true
 			--Managers.event:trigger("remove_world_marker", marker.id)
 		end

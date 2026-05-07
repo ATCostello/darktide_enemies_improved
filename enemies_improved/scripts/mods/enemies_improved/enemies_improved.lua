@@ -356,9 +356,9 @@ mod.force_remove_unit_markers = function(unit)
 	remove(mod.enemy_healthbars[unit])
 	remove(mod.enemy_debuffs[unit])
 
-	table_remove(mod.enemy_markers, table_index_of(mod.enemy_markers, unit))
-	table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
-	table_remove(mod.enemy_debuffs, table_index_of(mod.enemy_debuffs, unit))
+	mod.enemy_markers[unit] = nil
+	mod.enemy_healthbars[unit] = nil
+	mod.enemy_debuffs[unit] = nil
 
 	-- reset cluster state if this unit was a rep
 	local cluster = mod.get_horde_cluster_for_unit(unit)
@@ -462,8 +462,8 @@ mod.scan_enemies = function()
 			if forward_bonus <= 0 then
 				mod.force_remove_unit_markers(unit)
 
-				table_remove(cache, table_index_of(cache, unit))
-				table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
+				cache[unit] = nil
+				mod.marked_dead[unit] = nil
 
 				goto skip_breed
 			end
@@ -476,8 +476,8 @@ mod.scan_enemies = function()
 				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
 					mod.force_remove_unit_markers(unit)
 
-					table_remove(cache, table_index_of(cache, unit))
-					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
+					cache[unit] = nil
+					mod.marked_dead[unit] = nil
 
 					goto skip_breed
 				end
@@ -591,10 +591,10 @@ mod.scan_enemies = function()
 						_last_healthbar_update = 0,
 					}
 
-					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
+					mod.marked_dead[unit] = nil
 				else
 					entry.seen = true
-					table_remove(mod.marked_dead, table_index_of(mod.marked_dead, unit))
+					mod.marked_dead[unit] = nil
 				end
 			end
 			::skip_breed::
@@ -1115,11 +1115,11 @@ mod.remove_dead = function()
 		end
 
 		if not fs.hb_show_dps then
-			table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
+			mod.enemy_healthbars[unit] = nil
 		end
-		table_remove(mod.enemy_debuffs, table_index_of(mod.enemy_debuffs, unit))
-		table_remove(mod.enemy_markers, table_index_of(mod.enemy_markers, unit))
-		table_remove(mod.enemy_cache, table_index_of(mod.enemy_cache, unit))
+		mod.enemy_debuffs[unit] = nil
+		mod.enemy_markers[unit] = nil
+		mod.enemy_cache[unit] = nil
 	end
 end
 

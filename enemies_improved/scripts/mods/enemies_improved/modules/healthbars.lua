@@ -52,7 +52,7 @@ mod.update_enemy_healthbars = function(entry, t)
 
 				if marker_id then
 					Managers.event:trigger("remove_world_marker", marker_id)
-					table_remove(mod.enemy_healthbars, table_index_of(mod.enemy_healthbars, unit))
+					mod.enemy_healthbars[unit] = nil
 				end
 
 				entry._healthbar_created = false
