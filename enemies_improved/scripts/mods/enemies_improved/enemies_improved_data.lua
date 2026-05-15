@@ -457,7 +457,7 @@ table.insert(mod.settings_widgets, {
 			type = "numeric",
 			default_value = 30,
 			range = {
-				15,
+				5,
 				100,
 			},
 			tooltip = "draw_distance_tooltip",
@@ -551,6 +551,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "main_font_colour",
 			type = "group",
+			tab = "General",
 			sub_widgets = {
 				{
 					setting_id = "main_font_colour_R",
@@ -587,6 +588,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "secondary_font_colour",
 			type = "group",
+			tab = "General",
 			sub_widgets = {
 				{
 					setting_id = "secondary_font_colour_R",
@@ -627,6 +629,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "special_attack_settings",
 	type = "group",
+	tab = "Special Attacks",
 	sub_widgets = {
 		{
 			setting_id = "marker_specials_enable",
@@ -667,6 +670,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "outline_specials_colour",
 			type = "group",
+			tab = "Special Attacks",
 			sub_widgets = {
 				{
 					setting_id = "outline_specials_colour_R",
@@ -707,6 +711,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "stagger_settings",
 	type = "group",
+	tab = "Stagger",
 	sub_widgets = {
 		{
 			setting_id = "debuff_stagger_enable",
@@ -747,6 +752,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "outline_stagger_colour",
 			type = "group",
+			tab = "Stagger",
 			sub_widgets = {
 				{
 					setting_id = "outline_stagger_colour_R",
@@ -841,6 +847,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "marker_bg_colour",
 			type = "group",
+			tab = "Markers",
 			sub_widgets = {
 				{
 					setting_id = "marker_bg_colour_A",
@@ -891,6 +898,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "healthbar_settings",
 	type = "group",
+	tab = "Healthbar",
 	sub_widgets = {
 		{
 			setting_id = "healthbar_enable",
@@ -914,6 +922,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "healthbar_type_icon_scale",
 			type = "numeric",
+			tab = "Healthbar",
 			default_value = 1.05,
 			range = {
 				1,
@@ -1089,6 +1098,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "toughness_colour",
 	type = "group",
+	tab = "Healthbar",
 	sub_widgets = {
 		{
 			setting_id = "toughness_enabled",
@@ -1150,6 +1160,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "healthbar_text_settings",
 	type = "group",
+	tab = "Healthbar",
 	sub_widgets = {
 		{
 			setting_id = "hb_text_top_left_01",
@@ -1179,6 +1190,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "damage_number_settings",
 	type = "group",
+	tab = "Damage Numbers",
 	sub_widgets = {
 		{
 			setting_id = "hb_show_damage_numbers",
@@ -1271,6 +1283,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "debuff_settings",
 	type = "group",
+	tab = "Debuffs",
 	sub_widgets = {
 		{
 			setting_id = "debuff_enable",
@@ -1457,6 +1470,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_max_stacks_colour",
 			type = "group",
+			tab = "Debuffs",
 			sub_widgets = {
 				{
 					setting_id = "debuff_max_stacks_scale",
@@ -1505,6 +1519,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_group_colour",
 			type = "group",
+			tab = "Debuffs",
 			sub_widgets = {
 				{
 					setting_id = "debuff_group_selected",
@@ -1590,6 +1605,7 @@ mod.group_settings_widgets = {
 	{
 		setting_id = "outline_type_colour",
 		type = "group",
+		tab = "Group Overrides",
 		sub_widgets = {
 			{
 				setting_id = "outline_type_colour_R",
@@ -1634,6 +1650,7 @@ mod.group_settings_widgets = {
 	{
 		setting_id = "healthbar_type_colour",
 		type = "group",
+		tab = "Group Overrides",
 		sub_widgets = {
 			{
 				setting_id = "healthbar_type_colour_R",
@@ -1700,6 +1717,7 @@ mod.group_settings_widgets = {
 	{
 		setting_id = "healthbar_icon_type_colour",
 		type = "group",
+		tab = "Group Overrides",
 		sub_widgets = {
 			{
 				setting_id = "healthbar_icon_type_colour_R",
@@ -1738,6 +1756,7 @@ mod.group_settings_widgets = {
 table.insert(mod.settings_widgets, {
 	setting_id = "group_settings",
 	type = "group",
+	tab = "Group Overrides",
 	sub_widgets = mod.group_settings_widgets,
 })
 
@@ -1767,6 +1786,7 @@ mod.individual_override_settings = {
 	{
 		setting_id = "healthbar_individual_colour",
 		type = "group",
+		tab = "Individual Overrides",
 		sub_widgets = {
 			{
 				setting_id = "healthbar_individual_enable",
@@ -1811,6 +1831,7 @@ mod.individual_override_settings = {
 	{
 		setting_id = "outline_individual_colour",
 		type = "group",
+		tab = "Individual Overrides",
 		sub_widgets = {
 			{
 				setting_id = "outline_individual_enable",
@@ -1855,6 +1876,7 @@ mod.individual_override_settings = {
 table.insert(mod.settings_widgets, {
 	setting_id = "individual_override_settings",
 	type = "group",
+	tab = "Individual Overrides",
 	sub_widgets = mod.individual_override_settings,
 })
 
@@ -1862,6 +1884,7 @@ table.insert(mod.settings_widgets, {
 table.insert(mod.settings_widgets, {
 	setting_id = "throttle_timings",
 	type = "group",
+	tab = "Throttle Timings",
 	sub_widgets = {
 		{
 			setting_id = "general_throttle_rate",

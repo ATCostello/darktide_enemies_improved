@@ -131,6 +131,47 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		content[stack_text_id] = ""
 		content[name_text_id] = ""
 
+		-- ICON SHADOW
+		passes[#passes + 1] = {
+			pass_type = "texture",
+			style_id = icon_id .. "_shadow",
+			value_id = icon_id,
+			visibility_function = function(content, style)
+				return content[icon_id] ~= nil and fs.debuff_icons
+			end,
+		}
+
+		style[icon_id .. "_shadow"] = {
+			scale_to_material = true,
+			horizontal_alignment = "right",
+			vertical_alignment = "center",
+
+			offset = {
+				icon_x + base_offset + 1,
+				row_offset_y + 1,
+				5,
+			},
+
+			default_offset = {
+				icon_x + base_offset + 1,
+				row_offset_y + 1,
+				5,
+			},
+
+			size = {
+				28 * fs.debuff_icon_scale * fs.text_scale,
+				28 * fs.debuff_icon_scale * fs.text_scale,
+			},
+
+			default_size = {
+				28 * fs.debuff_icon_scale * fs.text_scale,
+				28 * fs.debuff_icon_scale * fs.text_scale,
+			},
+
+			color = { 255, 0, 0, 0 },
+			default_alpha = 255,
+		}
+
 		-- ICON
 		passes[#passes + 1] = {
 			pass_type = "texture",
@@ -197,8 +238,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			default_size = { bar_width * 0.5 * fs.text_scale, 20 },
 
 			drop_shadow = true,
-			shadow_offset = { 1, -1 },
-			shadow_color = { 200, 0, 0, 0 },
+			shadow_offset = { 1, 1 },
+			shadow_color = { 255, 0, 0, 0 },
 			default_alpha = 255,
 		}
 
@@ -247,8 +288,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			max_lines = 1,
 
 			drop_shadow = true,
-			shadow_offset = { 1, -1 },
-			shadow_color = { 200, 0, 0, 0 },
+			shadow_offset = { 1, 1 },
+			shadow_color = { 255, 0, 0, 0 },
 			default_alpha = 255,
 		}
 	end
@@ -891,6 +932,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local name_text_id = "debuff_name_" .. i
 
 		local icon_style = style[icon_id]
+		local icon_shadow_style = style[icon_id .. "_shadow"]
 		local stack_text_style = style[stack_text_id]
 		local name_text_style = style[name_text_id]
 
@@ -940,6 +982,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					end
 				end				
 
+				-- ICON SHADOW
+				local o = icon_shadow_style.offset
+				o[1] = icon_x + col_offset_x + base_offset + 1
+				o[2] = base_y_fixed * fs.debuff_y_offset + 1
+
+				local o = icon_shadow_style.default_offset
+				o[1] = icon_x + col_offset_x + base_offset + 1
+				o[2] = base_y_fixed * fs.debuff_y_offset + 1
+
 				-- ICON
 				local o = icon_style.offset
 				o[1] = icon_x + col_offset_x + base_offset
@@ -977,6 +1028,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					if debuff.type == "dot" then
 						local row_offset_y = state.y - ((row_i - 1) * row_step)
 
+						local o = icon_shadow_style.offset
+						o[1] = icon_x + base_offset + 1
+						o[2] = row_offset_y + 1
+						local o = icon_shadow_style.default_offset
+						o[1] = icon_x + base_offset + 1
+						o[2] = row_offset_y + 1
+
+
 						local o = icon_style.offset
 						o[1] = icon_x + base_offset
 						o[2] = row_offset_y
@@ -1011,6 +1070,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 							row_offset_y = state.y + 16 * fs.debuff_y_offset + ((row_i - 1) * row_step)
 						end
 
+						local o = icon_shadow_style.offset
+						o[1] = icon_x + base_offset + 1
+						o[2] = row_offset_y + 1
+						local o = icon_shadow_style.default_offset
+						o[1] = icon_x + base_offset + 1
+						o[2] = row_offset_y + 1
+
 						local o = icon_style.offset
 						o[1] = icon_x + base_offset
 						o[2] = row_offset_y
@@ -1040,6 +1106,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					end
 				else
 					local row_offset_y = state.y - ((row_i - 1) * row_step)
+
+					local o = icon_shadow_style.offset
+					o[1] = icon_x + base_offset + 1
+					o[2] = row_offset_y + 1
+					local o = icon_shadow_style.default_offset
+					o[1] = icon_x + base_offset + 1
+					o[2] = row_offset_y + 1
 
 					local o = icon_style.offset
 					o[1] = icon_x + base_offset
@@ -1203,6 +1276,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 					icon_style.size[1] = icon_style.default_size[1] * scale
 					icon_style.size[2] = icon_style.default_size[2] * scale
+					icon_shadow_style.size[1] = icon_shadow_style.default_size[1] * scale
+					icon_shadow_style.size[2] = icon_shadow_style.default_size[2] * scale
 
 					if fs.debuff_max_stacks_scale and at_max_stacks then
 						if fs.debuff_stack_on_icon then
@@ -1224,14 +1299,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 					name_text_style.font_size = name_text_style.default_font_size * scale
 
-					icon_style.offset[1] = icon_style.default_offset[1] * scale
-					icon_style.offset[2] = icon_style.default_offset[2] * scale
+					icon_shadow_style.offset[1] = math.floor(icon_shadow_style.default_offset[1] * scale)
+					icon_shadow_style.offset[2] = math.floor(icon_shadow_style.default_offset[2] * scale)
 
-					stack_text_style.offset[1] = stack_text_style.default_offset[1] * scale
-					stack_text_style.offset[2] = stack_text_style.default_offset[2] * scale
+					icon_style.offset[1] = math.floor(icon_style.default_offset[1] * scale)
+					icon_style.offset[2] = math.floor(icon_style.default_offset[2] * scale)
 
-					name_text_style.offset[1] = name_text_style.default_offset[1] * scale
-					name_text_style.offset[2] = name_text_style.default_offset[2] * scale
+					stack_text_style.offset[1] = math.floor(stack_text_style.default_offset[1] * scale)
+					stack_text_style.offset[2] = math.floor(stack_text_style.default_offset[2] * scale)
+
+					name_text_style.offset[1] = math.floor(name_text_style.default_offset[1] * scale)
+					name_text_style.offset[2] = math.floor(name_text_style.default_offset[2] * scale)
 				end
 			end
 		else

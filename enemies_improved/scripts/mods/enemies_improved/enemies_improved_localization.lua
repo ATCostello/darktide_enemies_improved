@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.11"
+mod.version = "1.5.12"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1360,7 +1360,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "调整伤害数字的上下位置，仅影响浮动/炫丽样式。",
 	},
 	healthbar_type_icon_scale = {
-		en = "Type icon scale",
+		en = "Healthbar Type icon scale",
 		["zh-cn"] = "类型图标大小",
 	},
 	healthbar_type_icon_scale_tooltip = {
@@ -1717,15 +1717,15 @@ table.insert(localisations_to_add, {
 	},
 
 	outline_type_colour_R = {
-		en = "Outline Colour: Red",
+		en = "Type Outline Colour: Red",
 		["zh-cn"] = "轮廓颜色：红",
 	},
 	outline_type_colour_G = {
-		en = "Outline Colour: Green",
+		en = "Type Outline Colour: Green",
 		["zh-cn"] = "轮廓颜色：绿",
 	},
 	outline_type_colour_B = {
-		en = "Outline Colour: Blue",
+		en = "Type Outline Colour: Blue",
 		["zh-cn"] = "轮廓颜色：蓝",
 	},
 
@@ -1747,15 +1747,15 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "设置当前敌人类型的血条颜色，数值0~255。",
 	},
 	healthbar_type_colour_R = {
-		en = "Healthbar Colour: Red",
+		en = "Type Healthbar Colour: Red",
 		["zh-cn"] = "血条颜色：红",
 	},
 	healthbar_type_colour_G = {
-		en = "Healthbar Colour: Green",
+		en = "Type Healthbar Colour: Green",
 		["zh-cn"] = "血条颜色：绿",
 	},
 	healthbar_type_colour_B = {
-		en = "Healthbar Colour: Blue",
+		en = "Type Healthbar Colour: Blue",
 		["zh-cn"] = "血条颜色：蓝",
 	},
 
@@ -1844,15 +1844,15 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "血条颜色（敌人专属）",
 	},
 	healthbar_individual_colour_R = {
-		en = "Healthbar Colour: Red",
+		en = "Individual Healthbar Colour: Red",
 		["zh-cn"] = "血条颜色：红",
 	},
 	healthbar_individual_colour_G = {
-		en = "Healthbar Colour: Green",
+		en = "Individual Healthbar Colour: Green",
 		["zh-cn"] = "血条颜色：绿",
 	},
 	healthbar_individual_colour_B = {
-		en = "Healthbar Colour: Blue",
+		en = "Individual Healthbar Colour: Blue",
 		["zh-cn"] = "血条颜色：蓝",
 	},
 	healthbar_individual_colour_tooltip = {
@@ -1872,15 +1872,15 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "轮廓颜色（敌人专属）",
 	},
 	outline_individual_colour_R = {
-		en = "Outline Colour: Red",
+		en = "Individual Outline Colour: Red",
 		["zh-cn"] = "轮廓颜色：红",
 	},
 	outline_individual_colour_G = {
-		en = "Outline Colour: Green",
+		en = "Individual Outline Colour: Green",
 		["zh-cn"] = "轮廓颜色：绿",
 	},
 	outline_individual_colour_B = {
-		en = "Outline Colour: Blue",
+		en = "Individual Outline Colour: Blue",
 		["zh-cn"] = "轮廓颜色：蓝",
 	},
 	outline_individual_colour_tooltip = {
@@ -1907,7 +1907,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "常规更新速率",
 	},
 	general_throttle_rate_tooltip = {
-		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nShouldn't really need to touch this, I recommend between 20-40 for a smooth experience. \n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nShouldn't really need to touch this, I recommend between 20-40 for a smooth experience. \n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
 		["zh-cn"] = "调整屏幕内所有UI的更新速率，单位毫秒。数值越大越省性能，但可能卡顿。推荐20-40。",
 	},
 	off_screen_throttle_rate = {
@@ -1915,7 +1915,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "屏幕外更新速率",
 	},
 	off_screen_throttle_rate_tooltip = {
-		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 5 times per second etc. ",
+		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
 		["zh-cn"] = "调整屏幕外敌人UI的更新速率，节省性能。推荐150-200。",
 	},
 })
