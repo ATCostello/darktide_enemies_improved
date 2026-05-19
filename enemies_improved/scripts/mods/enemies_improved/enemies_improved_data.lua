@@ -1127,6 +1127,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "toughness_colour_R",
 			type = "numeric",
+			tab = "Healthbar",
 			default_value = 50,
 			range = {
 				0,
@@ -1137,6 +1138,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "toughness_colour_G",
 			type = "numeric",
+			tab = "Healthbar",
 			default_value = 225,
 			range = {
 				0,
@@ -1147,6 +1149,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "toughness_colour_B",
 			type = "numeric",
+			tab = "Healthbar",
 			default_value = 255,
 			range = {
 				0,
@@ -1487,6 +1490,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "debuff_max_stacks_colour_R",
 					type = "numeric",
+					tab = "Healthbar",
 					default_value = 255,
 					range = {
 						0,
@@ -1497,6 +1501,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "debuff_max_stacks_colour_G",
 					type = "numeric",
+					tab = "Healthbar",
 					default_value = 200,
 					range = {
 						0,
@@ -1507,6 +1512,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "debuff_max_stacks_colour_B",
 					type = "numeric",
+					tab = "Healthbar",
 					default_value = 0,
 					range = {
 						0,

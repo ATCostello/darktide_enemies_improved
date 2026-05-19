@@ -477,7 +477,7 @@ mod.update_dmf_settings_colours = function(setting_id)
 		if view and view._settings_category_widgets and view._settings_category_widgets[mod:localize("mod_name")] then
 			for _, data in next, view._settings_category_widgets[mod:localize("mod_name")] do
 				local widget = data.widget
-				if not widget then
+				if not widget or not widget.content.text then
 					break
 				end
 
