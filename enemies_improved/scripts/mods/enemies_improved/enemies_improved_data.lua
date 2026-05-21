@@ -456,6 +456,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "draw_distance",
 			type = "numeric",
 			default_value = 30,
+			step_size_value = 5,
 			range = {
 				5,
 				100,
@@ -551,7 +552,6 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "main_font_colour",
 			type = "group",
-			tab = "General",
 			sub_widgets = {
 				{
 					setting_id = "main_font_colour_R",
@@ -588,7 +588,6 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "secondary_font_colour",
 			type = "group",
-			tab = "General",
 			sub_widgets = {
 				{
 					setting_id = "secondary_font_colour_R",
@@ -1470,6 +1469,7 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "debuff_selected_enable_tooltip",
 		},
+
 		{
 			setting_id = "debuff_max_stacks_colour",
 			type = "group",

@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.13"
+mod.version = "1.5.14"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1125,7 +1125,7 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_segments_enable_tooltip = {
 		en = "Adds small lines to the healthbar to indicate percentages of 25, 50 and 75.",
-		["zh-cn"] = "在血条上添加刻度线，标记25%/50%/75%血量。",
+		["zh-cn"] = "在血条上添加刻度线，标记25%%/50%%/75%%血量。",
 	},
 	hb_horde_enable = {
 		en = "Enable individual horde healthbars?",
