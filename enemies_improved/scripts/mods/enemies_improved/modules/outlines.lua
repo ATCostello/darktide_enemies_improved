@@ -15,41 +15,20 @@ local Managers_ui = Managers.ui
 -- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
-local _physics_world = nil
-local _physics_world_checked = false
 local fs = mod.frame_settings
 
-mod.reset_outline_cache = function()
-	_outline_system = nil
-	_outline_system_checked = false
-	_physics_world = nil
-	_physics_world_checked = false
-end
-
-local function get_physics_world()
-	if _physics_world_checked then
-		return _physics_world
-	end
-
-	local world = Managers.world:world("level_world")
-	_physics_world = World.get_data(world, "physics_world")
-	_physics_world_checked = true
-
-	return _physics_world
-end
-
 local function get_outline_system()
-	if _outline_system_checked then
-		return _outline_system
-	end
-
 	local extension_manager = Managers.state.extension
-	if extension_manager and extension_manager:has_system("outline_system") then
-		_outline_system = extension_manager:system("outline_system")
-	end
-	_outline_system_checked = true
 
-	return _outline_system
+	if not extension_manager then
+		return nil
+	end
+
+	if not extension_manager:has_system("outline_system") then
+		return nil
+	end
+
+	return extension_manager:system("outline_system")
 end
 
 mod.remove_outline = function(unit, outline, outline_system)
@@ -323,25 +302,25 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	-- use cached LOS from scan if available; falls back to raycast if stale
-	local has_los = entry.los
-
-	if has_los == nil or has_los == false then
-		local player = Managers.player:local_player(1)
-		local player_unit = player and player.player_unit
-		if not player_unit or not mod.detect_alive(player_unit) then
-			return
-		end
-
-		local physics_world = get_physics_world()
-		has_los = physics_world and mod.has_line_of_sight(player_unit, unit, physics_world) or false
+	local player = Managers.player:local_player(1)
+	local player_unit = player and player.player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
 	end
+
+	local world = Managers.world:world("level_world")
+	local physics_world = World.get_data(world, "physics_world")
+
+	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
 
 	if entry._outline_applied == nil then
 		entry._outline_applied = false
 	end
 
-	local tag_id = Managers.state.extension:system("smart_tag_system"):unit_tag_id(unit)
+	--local is_tagged = mod.tagged_units[unit]
+
+	local smart_tag_system = Managers.state.extension:system("smart_tag_system")
+	local tag_id = smart_tag_system:unit_tag_id(unit)
 	local is_tagged = tag_id ~= nil
 
 	if has_los then
@@ -354,6 +333,7 @@ mod.update_enemy_outlines = function(entry)
 		entry._outline_applied = false
 	end
 
+	-- reapply after tagged
 	if is_tagged then
 		entry._outline_applied = false
 	end

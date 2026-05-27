@@ -229,8 +229,8 @@ for _, debuff in next, mod.debuffs do
 		text = debuff.name,
 		value = debuff.name,
 		sort = mod:localize(debuff.name) or debuff.name,
-		icon = mod.debuff_styles[debuff.group].icon,
-		icon_colour = mod.debuff_styles[debuff.group].colour,
+		--icon = mod.debuff_styles[debuff.group].icon,
+		--icon_colour = mod.debuff_styles[debuff.group].colour,
 	}
 end
 
