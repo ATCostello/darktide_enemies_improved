@@ -43,6 +43,9 @@ local enemy_override_settings = {
 	["outline_individual_colour_G"] = 50,
 	["outline_individual_colour_B"] = 10,
 
+	["distance_individual_enable"] = false,
+	["distance_individual_value"] = 30,
+
 	["reset_individual_to_default"] = false,
 }
 
@@ -68,6 +71,9 @@ end
 mod.reset_individual_to_default = function(enemy_type)
 	-- reset all options to nil so that the defaults will be loaded...
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
+
+	mod:set("distance_" .. enemy_type .. "_enable", nil)
+	mod:set("distance_" .. enemy_type .. "_value", nil)
 
 	local reset_message = mod:localize("reset_individual_to_default_message") or ""
 	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))

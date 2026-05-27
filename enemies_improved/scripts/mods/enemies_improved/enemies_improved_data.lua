@@ -1790,6 +1790,24 @@ mod.individual_override_settings = {
 	--},
 
 	{
+		setting_id = "distance_individual_enable",
+		type = "checkbox",
+		default_value = false,
+		tooltip = "distance_individual_enable_tooltip",
+	},
+	{
+		setting_id = "distance_individual_value",
+		type = "numeric",
+		default_value = 30,
+		step_size_value = 5,
+		range = {
+			5,
+			100,
+		},
+		tooltip = "distance_individual_value_tooltip",
+	},
+
+	{
 		setting_id = "healthbar_individual_colour",
 		type = "group",
 		tab = "Individual Overrides",
@@ -1875,7 +1893,7 @@ mod.individual_override_settings = {
 				},
 				tooltip = "outline_individual_colour_tooltip",
 			},
-		},
+	},
 	},
 }
 

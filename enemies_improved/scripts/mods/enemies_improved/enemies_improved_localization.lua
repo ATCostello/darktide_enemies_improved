@@ -1893,7 +1893,31 @@ table.insert(localisations_to_add, {
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
-		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设��。",
+		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设置。",
+	},
+	distance_individual_enable = {
+		en = "Override draw distance?",
+	},
+	distance_individual_enable_tooltip = {
+		en = "Toggle the draw distance override for this enemy. When enabled, the enemy will only be visible within the specified distance below.",
+	},
+	distance_individual_value = {
+		en = "Draw distance (Enemy Specific)",
+	},
+	distance_individual_value_tooltip = {
+		en = "The max distance (in metres) this specific enemy will be visible for markers, healthbars and outlines.",
+	},
+	healthbar_individual_width = {
+		en = "Healthbar Width (Enemy Specific)",
+	},
+	healthbar_individual_width_tooltip = {
+		en = "Override the width of the healthbar for this specific enemy.",
+	},
+	healthbar_individual_height = {
+		en = "Healthbar Height (Enemy Specific)",
+	},
+	healthbar_individual_height_tooltip = {
+		en = "Override the height of the healthbar for this specific enemy.",
 	},
 })
 
