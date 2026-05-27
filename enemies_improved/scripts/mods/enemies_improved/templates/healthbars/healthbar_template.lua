@@ -23,7 +23,7 @@ template.unit_node = "root_point"
 template.position_offset = { 0, 0, fs.hb_y_offset }
 
 template.check_line_of_sight = fs.check_line_of_sight
-template.max_distance = fs.draw_distance
+template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 template.screen_clamp = false
 
 template.bar_settings = {
@@ -590,7 +590,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	template.max_distance = fs.draw_distance
+	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 

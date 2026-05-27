@@ -74,13 +74,7 @@ mod.apply_marker_fade = function(self)
 	local cx, cy, cz = cam_pos.x, cam_pos.y, cam_pos.z
 	local fx, fy, fz = cam_forward.x, cam_forward.y, cam_forward.z
 
-	local draw_distance = fs.draw_distance
-
-	local fade_start = draw_distance * 0.9 -- starts fading at 70%
-	local fade_end = draw_distance -- fully invisible at max distance
-
-	local DIST_FADE_START_SQ = fade_start * fade_start
-	local DIST_FADE_END_SQ = fade_end * fade_end
+	local draw_distance_base = fs.draw_distance
 
 	local STACK_FADE_FACTOR = 0.9
 	local DEPTH_THRESHOLD = 0.05
@@ -128,6 +122,21 @@ mod.apply_marker_fade = function(self)
 				entry.x, entry.y, entry.z = x, y, z
 				entry.dist_sq = dist_sq
 				entry.depth = depth
+
+				-- per-marker fade distance based on individual distance override
+				local draw_distance = draw_distance_base
+				local cache_entry = mod.enemy_cache[marker.unit]
+				if cache_entry and cache_entry.breed_name then
+					local ind_dist_enabled = mod:get("distance_" .. cache_entry.breed_name .. "_enable")
+					if ind_dist_enabled then
+						local ind_dist = mod:get("distance_" .. cache_entry.breed_name .. "_value")
+						if ind_dist and ind_dist > draw_distance then
+							draw_distance = ind_dist
+						end
+					end
+				end
+				entry.fade_distance = draw_distance
+
 				marker_list[idx] = entry
 			end
 		end
@@ -142,6 +151,12 @@ mod.apply_marker_fade = function(self)
 	for i = 1, #marker_list do
 		local data = marker_list[i]
 		local marker = data.marker
+
+		local draw_distance = data.fade_distance or draw_distance_base
+		local fade_start = draw_distance * 0.9
+		local fade_end = draw_distance
+		local DIST_FADE_START_SQ = fade_start * fade_start
+		local DIST_FADE_END_SQ = fade_end * fade_end
 
 		local fade
 

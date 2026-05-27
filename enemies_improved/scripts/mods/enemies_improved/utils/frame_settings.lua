@@ -15,6 +15,21 @@ mod.build_frame_settings = function(dt)
 	-- Draw distance
 	fs.draw_distance = mod:get("draw_distance")
 
+	-- broadphase range: must encompass all individual distance overrides
+	fs.draw_distance_broadphase = fs.draw_distance
+	for _, options in next, mod.breed_names do
+		local enemy = options.value
+		if enemy then
+			local enabled = mod:get("distance_" .. enemy .. "_enable")
+			if enabled then
+				local ind_dist = mod:get("distance_" .. enemy .. "_value")
+				if ind_dist and ind_dist > fs.draw_distance_broadphase then
+					fs.draw_distance_broadphase = ind_dist
+				end
+			end
+		end
+	end
+
 	fs.general_throttle_rate = mod:get("general_throttle_rate") / 1000
 	fs.off_screen_throttle_rate = mod:get("off_screen_throttle_rate") / 1000
 

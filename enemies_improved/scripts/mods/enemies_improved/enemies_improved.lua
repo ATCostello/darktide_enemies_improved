@@ -431,7 +431,7 @@ mod.scan_enemies = function()
 	local broadphase = broadphase_system.broadphase
 	local from_pos = current_pos
 	local enemy_side_names = side:relation_side_names("enemy")
-	local range = mod.frame_settings.draw_distance
+	local range = mod.frame_settings.draw_distance_broadphase or mod.frame_settings.draw_distance
 
 	local results = mod._broadphase_results
 	table_clear(results)
@@ -1085,17 +1085,14 @@ mod.remove_dead = function()
 			local dz = pos.z - player_pos.z
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- individual distance override
+			-- individual distance override (replaces global for this enemy)
 			local effective_max_dist_sq = max_dist_sq
 			if entry.breed_name then
 				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
 				if ind_dist_enabled then
 					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
 					if ind_dist then
-						local ind_dist_sq = ind_dist * ind_dist
-						if ind_dist_sq < effective_max_dist_sq then
-							effective_max_dist_sq = ind_dist_sq
-						end
+						effective_max_dist_sq = ind_dist * ind_dist
 					end
 				end
 			end
@@ -1237,8 +1234,6 @@ mod.update_enemies = function(dt, t)
 	local player = Managers.player:local_player(1)
 	local player_unit = player and player.player_unit
 	local player_pos = player_unit and Unit.world_position(player_unit, 1)
-	local max_dist_sq = fs.draw_distance * fs.draw_distance
-
 	-- go through enemy_cache and perform updates...
 	for i = 1, to_process do
 		local unit = temp[i]
@@ -1257,23 +1252,21 @@ mod.update_enemies = function(dt, t)
 			local dz = pos.z - player_pos.z
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- LOD cutoff
-			if dist_sq > max_dist_sq then
-				goto continue_enemy_loop
-			end
-
-			-- individual distance override
+			-- effective max distance (individual overrides replace global)
+			local effective_max_dist_sq = fs.draw_distance * fs.draw_distance
 			if entry and entry.breed_name then
 				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
 				if ind_dist_enabled then
 					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
 					if ind_dist then
-						local ind_dist_sq = ind_dist * ind_dist
-						if dist_sq > ind_dist_sq then
-							goto continue_enemy_loop
-						end
+						effective_max_dist_sq = ind_dist * ind_dist
 					end
 				end
+			end
+
+			-- LOD cutoff
+			if dist_sq > effective_max_dist_sq then
+				goto continue_enemy_loop
 			end
 		end
 

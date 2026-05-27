@@ -44,7 +44,7 @@ template.alerted = false
 
 template.check_line_of_sight = fs.check_line_of_sight
 template.screen_clamp = true
-template.max_distance = fs.draw_distance
+template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 
 template.scale = 1
 
@@ -410,7 +410,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	template.max_distance = fs.draw_distance
+	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 

@@ -28,7 +28,7 @@ end
 
 local hb_size_width = fs.hb_size_width
 local hb_size_height = fs.hb_size_height
-local draw_distance_setting = fs.draw_distance
+local draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
 local size = {
 	200,
 	hb_size_height,
@@ -322,7 +322,7 @@ template.on_enter = function(widget, marker, template)
 
 	hb_size_width = fs.hb_size_width
 	hb_size_height = fs.hb_size_height
-	draw_distance_setting = fs.draw_distance
+	draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
 	size = {
 		200,
 		hb_size_height,
