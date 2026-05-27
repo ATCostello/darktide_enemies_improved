@@ -75,6 +75,7 @@ local _pos_vec = Vector3.zero()
 
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
+local _units_to_remove = {}
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -152,12 +153,9 @@ mod.on_game_state_changed = function(state, state_name)
 	pkg:load("packages/ui/views/character_appearance_view/character_appearance_view", "enemies_improved", nil, true)
 
 	-- empty caches
+	mod.reset_outline_cache()
 	mod.clear_caches()
 	table_clear(mod.marked_dead)
-
-	if mod.DEBUG and mod.anim_db_dirty then
-		--mod.save_anim_db()
-	end
 end
 
 local function check_selected_font()
@@ -235,15 +233,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
-		-- throttle updates according to enemy amounts to help keep performance in check...
-		local enemy_count = 0
-		for _ in next, mod.enemy_cache do
-			enemy_count = enemy_count + 1
-		end
-
-		local update_interval
-
-		update_interval = fs.general_throttle_rate
+		local update_interval = fs.general_throttle_rate
 
 		self._update_time = (self._update_time or 0) + dt
 		self._total_update_time = (self._total_update_time or 0) + dt
@@ -260,7 +250,10 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		end
 
 		-- pulse special attacks (Outside of global throttle)
-		if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
+		if
+			(fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable)
+			and not mod._pulse_skip_alternate
+		then
 			local interval = fs.special_attack_pulse_speed or 0.2
 
 			for _, entry in next, mod.enemy_cache do
@@ -278,7 +271,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		end
 
 		-- STAGGER OUTLINES
-		if fs.outline_stagger_horde_enable or fs.outline_stagger_enable then
+		if (fs.outline_stagger_horde_enable or fs.outline_stagger_enable) and not mod._pulse_skip_alternate then
 			local interval = fs.stagger_pulse_speed or 0.2
 
 			for _, entry in next, mod.enemy_cache do
@@ -299,6 +292,8 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 				end
 			end
 		end
+
+		mod._pulse_skip_alternate = not mod._pulse_skip_alternate
 
 		-- Hide default health bars if custom healthbars are enabled!
 		if fs.healthbar_enable then
@@ -382,7 +377,12 @@ end
 -- Enemy scanning
 -----------------------------------------------------------------------
 
+local _scan_counter = 0
+
 mod.scan_enemies = function()
+	_scan_counter = _scan_counter + 1
+	local do_throttled_los = _scan_counter % 3 == 0
+
 	local local_player = Managers_player:local_player(1)
 	if not local_player then
 		return
@@ -444,19 +444,47 @@ mod.scan_enemies = function()
 
 	local cache = mod.enemy_cache
 
-	-- mark unseen
 	for _, data in next, cache do
 		data.seen = false
+		data.los = false
 	end
 
 	table_clear(_horde_units_all)
 	table_clear(_cull_cells)
 
+	local world = Managers.world:world("level_world")
+	local physics_world = World.get_data(world, "physics_world")
+
+	-- cache camera forward once per scan instead of per enemy
+	local camera_forward
+	local ui_manager = Managers_ui
+	if ui_manager then
+		local hud = ui_manager:get_hud()
+		local world_markers = hud and hud:element("HudElementWorldMarkers")
+		local camera = world_markers and world_markers:_get_camera()
+		if camera then
+			camera_forward = Quaternion.forward(Camera.local_rotation(camera))
+		end
+	end
+
 	for i = 1, num_hits do
 		local unit = results[i]
 
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
-			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
+			local entry = cache[unit]
+
+			local forward_bonus = 1
+			if camera_forward then
+				local enemy_pos = POSITION_LOOKUP[unit]
+				if enemy_pos then
+					local to_enemy = Vector3.flat(enemy_pos - current_pos)
+					local len_sq = Vector3.length_squared(to_enemy)
+					if len_sq > 0 then
+						to_enemy = to_enemy / math.sqrt(len_sq)
+						forward_bonus = Vector3.dot(camera_forward, to_enemy)
+					end
+				end
+			end
 
 			-- VIEW CONE FILTER (HARD REJECT)
 			if forward_bonus <= 0 then
@@ -468,11 +496,10 @@ mod.scan_enemies = function()
 				goto skip_breed
 			end
 
-			-- LOS FILTER (HARD REJECT)
-			local world = Managers.world:world("level_world")
-			local physics_world = World.get_data(world, "physics_world")
-
-			if physics_world then
+			-- LOS FILTER (throttled for cached entries)
+			if entry and not do_throttled_los then
+				entry.los = true
+			elseif physics_world then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
 					mod.force_remove_unit_markers(unit)
 
@@ -481,13 +508,21 @@ mod.scan_enemies = function()
 
 					goto skip_breed
 				end
-			end
 
-			local entry = cache[unit]
+				if entry then
+					entry.los = true
+				end
+			elseif entry then
+				entry.los = true
+			end
 
 			local pos = Unit.world_position(unit, 1, _pos_vec)
 			if entry then
-				entry.pos = Vector3(pos.x, pos.y, pos.z)
+				if entry.pos then
+					entry.pos.x, entry.pos.y, entry.pos.z = pos.x, pos.y, pos.z
+				else
+					entry.pos = Vector3(pos.x, pos.y, pos.z)
+				end
 			end
 
 			local dx = pos.x - current_pos.x
@@ -552,7 +587,7 @@ mod.scan_enemies = function()
 					unit_data_ext = unit_data_ext,
 					breed = breed,
 					breed_type = breed_type,
-					pos = Vector3(pos.x, pos.y, pos.z),
+					pos = entry and entry.pos or Vector3(pos.x, pos.y, pos.z),
 				}
 
 				goto skip_breed
@@ -561,6 +596,7 @@ mod.scan_enemies = function()
 					cache[unit] = {
 						unit = unit,
 						seen = true,
+						los = true,
 
 						dead = false,
 
@@ -631,26 +667,28 @@ mod.scan_enemies = function()
 					local entry = mod.enemy_cache[unit]
 
 					if not entry then
-					mod.enemy_cache[unit] = {
-						unit = unit,
-						seen = true,
-						dead = false,
+						mod.enemy_cache[unit] = {
+							unit = unit,
+							seen = true,
+							los = true,
+							dead = false,
 
-						health_ext = ScriptUnit_has_extension(unit, "health_system"),
-						unit_data_ext = data.unit_data_ext,
-						behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
+							health_ext = ScriptUnit_has_extension(unit, "health_system"),
+							unit_data_ext = data.unit_data_ext,
+							behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 
-						is_horde = mod.is_horde(unit),
+							is_horde = mod.is_horde(unit),
 
-						breed = data.breed,
-						breed_name = data.breed and data.breed.name,
-						breed_type = data.breed_type,
+							breed = data.breed,
+							breed_name = data.breed and data.breed.name,
+							breed_type = data.breed_type,
 
-						_priority_score = data.score,
-						pos = data.pos,
-					}
+							_priority_score = data.score,
+							pos = data.pos,
+						}
 					else
 						entry.seen = true
+						entry.los = true
 						entry._priority_score = data.score
 						entry.pos = data.pos
 					end
@@ -696,18 +734,21 @@ local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
 local HORDE_MIN_UNITS_FOR_CLUSTER = 8
 
+local _horde_visited = {}
+
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
+	table_clear(_horde_visited)
 
 	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
 	end
 
 	local clusters = _horde_clusters
+	local visited = _horde_visited
 	local spatial = {}
 
-	-- Step 1: build spatial hash
 	for i = 1, num_units do
 		local unit = units[i]
 
@@ -751,14 +792,10 @@ local function _build_horde_clusters(units, num_units)
 		end
 	end
 
-	local visited = {}
-
-	-- Step 2: cluster via BFS
 	for i = 1, num_units do
 		local unit = units[i]
-		local z_samples = {}
 
-		if not visited[unit] and mod.detect_alive(unit) then
+		if not visited[unit] then
 			local entry = mod.enemy_cache[unit]
 			local breed = entry and entry.breed
 			local tags = breed and breed.tags
@@ -767,24 +804,24 @@ local function _build_horde_clusters(units, num_units)
 				goto continue
 			end
 
+			if not mod.detect_alive(unit) then
+				goto continue
+			end
+
 			local cluster_units = {}
 			local queue = { unit }
+			local z_samples = {}
 			visited[unit] = true
 
 			local sum_x, sum_y, sum_z = 0, 0, 0
 			local count = 0
+			local total_current = 0
+			local total_max = 0
 
-			local max_z = 0
-
-			-- Bounds for midpoint center
 			local min_x = math.huge
 			local max_x = -math.huge
 			local min_y = math.huge
 			local max_y = -math.huge
-
-			-- Track top 2 heights
-			--local highest_z = -math.huge
-			--local second_highest_z = -math.huge
 
 			while #queue > 0 do
 				local current = queue[#queue]
@@ -796,29 +833,16 @@ local function _build_horde_clusters(units, num_units)
 
 				cluster_units[#cluster_units + 1] = current
 
-				-- avg/max
-				--[[sum_x = sum_x + pos.x
-				sum_y = sum_y + pos.y
-				sum_z = sum_z + pos.z
-				count = count + 1
-
-				if max_z < pos.z then
-					max_z = pos.z
-				end	
-
-				sum_x = sum_x + pos.x]]
-
-				-- tallest & second tallest
-				--sum_x = sum_x + pos.x
-				--sum_y = sum_y + pos.y
-				--count = count + 1
-
-				-- Proper centroid accumulation (X, Y, Z)
 				sum_x = sum_x + pos.x
 				sum_y = sum_y + pos.y
 				sum_z = sum_z + pos.z
 				count = count + 1
 				z_samples[#z_samples + 1] = pos.z
+
+				if e.health_ext then
+					total_current = total_current + (e.health_ext:current_health() or 0)
+					total_max = total_max + (e.health_ext:max_health() or 0)
+				end
 
 				-- Bounds tracking (X/Y center)
 				if pos.x < min_x then
@@ -834,19 +858,9 @@ local function _build_horde_clusters(units, num_units)
 					max_y = pos.y
 				end
 
-				--local z = pos.z
-
-				--if z > highest_z then
-				--	second_highest_z = highest_z
-				--	highest_z = z
-				--elseif z > second_highest_z then
-				--	second_highest_z = z
-				--end
-
 				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
 
-				-- check neighboring cells
 				for dx = -1, 1 do
 					for dy = -1, 1 do
 						local key = (gx + dx) * 73856093 + (gy + dy) * 19349663
@@ -856,17 +870,16 @@ local function _build_horde_clusters(units, num_units)
 							for j = 1, #cell do
 								local other = cell[j]
 
-								if not visited[other] and mod.detect_alive(other) then
+								if not visited[other] then
 									local oe = mod.enemy_cache[other]
-									if oe and oe.breed == breed then
+									if oe and oe.breed == breed and mod.detect_alive(other) then
 										local op = oe.pos or Unit.world_position(other, 1)
 										oe.pos = op
 
 										local dx = op.x - pos.x
 										local dy = op.y - pos.y
-										local dist_sq = dx * dx + dy * dy
 
-										if dist_sq <= CLUSTER_RADIUS_SQ then
+										if dx * dx + dy * dy <= CLUSTER_RADIUS_SQ then
 											visited[other] = true
 											queue[#queue + 1] = other
 										end
@@ -883,14 +896,11 @@ local function _build_horde_clusters(units, num_units)
 
 				local cx = (min_x + max_x) * 0.5
 				local cy = (min_y + max_y) * 0.5
-				local avg_z = sum_z * inv
 
 				local width = max_x - min_x
 				local height = max_y - min_y
 
-				-- If cluster is too thin, fall back slightly toward centroid feel
 				if width < 1.5 or height < 1.5 then
-					-- small bias toward first unit
 					local rep = cluster_units[1]
 					if rep then
 						local pos = mod.enemy_cache[rep].pos
@@ -899,26 +909,9 @@ local function _build_horde_clusters(units, num_units)
 					end
 				end
 
-				-- average
-				--local target_z = avg_z + 2.0
-
-				--max
-				--local target_z = max_z + 2.0
-
-				-- tallest / second tallest
-				-- Fallback if cluster is tiny or something went weird
-				--local base_z
-				--if second_highest_z > -math.huge then
-				--	base_z = (highest_z + second_highest_z) * 0.5
-				--else
-				--	base_z = highest_z
-				--end
-
-				--local target_z = base_z + 2.0
-
 				table.sort(z_samples)
 
-				local trim = math.floor(#z_samples * 0.2) -- trim 20% top/bottom
+				local trim = math.floor(#z_samples * 0.2)
 				local start_i = 1 + trim
 				local end_i = #z_samples - trim
 
@@ -935,7 +928,6 @@ local function _build_horde_clusters(units, num_units)
 
 				local idx = #clusters + 1
 
-				-- smooth
 				local prev = clusters[idx] and clusters[idx].center
 
 				local smooth_z = target_z
@@ -953,8 +945,8 @@ local function _build_horde_clusters(units, num_units)
 						y = cy,
 						z = smooth_z,
 					},
-					total_current = 0,
-					total_max = 0,
+					total_current = total_current,
+					total_max = total_max,
 				}
 
 				clusters[idx] = cluster
@@ -962,26 +954,6 @@ local function _build_horde_clusters(units, num_units)
 				for j = 1, #cluster_units do
 					_horde_cluster_by_unit[cluster_units[j]] = idx
 				end
-
-				-- aggregate health (cached extensions)
-				local total_current = 0
-				local total_max = 0
-
-				for j = 1, #cluster_units do
-					local u = cluster_units[j]
-					local e = mod.enemy_cache[u]
-
-					if e and mod.detect_alive(u) then
-						local he = e.health_ext
-						if he then
-							total_current = total_current + (he:current_health() or 0)
-							total_max = total_max + (he:max_health() or 0)
-						end
-					end
-				end
-
-				cluster.total_current = total_current
-				cluster.total_max = total_max
 			end
 		end
 
@@ -1016,7 +988,8 @@ function string.starts(String, Start)
 end
 
 mod.remove_dead = function()
-	local units_to_remove = {}
+	local units_to_remove = _units_to_remove
+	table_clear(units_to_remove)
 
 	-- Get player
 	local player = Managers.player:local_player(1)
@@ -1030,7 +1003,7 @@ mod.remove_dead = function()
 	end
 
 	local player_pos = Unit.world_position(player_unit, 1)
-	local max_dist_sq = (mod.frame_settings.draw_distance or 50) ^ 2
+	local max_dist_sq = (fs.draw_distance or 50) ^ 2
 	local mark_dead = false
 
 	-- Go through each marker type and clear caches.
@@ -1085,17 +1058,8 @@ mod.remove_dead = function()
 			local dz = pos.z - player_pos.z
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- individual distance override (replaces global for this enemy)
-			local effective_max_dist_sq = max_dist_sq
-			if entry.breed_name then
-				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
-				if ind_dist_enabled then
-					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
-					if ind_dist then
-						effective_max_dist_sq = ind_dist * ind_dist
-					end
-				end
-			end
+			local ind_dist = entry.breed_name and fs.breed_distances[entry.breed_name]
+			local effective_max_dist_sq = ind_dist and (ind_dist * ind_dist) or max_dist_sq
 
 			if dist_sq > effective_max_dist_sq then
 				remove = true
@@ -1165,6 +1129,8 @@ mod.clear_caches = function()
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
+	table_clear(_horde_visited)
+	table_clear(_units_to_remove)
 end
 
 mod.update_horde_clusters = function(temp, to_process)
@@ -1181,10 +1147,6 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	for _, entry in next, mod.enemy_cache do
-		entry.pos = nil
-	end
-
 	mod.scan_enemies()
 
 	if not next(mod.enemy_cache) then
@@ -1194,7 +1156,7 @@ mod.update_enemies = function(dt, t)
 	local temp = _enemy_units_temp
 	local count = 0
 
-	for unit in next, mod.enemy_cache do
+	for unit, entry in next, mod.enemy_cache do
 		count = count + 1
 		temp[count] = unit
 	end
@@ -1203,25 +1165,21 @@ mod.update_enemies = function(dt, t)
 		return
 	end
 
-	-- rotate index so we don't always process the same subset first
 	_last_enemy_index = (_last_enemy_index % count) + 1
 
 	local to_process = math_min(count, MAX_ENEMIES_PER_FRAME)
 
-	-- select a rotating window of units into first to_process entries
 	if to_process < count then
 		local idx = _last_enemy_index
 		for i = 1, to_process do
 			if idx > count then
 				idx = 1
 			end
-			-- swap into front
 			temp[i], temp[idx] = temp[idx], temp[i]
 			idx = idx + 1
 		end
 	end
 
-	-- trim any extra entries in temp
 	for i = to_process + 1, count do
 		temp[i] = nil
 	end
@@ -1242,7 +1200,8 @@ mod.update_enemies = function(dt, t)
 			local entry = mod.enemy_cache[unit]
 
 			if not entry.pos then
-				entry.pos = Unit.world_position(unit, 1)
+				local wpos = Unit.world_position(unit, 1, _pos_vec)
+				entry.pos = Vector3(wpos.x, wpos.y, wpos.z)
 			end
 
 			local pos = entry.pos
@@ -1252,17 +1211,8 @@ mod.update_enemies = function(dt, t)
 			local dz = pos.z - player_pos.z
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- effective max distance (individual overrides replace global)
-			local effective_max_dist_sq = fs.draw_distance * fs.draw_distance
-			if entry and entry.breed_name then
-				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
-				if ind_dist_enabled then
-					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
-					if ind_dist then
-						effective_max_dist_sq = ind_dist * ind_dist
-					end
-				end
-			end
+			local ind_dist = entry.breed_name and fs.breed_distances[entry.breed_name]
+			local effective_max_dist_sq = ind_dist and (ind_dist * ind_dist) or (fs.draw_distance * fs.draw_distance)
 
 			-- LOD cutoff
 			if dist_sq > effective_max_dist_sq then
@@ -1297,11 +1247,16 @@ mod.update_enemies = function(dt, t)
 		::continue_enemy_loop::
 	end
 
-	-- Apply distance / stacking fade to all active markers
-	if fs.enable_depth_fading then
+	mod._fade_skip = not mod._fade_skip
+	mod._remove_skip = not mod._remove_skip
+
+	if fs.enable_depth_fading and not mod._fade_skip then
 		mod.apply_marker_fade(self)
 	end
-	mod.remove_dead()
+
+	if not mod._remove_skip then
+		mod.remove_dead()
+	end
 end
 
 mod.get_breed_tags = function(unit)

@@ -225,8 +225,13 @@ mod.default_debuffs = table.clone(mod.debuffs)
 mod.debuff_list = {}
 
 for _, debuff in next, mod.debuffs do
-	mod.debuff_list[#mod.debuff_list + 1] =
-		{ text = debuff.name, value = debuff.name, sort = mod:localize(debuff.name) or debuff.name }
+	mod.debuff_list[#mod.debuff_list + 1] = {
+		text = debuff.name,
+		value = debuff.name,
+		sort = mod:localize(debuff.name) or debuff.name,
+		icon = mod.debuff_styles[debuff.group].icon,
+		icon_colour = mod.debuff_styles[debuff.group].colour,
+	}
 end
 
 table.sort(mod.debuff_list, function(a, b)
@@ -1893,7 +1898,7 @@ mod.individual_override_settings = {
 				},
 				tooltip = "outline_individual_colour_tooltip",
 			},
-	},
+		},
 	},
 }
 

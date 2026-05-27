@@ -16,15 +16,20 @@ mod.build_frame_settings = function(dt)
 	fs.draw_distance = mod:get("draw_distance")
 
 	-- broadphase range: must encompass all individual distance overrides
+	-- cache per-breed distances to avoid mod:get() in hot paths
 	fs.draw_distance_broadphase = fs.draw_distance
+	fs.breed_distances = {}
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
 		if enemy then
 			local enabled = mod:get("distance_" .. enemy .. "_enable")
 			if enabled then
 				local ind_dist = mod:get("distance_" .. enemy .. "_value")
-				if ind_dist and ind_dist > fs.draw_distance_broadphase then
-					fs.draw_distance_broadphase = ind_dist
+				if ind_dist then
+					fs.breed_distances[enemy] = ind_dist
+					if ind_dist > fs.draw_distance_broadphase then
+						fs.draw_distance_broadphase = ind_dist
+					end
 				end
 			end
 		end
