@@ -622,14 +622,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local breed_type = content._breed_type or "enemy"
 
-	-- if enemy group is disabled, don't show
+	-- if enemy group is disabled, don't show (unless individual force override is on)
 	local group_hb_enabled = mod:get("healthbar_" .. breed_type .. "_enable")
 	if group_hb_enabled ~= nil then
 		if not group_hb_enabled then
-			marker.draw = false
-			marker.alpha_multiplier = 0
-			widget.alpha_multiplier = 0
-			return
+			local enemy_individual = breed and breed.name
+			local force_enabled = enemy_individual and mod:get("healthbar_" .. enemy_individual .. "_force")
+			if not force_enabled then
+				marker.draw = false
+				marker.alpha_multiplier = 0
+				widget.alpha_multiplier = 0
+				return
+			end
 		end
 	end
 

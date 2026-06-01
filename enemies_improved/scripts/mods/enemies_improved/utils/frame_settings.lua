@@ -20,11 +20,19 @@ mod.build_frame_settings = function(dt)
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
 		if enemy then
-			local enabled = mod:get("distance_" .. enemy .. "_enable")
-			if enabled then
+			local dist_enabled = mod:get("distance_" .. enemy .. "_enable")
+			if dist_enabled then
 				local ind_dist = mod:get("distance_" .. enemy .. "_value")
 				if ind_dist and ind_dist > fs.draw_distance_broadphase then
 					fs.draw_distance_broadphase = ind_dist
+				end
+			end
+
+			local outline_enabled = mod:get("outline_distance_" .. enemy .. "_enable")
+			if outline_enabled then
+				local outline_dist = mod:get("outline_distance_" .. enemy .. "_value")
+				if outline_dist and outline_dist > fs.draw_distance_broadphase then
+					fs.draw_distance_broadphase = outline_dist
 				end
 			end
 		end
@@ -138,6 +146,40 @@ mod.build_frame_settings = function(dt)
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
 	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
+
+	local r_crit = mod:get("damage_number_crit_colour_R")
+	local g_crit = mod:get("damage_number_crit_colour_G")
+	local b_crit = mod:get("damage_number_crit_colour_B")
+
+	if not r_crit or not g_crit or not b_crit then
+		r_crit = 247
+		g_crit = 158
+		b_crit = 13
+	end
+
+	fs.damage_number_crit_colour = {
+		255,
+		r_crit,
+		g_crit,
+		b_crit,
+	}
+
+	local r_ws = mod:get("damage_number_weakspot_colour_R")
+	local g_ws = mod:get("damage_number_weakspot_colour_G")
+	local b_ws = mod:get("damage_number_weakspot_colour_B")
+
+	if not r_ws or not g_ws or not b_ws then
+		r_ws = 255
+		g_ws = 245
+		b_ws = 107
+	end
+
+	fs.damage_number_weakspot_colour = {
+		255,
+		r_ws,
+		g_ws,
+		b_ws,
+	}
 	fs.hb_toggle_base_boss_healthbar = mod:get("hb_toggle_base_boss_healthbar")
 	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
 	fs.healthbar_colour_preset = mod:get("healthbar_colour_preset")

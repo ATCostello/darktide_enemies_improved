@@ -189,6 +189,31 @@ mod.remove_alert_outline = function(entry)
 	end
 end
 
+mod.outline_safety_cleanup = function()
+	local outline_system = get_outline_system()
+	if not outline_system then
+		return
+	end
+
+	for _, entry in next, mod.enemy_cache do
+		local unit = entry.unit
+		if unit and Unit.alive(unit) then
+			if entry.alert_outline and not entry.special_attack_imminent then
+				mod.remove_outline(unit, "enemies_improved_alert", outline_system)
+				entry.alert_outline = false
+			end
+
+			if entry.stagger_outline and not entry.staggered then
+				mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
+				entry.stagger_outline = false
+			end
+		elseif entry and (entry.alert_outline or entry.stagger_outline) then
+			entry.alert_outline = false
+			entry.stagger_outline = false
+		end
+	end
+end
+
 mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 	if not player_unit or not enemy_unit then
 		return false
@@ -306,6 +331,28 @@ mod.update_enemy_outlines = function(entry)
 	local player_unit = player and player.player_unit
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
+	end
+
+	-- outline distance individual override
+	local breed = entry.breed
+	local breed_name = breed and breed.name
+	if breed_name then
+		local dist_enabled = mod:get("outline_distance_" .. breed_name .. "_enable")
+		if dist_enabled then
+			local max_dist = mod:get("outline_distance_" .. breed_name .. "_value") or 30
+			local player_pos = POSITION_LOOKUP[player_unit]
+			local unit_pos = POSITION_LOOKUP[unit]
+			if player_pos and unit_pos then
+				local dist = Vector3.distance(player_pos, unit_pos)
+				if dist > max_dist then
+					mod.disable_enemy_outlines(unit, entry)
+					entry._outline_applied = false
+					mod.remove_alert_outline(entry)
+					mod.remove_stagger_outline(entry)
+					return
+				end
+			end
+		end
 	end
 
 	local world = Managers.world:world("level_world")

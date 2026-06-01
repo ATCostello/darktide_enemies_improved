@@ -296,8 +296,17 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 					else
 						mod.remove_stagger_outline(entry)
 					end
+				else
+					mod.remove_stagger_outline(entry)
 				end
 			end
+		end
+
+		-- OUTLINE SAFETY CLEANUP - runs every ~2 seconds to clean stuck outlines
+		self._outline_safety_timer = (self._outline_safety_timer or 0) + dt
+		if self._outline_safety_timer >= 2 then
+			self._outline_safety_timer = 0
+			mod.outline_safety_cleanup()
 		end
 
 		-- Hide default health bars if custom healthbars are enabled!
@@ -375,6 +384,9 @@ mod.force_remove_unit_markers = function(unit)
 
 		mod.disable_enemy_outlines(unit, entry)
 		entry._outline_applied = false
+
+		mod.remove_alert_outline(entry)
+		mod.remove_stagger_outline(entry)
 	end
 end
 
@@ -581,6 +593,7 @@ mod.scan_enemies = function()
 
 						-- outlines
 						alert_outline = false,
+						stagger_outline = false,
 						outline_name = nil,
 
 						alert_healthbar = false,
@@ -1099,11 +1112,12 @@ mod.remove_dead = function()
 
 			if dist_sq > effective_max_dist_sq then
 				remove = true
-				--mark_dead = false
 
 				-- disable outlines too
 				mod.disable_enemy_outlines(unit, entry)
 				entry._outline_applied = false
+				mod.remove_alert_outline(entry)
+				mod.remove_stagger_outline(entry)
 			end
 		end
 

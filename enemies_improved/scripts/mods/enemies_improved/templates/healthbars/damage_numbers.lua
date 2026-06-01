@@ -49,8 +49,8 @@ local function _init_damage_colors()
 
 	-- normal colours
 	CACHED_DAMAGE_COLORS.default = fs.main_colour
-	CACHED_DAMAGE_COLORS.crit = {255, 247, 158, 13}
-	CACHED_DAMAGE_COLORS.weakspot = {255, 255, 245, 107}
+	CACHED_DAMAGE_COLORS.crit = fs.damage_number_crit_colour
+	CACHED_DAMAGE_COLORS.weakspot = fs.damage_number_weakspot_colour
 	-- toughness colours
 	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
 

@@ -280,7 +280,17 @@ end
 -- Lifecycle
 -----------------------------------------------------------------------
 
+local Unit_alive = Unit.alive
+
 template.on_enter = function(widget, marker, template)
+	if not marker.unit or not Unit_alive(marker.unit) then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
+		return
+	end
+
 	template.position_offset = { 0, 0, fs.marker_y_offset }
 	widget.alpha_multiplier = 0
 	local content = widget.content
@@ -354,12 +364,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local content = widget.content
 	local distance = content.distance or 0
-	local data = marker.data
 	local unit = marker.unit
 	local style = widget.style
 	local marker_scale = marker.scale
 
-	if not unit then
+	if not unit or not Unit_alive(unit) then
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0

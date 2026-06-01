@@ -229,8 +229,8 @@ for _, debuff in next, mod.debuffs do
 		text = debuff.name,
 		value = debuff.name,
 		sort = mod:localize(debuff.name) or debuff.name,
-		--icon = mod.debuff_styles[debuff.group].icon,
-		--icon_colour = mod.debuff_styles[debuff.group].colour,
+		icon = mod.debuff_styles[debuff.group].icon,
+		icon_colour = mod.debuff_styles[debuff.group].colour,
 	}
 end
 
@@ -242,8 +242,13 @@ end)
 mod.debuff_groups_list = {}
 
 for group_name, debuff in next, mod.debuff_styles do
-	mod.debuff_groups_list[#mod.debuff_groups_list + 1] =
-		{ text = group_name, value = group_name, sort = mod:localize(group_name) or group_name }
+	mod.debuff_groups_list[#mod.debuff_groups_list + 1] = {
+		text = group_name,
+		value = group_name,
+		sort = mod:localize(group_name) or group_name,
+		icon = mod.debuff_styles[group_name].icon,
+		icon_colour = mod.debuff_styles[group_name].colour,
+	}
 end
 
 table.sort(mod.debuff_groups_list, function(a, b)
@@ -1284,8 +1289,83 @@ table.insert(mod.settings_widgets, {
 			},
 			tooltip = "readable_max_damage_numbers_tooltip",
 		},
+		{
+			setting_id = "damage_number_crit_colour",
+			type = "group",
+			--tab = "Damage Numbers",
+			sub_widgets = {
+				{
+					setting_id = "damage_number_crit_colour_R",
+					type = "numeric",
+					default_value = 247,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_crit_colour_tooltip",
+				},
+				{
+					setting_id = "damage_number_crit_colour_G",
+					type = "numeric",
+					default_value = 158,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_crit_colour_tooltip",
+				},
+				{
+					setting_id = "damage_number_crit_colour_B",
+					type = "numeric",
+					default_value = 13,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_crit_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "damage_number_weakspot_colour",
+			type = "group",
+			--tab = "Damage Numbers",
+			sub_widgets = {
+				{
+					setting_id = "damage_number_weakspot_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_weakspot_colour_tooltip",
+				},
+				{
+					setting_id = "damage_number_weakspot_colour_G",
+					type = "numeric",
+					default_value = 245,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_weakspot_colour_tooltip",
+				},
+				{
+					setting_id = "damage_number_weakspot_colour_B",
+					type = "numeric",
+					default_value = 107,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "damage_number_weakspot_colour_tooltip",
+				},
+			},
+		},
 	},
 })
+
 -- DEBUFFS
 table.insert(mod.settings_widgets, {
 	setting_id = "debuff_settings",
@@ -1812,6 +1892,30 @@ mod.individual_override_settings = {
 		tooltip = "distance_individual_value_tooltip",
 	},
 
+	{
+		setting_id = "outline_distance_individual_enable",
+		type = "checkbox",
+		default_value = false,
+		tooltip = "outline_distance_individual_enable_tooltip",
+	},
+	{
+		setting_id = "outline_distance_individual_value",
+		type = "numeric",
+		default_value = 30,
+		step_size_value = 5,
+		range = {
+			5,
+			100,
+		},
+		tooltip = "outline_distance_individual_value_tooltip",
+	},
+
+	{
+		setting_id = "healthbar_individual_force",
+		type = "checkbox",
+		default_value = false,
+		tooltip = "healthbar_individual_force_tooltip",
+	},
 	{
 		setting_id = "healthbar_individual_colour",
 		type = "group",

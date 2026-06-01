@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.15"
+mod.version = "1.5.16"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1283,6 +1283,46 @@ table.insert(localisations_to_add, {
 		en = "Should the ghostbar use the colour of the healthbar of the enemy?\n\nIf disabled, the ghostbar will be white.",
 		["zh-cn"] = "延迟血条使用敌人血条颜色，关闭则为白色。",
 	},
+	damage_number_crit_colour = {
+		en = "Crit damage colour",
+		["zh-cn"] = "暴击伤害颜色",
+	},
+	damage_number_crit_colour_R = {
+		en = "Crit Colour: Red",
+		["zh-cn"] = "暴击颜色：红",
+	},
+	damage_number_crit_colour_G = {
+		en = "Crit Colour: Green",
+		["zh-cn"] = "暴击颜色：绿",
+	},
+	damage_number_crit_colour_B = {
+		en = "Crit Colour: Blue",
+		["zh-cn"] = "暴击颜色：蓝",
+	},
+	damage_number_crit_colour_tooltip = {
+		en = "Adjust the colour for critical hit damage numbers.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置暴击伤害数字的颜色，数值0~255。",
+	},
+	damage_number_weakspot_colour = {
+		en = "Weakspot damage colour",
+		["zh-cn"] = "弱点伤害颜色",
+	},
+	damage_number_weakspot_colour_R = {
+		en = "Weakspot Colour: Red",
+		["zh-cn"] = "弱点颜色：红",
+	},
+	damage_number_weakspot_colour_G = {
+		en = "Weakspot Colour: Green",
+		["zh-cn"] = "弱点颜色：绿",
+	},
+	damage_number_weakspot_colour_B = {
+		en = "Weakspot Colour: Blue",
+		["zh-cn"] = "弱点颜色：蓝",
+	},
+	damage_number_weakspot_colour_tooltip = {
+		en = "Adjust the colour for weakspot hit damage numbers.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		["zh-cn"] = "设置弱点伤害数字的颜色，数值0~255。",
+	},
 	readable_max_damage_numbers = {
 		en = "Max numbers to show",
 		["zh-cn"] = "最大显示数字",
@@ -1832,12 +1872,20 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "重置选中敌人的设置为默认值。",
 	},
 	healthbar_individual_enable = {
-		en = "Enable healthbars override?",
-		["zh-cn"] = "覆盖血条设置",
+		en = "Healthbar colour override?",
+		["zh-cn"] = "覆盖血条颜色",
 	},
 	healthbar_individual_enable_tooltip = {
-		en = "Toggle healthbars overriding for your selected enemy",
-		["zh-cn"] = "为选中敌人覆盖血条显示设置。",
+		en = "Toggle healthbar colour overriding for your selected enemy",
+		["zh-cn"] = "为选中敌人覆盖血条颜色。",
+	},
+	healthbar_individual_force = {
+		en = "Force healthbar on?",
+		["zh-cn"] = "强制显示血条？",
+	},
+	healthbar_individual_force_tooltip = {
+		en = "When enabled, the healthbar will always be shown for this enemy, even if the enemy type group has healthbars disabled.",
+		["zh-cn"] = "开启后该敌人始终显示血条，即使其类型分组已禁用血条。",
 	},
 	healthbar_individual_colour = {
 		en = "Healthbar colour (Enemy Specific)",
@@ -1906,6 +1954,18 @@ table.insert(localisations_to_add, {
 	},
 	distance_individual_value_tooltip = {
 		en = "The max distance (in metres) this specific enemy will be visible for markers, healthbars and outlines.",
+	},
+	outline_distance_individual_enable = {
+		en = "Outline draw distance (Enemy Specific)",
+	},
+	outline_distance_individual_enable_tooltip = {
+		en = "Toggle the outline draw distance override for this enemy. When enabled, the outline will only be visible within the specified distance below.",
+	},
+	outline_distance_individual_value = {
+		en = "Outline draw distance (Enemy Specific)",
+	},
+	outline_distance_individual_value_tooltip = {
+		en = "The max distance (in metres) this specific enemy's outline will be visible.",
 	},
 	healthbar_individual_width = {
 		en = "Healthbar Width (Enemy Specific)",
