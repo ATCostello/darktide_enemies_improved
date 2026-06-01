@@ -28,11 +28,10 @@ mod.update_enemy_markers = function(entry, t)
 	local breed = unit_data_extension and unit_data_extension:breed()
 	local enemy_individual = breed and breed.name
 
-	-- Check individual toggle
+	-- Check individual toggle (cached in fs)
 	local individual_enabled = false
 	if enemy_individual then
-		local setting = mod:get("markers_" .. enemy_individual .. "_toggle")
-		if setting == true then
+		if fs.breed_marker_toggle[enemy_individual] == true then
 			individual_enabled = true
 		end
 	end

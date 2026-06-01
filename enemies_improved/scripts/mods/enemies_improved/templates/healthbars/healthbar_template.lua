@@ -463,7 +463,7 @@ template.on_enter = function(widget, marker, template)
 				local individual_breed_type = mod.find_breed_category_by_tags(tags)
 
 				if individual_breed_type == breed_type then
-					if mod:get("healthbar_" .. enemy_individual .. "_enable") then
+					if fs.breed_healthbar_enabled[enemy_individual] then
 						bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
 					end
 				end
@@ -623,11 +623,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed_type = content._breed_type or "enemy"
 
 	-- if enemy group is disabled, don't show (unless individual force override is on)
-	local group_hb_enabled = mod:get("healthbar_" .. breed_type .. "_enable")
+	-- using cached fs values
+	local group_hb_enabled = fs.breed_type_healthbar_enabled[breed_type]
 	if group_hb_enabled ~= nil then
 		if not group_hb_enabled then
 			local enemy_individual = breed and breed.name
-			local force_enabled = enemy_individual and mod:get("healthbar_" .. enemy_individual .. "_force")
+			local force_enabled = enemy_individual and fs.breed_healthbar_force[enemy_individual]
 			if not force_enabled then
 				marker.draw = false
 				marker.alpha_multiplier = 0
@@ -1153,19 +1154,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	--local function icon_special_attack(content_icon, style_icon)
 	if entry and fs.healthbar_specials_enable and entry.alert_outline then
 		-- get special colour
-		local sr = mod:get("outline_specials_colour_R")
-		local sg = mod:get("outline_specials_colour_G")
-		local sb = mod:get("outline_specials_colour_B")
-
-		if not sr then
-			sr = 255
-		end
-		if not sg then
-			sg = 0
-		end
-		if not sb then
-			sb = 0
-		end
+		local spec_col = fs.outline_specials_colour
 
 		if not content.alert_healthbar then
 			----- TURN ON
@@ -1173,9 +1162,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			style.icon_background1.default_alpha = 255
 
 			-- set alert glow colour
-			style.icon_background1.color[2] = sr
-			style.icon_background1.color[3] = sg
-			style.icon_background1.color[4] = sb
+			style.icon_background1.color[2] = spec_col[2]
+			style.icon_background1.color[3] = spec_col[3]
+			style.icon_background1.color[4] = spec_col[4]
 			content.alert_healthbar = true
 		elseif content.alert_healthbar and fs.specials_flash then
 			----- TURN OFF
@@ -1388,6 +1377,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		content.hb_built = false
 	end
+end
+
+mod._cleanup_unit_health_data = function(unit)
+	previous_health[unit] = nil
+	last_damaged_time[unit] = nil
+	peak_cluster_max_by_rep[unit] = nil
 end
 
 return template

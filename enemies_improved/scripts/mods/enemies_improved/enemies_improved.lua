@@ -69,6 +69,8 @@ local MAX_ENEMIES_PER_FRAME = 100
 local _enemy_units_temp = {}
 local _last_enemy_index = 0
 local _horde_units_all = {}
+local _cull_pool = {}
+local _cull_pool_count = 0
 
 local _player_pos_vec = Vector3.zero()
 local _pos_vec = Vector3.zero()
@@ -259,45 +261,45 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			mod.clear_caches()
 		end
 
-		-- pulse special attacks (Outside of global throttle)
-		if fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable then
-			local interval = fs.special_attack_pulse_speed or 0.2
+		-- pulse special attacks + stagger outlines (combined into single cache iteration)
+		local has_specials = fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable
+		local has_stagger = fs.outline_stagger_horde_enable or fs.outline_stagger_enable
+		if has_specials or has_stagger then
+			local pulse_interval = fs.special_attack_pulse_speed or 0.2
+			local stagger_interval = fs.stagger_pulse_speed or 0.2
 
 			for _, entry in next, mod.enemy_cache do
-				if entry.special_attack_imminent then
-					entry._pulse_timer = (entry._pulse_timer or 0) + dt
-
-					if entry._pulse_timer >= interval then
-						mod.pulse_enemy_outline(entry)
-						entry._pulse_timer = 0
-					end
-				else
-					mod.remove_alert_outline(entry)
-				end
-			end
-		end
-
-		-- STAGGER OUTLINES
-		if fs.outline_stagger_horde_enable or fs.outline_stagger_enable then
-			local interval = fs.stagger_pulse_speed or 0.2
-
-			for _, entry in next, mod.enemy_cache do
-				if
-					(entry.is_horde and fs.outline_stagger_horde_enable)
-					or (not entry.is_horde and fs.outline_stagger_enable)
-				then
-					entry._pulse_timer = (entry._pulse_timer or 0) + dt
-
-					if entry.staggered then
-						if entry._pulse_timer >= interval then
+				-- special attack pulse
+				if has_specials then
+					if entry.special_attack_imminent then
+						entry._pulse_timer = (entry._pulse_timer or 0) + dt
+						if entry._pulse_timer >= pulse_interval then
 							mod.pulse_enemy_outline(entry)
 							entry._pulse_timer = 0
 						end
 					else
+						mod.remove_alert_outline(entry)
+					end
+				end
+
+				-- stagger pulse
+				if has_stagger then
+					if
+						(entry.is_horde and fs.outline_stagger_horde_enable)
+						or (not entry.is_horde and fs.outline_stagger_enable)
+					then
+						if entry.staggered then
+							entry._pulse_timer = (entry._pulse_timer or 0) + dt
+							if entry._pulse_timer >= stagger_interval then
+								mod.pulse_enemy_outline(entry)
+								entry._pulse_timer = 0
+							end
+						else
+							mod.remove_stagger_outline(entry)
+						end
+					else
 						mod.remove_stagger_outline(entry)
 					end
-				else
-					mod.remove_stagger_outline(entry)
 				end
 			end
 		end
@@ -462,7 +464,20 @@ mod.scan_enemies = function()
 	end
 
 	table_clear(_horde_units_all)
+
+	-- Return cull cell entries to pool before clearing
+	for key, list in pairs(_cull_cells) do
+		for i = 1, #list do
+			local e = list[i]
+			_cull_pool_count = _cull_pool_count + 1
+			_cull_pool[_cull_pool_count] = e
+		end
+		table_clear(list)
+	end
 	table_clear(_cull_cells)
+
+	local world = Managers.world:world("level_world")
+	local physics_world_cache = world and World.get_data(world, "physics_world")
 
 	for i = 1, num_hits do
 		local unit = results[i]
@@ -481,11 +496,8 @@ mod.scan_enemies = function()
 			end
 
 			-- LOS FILTER (HARD REJECT)
-			local world = Managers.world:world("level_world")
-			local physics_world = World.get_data(world, "physics_world")
-
-			if physics_world then
-				if not mod.has_line_of_sight(player_unit, unit, physics_world) then
+			if physics_world_cache then
+				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache) then
 					mod.force_remove_unit_markers(unit)
 
 					cache[unit] = nil
@@ -556,16 +568,22 @@ mod.scan_enemies = function()
 					_cull_cells[key] = list
 				end
 
-				list[#list + 1] = {
-					unit = unit,
-					score = score,
-					dist_sq = dist_sq,
-					entry = entry,
-					unit_data_ext = unit_data_ext,
-					breed = breed,
-					breed_type = breed_type,
-					pos = Vector3(pos.x, pos.y, pos.z),
-				}
+				local e = _cull_pool[_cull_pool_count]
+				if e then
+					_cull_pool[_cull_pool_count] = nil
+					_cull_pool_count = _cull_pool_count - 1
+				else
+					e = {}
+				end
+				e.unit = unit
+				e.score = score
+				e.dist_sq = dist_sq
+				e.entry = entry
+				e.unit_data_ext = unit_data_ext
+				e.breed = breed
+				e.breed_type = breed_type
+				e.pos = Vector3(pos.x, pos.y, pos.z)
+				list[#list + 1] = e
 
 				goto skip_breed
 			else
@@ -1028,8 +1046,10 @@ function string.starts(String, Start)
 	return string.sub(String, 1, string.len(Start)) == Start
 end
 
+local _units_to_remove = {}
+
 mod.remove_dead = function()
-	local units_to_remove = {}
+	table_clear(_units_to_remove)
 
 	-- Get player
 	local player = Managers.player:local_player(1)
@@ -1045,29 +1065,7 @@ mod.remove_dead = function()
 	local player_pos = Unit.world_position(player_unit, 1)
 	local max_dist_sq = (mod.frame_settings.draw_distance or 50) ^ 2
 	local mark_dead = false
-
-	-- Go through each marker type and clear caches.
-	local function iterate_types_removal(unit)
-		local id
-
-		id = mod.enemy_markers[unit]
-
-		if id then
-			Managers.event:trigger("remove_world_marker", id)
-		end
-
-		id = mod.enemy_healthbars[unit]
-		if id and not fs.hb_show_dps then
-			Managers.event:trigger("remove_world_marker", id)
-		end
-
-		id = mod.enemy_debuffs[unit]
-		if id then
-			Managers.event:trigger("remove_world_marker", id)
-		end
-
-		units_to_remove[#units_to_remove + 1] = unit
-	end
+	local remove_table = _units_to_remove
 
 	-- Main loop
 	for unit, entry in next, mod.enemy_cache do
@@ -1099,11 +1097,11 @@ mod.remove_dead = function()
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
 			-- individual distance override (replaces global for this enemy)
+			local breed_name = entry.breed_name
 			local effective_max_dist_sq = max_dist_sq
-			if entry.breed_name then
-				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
-				if ind_dist_enabled then
-					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
+			if breed_name then
+				if fs.breed_dist_enabled[breed_name] then
+					local ind_dist = fs.breed_dist_value[breed_name]
 					if ind_dist then
 						effective_max_dist_sq = ind_dist * ind_dist
 					end
@@ -1129,12 +1127,26 @@ mod.remove_dead = function()
 		end
 
 		if remove then
-			iterate_types_removal(unit)
+			local id
+			id = mod.enemy_markers[unit]
+			if id then
+				Managers.event:trigger("remove_world_marker", id)
+			end
+			id = mod.enemy_healthbars[unit]
+			if id and not fs.hb_show_dps then
+				Managers.event:trigger("remove_world_marker", id)
+			end
+			id = mod.enemy_debuffs[unit]
+			if id then
+				Managers.event:trigger("remove_world_marker", id)
+			end
+
+			remove_table[#remove_table + 1] = unit
 		end
 	end
 
 	-- Cleanup
-	for _, unit in next, units_to_remove do
+	for _, unit in next, remove_table do
 		if mark_dead then
 			mod.marked_dead[unit] = true
 		else
@@ -1144,6 +1156,12 @@ mod.remove_dead = function()
 		if not fs.hb_show_dps then
 			mod.enemy_healthbars[unit] = nil
 		end
+
+		-- Clean up per-unit data that accumulates if healthbars module is loaded
+		if mod._cleanup_unit_health_data then
+			mod._cleanup_unit_health_data(unit)
+		end
+
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_markers[unit] = nil
 		mod.enemy_cache[unit] = nil
@@ -1195,10 +1213,6 @@ end
 -----------------------------------------------------------------------
 
 mod.update_enemies = function(dt, t)
-	for _, entry in next, mod.enemy_cache do
-		entry.pos = nil
-	end
-
 	mod.scan_enemies()
 
 	if not next(mod.enemy_cache) then
@@ -1267,11 +1281,11 @@ mod.update_enemies = function(dt, t)
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
 			-- effective max distance (individual overrides replace global)
+			local breed_name = entry.breed_name
 			local effective_max_dist_sq = fs.draw_distance * fs.draw_distance
-			if entry and entry.breed_name then
-				local ind_dist_enabled = mod:get("distance_" .. entry.breed_name .. "_enable")
-				if ind_dist_enabled then
-					local ind_dist = mod:get("distance_" .. entry.breed_name .. "_value")
+			if breed_name then
+				if fs.breed_dist_enabled[breed_name] then
+					local ind_dist = fs.breed_dist_value[breed_name]
 					if ind_dist then
 						effective_max_dist_sq = ind_dist * ind_dist
 					end

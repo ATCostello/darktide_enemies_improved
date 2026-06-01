@@ -61,25 +61,22 @@ mod.enable_enemy_outlines = function(unit, entry)
 	local breed_name = breed and breed.name
 	local breed_type = entry.breed_type or "enemy"
 
-	-- INDIVIDUAL OVERRIDE
-	if breed_name then
-		local key = "outline_" .. breed_name .. "_enable"
-		if mod:get(key) then
-			local outline_name = entry._outline_name_individual
-			if not outline_name then
-				outline_name = "enemies_" .. breed_name
-				entry._outline_name_individual = outline_name
-			end
-
-			mod.remove_outline(unit, outline_name, outline_system)
-			mod.add_outline(unit, outline_name, outline_system)
-
-			return
+	-- INDIVIDUAL OVERRIDE (cached in fs)
+	if breed_name and fs.breed_outline_enabled[breed_name] then
+		local outline_name = entry._outline_name_individual
+		if not outline_name then
+			outline_name = "enemies_" .. breed_name
+			entry._outline_name_individual = outline_name
 		end
+
+		mod.remove_outline(unit, outline_name, outline_system)
+		mod.add_outline(unit, outline_name, outline_system)
+
+		return
 	end
 
-	-- CATEGORY
-	if mod:get("outline_" .. breed_type .. "_enable") then
+	-- CATEGORY (cached in fs)
+	if fs.breed_type_outline_enabled[breed_type] then
 		local outline_name = entry._outline_name_type
 		if not outline_name then
 			outline_name = "enemies_" .. breed_type
@@ -333,18 +330,21 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	-- outline distance individual override
+	-- outline distance individual override (cached in fs)
 	local breed = entry.breed
 	local breed_name = breed and breed.name
 	if breed_name then
-		local dist_enabled = mod:get("outline_distance_" .. breed_name .. "_enable")
+		local dist_enabled = fs.breed_outline_dist_enabled[breed_name]
 		if dist_enabled then
-			local max_dist = mod:get("outline_distance_" .. breed_name .. "_value") or 30
+			local max_dist = fs.breed_outline_dist_value[breed_name] or 30
 			local player_pos = POSITION_LOOKUP[player_unit]
 			local unit_pos = POSITION_LOOKUP[unit]
 			if player_pos and unit_pos then
-				local dist = Vector3.distance(player_pos, unit_pos)
-				if dist > max_dist then
+				local dx = player_pos.x - unit_pos.x
+				local dy = player_pos.y - unit_pos.y
+				local dz = player_pos.z - unit_pos.z
+				local dist_sq = dx * dx + dy * dy + dz * dz
+				if dist_sq > max_dist * max_dist then
 					mod.disable_enemy_outlines(unit, entry)
 					entry._outline_applied = false
 					mod.remove_alert_outline(entry)
@@ -355,33 +355,37 @@ mod.update_enemy_outlines = function(entry)
 		end
 	end
 
-	local world = Managers.world:world("level_world")
-	local physics_world = World.get_data(world, "physics_world")
-
-	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
-
 	if entry._outline_applied == nil then
 		entry._outline_applied = false
 	end
-
-	--local is_tagged = mod.tagged_units[unit]
 
 	local smart_tag_system = Managers.state.extension:system("smart_tag_system")
 	local tag_id = smart_tag_system:unit_tag_id(unit)
 	local is_tagged = tag_id ~= nil
 
+	-- reapply after tagged
+	if is_tagged then
+		if entry._outline_applied then
+			mod.disable_enemy_outlines(unit, entry)
+			entry._outline_applied = false
+		end
+	elseif entry._outline_applied then
+		-- already applied, no need to recheck LoS every frame
+		return
+	end
+
+	local world = Managers.world:world("level_world")
+	local physics_world = World.get_data(world, "physics_world")
+
+	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
+
 	if has_los then
-		if not entry._outline_applied and not is_tagged then
+		if not entry._outline_applied then
 			mod.enable_enemy_outlines(unit, entry)
 			entry._outline_applied = true
 		end
 	elseif entry._outline_applied then
 		mod.disable_enemy_outlines(unit, entry)
-		entry._outline_applied = false
-	end
-
-	-- reapply after tagged
-	if is_tagged then
 		entry._outline_applied = false
 	end
 end
@@ -471,8 +475,7 @@ mod.apply_enemy_outlines = function(settings)
 		local enemy_individual = options.value
 
 		if enemy_individual then
-			local key = "outline_" .. enemy_individual .. "_enable"
-			local enabled = mod:get(key)
+			local enabled = fs.breed_outline_enabled[enemy_individual]
 
 			if enabled and mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] then
 				local r = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2]
@@ -520,7 +523,7 @@ mod.apply_enemy_outlines = function(settings)
 							return false
 						end
 
-						return mod:get("outline_" .. enemy_individual .. "_enable")
+						return fs.breed_outline_enabled[enemy_individual]
 					end,
 				}
 			end

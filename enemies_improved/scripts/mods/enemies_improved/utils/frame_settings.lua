@@ -16,25 +16,52 @@ mod.build_frame_settings = function(dt)
 	fs.draw_distance = mod:get("draw_distance")
 
 	-- broadphase range: must encompass all individual distance overrides
+	-- Also build per-breed cache tables to avoid mod:get() + string concat in hot paths
 	fs.draw_distance_broadphase = fs.draw_distance
+	fs.breed_dist_enabled = {}
+	fs.breed_dist_value = {}
+	fs.breed_outline_dist_enabled = {}
+	fs.breed_outline_dist_value = {}
+	fs.breed_marker_toggle = {}
+	fs.breed_outline_enabled = {}
+	fs.breed_healthbar_enabled = {}
+	fs.breed_healthbar_force = {}
+	fs.breed_type_outline_enabled = {}
+	fs.breed_type_healthbar_enabled = {}
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
 		if enemy then
 			local dist_enabled = mod:get("distance_" .. enemy .. "_enable")
+			fs.breed_dist_enabled[enemy] = dist_enabled
 			if dist_enabled then
 				local ind_dist = mod:get("distance_" .. enemy .. "_value")
+				fs.breed_dist_value[enemy] = ind_dist
 				if ind_dist and ind_dist > fs.draw_distance_broadphase then
 					fs.draw_distance_broadphase = ind_dist
 				end
 			end
 
 			local outline_enabled = mod:get("outline_distance_" .. enemy .. "_enable")
+			fs.breed_outline_dist_enabled[enemy] = outline_enabled
 			if outline_enabled then
 				local outline_dist = mod:get("outline_distance_" .. enemy .. "_value")
+				fs.breed_outline_dist_value[enemy] = outline_dist
 				if outline_dist and outline_dist > fs.draw_distance_broadphase then
 					fs.draw_distance_broadphase = outline_dist
 				end
 			end
+
+			fs.breed_marker_toggle[enemy] = mod:get("markers_" .. enemy .. "_toggle")
+			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
+			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
+			fs.breed_healthbar_force[enemy] = mod:get("healthbar_" .. enemy .. "_force")
+		end
+	end
+	for _, options in next, mod.breed_types do
+		local breed = options.value
+		if breed and breed ~= "select" then
+			fs.breed_type_outline_enabled[breed] = mod:get("outline_" .. breed .. "_enable")
+			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
 		end
 	end
 
@@ -213,6 +240,15 @@ mod.build_frame_settings = function(dt)
 	fs.outline_specials_enable = mod:get("outline_specials_enable")
 	fs.specials_flash = mod:get("specials_flash")
 	fs.special_attack_pulse_speed = mod:get("special_attack_pulse_speed")
+
+	local spec_r = mod:get("outline_specials_colour_R")
+	local spec_g = mod:get("outline_specials_colour_G")
+	local spec_b = mod:get("outline_specials_colour_B")
+	fs.outline_specials_colour = {
+		[2] = spec_r or 255,
+		[3] = spec_g or 0,
+		[4] = spec_b or 0,
+	}
 
 	-- STAGGER SETTINGS
 	fs.debuff_stagger_enable = mod:get("debuff_stagger_enable")

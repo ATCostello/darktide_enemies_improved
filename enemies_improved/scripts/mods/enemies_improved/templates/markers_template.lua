@@ -308,7 +308,7 @@ template.on_enter = function(widget, marker, template)
 	content.breed_settings = content.breed and minion_breeds[content.breed.name]
 
 	if content.breed and content.breed.name then
-		content.healthbar_enabled = mod:get("healthbar_" .. content.breed.name .. "_enable")
+		content.healthbar_enabled = fs.breed_healthbar_enabled[content.breed.name]
 	end
 
 	content.m_allowed = true
@@ -316,7 +316,7 @@ template.on_enter = function(widget, marker, template)
 	local enemy_individual = content.breed and content.breed.name
 
 	if enemy_individual then
-		local enabled = mod:get("markers_" .. enemy_individual .. "_toggle")
+		local enabled = fs.breed_marker_toggle[enemy_individual]
 
 		if enabled ~= nil then
 			content.m_allowed = enabled
@@ -484,27 +484,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if entry and fs.marker_specials_enable and entry.alert_outline then
 		content.special_attack_imminent = true
 
-		local sr = (mod:get("outline_specials_colour_R"))
-		local sg = (mod:get("outline_specials_colour_G"))
-		local sb = (mod:get("outline_specials_colour_B"))
+		local spec_col = fs.outline_specials_colour
+		style.arrow.color[2] = spec_col[2]
+		style.arrow.color[3] = spec_col[3]
+		style.arrow.color[4] = spec_col[4]
 
-		if not sr then
-			sr = 255
-		end
-		if not sg then
-			sg = 0
-		end
-		if not sb then
-			sb = 0
-		end
-
-		style.arrow.color[2] = sr
-		style.arrow.color[3] = sg
-		style.arrow.color[4] = sb
-
-		style.background.color[2] = sr
-		style.background.color[3] = sg
-		style.background.color[4] = sb
+		style.background.color[2] = spec_col[2]
+		style.background.color[3] = spec_col[3]
+		style.background.color[4] = spec_col[4]
 	else
 		--content.is_clamped = false
 		content.special_attack_imminent = false

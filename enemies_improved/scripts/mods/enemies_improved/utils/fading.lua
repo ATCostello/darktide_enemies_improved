@@ -127,9 +127,8 @@ mod.apply_marker_fade = function(self)
 				local draw_distance = draw_distance_base
 				local cache_entry = mod.enemy_cache[marker.unit]
 				if cache_entry and cache_entry.breed_name then
-					local ind_dist_enabled = mod:get("distance_" .. cache_entry.breed_name .. "_enable")
-					if ind_dist_enabled then
-						local ind_dist = mod:get("distance_" .. cache_entry.breed_name .. "_value")
+					if fs.breed_dist_enabled[cache_entry.breed_name] then
+						local ind_dist = fs.breed_dist_value[cache_entry.breed_name]
 						if ind_dist and ind_dist > draw_distance then
 							draw_distance = ind_dist
 						end
