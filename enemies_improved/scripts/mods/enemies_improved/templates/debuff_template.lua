@@ -1152,7 +1152,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			if state then
-				content[icon_id] = mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].icon
+				content[icon_id] = mod.debuffs and mod.debuffs[name] and mod.debuffs[name].group and mod.debuff_styles[mod.debuffs[name].group] and mod.debuff_styles[mod.debuffs[name].group].icon
 					or "content/ui/materials/icons/generic/danger"
 
 				-- Add percentage text

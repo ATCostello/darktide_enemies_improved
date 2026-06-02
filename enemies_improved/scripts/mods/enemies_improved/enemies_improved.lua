@@ -385,8 +385,6 @@ mod.force_remove_unit_markers = function(unit)
 		entry._marker_created = false
 
 		mod.disable_enemy_outlines(unit, entry)
-		entry._outline_applied = false
-
 		mod.remove_alert_outline(entry)
 		mod.remove_stagger_outline(entry)
 	end
@@ -687,29 +685,9 @@ mod.scan_enemies = function()
 					end
 
 					mod.marked_dead[unit] = nil
-
-					-- DEBUG
-					if mod.DEBUG then
-						local extension_manager = Managers.state.extension
-						local outline_system = extension_manager:system("outline_system")
-						outline_system:add_outline(unit, "enemies_improved_staggered")
-					end
 				else
 					-- culled
 					mod.force_remove_unit_markers(unit)
-
-					--local entry = mod.enemy_cache[unit]
-					--if entry then
-					--	entry.seen = false
-					--end
-
-					-- DEBUG
-					if mod.DEBUG then
-						-- debug to add outlines to enemies that have been processed, and should have a healthbar...
-						local extension_manager = Managers.state.extension
-						local outline_system = extension_manager:system("outline_system")
-						outline_system:remove_outline(unit, "enemies_improved_staggered")
-					end
 				end
 			end
 		end
@@ -1113,7 +1091,6 @@ mod.remove_dead = function()
 
 				-- disable outlines too
 				mod.disable_enemy_outlines(unit, entry)
-				entry._outline_applied = false
 				mod.remove_alert_outline(entry)
 				mod.remove_stagger_outline(entry)
 			end

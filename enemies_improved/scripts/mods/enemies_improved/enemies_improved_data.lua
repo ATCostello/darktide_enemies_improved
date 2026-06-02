@@ -822,7 +822,7 @@ table.insert(mod.settings_widgets, {
 			type = "numeric",
 			default_value = 1.5,
 			decimals_number = 1,
-			step_size_value = 1,
+			step_size_value = 0.1,
 			range = {
 				1,
 				6,

@@ -71,7 +71,7 @@ mod.enable_enemy_outlines = function(unit, entry)
 
 		mod.remove_outline(unit, outline_name, outline_system)
 		mod.add_outline(unit, outline_name, outline_system)
-
+		entry._outline_applied = true
 		return
 	end
 
@@ -85,6 +85,7 @@ mod.enable_enemy_outlines = function(unit, entry)
 
 		mod.remove_outline(unit, outline_name, outline_system)
 		mod.add_outline(unit, outline_name, outline_system)
+		entry._outline_applied = true
 	end
 end
 
@@ -104,10 +105,12 @@ mod.disable_enemy_outlines = function(unit, entry)
 
 	local type_outline = entry._outline_name_type or ("enemies_" .. breed_type)
 	mod.remove_outline(unit, type_outline, outline_system)
+	entry._outline_applied = false
 
 	if breed_name then
 		local individual_outline = entry._outline_name_individual or ("enemies_" .. breed_name)
 		mod.remove_outline(unit, individual_outline, outline_system)
+		entry._outline_applied = false
 	end
 end
 
@@ -122,17 +125,27 @@ mod.pulse_enemy_outline = function(entry)
 		return
 	end
 
-	if entry.special_attack_imminent then
+	local player = Managers.player:local_player(1)
+	local player_unit = player and player.player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
+	end
+	local world = Managers.world:world("level_world")
+	local physics_world = World.get_data(world, "physics_world")
+
+	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
+
+	if has_los and entry.special_attack_imminent then
 		if not entry.alert_outline then
 			if fs.outline_specials_enable then
 				mod.add_outline(unit, "enemies_improved_alert", outline_system)
+				entry.alert_outline = true
 			end
-			entry.alert_outline = true
 		elseif fs.specials_flash then
 			mod.remove_outline(unit, "enemies_improved_alert", outline_system)
 			entry.alert_outline = false
 		end
-	elseif entry.staggered then
+	elseif has_los and entry.staggered then
 		if
 			(entry.is_horde and fs.outline_stagger_horde_enable) or (not entry.is_horde and fs.outline_stagger_enable)
 		then
@@ -346,7 +359,6 @@ mod.update_enemy_outlines = function(entry)
 				local dist_sq = dx * dx + dy * dy + dz * dz
 				if dist_sq > max_dist * max_dist then
 					mod.disable_enemy_outlines(unit, entry)
-					entry._outline_applied = false
 					mod.remove_alert_outline(entry)
 					mod.remove_stagger_outline(entry)
 					return
@@ -363,14 +375,11 @@ mod.update_enemy_outlines = function(entry)
 	local tag_id = smart_tag_system:unit_tag_id(unit)
 	local is_tagged = tag_id ~= nil
 
-	-- reapply after tagged
+	-- disable our outlines if an enemy is tagged
 	if is_tagged then
 		if entry._outline_applied then
 			mod.disable_enemy_outlines(unit, entry)
-			entry._outline_applied = false
 		end
-	elseif entry._outline_applied then
-		-- already applied, no need to recheck LoS every frame
 		return
 	end
 
@@ -382,11 +391,9 @@ mod.update_enemy_outlines = function(entry)
 	if has_los then
 		if not entry._outline_applied then
 			mod.enable_enemy_outlines(unit, entry)
-			entry._outline_applied = true
 		end
 	elseif entry._outline_applied then
 		mod.disable_enemy_outlines(unit, entry)
-		entry._outline_applied = false
 	end
 end
 
@@ -453,10 +460,9 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
-					priority = 4,
+					priority = 6,
 					material_layers = {
 						"minion_outline",
-						"minion_outline_reversed_depth",
 					},
 					color = { r, g, b },
 					visibility_check = function()
@@ -497,10 +503,9 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
-					priority = 3,
+					priority = 5,
 					material_layers = {
 						"minion_outline",
-						"minion_outline_reversed_depth",
 					},
 					color = { r, g, b },
 
@@ -553,7 +558,6 @@ mod.apply_enemy_outlines = function(settings)
 		priority = 1,
 		material_layers = {
 			"minion_outline",
-			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
 		visibility_check = function()
@@ -571,7 +575,6 @@ mod.apply_enemy_outlines = function(settings)
 		priority = 2,
 		material_layers = {
 			"minion_outline",
-			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
 		visibility_check = function()
