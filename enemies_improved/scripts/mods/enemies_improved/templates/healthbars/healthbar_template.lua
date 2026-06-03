@@ -115,8 +115,8 @@ template.damage_number_settings = {
 	x_offset = 0,
 	x_offset_between_numbers = 14 * fs.text_scale * 3,
 	y_offset = 0,
-	flashy_font_size_dmg_multiplier = { 1, 1.5 },
-	flashy_font_size_dmg_scale_range = { 50, 300 },
+	flashy_font_size_dmg_multiplier = { 1, 1.2 },
+	flashy_font_size_dmg_scale_range = { 15, 50 },
 }
 
 local previous_health = {}
@@ -905,6 +905,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	content.player_camera = player_camera
 
+	if player_camera and marker.world_position then
+		content._marker_world_pos = marker.world_position
+	end
+
 	if not is_dead and health_extension then
 		total_damage_taken = health_extension:total_damage_taken()
 	else
@@ -932,12 +936,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local last_hit_world_position = health_extension:last_hit_world_position()
 
 			if last_hit_world_position then
-				local box = content.last_hit_world_position
-				if not box then
-					content.last_hit_world_position = Vector3Box(last_hit_world_position)
+				local marker_pos = content._marker_world_pos and content._marker_world_pos:unbox()
+				if not marker_pos or Vector3.distance(last_hit_world_position, marker_pos) < 2 then
+					local box = content.last_hit_world_position
+					if not box then
+						content.last_hit_world_position = Vector3Box(last_hit_world_position)
+					else
+						box:store(last_hit_world_position)
+					end
 				else
-					box:store(last_hit_world_position)
+					content.last_hit_world_position = nil
 				end
+			elseif content.last_hit_world_position then
+				content.last_hit_world_position = nil
 			end
 		end
 	end
@@ -1063,6 +1074,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					latest_damage_number.shrink_start_t = nil
 					latest_damage_number.y_position = nil
 					latest_damage_number.start_time = t
+
+					if not content.last_hit_world_position then
+						latest_damage_number.hit_world_position = nil
+					end
 
 					local breed_local = content.breed
 					local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types

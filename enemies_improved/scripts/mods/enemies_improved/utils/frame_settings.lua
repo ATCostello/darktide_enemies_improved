@@ -173,6 +173,7 @@ mod.build_frame_settings = function(dt)
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
 	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
+	fs.damage_number_flashy_speed = mod:get("damage_number_flashy_speed")
 
 	local r_crit = mod:get("damage_number_crit_colour_R")
 	local g_crit = mod:get("damage_number_crit_colour_G")

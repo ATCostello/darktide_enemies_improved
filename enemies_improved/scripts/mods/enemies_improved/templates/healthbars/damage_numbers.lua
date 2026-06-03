@@ -88,6 +88,20 @@ local function _flashy_damage_number_function(
 	for i = num_damage_numbers, 1, -1 do
 		local damage_number = damage_numbers[i]
 
+		local start_x = x_position
+		local start_y = y_position
+		local hb_off_y = (ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
+		if damage_number.hit_world_position and ui_content.player_camera and ui_content._marker_world_pos then
+			local inv_scale = ui_renderer.inverse_scale
+			local camera = ui_content.player_camera
+			local hit_w2s = Camera.world_to_screen(camera, damage_number.hit_world_position:unbox())
+			local marker_w2s = Camera.world_to_screen(camera, ui_content._marker_world_pos:unbox())
+			start_x = x_position + (hit_w2s[1] - marker_w2s[1]) * inv_scale
+			start_y = y_position + (hit_w2s[2] - marker_w2s[2]) * inv_scale + hb_off_y
+		else
+			start_y = y_position + hb_off_y
+		end
+
 		local duration = damage_number.duration / 2
 		local time = damage_number.time
 		local progress = math_clamp(time / duration, 0, 1)
@@ -98,7 +112,7 @@ local function _flashy_damage_number_function(
 		elseif i >= max_damage_numbers then
 			table_remove(damage_numbers, 1)
 		else
-			damage_number.time = time + dt
+			damage_number.time = time + dt * (fs.damage_number_flashy_speed or 1)
 		end
 
 		if damage_number.was_critical then
@@ -143,7 +157,7 @@ local function _flashy_damage_number_function(
 				damage_number.expand_duration = nil
 				damage_number.shrink_start_t = duration - damage_number_settings.shrink_duration
 			else
-				damage_number.expand_time = expand_time + dt
+				damage_number.expand_time = expand_time + dt * (fs.damage_number_flashy_speed or 1)
 			end
 		elseif damage_number.shrink_start_t and time > damage_number.shrink_start_t then
 			local diff = time - damage_number.shrink_start_t
@@ -151,7 +165,6 @@ local function _flashy_damage_number_function(
 			local scale = 1 - percentage
 
 			font_size = font_size * scale
-			--text_color[1] = text_color[1] * scale
 		end
 
 		local text = value
@@ -171,8 +184,8 @@ local function _flashy_damage_number_function(
 		local float_y_value = float_value * 1.25
 		local float_x_value = float_right and float_value or -float_value
 
-		position[2] = y_position - math.ease_out_elastic(time) * float_y_value + time * float_y_value
-		position[1] = x_position
+		position[2] = start_y - math.ease_out_elastic(time) * float_y_value + time * float_y_value
+		position[1] = start_x
 			+ math.ease_out_elastic(time) * float_x_value
 			+ (float_right and time * float_value or time * -float_value)
 			- (not float_right and font_size * 0.5 or 0)
@@ -273,9 +286,23 @@ local function _floating_damage_number_function(
 			font_size = font_size * scale_size
 		end
 
+		local start_x = x_position
+		local start_y = y_position
+		local hb_off_y = (ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
+		if damage_number.hit_world_position and ui_content.player_camera and ui_content._marker_world_pos then
+			local inv_scale = ui_renderer.inverse_scale
+			local camera = ui_content.player_camera
+			local hit_w2s = Camera.world_to_screen(camera, damage_number.hit_world_position:unbox())
+			local marker_w2s = Camera.world_to_screen(camera, ui_content._marker_world_pos:unbox())
+			start_x = x_position + (hit_w2s[1] - marker_w2s[1]) * inv_scale
+			start_y = y_position + (hit_w2s[2] - marker_w2s[2]) * inv_scale
+		else
+			start_y = y_position + hb_off_y
+		end
+
 		position[3] = z_position + current_order * 2
-		position[2] = y_position - 15 * time
-		position[1] = x_position + current_order * damage_number_settings.x_offset_between_numbers
+		position[2] = start_y - 15 * time
+		position[1] = start_x
 
 		UIRenderer.draw_text(ui_renderer, text, font_size, font_type, position, size, text_color, {})
 	end

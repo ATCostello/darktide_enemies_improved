@@ -1231,7 +1231,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_damage_numbers_add_total",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "hb_damage_numbers_add_total_tooltip",
 		},
 		{
@@ -1256,12 +1256,12 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "damage_number_y_offset",
 			type = "numeric",
-			default_value = 2,
+			default_value = 1,
 			decimals_number = 2,
-			step_size_value = 0.25,
+			step_size_value = 0.1,
 			range = {
-				0,
-				3,
+				-2,
+				2,
 			},
 			tooltip = "damage_number_y_offset_tooltip",
 		},
@@ -1288,6 +1288,18 @@ table.insert(mod.settings_widgets, {
 				10,
 			},
 			tooltip = "readable_max_damage_numbers_tooltip",
+		},
+		{
+			setting_id = "damage_number_flashy_speed",
+			type = "numeric",
+			default_value = 0.5,
+			decimals_number = 2,
+			step_size_value = 0.1,
+			range = {
+				0.2,
+				1.5,
+			},
+			tooltip = "damage_number_flashy_speed_tooltip",
 		},
 		{
 			setting_id = "damage_number_crit_colour",
