@@ -50,7 +50,7 @@ mod.debuff_styles = {
 
 	stagger = {
 		icon = "content/ui/materials/icons/throwables/hud/small/party_non_grenade",
-		colour = { 255, 100, 200, 255 },
+		colour = { 255, 150, 200, 255 },
 	},
 
 	blind = {
@@ -766,7 +766,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_R",
 					type = "numeric",
-					default_value = 0,
+					default_value = 100,
 					range = {
 						0,
 						255,
@@ -776,7 +776,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_G",
 					type = "numeric",
-					default_value = 100,
+					default_value = 200,
 					range = {
 						0,
 						255,
@@ -786,7 +786,7 @@ table.insert(mod.settings_widgets, {
 				{
 					setting_id = "outline_stagger_colour_B",
 					type = "numeric",
-					default_value = 150,
+					default_value = 255,
 					range = {
 						0,
 						255,

@@ -672,7 +672,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local entry = active[i]
 			local name = entry.name
 			local max_stacks = entry.max_stacks
-			local icon = mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].icon
+			local icon = mod.debuffs and mod.debuffs[name] and mod.debuffs[name].group and mod.debuff_styles[mod.debuffs[name].group] and mod.debuff_styles[mod.debuffs[name].group].icon or nil
 			local debuff_type = entry.type
 
 			icon = icon or name
@@ -1224,7 +1224,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 
 				-- colour mutation
-				local colour = (mod.debuffs and mod.debuff_styles[mod.debuffs[name].group].colour)
+				local colour = (mod.debuffs and mod.debuffs[name] and mod.debuffs[name].group and mod.debuff_styles[mod.debuffs[name].group] and mod.debuff_styles[mod.debuffs[name].group].colour)
 					or { 255, 255, 255, 255 }
 
 				icon_style.color[2] = colour[2] or 255
@@ -1232,9 +1232,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				icon_style.color[4] = colour[4] or 255
 
 				-- Staggered colour should follow the stagger colour specifically
-				if fs.debuff_stagger_enable and mod.debuffs[name].group == "stagger" then
-					icon_style.color[2] = fs.outline_stagger_colour[2] or 255
-					icon_style.color[3] = fs.outline_stagger_colour[3] or 255
+				if fs.debuff_stagger_enable and mod.debuffs[name] and mod.debuffs[name].group == "stagger" then
+					icon_style.color[2] = fs.outline_stagger_colour[2] or 100
+					icon_style.color[3] = fs.outline_stagger_colour[3] or 200
 					icon_style.color[4] = fs.outline_stagger_colour[4] or 255
 				end
 
