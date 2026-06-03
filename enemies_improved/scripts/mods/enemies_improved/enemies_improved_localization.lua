@@ -1187,6 +1187,12 @@ table.insert(localisations_to_add, {
 		en = "Whether the damage numbers in a small timeframe should be added together into one larger number, or if each damage should be shown individually.",
 		["zh-cn"] = "短时间内的伤害合并为一个总数值显示。",
 	},
+	damage_number_flashy_speed = {
+		en = "Flashy numbers move speed",
+	},
+	damage_number_flashy_speed_tooltip = {
+		en = "The speed at which the flashy damage numbers move.",
+	},
 	hb_damage_show_only_latest = {
 		en = "Only show last damaged enemies?",
 		["zh-cn"] = "仅显示最近攻击的敌人",
