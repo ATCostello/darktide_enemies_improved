@@ -660,28 +660,28 @@ mod.scan_enemies = function()
 					local entry = mod.enemy_cache[unit]
 
 					if not entry then
-					mod.enemy_cache[unit] = {
-						unit = unit,
-						seen = true,
-						dead = false,
+						mod.enemy_cache[unit] = {
+							unit = unit,
+							seen = true,
+							dead = false,
 
-						health_ext = ScriptUnit_has_extension(unit, "health_system"),
-						unit_data_ext = data.unit_data_ext,
-						behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
+							health_ext = ScriptUnit_has_extension(unit, "health_system"),
+							unit_data_ext = data.unit_data_ext,
+							behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
 
-						is_horde = mod.is_horde(unit),
+							is_horde = mod.is_horde(unit),
 
-						breed = data.breed,
-						breed_name = data.breed and data.breed.name,
-						breed_type = data.breed_type,
+							breed = data.breed,
+							breed_name = data.breed and data.breed.name,
+							breed_type = data.breed_type,
 
-						_priority_score = data.score,
-						pos = data.pos,
-					}
+							_priority_score = data.score,
+							pos = Vector3(data.pos.x, data.pos.y, data.pos.z),
+						}
 					else
 						entry.seen = true
 						entry._priority_score = data.score
-						entry.pos = data.pos
+						entry.pos = Vector3(data.pos.x, data.pos.y, data.pos.z)
 					end
 
 					mod.marked_dead[unit] = nil
@@ -749,13 +749,15 @@ local function _build_horde_clusters(units, num_units)
 				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
 				local key = gx * 73856093 + gy * 19349663
 
-				local cell = spatial[key]
-				if not cell then
-					cell = {}
-					spatial[key] = cell
-				end
+				if key then
+					local cell = spatial[key]
+					if not cell then
+						cell = {}
+						spatial[key] = cell
+					end
 
-				cell[#cell + 1] = unit
+					cell[#cell + 1] = unit
+				end
 			end
 		end
 	end
@@ -800,84 +802,65 @@ local function _build_horde_clusters(units, num_units)
 				queue[#queue] = nil
 
 				local e = mod.enemy_cache[current]
-				local pos = e.pos or Unit.world_position(current, 1)
-				e.pos = pos
-
-				cluster_units[#cluster_units + 1] = current
-
-				-- avg/max
-				--[[sum_x = sum_x + pos.x
-				sum_y = sum_y + pos.y
-				sum_z = sum_z + pos.z
-				count = count + 1
-
-				if max_z < pos.z then
-					max_z = pos.z
-				end	
-
-				sum_x = sum_x + pos.x]]
-
-				-- tallest & second tallest
-				--sum_x = sum_x + pos.x
-				--sum_y = sum_y + pos.y
-				--count = count + 1
-
-				-- Proper centroid accumulation (X, Y, Z)
-				sum_x = sum_x + pos.x
-				sum_y = sum_y + pos.y
-				sum_z = sum_z + pos.z
-				count = count + 1
-				z_samples[#z_samples + 1] = pos.z
-
-				-- Bounds tracking (X/Y center)
-				if pos.x < min_x then
-					min_x = pos.x
-				end
-				if pos.x > max_x then
-					max_x = pos.x
-				end
-				if pos.y < min_y then
-					min_y = pos.y
-				end
-				if pos.y > max_y then
-					max_y = pos.y
+				local wp = Unit.world_position(current, 1)
+				local pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
+				if pos and e then
+					e.pos = pos
 				end
 
-				--local z = pos.z
+				if pos then
+					cluster_units[#cluster_units + 1] = current
 
-				--if z > highest_z then
-				--	second_highest_z = highest_z
-				--	highest_z = z
-				--elseif z > second_highest_z then
-				--	second_highest_z = z
-				--end
+					-- Proper centroid accumulation (X, Y, Z)
+					sum_x = sum_x + pos.x
+					sum_y = sum_y + pos.y
+					sum_z = sum_z + pos.z
+					count = count + 1
+					z_samples[#z_samples + 1] = pos.z
 
-				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
-				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
+					-- Bounds tracking (X/Y center)
+					if pos.x < min_x then
+						min_x = pos.x
+					end
+					if pos.x > max_x then
+						max_x = pos.x
+					end
+					if pos.y < min_y then
+						min_y = pos.y
+					end
+					if pos.y > max_y then
+						max_y = pos.y
+					end
 
-				-- check neighboring cells
-				for dx = -1, 1 do
-					for dy = -1, 1 do
-						local key = (gx + dx) * 73856093 + (gy + dy) * 19349663
-						local cell = spatial[key]
+					local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
+					local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
 
-						if cell then
-							for j = 1, #cell do
-								local other = cell[j]
+					-- check neighboring cells
+					for dx = -1, 1 do
+						for dy = -1, 1 do
+							local key = (gx + dx) * 73856093 + (gy + dy) * 19349663
+							local cell = spatial[key]
 
-								if not visited[other] and mod.detect_alive(other) then
-									local oe = mod.enemy_cache[other]
-									if oe and oe.breed == breed then
-										local op = oe.pos or Unit.world_position(other, 1)
-										oe.pos = op
+							if cell then
+								for j = 1, #cell do
+									local other = cell[j]
 
-										local dx = op.x - pos.x
-										local dy = op.y - pos.y
-										local dist_sq = dx * dx + dy * dy
+									if not visited[other] and mod.detect_alive(other) then
+										local oe = mod.enemy_cache[other]
+										if oe and oe.breed == breed then
+											local wp2 = Unit.world_position(other, 1)
+											local op = wp2 and Vector3(wp2.x, wp2.y, wp2.z) or nil
+											if op then
+												oe.pos = op
+												local dx = op.x - pos.x
+												local dy = op.y - pos.y
+												local dist_sq = dx * dx + dy * dy
 
-										if dist_sq <= CLUSTER_RADIUS_SQ then
-											visited[other] = true
-											queue[#queue + 1] = other
+												if dist_sq <= CLUSTER_RADIUS_SQ then
+													visited[other] = true
+													queue[#queue + 1] = other
+												end
+											end
 										end
 									end
 								end
@@ -1063,36 +1046,38 @@ mod.remove_dead = function()
 
 		-- Distance check
 		if not remove and player_pos then
-			local pos = entry.pos
-			if not pos then
-				pos = Unit.world_position(unit, 1)
-				entry.pos = pos
+			local wp = Unit.world_position(unit, 1)
+			if wp then
+				entry.pos = Vector3(wp.x, wp.y, wp.z)
 			end
+			local pos = entry.pos
 
-			local dx = pos.x - player_pos.x
-			local dy = pos.y - player_pos.y
-			local dz = pos.z - player_pos.z
-			local dist_sq = dx * dx + dy * dy + dz * dz
+			if pos then
+				local dx = pos.x - player_pos.x
+				local dy = pos.y - player_pos.y
+				local dz = pos.z - player_pos.z
+				local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- individual distance override (replaces global for this enemy)
-			local breed_name = entry.breed_name
-			local effective_max_dist_sq = max_dist_sq
-			if breed_name then
-				if fs.breed_dist_enabled[breed_name] then
-					local ind_dist = fs.breed_dist_value[breed_name]
-					if ind_dist then
-						effective_max_dist_sq = ind_dist * ind_dist
+				-- individual distance override (replaces global for this enemy)
+				local breed_name = entry.breed_name
+				local effective_max_dist_sq = max_dist_sq
+				if breed_name then
+					if fs.breed_dist_enabled[breed_name] then
+						local ind_dist = fs.breed_dist_value[breed_name]
+						if ind_dist then
+							effective_max_dist_sq = ind_dist * ind_dist
+						end
 					end
 				end
-			end
 
-			if dist_sq > effective_max_dist_sq then
-				remove = true
+				if dist_sq > effective_max_dist_sq then
+					remove = true
 
-				-- disable outlines too
-				mod.disable_enemy_outlines(unit, entry)
-				mod.remove_alert_outline(entry)
-				mod.remove_stagger_outline(entry)
+					-- disable outlines too
+					mod.disable_enemy_outlines(unit, entry)
+					mod.remove_alert_outline(entry)
+					mod.remove_stagger_outline(entry)
+				end
 			end
 		end
 
@@ -1149,7 +1134,9 @@ mod.is_horde = function(unit)
 	if Unit_alive(unit) then
 		local tags = mod.get_breed_tags(unit)
 		local is_horde = tags and (tags.horde or tags.roamer) or false
-
+		if mod.is_vanguard(unit) then
+			is_horde = false
+		end
 		return is_horde
 	else
 		return false
@@ -1246,10 +1233,16 @@ mod.update_enemies = function(dt, t)
 		if player_pos and Unit_alive(unit) then
 			local entry = mod.enemy_cache[unit]
 
-			if not entry.pos then
-				entry.pos = Unit.world_position(unit, 1)
+			if not entry then
+				goto continue_enemy_loop
 			end
 
+			local wp = Unit.world_position(unit, 1)
+			if wp then
+				entry.pos = Vector3(wp.x, wp.y, wp.z)
+			else
+				goto continue_enemy_loop
+			end
 			local pos = entry.pos
 
 			local dx = pos.x - player_pos.x
@@ -1334,6 +1327,10 @@ end
 -- breed points to the breed tags list, get from mod.get_breed_tags(unit)
 mod.find_breed_category = function(unit)
 	if unit then
+		if mod.is_vanguard(unit) then
+			return "elite"
+		end
+
 		local tags = mod.get_breed_tags(unit) or {}
 		if tags.horde or tags.roamer then
 			return "horde"

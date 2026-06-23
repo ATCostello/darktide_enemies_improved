@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.5.19"
+mod.version = "1.6.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -58,9 +58,28 @@ end
 local Breeds = require("scripts/settings/breed/breeds")
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
+local ScriptUnit_has_extension = ScriptUnit.has_extension
 
-mod.find_breed_category_by_tags = function(tags)
+mod.is_vanguard = function(unit)
+	if not unit then
+		return false
+	end
+	local unit_data_extension = ScriptUnit_has_extension(unit, "unit_data_system")
+	if unit_data_extension then
+		local breed = unit_data_extension:breed()
+		if breed and (breed.name == "cultist_vanguard" or breed.name == "renegade_vanguard") then
+			return true
+		end
+	end
+	return false
+end
+
+mod.find_breed_category_by_tags = function(tags, breed_name)
 	if tags then
+		if breed_name == "cultist_vanguard" or breed_name == "renegade_vanguard" then
+			return "elite"
+		end
+
 		if tags.horde or tags.roamer then
 			return "horde"
 		elseif tags.captain or tags.cultist_captain then
@@ -96,6 +115,9 @@ mod.gather_enemy_names_by_breed_types = function()
 		if name ~= "attack_valkyrie" then
 			local tags = options.tags
 			local breed_type = mod.find_breed_category_by_tags(tags)
+			if name == "renegade_vanguard" or name == "cultist_vanguard" then
+				breed_type = "elite"
+			end
 
 			if breed_type then
 				enemies[i] =
@@ -538,6 +560,13 @@ table.insert(localisations_to_add, {
 	select = {
 		en = "SELECT AN ENEMY TYPE",
 		["zh-cn"] = "选择敌人类型",
+	},
+	-- New Vanguard breed display names (added as safety net for breed localization)
+	loc_breed_display_name_cultist_vanguard = {
+		en = "Cultist Vanguard",
+	},
+	loc_breed_display_name_renegade_vanguard = {
+		en = "Renegade Vanguard",
 	},
 	monster = {
 		en = "miniboss",

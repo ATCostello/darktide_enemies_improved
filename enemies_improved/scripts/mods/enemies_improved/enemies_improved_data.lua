@@ -199,6 +199,59 @@ mod.debuffs = {
 		group = "stagger_damage",
 	},
 
+	-- Cryptic (Class 5) debuffs
+	cryptic_servo_skull_debuff = {
+		name = "cryptic_servo_skull_debuff",
+		type = "utility",
+		group = "damage_taken",
+	},
+	cryptic_overload_keystone_increase_damage_taken_debuff = {
+		name = "cryptic_overload_keystone_increase_damage_taken_debuff",
+		type = "utility",
+		group = "damage_taken",
+	},
+
+	-- New Psyker debuffs
+	psyker_smite_vulnerable_debuff = {
+		name = "psyker_smite_vulnerable_debuff",
+		type = "utility",
+		group = "shock",
+	},
+
+	-- New Ogryn debuffs
+	ogryn_targets_recieve_damage_taken_increase_debuff = {
+		name = "ogryn_targets_recieve_damage_taken_increase_debuff",
+		type = "utility",
+		group = "damage_taken",
+	},
+
+	-- New weapon debuffs
+	phosphor_rending_debuff = {
+		name = "phosphor_rending_debuff",
+		type = "utility",
+		group = "rending",
+	},
+	hit_mass_reduction_debuff = {
+		name = "hit_mass_reduction_debuff",
+		type = "utility",
+		group = "generic",
+	},
+	shotgun_special_rending_debuff = {
+		name = "shotgun_special_rending_debuff",
+		type = "utility",
+		group = "rending",
+	},
+	ogryn_pick_axe_weapon_special_debuff = {
+		name = "ogryn_pick_axe_weapon_special_debuff",
+		type = "utility",
+		group = "rending",
+	},
+	combatsword_p2_weapon_special_debuff = {
+		name = "combatsword_p2_weapon_special_debuff",
+		type = "utility",
+		group = "rending",
+	},
+
 	broker_punk_rage_improved_shout_debuff = {
 		name = "broker_punk_rage_improved_shout_debuff",
 		type = "utility",

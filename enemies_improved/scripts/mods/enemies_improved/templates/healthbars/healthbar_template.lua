@@ -183,8 +183,10 @@ local function get_text_option(content, option)
 	if option == "enemy_type" then
 		return mod:localize(breed_type) or ""
 	elseif option == "enemy_name" then
+		local name = mod:localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
+
 		if content.in_horde_cluster then
-			local cluster_string = Localize(breed.display_name) .. " " .. mod:localize("horde")
+			local cluster_string = name .. " " .. mod:localize("horde")
 
 			if content.cluster_count then
 				cluster_string = cluster_string .. " (x " .. content.cluster_count .. ")"
@@ -192,7 +194,7 @@ local function get_text_option(content, option)
 
 			return cluster_string
 		else
-			return Localize(breed.display_name) or ""
+			return name
 		end
 	elseif option == "armour_type" then
 		local armor_type = breed and breed.armor_type
@@ -461,6 +463,10 @@ template.on_enter = function(widget, marker, template)
 			if breed_settings then
 				local tags = breed_settings.tags
 				local individual_breed_type = mod.find_breed_category_by_tags(tags)
+
+				if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
+					individual_breed_type = "elite"
+				end
 
 				if individual_breed_type == breed_type then
 					if fs.breed_healthbar_enabled[enemy_individual] then
