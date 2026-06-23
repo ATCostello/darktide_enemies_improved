@@ -105,6 +105,7 @@ mod.set_breed_colours = function()
 			far = { 255, 255, 40, 40 },
 			special = { 255, 255, 40, 40 },
 			enemy = { 255, 255, 40, 40 },
+			shield = { 255, 255, 40, 40 },
 		}
 	elseif mod:get("healthbar_colour_preset") == "colourful" then
 		mod.BREED_COLOURS = {
@@ -118,6 +119,7 @@ mod.set_breed_colours = function()
 			far = { 255, 0, 255, 120 },
 			special = { 255, 255, 0, 255 },
 			enemy = { 255, 200, 200, 200 },
+			shield = { 255, 200, 200, 200 },
 		}
 	else
 		mod.BREED_COLOURS = {
@@ -131,6 +133,7 @@ mod.set_breed_colours = function()
 			far = { 255, 0, 255, 120 },
 			special = { 255, 255, 0, 255 },
 			enemy = { 255, 200, 200, 200 },
+			shield = { 255, 200, 200, 200 },
 		}
 	end
 	mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)

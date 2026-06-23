@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.6.0"
+mod.version = "1.6.02"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -77,7 +77,7 @@ end
 mod.find_breed_category_by_tags = function(tags, breed_name)
 	if tags then
 		if breed_name == "cultist_vanguard" or breed_name == "renegade_vanguard" then
-			return "elite"
+			return "shield"
 		end
 
 		if tags.horde or tags.roamer then
@@ -242,6 +242,10 @@ table.insert(localisations_to_add, {
 	fire = {
 		en = "Fire",
 		["zh-cn"] = "火焰",
+	},
+
+	phosphor_burn = {
+		en = "Phosphor Burn",
 	},
 
 	warp = {
@@ -607,6 +611,9 @@ table.insert(localisations_to_add, {
 	enemy = {
 		en = "ritualist",
 		["zh-cn"] = "仪式者",
+	},
+	shield = {
+		en = "vanguard (shields)",
 	},
 })
 
@@ -1900,7 +1907,7 @@ table.insert(localisations_to_add, {
 	},
 	reset_individual_to_default = {
 		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
-		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}恢复默认设置",
+		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}���复默认设置",
 	},
 	reset_individual_to_default_tooltip = {
 		en = "Reset settings for individual '_individual_' to default.",

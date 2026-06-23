@@ -571,6 +571,15 @@ local _create_definition = function(template, scenegraph_id)
 				return content.hb_built and content.icon_enabled and content.icon_special
 			end,
 		},
+		{ -- shield
+			pass_type = "texture",
+			style_id = "icon_shield",
+			value = "content/ui/materials/hud/interactions/icons/void_shield",
+			style = icon_style,
+			visibility_function = function(content)
+				return content.hb_built and content.icon_enabled and content.icon_shield
+			end,
+		},
 		{ -- disablers
 			pass_type = "texture",
 			style_id = "icon_disabler",

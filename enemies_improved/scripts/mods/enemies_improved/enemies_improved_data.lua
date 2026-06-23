@@ -91,6 +91,11 @@ mod.debuffs = {
 	flame_grenade_liquid_area = { name = "flame_grenade_liquid_area", type = "dot", group = "fire" },
 	warp_fire = { name = "warp_fire", type = "dot", group = "warp" },
 	shock_effect = { name = "shock_effect", type = "dot", group = "shock" },
+	phosphor_burn = {
+		name = "phosphor_burn",
+		type = "dot",
+		group = "fire",
+	},
 
 	neurotoxin_interval_buff = { name = "neurotoxin_interval_buff", type = "dot", group = "toxin" },
 	neurotoxin_interval_buff2 = { name = "neurotoxin_interval_buff2", type = "dot", group = "toxin" },
@@ -226,6 +231,7 @@ mod.debuffs = {
 	},
 
 	-- New weapon debuffs
+
 	phosphor_rending_debuff = {
 		name = "phosphor_rending_debuff",
 		type = "utility",
@@ -332,6 +338,7 @@ mod.ICON_COLOURS = {
 	enemy = { 255, 200, 200, 200 },
 	glow = { 255, 200, 170, 80 },
 	glow_default = { 255, 200, 170, 80 },
+	shield = { 255, 50, 150, 255 },
 }
 
 mod.ICON_SETTINGS = {
@@ -398,6 +405,13 @@ mod.ICON_SETTINGS = {
 		glow_intensity = 0,
 		default_glow_intensity = 0,
 	},
+	shield = {
+		enabled = true,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
 	enemy = {
 		enabled = false,
 		scale = 1,
@@ -418,6 +432,7 @@ mod.OUTLINE_COLOURS = {
 	far = { 255, 50, 10, 0 },
 	special = { 255, 50, 10, 0 },
 	enemy = { 255, 50, 10, 0 },
+	shield = { 255, 50, 10, 0 },
 }
 
 mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
@@ -1731,6 +1746,7 @@ mod.breed_types = {
 	{ text = "far", value = "far" },
 	{ text = "elite", value = "elite" },
 	{ text = "special", value = "special" },
+	{ text = "shield", value = "shield" },
 	{ text = "enemy", value = "enemy" },
 }
 

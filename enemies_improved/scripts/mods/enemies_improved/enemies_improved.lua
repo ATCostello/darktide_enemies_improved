@@ -111,6 +111,7 @@ local PRIORITY = {
 	far = 100,
 	special = 100,
 	elite = 100,
+	shield = 50,
 	horde = 20,
 	enemy = 20,
 }
@@ -1328,7 +1329,7 @@ end
 mod.find_breed_category = function(unit)
 	if unit then
 		if mod.is_vanguard(unit) then
-			return "elite"
+			return "shield"
 		end
 
 		local tags = mod.get_breed_tags(unit) or {}

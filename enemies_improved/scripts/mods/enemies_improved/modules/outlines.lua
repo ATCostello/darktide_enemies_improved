@@ -409,6 +409,7 @@ mod.default_outline_enabled = {
 	elite = false,
 	special = false,
 	enemy = false,
+	shield = false,
 }
 
 mod.apply_enemy_outlines = function(settings)
