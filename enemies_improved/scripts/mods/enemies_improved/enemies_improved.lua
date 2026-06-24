@@ -741,9 +741,10 @@ local function _build_horde_clusters(units, num_units)
 				if entry and entry.pos then
 					pos = entry.pos
 				else
-					pos = Unit.world_position(unit, 1, _pos_vec)
+					local wp = Unit.world_position(unit, 1, _pos_vec)
+					pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
 					if entry then
-						entry.pos = Vector3(pos.x, pos.y, pos.z)
+						entry.pos = pos
 					end
 				end
 
