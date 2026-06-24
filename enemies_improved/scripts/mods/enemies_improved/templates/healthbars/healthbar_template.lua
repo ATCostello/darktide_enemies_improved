@@ -440,7 +440,7 @@ template.on_enter = function(widget, marker, template)
 			content.icon_boss, style.icon_boss = apply_icon_settings(content.icon_boss, style.icon_boss)
 		end
 		if breed_type == "shield" then
-			content.icon_special, style.icon_special = apply_icon_settings(content.icon_special, style.icon_special)
+			content.icon_shield, style.icon_shield = apply_icon_settings(content.icon_shield, style.icon_shield)
 		end
 		if breed_type == "horde" then
 			content.icon_enabled = false

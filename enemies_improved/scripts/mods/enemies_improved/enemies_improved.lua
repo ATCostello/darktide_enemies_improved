@@ -406,7 +406,8 @@ mod.scan_enemies = function()
 		return
 	end
 
-	local current_pos = Unit.world_position(player_unit, 1, _player_pos_vec)
+	local wp = Unit.world_position(player_unit, 1, _player_pos_vec)
+	local current_pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
 
 	--[[local last_pos = mod._last_scan_pos
 
@@ -1226,7 +1227,9 @@ mod.update_enemies = function(dt, t)
 
 	local player = Managers.player:local_player(1)
 	local player_unit = player and player.player_unit
-	local player_pos = player_unit and Unit.world_position(player_unit, 1)
+	local wp = player_unit and Unit.world_position(player_unit, 1)
+	local player_pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
+
 	-- go through enemy_cache and perform updates...
 	for i = 1, to_process do
 		local unit = temp[i]

@@ -537,6 +537,7 @@ mod.load_toggled_debuffs_state = function()
 end
 
 mod.on_setting_changed = function(setting_id)
+	mod.build_frame_settings()
 	local fs = mod.frame_settings
 
 	if setting_id == "debuff_toggles" then
@@ -572,9 +573,6 @@ mod.on_setting_changed = function(setting_id)
 	then
 		mod.set_debuff_colours(mod:get("debuff_group_selected"))
 	end
-
-	-- Always rebuild frame settings before any early return so setting changes take effect
-	mod.build_frame_settings()
 
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
@@ -647,6 +645,7 @@ mod.on_setting_changed = function(setting_id)
 	end
 
 	mod.update_dmf_settings_colours(setting_id)
+	mod.build_frame_settings()
 end
 
 -- Rebuilds all enemies improved UI stuff if the settings menu is closed, as by default the UI elements go invisible

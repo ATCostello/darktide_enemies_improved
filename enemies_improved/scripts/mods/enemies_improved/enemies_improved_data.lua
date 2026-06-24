@@ -68,6 +68,11 @@ mod.debuff_styles = {
 		colour = { 255, 255, 242, 99 },
 	},
 
+	hit_mass_multiplier = {
+		icon = "content/ui/materials/icons/circumstances/havoc/havoc_mutator_skin",
+		colour = { 255, 255, 100, 99 },
+	},
+
 	stagger_damage = {
 		icon = "content/ui/materials/hud/interactions/icons/enemy",
 		colour = { 255, 255, 185, 100 },
@@ -87,15 +92,16 @@ mod.debuff_styles = {
 mod.debuffs = {
 	-- DOT
 	bleed = { name = "bleed", type = "dot", group = "bleed" },
+	bleeding = { name = "bleeding", type = "dot", group = "bleed" },
+
 	flamer_assault = { name = "flamer_assault", type = "dot", group = "fire" },
 	flame_grenade_liquid_area = { name = "flame_grenade_liquid_area", type = "dot", group = "fire" },
+	burning = { name = "burning", type = "dot", group = "fire" },
+
 	warp_fire = { name = "warp_fire", type = "dot", group = "warp" },
+
 	shock_effect = { name = "shock_effect", type = "dot", group = "shock" },
-	phosphor_burn = {
-		name = "phosphor_burn",
-		type = "dot",
-		group = "fire",
-	},
+	electrocuted = { name = "electrocuted", type = "dot", group = "shock" },
 
 	neurotoxin_interval_buff = { name = "neurotoxin_interval_buff", type = "dot", group = "toxin" },
 	neurotoxin_interval_buff2 = { name = "neurotoxin_interval_buff2", type = "dot", group = "toxin" },
@@ -204,7 +210,7 @@ mod.debuffs = {
 		group = "stagger_damage",
 	},
 
-	-- Cryptic (Class 5) debuffs
+	-- Cryptic debuffs
 	cryptic_servo_skull_debuff = {
 		name = "cryptic_servo_skull_debuff",
 		type = "utility",
@@ -215,47 +221,16 @@ mod.debuffs = {
 		type = "utility",
 		group = "damage_taken",
 	},
-
-	-- New Psyker debuffs
-	psyker_smite_vulnerable_debuff = {
-		name = "psyker_smite_vulnerable_debuff",
-		type = "utility",
-		group = "shock",
-	},
-
-	-- New Ogryn debuffs
-	ogryn_targets_recieve_damage_taken_increase_debuff = {
-		name = "ogryn_targets_recieve_damage_taken_increase_debuff",
-		type = "utility",
-		group = "damage_taken",
-	},
-
 	-- New weapon debuffs
-
 	phosphor_rending_debuff = {
 		name = "phosphor_rending_debuff",
 		type = "utility",
 		group = "rending",
 	},
-	hit_mass_reduction_debuff = {
-		name = "hit_mass_reduction_debuff",
+	phosphor_burn = {
+		name = "phosphor_burn",
 		type = "utility",
-		group = "generic",
-	},
-	shotgun_special_rending_debuff = {
-		name = "shotgun_special_rending_debuff",
-		type = "utility",
-		group = "rending",
-	},
-	ogryn_pick_axe_weapon_special_debuff = {
-		name = "ogryn_pick_axe_weapon_special_debuff",
-		type = "utility",
-		group = "rending",
-	},
-	combatsword_p2_weapon_special_debuff = {
-		name = "combatsword_p2_weapon_special_debuff",
-		type = "utility",
-		group = "rending",
+		group = "hit_mass_multiplier",
 	},
 
 	broker_punk_rage_improved_shout_debuff = {

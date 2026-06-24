@@ -67,10 +67,10 @@ mod.apply_marker_fade = function(self)
 	local cam_rot = Camera.world_rotation(camera)
 	local cam_forward = Quaternion.forward(cam_rot)
 
-	local px, py, pz =
-		Unit.world_position(player_unit, 1).x,
-		Unit.world_position(player_unit, 1).y,
-		Unit.world_position(player_unit, 1).z
+	local wp = Unit.world_position(player_unit, 1)
+	local pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
+	
+	local px, py, pz = wp.x, wp.y, wp.z
 	local cx, cy, cz = cam_pos.x, cam_pos.y, cam_pos.z
 	local fx, fy, fz = cam_forward.x, cam_forward.y, cam_forward.z
 
@@ -101,7 +101,9 @@ mod.apply_marker_fade = function(self)
 		if marker and marker.unit and mod.detect_alive(marker.unit) then
 			local t = marker.type
 			if t == "enemy_healthbar" or t == "enemy_markers" or t == "enemy_debuff" or t == "enemy_utility_debuff" then
-				local pos = Unit.world_position(marker.unit, 1)
+				local wp = Unit.world_position(marker.unit, 1)
+				local pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
+
 				local x, y, z = pos.x, pos.y, pos.z
 
 				local dx = x - px

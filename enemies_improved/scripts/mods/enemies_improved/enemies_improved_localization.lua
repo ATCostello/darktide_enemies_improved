@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "1.6.02"
+mod.version = "1.6.04"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -245,7 +245,7 @@ table.insert(localisations_to_add, {
 	},
 
 	phosphor_burn = {
-		en = "Phosphor Burn",
+		en = "Phosphor",
 	},
 
 	warp = {
@@ -276,6 +276,10 @@ table.insert(localisations_to_add, {
 	melee_damage_taken = {
 		en = "+ Melee Damage",
 		["zh-cn"] = "+近战伤害",
+	},
+
+	hit_mass_multiplier = {
+		en = "Hit Mass Multiplier",
 	},
 
 	stagger_damage = {
@@ -320,6 +324,17 @@ table.insert(localisations_to_add, {
 	bleed = {
 		en = "Bleed",
 		["zh-cn"] = "流血",
+	},
+	bleeding = {
+		en = "Bleeding",
+		["zh-cn"] = "流血",
+	},
+	burning = {
+		en = "Burning",
+		["zh-cn"] = "燃烧",
+	},
+	electrocuted = {
+		en = "Electrocuted",
 	},
 	flamer_assault = {
 		en = "Burning",
@@ -552,6 +567,23 @@ table.insert(localisations_to_add, {
 	shock_grenade_interval = {
 		en = "Shock Grenade Stagger",
 		["zh-cn"] = "震撼手雷硬直",
+	},
+
+	-- Skitarii
+	phosphor_rending_debuff = {
+		en = "Brittleness (Phosphor)",
+	},
+	cryptic_servo_skull_debuff = {
+		en = "Increased Damage (Servo Skull)",
+	},
+	cryptic_servo_skull_debuff_abrv = {
+		en = "+ Damage (Servo Skull)",
+	},
+	cryptic_overload_keystone_increase_damage_taken_debuff = {
+		en = "Increased Damage (Overload)",
+	},
+	cryptic_overload_keystone_increase_damage_taken_debuff_abrv = {
+		en = "+ Damage (Overload)",
 	},
 })
 

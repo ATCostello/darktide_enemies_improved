@@ -28,6 +28,7 @@ mod.build_frame_settings = function(dt)
 	fs.breed_healthbar_force = {}
 	fs.breed_type_outline_enabled = {}
 	fs.breed_type_healthbar_enabled = {}
+	
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
 		if enemy then

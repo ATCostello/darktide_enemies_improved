@@ -479,80 +479,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active[i] = nil
 	end
 
-	
-
-	for i = 1, #debuffs do
-		local buff = debuffs[i]
-		local name = buff:template_name()
-		local template = buff:template()
-		local stat_buffs = template.stat_buffs
-		local conditional_stat_buffs = template.conditional_stat_buffs
-
-		-- DOT STUFF
-		if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
-			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
-
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
-			entry.name = name
-			entry.stacks = stacks
-			entry.max_stacks = template.max_stacks
-			entry.stat_buffs = stat_buffs
-			entry.conditional_stat_buffs = conditional_stat_buffs
-			entry.type = "dot"
-		end
-
-		-- UTILITY STUFF
-		if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
-			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
-
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
-			-- FIX THIS STAT'S MAX BUFFS BEING SET TO 8 WHEN ITS ACTUALLY 1... (pickaxe pull)
-			if name == "increase_damage_taken" then
-				template.max_stacks = 1
-			end
-
-			entry.name = name
-			entry.stacks = stacks
-			entry.max_stacks = template.max_stacks
-			entry.stat_buffs = stat_buffs
-			entry.conditional_stat_buffs = conditional_stat_buffs
-			entry.type = "utility"
-		end
-	end
-
-	for i = active_count + 1, #active do
-		active_pool[#active_pool + 1] = active[i]
-		active[i] = nil
-	end
-
 	-- get from keywords
-	if keywords and #keywords > 0 then
-		for i = 1, #keywords do
-			local keyword = keywords[i]
+	if keywords then
+		for keyword, _ in pairs(keywords) do
 			local name = keyword
-
+			
 			-- DOT STUFF
 			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
 				local stacks = 1
@@ -590,6 +521,70 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				active[active_count] = entry
 			end
+		end
+	end
+
+	-- Get from debuffs
+	for i = 1, #debuffs do
+		local buff = debuffs[i]
+		local name = buff:template_name()
+		local template = buff:template()
+		local stat_buffs = template.stat_buffs
+		local conditional_stat_buffs = template.conditional_stat_buffs
+
+		-- DOT STUFF
+		if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
+			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
+
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			entry.name = name
+			entry.stacks = stacks
+			entry.max_stacks = template.max_stacks
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "dot"
+
+		end
+
+		-- UTILITY STUFF
+		if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
+			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
+
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			-- FIX THIS STAT'S MAX BUFFS BEING SET TO 8 WHEN ITS ACTUALLY 1... (pickaxe pull)
+			if name == "increase_damage_taken" then
+				template.max_stacks = 1
+			end
+
+			entry.name = name
+			entry.stacks = stacks
+			entry.max_stacks = template.max_stacks
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "utility"
+
 		end
 	end
 
@@ -644,6 +639,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	for i = active_count + 1, #active do
+		active_pool[#active_pool + 1] = active[i]
 		active[i] = nil
 	end
 
@@ -697,6 +693,32 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				existing.duration = duration
 				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
 				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
+
+				-- accumulate actual stat contributions (capped per source) for correct combined percentage
+				if entry.stat_buffs then
+					existing._stat_total = existing._stat_total or {}
+					for stat_name, val in pairs(entry.stat_buffs) do
+						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+						local stat_buff_type = stat_buff_types[stat_name]
+						if stat_buff_type == "multiplicative_multiplier" then
+							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0) + (val - 1) * effective_stacks
+						else
+							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0) + val * effective_stacks
+						end
+					end
+				end
+				if entry.conditional_stat_buffs then
+					existing._conditional_stat_total = existing._conditional_stat_total or {}
+					for stat_name, val in pairs(entry.conditional_stat_buffs) do
+						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+						local stat_buff_type = stat_buff_types[stat_name]
+						if stat_buff_type == "multiplicative_multiplier" then
+							existing._conditional_stat_total[stat_name] = (existing._conditional_stat_total[stat_name] or 0) + (val - 1) * effective_stacks
+						else
+							existing._conditional_stat_total[stat_name] = (existing._conditional_stat_total[stat_name] or 0) + val * effective_stacks
+						end
+					end
+				end
 			else
 				combined_count = combined_count + 1
 
@@ -710,6 +732,33 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					combined = true,
 					type = debuff_type,
 				}
+
+				if entry.stat_buffs then
+					local stat_total = {}
+					for stat_name, val in pairs(entry.stat_buffs) do
+						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+						local stat_buff_type = stat_buff_types[stat_name]
+						if stat_buff_type == "multiplicative_multiplier" then
+							stat_total[stat_name] = (val - 1) * effective_stacks
+						else
+							stat_total[stat_name] = val * effective_stacks
+						end
+					end
+					new_entry._stat_total = stat_total
+				end
+				if entry.conditional_stat_buffs then
+					local conditional_stat_total = {}
+					for stat_name, val in pairs(entry.conditional_stat_buffs) do
+						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+						local stat_buff_type = stat_buff_types[stat_name]
+						if stat_buff_type == "multiplicative_multiplier" then
+							conditional_stat_total[stat_name] = (val - 1) * effective_stacks
+						else
+							conditional_stat_total[stat_name] = val * effective_stacks
+						end
+					end
+					new_entry._conditional_stat_total = conditional_stat_total
+				end
 
 				combined[combined_count] = new_entry
 
@@ -1158,7 +1207,29 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- Add percentage text
 				local stack_buff_percentage = ""
 
-				if stat_buffs then
+				if debuff.combined and debuff._stat_total then
+					for stat_name, total_val in pairs(debuff._stat_total) do
+						if stat_name and total_val then
+							local perc = total_val * 100
+							local nearest = math_floor((perc + 5) / 10) * 10
+							if math.abs(perc - nearest) <= 1 then
+								perc = nearest
+							end
+							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
+						end
+					end
+				elseif debuff.combined and debuff._conditional_stat_total then
+					for stat_name, total_val in pairs(debuff._conditional_stat_total) do
+						if stat_name and total_val then
+							local perc = total_val * 100
+							local nearest = math_floor((perc + 5) / 10) * 10
+							if math.abs(perc - nearest) <= 1 then
+								perc = nearest
+							end
+							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
+						end
+					end
+				elseif stat_buffs then
 					for stat_name, val in next, stat_buffs do
 						if stat_name and val then
 							local loc = mod:localize(stat_name)
