@@ -396,6 +396,8 @@ end
 -----------------------------------------------------------------------
 
 mod.scan_enemies = function()
+	table_clear(_horde_units_all)
+
 	local local_player = Managers_player:local_player(1)
 	if not local_player then
 		return
@@ -462,8 +464,6 @@ mod.scan_enemies = function()
 	for _, data in next, cache do
 		data.seen = false
 	end
-
-	table_clear(_horde_units_all)
 
 	-- Return cull cell entries to pool before clearing
 	for key, list in pairs(_cull_cells) do
@@ -711,6 +711,17 @@ local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 
+	-- Return early if player is dead
+	local player = Managers.player:local_player(1)
+	if not player then
+		return
+	end
+	local player_unit = player.player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
+	end
+
+
 	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
 	end
@@ -748,18 +759,20 @@ local function _build_horde_clusters(units, num_units)
 					end
 				end
 
-				local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
-				local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
-				local key = gx * 73856093 + gy * 19349663
+				if pos then
+					local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
+					local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
+					local key = gx * 73856093 + gy * 19349663
 
-				if key then
-					local cell = spatial[key]
-					if not cell then
-						cell = {}
-						spatial[key] = cell
+					if key then
+						local cell = spatial[key]
+						if not cell then
+							cell = {}
+							spatial[key] = cell
+						end
+
+						cell[#cell + 1] = unit
 					end
-
-					cell[#cell + 1] = unit
 				end
 			end
 		end
@@ -888,9 +901,12 @@ local function _build_horde_clusters(units, num_units)
 					-- small bias toward first unit
 					local rep = cluster_units[1]
 					if rep then
-						local pos = mod.enemy_cache[rep].pos
-						cx = cx * 0.7 + pos.x * 0.3
-						cy = cy * 0.7 + pos.y * 0.3
+						local entry = mod.enemy_cache[rep]
+						local pos = entry and entry.pos
+						if pos then
+							cx = cx * 0.7 + pos.x * 0.3
+							cy = cy * 0.7 + pos.y * 0.3
+						end
 					end
 				end
 
