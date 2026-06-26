@@ -262,7 +262,7 @@ for _, debuff in next, mod.debuffs do
 	mod.debuff_list[#mod.debuff_list + 1] = {
 		text = debuff.name,
 		value = debuff.name,
-		sort = mod:localize(debuff.name) or debuff.name,
+		sort = debuff.name,
 		icon = mod.debuff_styles[debuff.group].icon,
 		icon_colour = mod.debuff_styles[debuff.group].colour,
 	}
@@ -279,7 +279,7 @@ for group_name, debuff in next, mod.debuff_styles do
 	mod.debuff_groups_list[#mod.debuff_groups_list + 1] = {
 		text = group_name,
 		value = group_name,
-		sort = mod:localize(group_name) or group_name,
+		sort = group_name,
 		icon = mod.debuff_styles[group_name].icon,
 		icon_colour = mod.debuff_styles[group_name].colour,
 	}

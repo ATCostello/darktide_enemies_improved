@@ -337,7 +337,7 @@ table.insert(localisations_to_add, {
 		en = "Electrocuted",
 	},
 	flamer_assault = {
-		en = "Burning",
+		en = "Burning (Flamer)",
 		["zh-cn"] = "燃烧",
 	},
 	flame_grenade_liquid_area = {
@@ -405,7 +405,7 @@ table.insert(localisations_to_add, {
 	},
 
 	shock_effect = {
-		en = "Electrocuted",
+		en = "Electrocuted (Shocked)",
 		["zh-cn"] = "触电",
 	},
 

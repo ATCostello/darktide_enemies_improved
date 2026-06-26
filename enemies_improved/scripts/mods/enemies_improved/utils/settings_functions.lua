@@ -66,7 +66,7 @@ mod.reset_type_to_default = function(enemy_type)
 	mod:set("outline_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
 
-	local reset_message = mod:localize("reset_type_to_default_message") or ""
+	local reset_message = mod.custom_localize("reset_type_to_default_message") or ""
 	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
@@ -83,7 +83,7 @@ mod.reset_individual_to_default = function(enemy_type)
 	mod:set("outline_distance_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_distance_" .. enemy_type .. "_value", nil)
 
-	local reset_message = mod:localize("reset_individual_to_default_message") or ""
+	local reset_message = mod.custom_localize("reset_individual_to_default_message") or ""
 	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
@@ -461,7 +461,7 @@ mod.update_dmf_settings_colours = function(setting_id)
 		base_key = string.gsub(base_key, "_G$", "")
 		base_key = string.gsub(base_key, "_B$", "")
 
-		local old_title = mod:localize(base_key)
+		local old_title = mod.custom_localize(base_key)
 		local new_title = nil
 
 		-- Recompute localization table
@@ -495,8 +495,8 @@ mod.update_dmf_settings_colours = function(setting_id)
 
 		local view = Managers.ui:view_instance("dmf_options_view")
 
-		if view and view._settings_category_widgets and view._settings_category_widgets[mod:localize("mod_name")] then
-			for _, data in next, view._settings_category_widgets[mod:localize("mod_name")] do
+		if view and view._settings_category_widgets and view._settings_category_widgets[mod.custom_localize("mod_name")] then
+			for _, data in next, view._settings_category_widgets[mod.custom_localize("mod_name")] do
 				local widget = data.widget
 				if not widget or not widget.content.text then
 					break
@@ -676,8 +676,8 @@ local last_scroll_amount = 0
 local last_category = nil
 
 local function is_my_category(self)
-	return self._selected_category == mod:localize("mod_name")
-		or self._selected_category == mod:localize("mod_name_pizazz")
+	return self._selected_category == mod.custom_localize("mod_name")
+		or self._selected_category == mod.custom_localize("mod_name_pizazz")
 end
 
 mod:hook_safe(CLASS.BaseView, "on_exit", function(self)

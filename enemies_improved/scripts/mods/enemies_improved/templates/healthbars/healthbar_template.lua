@@ -181,12 +181,12 @@ local function get_text_option(content, option)
 	local breed = content.breed
 
 	if option == "enemy_type" then
-		return mod:localize(breed_type) or ""
+		return mod.custom_localize(breed_type) or ""
 	elseif option == "enemy_name" then
-		local name = mod:localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
+		local name = mod.custom_localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
 
 		if content.in_horde_cluster then
-			local cluster_string = name .. " " .. mod:localize("horde")
+			local cluster_string = name .. " " .. mod.custom_localize("horde")
 
 			if content.cluster_count then
 				cluster_string = cluster_string .. " (x " .. content.cluster_count .. ")"

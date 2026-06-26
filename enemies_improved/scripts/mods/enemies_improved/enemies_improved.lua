@@ -32,11 +32,6 @@ local FrameSettings = mod:io_dofile("enemies_improved/scripts/mods/enemies_impro
 local SettingsFunctions = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_functions")
 local DistanceFade = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/fading")
 
-local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
-local EnemyHealthbarTemplate =
-	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
-local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
-
 local Outlines = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/outlines")
 local Healthbars = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/healthbars")
 local Markers = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/markers")
@@ -181,6 +176,12 @@ local function check_selected_font()
 end
 
 mod.dmf = get_mod("DMF")
+mod.loaded = false
+
+mod.on_unload = function()
+	mod.clear_caches()
+	mod.loaded = false
+end
 
 mod.on_all_mods_loaded = function()
 	check_selected_font()
@@ -199,7 +200,21 @@ mod.on_all_mods_loaded = function()
 	mod.load_anim_db()
 
 	mod.dmf = get_mod("DMF")
+	mod.loaded = true
 end
+
+mod.custom_localize = function(loc_string)
+	if mod and mod.loaded then
+		return mod:localize(loc_string) or ""
+	else
+		return ""
+	end
+end
+
+local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
+local EnemyHealthbarTemplate =
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
+local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
 
 local function add_custom_templates(self)
 	-- add new marker templates to templates table

@@ -1232,14 +1232,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				elseif stat_buffs then
 					for stat_name, val in next, stat_buffs do
 						if stat_name and val then
-							local loc = mod:localize(stat_name)
+							local loc = mod.custom_localize(stat_name)
 							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
 				elseif conditional_stat_buffs then
 					for stat_name, val in next, conditional_stat_buffs do
 						if stat_name and val then
-							local loc = mod:localize(stat_name)
+							local loc = mod.custom_localize(stat_name)
 							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
 						end
 					end
@@ -1272,13 +1272,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local loc = ""
 
 						if fs.debuffs_abrv then
-							loc = mod:localize(name .. "_abrv") or ""
+							loc = mod.custom_localize(name .. "_abrv")
 						else
-							loc = mod:localize(name) or ""
+							loc = mod.custom_localize(name)
 						end
 
 						if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
-							loc = mod:localize(name)
+							loc = mod.custom_localize(name)
 						end
 
 						if debuff.combined then
