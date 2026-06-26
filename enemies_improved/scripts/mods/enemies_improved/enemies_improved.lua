@@ -201,17 +201,27 @@ mod.on_all_mods_loaded = function()
 	mod.dmf = get_mod("DMF")
 end
 
-mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
+local function add_custom_templates(self)
 	-- add new marker templates to templates table
 	if EnemyMarkersTemplate then
-		self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
+		if not self._marker_templates[EnemyMarkersTemplate.name] then
+			self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
+		end
 	end
 	if EnemyHealthbarTemplate then
-		self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
+		if not self._marker_templates[EnemyHealthbarTemplate.name] then
+			self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
+		end
 	end
 	if EnemyDebuffTemplate then
-		self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+		if not self._marker_templates[EnemyDebuffTemplate.name] then
+			self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+		end
 	end
+end
+
+mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
+	add_custom_templates(self)
 end)
 
 -- toggle boss healthbar
@@ -225,6 +235,9 @@ end)
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
+	-- Re-register custom marker templates in case the HUD marker table was rebuilt
+	add_custom_templates(self)
+
 	if fs.only_in_meatgrinder then
 		local current_level = Managers.state.mission and Managers.state.mission:mission()
 
@@ -720,7 +733,6 @@ local function _build_horde_clusters(units, num_units)
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
-
 
 	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
