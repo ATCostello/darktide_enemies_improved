@@ -100,7 +100,7 @@ mod.apply_marker_fade = function(self)
 	for marker_id, marker in next, markers_by_id do
 		if marker and marker.unit and mod.detect_alive(marker.unit) then
 			local t = marker.type
-			if t == "enemy_healthbar" or t == "enemy_markers" or t == "enemy_debuff" or t == "enemy_utility_debuff" then
+			if t == "enemies_improved" or t == "enemy_utility_debuff" then
 				local wp = Unit.world_position(marker.unit, 1)
 				local pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
 

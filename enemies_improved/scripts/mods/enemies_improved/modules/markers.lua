@@ -6,11 +6,8 @@ local Managers = Managers
 mod.enemy_markers = mod.enemy_markers or {}
 mod.marked_dead = mod.marked_dead or {}
 
-local function _on_marker_created(marker_id, entry, unit)
-	entry.marker = mod.get_marker_by_id(marker_id)
-	mod.enemy_markers[unit] = marker_id
-	entry._marker_created = true
-	entry._marker_pending = nil
+local function _on_ei_marker_created(marker_id, entry, unit)
+	mod._on_ei_marker_created(marker_id, entry, unit)
 end
 
 -------------------------------------------------------------------
@@ -46,7 +43,7 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
-	if entry._marker_created or entry._marker_pending then
+	if entry._ei_marker_created or entry._ei_marker_pending then
 		return
 	end
 
@@ -67,9 +64,9 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
-	entry._marker_pending = true
+	entry._ei_marker_pending = true
 
-	event_manager:trigger("add_world_marker_unit", "enemy_markers", unit, function(marker_id)
-		_on_marker_created(marker_id, entry, unit)
+	event_manager:trigger("add_world_marker_unit", "enemies_improved", unit, function(marker_id)
+		_on_ei_marker_created(marker_id, entry, unit)
 	end)
 end

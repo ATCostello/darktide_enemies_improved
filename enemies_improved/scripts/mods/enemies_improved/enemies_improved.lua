@@ -27,6 +27,25 @@ mod.detect_alive = function(unit)
 	return unit and HEALTH_ALIVE[unit] and Unit_alive(unit)
 end
 
+mod._on_ei_marker_created = function(marker_id, entry, unit)
+	entry.marker = mod.get_marker_by_id(marker_id)
+	entry.healthbar = mod.get_marker_by_id(marker_id)
+	entry.dot_debuffs = mod.get_marker_by_id(marker_id)
+	mod.enemy_markers[unit] = marker_id
+	mod.enemy_healthbars[unit] = marker_id
+	mod.enemy_debuffs[unit] = marker_id
+	entry._ei_marker_created = true
+	entry._ei_marker_pending = nil
+
+	if mod.frame_settings.horde_clusters_enable and entry.is_horde then
+		local cluster = mod.get_horde_cluster_for_unit(unit)
+		if cluster then
+			cluster._healthbar_created = true
+			cluster._healthbar_marker_id = marker_id
+		end
+	end
+end
+
 -- ENEMIES IMPROVED FUNCTIONS
 local FrameSettings = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/frame_settings")
 local SettingsFunctions = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_functions")
@@ -211,26 +230,13 @@ mod.custom_localize = function(loc_string)
 	end
 end
 
-local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
-local EnemyHealthbarTemplate =
-	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
-local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
+local EnemyImprovedTemplate =
+	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/enemies_improved_template")
 
 local function add_custom_templates(self)
-	-- add new marker templates to templates table
-	if EnemyMarkersTemplate then
-		if not self._marker_templates[EnemyMarkersTemplate.name] then
-			self._marker_templates[EnemyMarkersTemplate.name] = EnemyMarkersTemplate
-		end
-	end
-	if EnemyHealthbarTemplate then
-		if not self._marker_templates[EnemyHealthbarTemplate.name] then
-			self._marker_templates[EnemyHealthbarTemplate.name] = EnemyHealthbarTemplate
-		end
-	end
-	if EnemyDebuffTemplate then
-		if not self._marker_templates[EnemyDebuffTemplate.name] then
-			self._marker_templates[EnemyDebuffTemplate.name] = EnemyDebuffTemplate
+	if EnemyImprovedTemplate then
+		if not self._marker_templates[EnemyImprovedTemplate.name] then
+			self._marker_templates[EnemyImprovedTemplate.name] = EnemyImprovedTemplate
 		end
 	end
 end
@@ -353,7 +359,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 				if template then
 					local name = template.name
-					if name and name ~= "enemy_healthbar" and string.find(name, "damage_indicator", 1, true) then
+					if name and name ~= "enemies_improved" and string.find(name, "damage_indicator", 1, true) then
 						marker.draw = false
 						marker.alpha_multiplier = 0
 					end
@@ -409,9 +415,8 @@ mod.force_remove_unit_markers = function(unit)
 
 	local entry = mod.enemy_cache[unit]
 	if entry then
-		entry._healthbar_created = false
-		entry._healthbar_pending = nil
-		entry._marker_created = false
+		entry._ei_marker_created = false
+		entry._ei_marker_pending = nil
 
 		mod.disable_enemy_outlines(unit, entry)
 		mod.remove_alert_outline(entry)
@@ -644,10 +649,7 @@ mod.scan_enemies = function()
 
 						alert_healthbar = false,
 
-						_marker_created = false,
-						_healthbar_created = false,
-						_last_marker_update = 0,
-						_last_healthbar_update = 0,
+						_ei_marker_created = false,
 					}
 
 					mod.marked_dead[unit] = nil
@@ -707,6 +709,7 @@ mod.scan_enemies = function()
 
 							_priority_score = data.score,
 							pos = Vector3(data.pos.x, data.pos.y, data.pos.z),
+							_ei_marker_created = false,
 						}
 					else
 						entry.seen = true

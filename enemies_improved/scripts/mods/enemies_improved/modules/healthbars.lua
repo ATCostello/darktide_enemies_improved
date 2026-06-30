@@ -9,11 +9,8 @@ local Managers = Managers
 mod.enemy_healthbars = mod.enemy_healthbars or {}
 mod.marked_dead = mod.marked_dead or {}
 
-local function _on_healthbar_created(marker_id, entry, unit)
-	entry.healthbar = mod.get_marker_by_id(marker_id)
-	mod.enemy_healthbars[unit] = marker_id
-	entry._healthbar_created = true
-	entry._healthbar_pending = nil
+local function _on_ei_marker_created(marker_id, entry, unit)
+	mod._on_ei_marker_created(marker_id, entry, unit)
 end
 
 -----------------------------------------------------------------------
@@ -25,9 +22,9 @@ mod.update_enemy_healthbars = function(entry, t)
 	local fs = mod.frame_settings
 
 	-- Safety: clear stuck pending state after short time
-	if entry._healthbar_pending and entry._healthbar_pending_t then
-		if t - entry._healthbar_pending_t > 2 then
-			entry._healthbar_pending = nil
+	if entry._ei_marker_pending and entry._ei_marker_pending_t then
+		if t - entry._ei_marker_pending_t > 2 then
+			entry._ei_marker_pending = nil
 		end
 	end
 
@@ -46,7 +43,7 @@ mod.update_enemy_healthbars = function(entry, t)
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 
 		-- If this unit HAD a healthbar but is no longer a valid cluster rep then remove it
-		if entry._healthbar_created then
+		if entry._ei_marker_created then
 			if not cluster or cluster.rep_unit ~= unit then
 				local marker_id = mod.enemy_healthbars[unit]
 
@@ -55,15 +52,15 @@ mod.update_enemy_healthbars = function(entry, t)
 					mod.enemy_healthbars[unit] = nil
 				end
 
-				entry._healthbar_created = false
-				entry._healthbar_pending = nil
+				entry._ei_marker_created = false
+				entry._ei_marker_pending = nil
 
 				return
 			end
 		end
 	end
 
-	if entry._healthbar_created or entry._healthbar_pending then
+	if entry._ei_marker_created or entry._ei_marker_pending then
 		return
 	end
 
@@ -98,11 +95,11 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	entry._healthbar_pending = true
-	entry._healthbar_pending_t = t
+	entry._ei_marker_pending = true
+	entry._ei_marker_pending_t = t
 
-	Managers_event:trigger("add_world_marker_unit", "enemy_healthbar", unit, function(marker_id)
-		_on_healthbar_created(marker_id, entry, unit)
+	Managers_event:trigger("add_world_marker_unit", "enemies_improved", unit, function(marker_id)
+		_on_ei_marker_created(marker_id, entry, unit)
 
 		-- Mark cluster as having a healthbar
 		if mod.frame_settings.horde_clusters_enable and entry.is_horde then
