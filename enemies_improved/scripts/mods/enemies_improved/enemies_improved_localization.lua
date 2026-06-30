@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.0TEST1"
+mod.version = "2.0.0TEST2"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -245,7 +245,8 @@ table.insert(localisations_to_add, {
 	},
 
 	phosphor_burn = {
-		en = "Phosphor",
+		en = "Phosphor Burn",
+		["zh-cn"] = "磷火",
 	},
 
 	warp = {
@@ -265,7 +266,7 @@ table.insert(localisations_to_add, {
 
 	rending = {
 		en = "Rending",
-		["zh-cn"] = "碎裂",
+		["zh-cn"] = "脆弱",
 	},
 
 	damage_taken = {
@@ -280,6 +281,7 @@ table.insert(localisations_to_add, {
 
 	hit_mass_multiplier = {
 		en = "Hit Mass Multiplier",
+		["zh-cn"] = "打击质量倍率",
 	},
 
 	stagger_damage = {
@@ -335,10 +337,11 @@ table.insert(localisations_to_add, {
 	},
 	electrocuted = {
 		en = "Electrocuted",
+		["zh-cn"] = "触电",
 	},
 	flamer_assault = {
-		en = "Burning (Flamer)",
-		["zh-cn"] = "燃烧",
+		en = "Burning(Flamer)",
+		["zh-cn"] = "燃烧（喷火器）",
 	},
 	flame_grenade_liquid_area = {
 		en = "Burning (Fire Grenade)",
@@ -412,19 +415,19 @@ table.insert(localisations_to_add, {
 	-- Rending / “take more damage”, tags, etc.
 	rending_debuff = {
 		en = "Brittleness",
-		["zh-cn"] = "碎裂",
+		["zh-cn"] = "脆弱",
 	},
 	rending_debuff_medium = {
 		en = "Brittleness (Medium)",
-		["zh-cn"] = "碎裂",
+		["zh-cn"] = "脆弱",
 	},
 	rending_burn_debuff = {
 		en = "Brittleness (Burn)",
-		["zh-cn"] = "碎裂",
+		["zh-cn"] = "脆弱",
 	},
 	saw_rending_debuff = {
 		en = "Brittleness (Saw Blade)",
-		["zh-cn"] = "碎裂",
+		["zh-cn"] = "脆弱",
 	},
 
 	increase_impact_received_while_staggered = {
@@ -531,11 +534,11 @@ table.insert(localisations_to_add, {
 	-- Arbite
 	adamant_drone_enemy_debuff = {
 		en = "Increased Damage Taken (Drone Marked)",
-		["zh-cn"] = "无人机标记",
+		["zh-cn"] = "无人机标记·增伤",
 	},
 	adamant_drone_enemy_debuff_abrv = {
 		en = "+ Damage",
-		["zh-cn"] = "无人机标记",
+		["zh-cn"] = "+ 受到伤害",
 	},
 	adamant_drone_talent_debuff = {
 		en = "Drone Suppressed",
@@ -572,18 +575,23 @@ table.insert(localisations_to_add, {
 	-- Skitarii
 	phosphor_rending_debuff = {
 		en = "Brittleness (Phosphor)",
+		["zh-cn"] = "脆弱（磷火）",
 	},
 	cryptic_servo_skull_debuff = {
 		en = "Increased Damage (Servo Skull)",
+		["zh-cn"] = "伺服头骨增伤",
 	},
 	cryptic_servo_skull_debuff_abrv = {
 		en = "+ Damage (Servo Skull)",
+		["zh-cn"] = "+增伤（伺服头骨）",
 	},
 	cryptic_overload_keystone_increase_damage_taken_debuff = {
 		en = "Increased Damage (Overload)",
+		["zh-cn"] = "过载增伤",
 	},
 	cryptic_overload_keystone_increase_damage_taken_debuff_abrv = {
 		en = "+ Damage (Overload)",
+		["zh-cn"] = "+增伤（过载）",
 	},
 })
 
@@ -600,9 +608,11 @@ table.insert(localisations_to_add, {
 	-- New Vanguard breed display names (added as safety net for breed localization)
 	loc_breed_display_name_cultist_vanguard = {
 		en = "Cultist Vanguard",
+		["zh-cn"] = "渣滓盾卫",
 	},
 	loc_breed_display_name_renegade_vanguard = {
 		en = "Renegade Vanguard",
+		["zh-cn"] = "血痂盾卫",
 	},
 	monster = {
 		en = "miniboss",
@@ -646,6 +656,7 @@ table.insert(localisations_to_add, {
 	},
 	shield = {
 		en = "vanguard (shields)",
+		["zh-cn"] = "盾卫",
 	},
 })
 
@@ -685,7 +696,7 @@ table.insert(localisations_to_add, {
 	},
 	contracts_progress_overall_fill = {
 		en = "Colourful box",
-		["zh-cn"] = "白色框体",
+		["zh-cn"] = "彩色框体",
 	},
 })
 
@@ -829,9 +840,11 @@ table.insert(localisations_to_add, {
 	},
 	only_in_meatgrinder = {
 		en = "Only show in Meat Grinder?",
+		["zh-cn"] = "仅在灵能室显示？",
 	},
 	only_in_meatgrinder_tooltip = {
 		en = "Toggle to show Enemies Improved widgets in the meat grinder ONLY. This means that in live matches, or anywhere outside the meat grinder - you will not see any enemies improved changes.",
+		["zh-cn"] = "开启后，仅在灵能室内显示敌人增强模组的UI组件。在正式对局或灵能室以外的区域，将不会生效任何敌人增强相关改动。",
 	},
 })
 
@@ -1287,9 +1300,11 @@ table.insert(localisations_to_add, {
 	},
 	damage_number_flashy_speed = {
 		en = "Flashy numbers move speed",
+		["zh-cn"] = "醒目伤害数字移动速度",
 	},
 	damage_number_flashy_speed_tooltip = {
 		en = "The speed at which the flashy damage numbers move.",
+		["zh-cn"] = "控制醒目样式伤害数字上浮移动的速度。",
 	},
 	hb_damage_show_only_latest = {
 		en = "Only show last damaged enemies?",
@@ -1505,7 +1520,7 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_type_icon_scale = {
 		en = "Healthbar Type icon scale",
-		["zh-cn"] = "类型图标大小",
+		["zh-cn"] = "血条图标大小",
 	},
 	healthbar_type_icon_scale_tooltip = {
 		en = "Adjust the scale of the type icon.",
@@ -1563,7 +1578,7 @@ table.insert(localisations_to_add, {
 	},
 	debuff_enable_tooltip = {
 		en = "Global toggle for debuff display.\n\nDebuffs are grouped into two categories, Damage over Time (DoT) and Utility. DoT debuffs are displayed upwards, whereas utility debuffs display downwards.\n\nDoT debuffs include things like bleeding, fire, electricity. Whereas utility includes rending, talent debuffs etc.",
-		["zh-cn"] = "全局开关减益显示。\n减益分为持续伤害（向上显示）和功能减益（向下显示）。\n持续伤害：流血、燃烧、触电；功能减益：碎裂、增伤、虚弱等。",
+		["zh-cn"] = "全局开关减益显示。\n减益分为持续伤害（向上显示）和功能减益（向下显示）。\n持续伤害：流血、燃烧、触电；功能减益：脆弱、增伤、虚弱等。",
 	},
 	debuff_dot_enable = {
 		en = "Enable Damage-Over-Time debuffs",
@@ -1579,7 +1594,7 @@ table.insert(localisations_to_add, {
 	},
 	debuff_utility_enable_tooltip = {
 		en = "Utility debuffs are displayed downwards and include things like rending, damage increases, weakening.",
-		["zh-cn"] = "碎裂、增伤、虚弱等功能效果向下显示。",
+		["zh-cn"] = "脆弱、增伤、虚弱等功能效果向下显示。",
 	},
 	split_debuff_types = {
 		en = "Split DoT and Utility debuffs?",
@@ -1808,9 +1823,11 @@ table.insert(localisations_to_add, {
 	},
 	debuff_horizontal = {
 		en = "Toggle Horizontal Debuff Mode?",
+		["zh-cn"] = "开启横向减益排列？",
 	},
 	debuff_horizontal_tooltip = {
 		en = "Toggles a horizontal mode, instead of the default vertical list. Force hides names, but shows icons and stacks in a horizontal layout instead.",
+		["zh-cn"] = "切换为横向布局，替代默认的纵向列表。会强制隐藏名称，仅以横向排列展示减益图标与层数。",
 	},
 	debuff_stacks_font_size = {
 		en = "Debuff Stacks Font Size",
@@ -1981,7 +1998,7 @@ table.insert(localisations_to_add, {
 	},
 	reset_individual_to_default = {
 		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
-		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}���复默认设置",
+		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}恢复默认设置",
 	},
 	reset_individual_to_default_tooltip = {
 		en = "Reset settings for individual '_individual_' to default.",
@@ -1989,7 +2006,7 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_enable = {
 		en = "Healthbar colour override?",
-		["zh-cn"] = "覆盖血条颜色",
+		["zh-cn"] = "覆盖血条设置",
 	},
 	healthbar_individual_enable_tooltip = {
 		en = "Toggle healthbar colour overriding for your selected enemy",
@@ -2009,15 +2026,15 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_colour_R = {
 		en = "Individual Healthbar Colour: Red",
-		["zh-cn"] = "血条颜色：红",
+		["zh-cn"] = "独立血条颜色：红",
 	},
 	healthbar_individual_colour_G = {
 		en = "Individual Healthbar Colour: Green",
-		["zh-cn"] = "血条颜色：绿",
+		["zh-cn"] = "独立血条颜色：绿",
 	},
 	healthbar_individual_colour_B = {
 		en = "Individual Healthbar Colour: Blue",
-		["zh-cn"] = "血条颜色：蓝",
+		["zh-cn"] = "独立血条颜色：蓝",
 	},
 	healthbar_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
@@ -2037,15 +2054,15 @@ table.insert(localisations_to_add, {
 	},
 	outline_individual_colour_R = {
 		en = "Individual Outline Colour: Red",
-		["zh-cn"] = "轮廓颜色：红",
+		["zh-cn"] = "独立轮廓颜色：红",
 	},
 	outline_individual_colour_G = {
 		en = "Individual Outline Colour: Green",
-		["zh-cn"] = "轮廓颜色：绿",
+		["zh-cn"] = "独立轮廓颜色：绿",
 	},
 	outline_individual_colour_B = {
 		en = "Individual Outline Colour: Blue",
-		["zh-cn"] = "轮廓颜色：蓝",
+		["zh-cn"] = "独立轮廓颜色：蓝",
 	},
 	outline_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy outline.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
@@ -2057,43 +2074,55 @@ table.insert(localisations_to_add, {
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
-		["zh-cn"] = "为选中敌人单独覆盖头顶标记，无视全局设置。",
+		["zh-cn"] = "为选定敌人单独强制开关头顶标记，不受全局标记总控影响，可单独指定特定敌人显示标记",
 	},
 	distance_individual_enable = {
 		en = "Override draw distance?",
+		["zh-cn"] = "单独覆盖渲染距离",
 	},
 	distance_individual_enable_tooltip = {
 		en = "Toggle the draw distance override for this enemy. When enabled, the enemy will only be visible within the specified distance below.",
+		["zh-cn"] = "为此敌人开启独立渲染距离。开启后，仅在下方设定距离内可见该单位。",
 	},
 	distance_individual_value = {
 		en = "Draw distance (Enemy Specific)",
+		["zh-cn"] = "渲染距离（敌人专属）",
 	},
 	distance_individual_value_tooltip = {
 		en = "The max distance (in metres) this specific enemy will be visible for markers, healthbars and outlines.",
+		["zh-cn"] = "单位：米。超出该距离后，此敌人的标记、血条和轮廓都会隐藏。",
 	},
 	outline_distance_individual_enable = {
 		en = "Outline draw distance (Enemy Specific)",
+		["zh-cn"] = "轮廓渲染距离（敌人专属）",
 	},
 	outline_distance_individual_enable_tooltip = {
 		en = "Toggle the outline draw distance override for this enemy. When enabled, the outline will only be visible within the specified distance below.",
+		["zh-cn"] = "为此敌人开启独立轮廓距离。开启后，仅在下方设定距离内显示轮廓。",
 	},
 	outline_distance_individual_value = {
 		en = "Outline draw distance (Enemy Specific)",
+		["zh-cn"] = "轮廓渲染距离（敌人专属）",
 	},
 	outline_distance_individual_value_tooltip = {
 		en = "The max distance (in metres) this specific enemy's outline will be visible.",
+		["zh-cn"] = "单位：米。超出该距离后，此敌人的轮廓将不再显示。",
 	},
 	healthbar_individual_width = {
 		en = "Healthbar Width (Enemy Specific)",
+		["zh-cn"] = "血条宽度（敌人专属）",
 	},
 	healthbar_individual_width_tooltip = {
 		en = "Override the width of the healthbar for this specific enemy.",
+		["zh-cn"] = "自定义该敌人血条的宽度。",
 	},
 	healthbar_individual_height = {
 		en = "Healthbar Height (Enemy Specific)",
+		["zh-cn"] = "血条高度（敌人专属）",
 	},
 	healthbar_individual_height_tooltip = {
 		en = "Override the height of the healthbar for this specific enemy.",
+		["zh-cn"] = "自定义该敌人血条的高度。",
 	},
 })
 
@@ -2108,7 +2137,7 @@ table.insert(localisations_to_add, {
 	},
 	general_throttle_rate_tooltip = {
 		en = "Adjust the rate at which all on-screen elements in enemies improved are updated.\n\nShouldn't really need to touch this, I recommend between 20-40 for a smooth experience. \n\nMaking this higher may help gain some fps in dense situations, but may introduce 'stuttering' on the widgets, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
-		["zh-cn"] = "调整屏幕内所有UI的更新速率，单位毫秒。数值越大越省性能，但可能卡顿。推荐20-40。",
+		["zh-cn"] = "调整本模组所有屏幕内UI元素的更新速率。\n\n通常无需修改，为保证流畅体验，推荐值为 20-40。\n\n提高该数值可在敌人密集场景提升帧率，但会增加UI更新延迟，可能导致组件卡顿抖动。\n\n单位为毫秒，数值100代表每秒更新10次，数值50代表每秒更新20次。",
 	},
 	off_screen_throttle_rate = {
 		en = "Off Screen Throttle Rate",
@@ -2116,7 +2145,7 @@ table.insert(localisations_to_add, {
 	},
 	off_screen_throttle_rate_tooltip = {
 		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
-		["zh-cn"] = "调整屏幕外敌人UI的更新速率，节省性能。推荐150-200。",
+		["zh-cn"] = "调整本模组所有屏幕外UI元素的更新速率，仅作用于视野外的敌人。\n\n通常无需修改，为保证流畅体验，推荐值为 150-200。\n\n提高该数值可在敌人密集场景提升帧率，但会延长UI显示延迟。\n\n单位为毫秒，数值100代表每秒更新10次，数值50代表每秒更新20次。",
 	},
 })
 
