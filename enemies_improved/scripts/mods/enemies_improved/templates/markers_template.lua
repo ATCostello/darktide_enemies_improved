@@ -392,6 +392,27 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	if fs.markers_show_only_damaged or fs.markers_show_only_undamaged then
+		local health_ext = content.health_extension
+		if not health_ext then
+			health_ext = ScriptUnit_has_extension(unit, "health_system")
+			content.health_extension = health_ext
+		end
+		local has_damage = health_ext and health_ext:total_damage_taken() > 0
+		if fs.markers_show_only_damaged and not has_damage then
+			marker.draw = false
+			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
+			return
+		end
+		if fs.markers_show_only_undamaged and has_damage then
+			marker.draw = false
+			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
+			return
+		end
+	end
+
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then

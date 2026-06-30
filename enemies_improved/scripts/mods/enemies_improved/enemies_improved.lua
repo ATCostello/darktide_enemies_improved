@@ -5,6 +5,7 @@ local Managers_player = Managers.player
 local Managers_state = Managers.state
 local Managers_ui = Managers.ui
 local Managers_time = Managers.time
+local Managers_world = Managers.world
 local ScriptUnit_extension = ScriptUnit.extension
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local table_clear = table.clear
@@ -16,6 +17,9 @@ local math_max = math.max
 local next = next
 local math_floor = math.floor
 local Unit_alive = Unit.alive
+local Actor_unit = Actor.unit
+local World_physics_world = World.physics_world
+local Quaternion_forward = Quaternion.forward
 
 -- debug mode toggle!!!
 mod.DEBUG = false
@@ -272,6 +276,10 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
+		-- Aim detection: run every frame, independent of throttle
+		mod.aimed_unit = {}
+		mod.do_aim_raycast()
+
 		-- throttle updates according to enemy amounts to help keep performance in check...
 		local enemy_count = 0
 		for _ in next, mod.enemy_cache do
@@ -1218,6 +1226,46 @@ mod.update_horde_clusters = function(temp, to_process)
 	else
 		table_clear(_horde_clusters)
 		table_clear(_horde_cluster_by_unit)
+	end
+end
+
+-- Crosshair cone check: find the closest enemy within ~12° of camera centre using the camera's own position/rotation and the engine's position lookup cache.
+mod.do_aim_raycast = function()
+	local ui_manager = Managers.ui
+	local hud = ui_manager and ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	if not world_markers then
+		return
+	end
+
+	local camera = world_markers:_get_camera()
+	if not camera then
+		return
+	end
+
+	local cam_pos = Camera.local_position(camera)
+	local px, py, pz = cam_pos.x, cam_pos.y, cam_pos.z
+	local forward = Quaternion.forward(Camera.local_rotation(camera))
+	local cone_cos = math.cos(math.rad(8))
+	local draw_dist_sq = fs.draw_distance * fs.draw_distance
+
+	for unit in pairs(mod.enemy_cache) do
+		if Unit_alive(unit) then
+			local enemy_pos = POSITION_LOOKUP[unit]
+			if enemy_pos then
+				local dx = enemy_pos.x - px
+				local dy = enemy_pos.y - py
+				local dz = enemy_pos.z - pz
+				local dist_sq = dx * dx + dy * dy + dz * dz
+				if dist_sq < draw_dist_sq and dist_sq > 0 then
+					local dist = math.sqrt(dist_sq)
+					local dot = (dx * forward.x + dy * forward.y + dz * forward.z) / dist
+					if dot > cone_cos then
+						mod.aimed_unit[unit] = true
+					end
+				end
+			end
+		end
 	end
 end
 

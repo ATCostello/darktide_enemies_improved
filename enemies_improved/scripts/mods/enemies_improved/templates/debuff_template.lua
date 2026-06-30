@@ -230,8 +230,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				8,
 			},
 			font_type = mod.font_type,
-			font_size = 16 * fs.text_scale,
-			default_font_size = 16 * fs.text_scale,
+			font_size = fs.debuff_stacks_font_size * fs.text_scale,
+			default_font_size = fs.debuff_stacks_font_size * fs.text_scale,
 
 			text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 			size = { bar_width * 0.5 * fs.text_scale, 20 },
@@ -277,8 +277,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			},
 
 			font_type = mod.font_type,
-			font_size = 16 * fs.text_scale,
-			default_font_size = 16 * fs.text_scale,
+			font_size = fs.debuff_names_font_size * fs.text_scale,
+			default_font_size = fs.debuff_names_font_size * fs.text_scale,
 
 			text_color = fs.main_colour or { 220, 220, 220, 220 },
 			size = { (name_x * 2) * fs.text_scale, 22 },

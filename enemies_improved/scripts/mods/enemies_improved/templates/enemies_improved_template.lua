@@ -153,6 +153,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	-- Global aimed-only filter: hides ALL enemies_improved content
+	local unit = marker.unit
+	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		return
+	end
+
 	-- Sub-templates check widget._next_update and marker.draw internally.
 	-- Save and force them so all three run their full logic this frame.
 	local saved_next_update = widget._next_update

@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.0"
+mod.version = "2.0.0TEST1"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -981,6 +981,24 @@ table.insert(localisations_to_add, {
 		en = "Select a colour for the background of the overhead markers.",
 		["zh-cn"] = "设置头顶标记的背景颜色。",
 	},
+	markers_show_only_damaged = {
+		en = "Only show markers for damaged enemies?",
+	},
+	markers_show_only_damaged_tooltip = {
+		en = "Only show overhead markers for enemies that have taken damage.",
+	},
+	markers_show_only_undamaged = {
+		en = "Only show markers for undamaged enemies?",
+	},
+	markers_show_only_undamaged_tooltip = {
+		en = "Only show overhead markers for enemies that have NOT taken any damage.",
+	},
+	markers_show_only_aimed = {
+		en = "Only show markers when aiming at enemy?",
+	},
+	markers_show_only_aimed_tooltip = {
+		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair. Works together with the damaged/undamaged filters above (all conditions must be met).",
+	},
 })
 
 -- stagger settings localisations
@@ -1068,6 +1086,18 @@ table.insert(localisations_to_add, {
 	healthbar_enable_tooltip = {
 		en = "Globally toggles healthbars for enemies. Specific enemy types can be enabled/disabled further below.",
 		["zh-cn"] = "全局开关敌人血条，可在下方单独配置各类型。",
+	},
+	hb_enable_bar = {
+		en = "Show healthbar bar?",
+	},
+	hb_enable_bar_tooltip = {
+		en = "Toggle the healthbar visual bar itself. If disabled, the bar will be hidden but text/numbers can still show.",
+	},
+	hb_enable_text = {
+		en = "Show healthbar text?",
+	},
+	hb_enable_text_tooltip = {
+		en = "Toggle the healthbar text (name, health numbers, armour type). If disabled, text will be hidden but the bar can still show.",
 	},
 	hb_y_offset = {
 		en = "Adjust Y offset for healthbars",
@@ -1781,6 +1811,18 @@ table.insert(localisations_to_add, {
 	},
 	debuff_horizontal_tooltip = {
 		en = "Toggles a horizontal mode, instead of the default vertical list. Force hides names, but shows icons and stacks in a horizontal layout instead.",
+	},
+	debuff_stacks_font_size = {
+		en = "Debuff Stacks Font Size",
+	},
+	debuff_stacks_font_size_tooltip = {
+		en = "Adjust the font size of the debuff stack/percentage counters.",
+	},
+	debuff_names_font_size = {
+		en = "Debuff Name Font Size",
+	},
+	debuff_names_font_size_tooltip = {
+		en = "Adjust the font size of the debuff names (if debuff names are enabled).",
 	},
 })
 

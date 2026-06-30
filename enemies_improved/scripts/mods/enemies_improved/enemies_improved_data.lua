@@ -529,6 +529,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "global_opacity_tooltip",
 		},
 		{
+			setting_id = "markers_show_only_aimed",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "markers_show_only_aimed_tooltip",
+		},
+		{
 			setting_id = "enable_depth_fading",
 			type = "checkbox",
 			default_value = true,
@@ -943,6 +949,18 @@ table.insert(mod.settings_widgets, {
 				},
 			},
 		},
+		{
+			setting_id = "markers_show_only_damaged",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "markers_show_only_damaged_tooltip",
+		},
+		{
+			setting_id = "markers_show_only_undamaged",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "markers_show_only_undamaged_tooltip",
+		},
 	},
 })
 
@@ -957,6 +975,18 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "healthbar_enable_tooltip",
+		},
+		{
+			setting_id = "hb_enable_bar",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_enable_bar_tooltip",
+		},
+		{
+			setting_id = "hb_enable_text",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_enable_text_tooltip",
 		},
 		{
 			setting_id = "healthbar_colour_preset",
@@ -1523,7 +1553,26 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "debuff_show_on_body_tooltip",
 		},
-
+		{
+			setting_id = "debuff_stacks_font_size",
+			type = "numeric",
+			default_value = 16,
+			range = {
+				8,
+				48,
+			},
+			tooltip = "debuff_stacks_font_size_tooltip",
+		},
+		{
+			setting_id = "debuff_names_font_size",
+			type = "numeric",
+			default_value = 16,
+			range = {
+				8,
+				48,
+			},
+			tooltip = "debuff_names_font_size_tooltip",
+		},
 		{
 			setting_id = "debuff_icon_scale",
 			type = "numeric",
