@@ -1108,16 +1108,16 @@ mod.remove_dead = function()
 			end
 		end
 
-		-- Deferred DPS removal: clean up after damage_number_duration + 1s
+		-- Deferred DPS removal: clean up after damage_number_duration
 		if not remove and entry._dead_at then
-			if t - entry._dead_at > fs.damage_number_duration + 1 then
+			if t - entry._dead_at > fs.damage_number_duration then
 				remove = true
 				mark_dead = true
 			end
 		end
 
-		-- Distance check
-		if not remove and player_pos then
+		-- Distance check	
+		if not remove and player_pos and mod.detect_alive(unit) then
 			local wp = Unit.world_position(unit, 1)
 			if wp then
 				entry.pos = Vector3(wp.x, wp.y, wp.z)
@@ -1267,7 +1267,7 @@ mod.do_aim_raycast = function()
 			if enemy_pos then
 				local dx = enemy_pos.x - px
 				local dy = enemy_pos.y - py
-				local dz = enemy_pos.z - pz
+				local dz = (enemy_pos.z - pz) * 0.3
 				local dist_sq = dx * dx + dy * dy + dz * dz
 				if dist_sq < draw_dist_sq and dist_sq > 0 then
 					local dist = math.sqrt(dist_sq)

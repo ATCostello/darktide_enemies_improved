@@ -292,7 +292,6 @@ template.on_enter = function(widget, marker, template)
 		content.draw_mkr = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -374,7 +373,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_mkr = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -390,7 +388,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_mkr = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
 		return
 	end
 
@@ -402,13 +399,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_mkr = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		if not fs.hb_show_dps then
-			marker.remove = true
-		end
-		return
 	end
 
-	if fs.markers_show_only_damaged or fs.markers_show_only_undamaged then
+	if is_alive and fs.markers_show_only_damaged or fs.markers_show_only_undamaged then
+		local time_since_last_damage = t - (content.last_damage_taken_time or 0)
+
 		local health_ext = content.health_extension
 		if not health_ext then
 			health_ext = ScriptUnit_has_extension(unit, "health_system")
@@ -421,13 +416,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				has_damage = result > 0
 			end
 		end
-		if fs.markers_show_only_damaged and not has_damage then
+
+		if fs.markers_show_only_damaged and not has_damage and time_since_last_damage > 5 then
 			content.draw_mkr = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
 			return
 		end
-		if fs.markers_show_only_undamaged and has_damage then
+		if fs.markers_show_only_undamaged and has_damage and time_since_last_damage > 5 then
 			content.draw_mkr = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0

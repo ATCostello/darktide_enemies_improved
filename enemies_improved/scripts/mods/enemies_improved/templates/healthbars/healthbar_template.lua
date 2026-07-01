@@ -1332,7 +1332,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
 			mod.enemy_healthbars[unit] = nil
-			--marker.remove = true
 			--Managers.event:trigger("remove_world_marker", marker.id)
 		end
 	end

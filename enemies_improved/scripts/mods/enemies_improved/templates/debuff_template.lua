@@ -417,8 +417,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
-		return
 	end
 
 	local is_alive = mod.detect_alive(unit)
@@ -427,10 +425,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		if not fs.hb_show_dps then
-			marker.remove = true
-		end
-		return
 	end
 
 	-- don't process hordes if disabled

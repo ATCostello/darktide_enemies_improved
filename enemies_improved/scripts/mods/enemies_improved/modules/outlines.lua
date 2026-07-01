@@ -415,7 +415,6 @@ mod.default_outline_enabled = {
 mod.apply_enemy_outlines = function(settings)
 	for _, entry in next, mod.breed_types do
 		local breed = entry.value
-
 		if breed ~= "select" then
 			local key = "outline_" .. breed .. "_enable"
 			local enabled = mod:get(key)

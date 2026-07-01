@@ -1144,7 +1144,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_y_offset",
 			type = "numeric",
-			default_value = 0.4,
+			default_value = 0,
 			range = {
 				-1,
 				2,
