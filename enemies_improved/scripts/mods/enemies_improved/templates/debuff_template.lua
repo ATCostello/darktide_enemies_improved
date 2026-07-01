@@ -311,14 +311,14 @@ template.on_enter = function(widget, marker, template)
 	template.position_offset = { 0, 0, fs.hb_y_offset }
 	--end
 
-	marker.draw = false
-
 	local content = widget.content
 	local style = widget.style
 	local unit = marker.unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
 	local buff_extension = ScriptUnit_extension(unit, "buff_system")
+
+	content.draw_dbf  = false
 
 	hb_size_width = fs.hb_size_width
 	hb_size_height = fs.hb_size_height
@@ -414,7 +414,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local fs = mod.frame_settings
 
 	if not unit then
-		marker.draw = false
+		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
 		marker.remove = true
@@ -424,10 +424,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		marker.draw = false
+		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		marker.remove = true
+		if not fs.hb_show_dps then
+			marker.remove = true
+		end
 		return
 	end
 
@@ -436,12 +438,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		fs.debuff_horde_enable == false
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
-		marker.draw = false
+		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
 		return
 	end
 
+	content.draw_dbf  = true
+	
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
 	if template.check_line_of_sight then
@@ -466,8 +470,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 	local unit_data_extension = content.unit_data_extension
 	local breed = content.breed
-	local debuffs = content.debuffs
-	local keywords = content.keywords
+	local debuffs = content.debuffs or {}
+	local keywords = content.keywords or {}
 
 	-- Gather active debuffs that we care about
 	widget._active = widget._active or {}
@@ -590,52 +594,66 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- CUSTOM STAGGER DEBUFF
 	local enemyentry = mod.enemy_cache[unit]
+	
+	dbg_a = active
 
 	if enemyentry and fs.debuff_stagger_enable then
 		if enemyentry.staggered then
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
 			local now = mod.get_time()
-
-			local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 10) / 10
-			if stagger_time_rounded <= 0 then
-				stagger_time_rounded = 0.00
-			end
-
-			-- set the stack timer to the amount of time the enemy is staggered if available...
-			entry.name = "staggered"
-			entry.stacks = 1
-			entry.duration = stagger_time_rounded
-			entry.max_stacks = 1
-			entry.stat_buffs = {}
-			entry.conditional_stat_buffs = {}
-			entry.type = "utility"
 
 			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
 				enemyentry.staggered = false
 				enemyentry.stagger_type = nil
 				enemyentry.stagger_duration = 0
 				enemyentry.stagger_timer = 0
+
+				if widget._active_lookup then
+					if widget._active_lookup["staggered"] then
+						widget._active_lookup["staggered"] = false
+					end
+				end
+
+				if widget._state then
+					if widget._state["staggered"] then
+						--widget._state["staggered"] = nil
+					end
+				end
+			else
+				active_count = active_count + 1
+				local entry = active[active_count]
+				if not entry then
+					entry = active_pool[#active_pool]
+					if entry then
+						active_pool[#active_pool] = nil
+					else
+						entry = {}
+					end
+					active[active_count] = entry
+				end
+
+
+				local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 10) / 10
+				if stagger_time_rounded <= 0 then
+					stagger_time_rounded = 0.00
+				end
+
+				-- set the stack timer to the amount of time the enemy is staggered if available...
+				entry.name = "staggered"
+				entry.stacks = 1
+				entry.duration = stagger_time_rounded
+				entry.max_stacks = 1
+				entry.stat_buffs = {}
+				entry.conditional_stat_buffs = {}
+				entry.type = "utility"
 			end
 		end
 	end
 
 	-- dont draw or do calculations if there are no debuffs applied..
 	if #active < 1 then
-		marker.draw = false
+		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		return
 	end
 
 	for i = active_count + 1, #active do
@@ -940,7 +958,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- Fade out removed debuffs
-	for name, state in next, state_table do
+	for name, state in pairs(state_table) do
 		if not active_lookup[name] then
 			local alpha = state.alpha - dt * 255 * fade_speed
 			if alpha <= 0 then
@@ -1328,21 +1346,21 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				marker.alpha_multiplier = line_of_sight_progress or 1
 
 				if #widget._active > 0 then
-					marker.draw = true
+					content.draw_dbf  = true
 				else
-					marker.draw = false
+					content.draw_dbf  = false
 					marker.alpha_multiplier = 0
 					widget.alpha_multiplier = 0
 				end
 
 				if not marker.is_inside_frustum then
-					marker.draw = false
+					content.draw_dbf  = false
 					marker.alpha_multiplier = 0
 					widget.alpha_multiplier = 0
 				end
 
 				-- apply scaling
-				if marker.draw then
+				if content.draw_dbf  then
 					local scale = marker.scale
 
 					icon_style.size[1] = icon_style.default_size[1] * scale

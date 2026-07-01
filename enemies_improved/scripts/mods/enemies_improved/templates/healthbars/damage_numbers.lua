@@ -471,7 +471,8 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				local damage_has_started_position
-
+				ui_content.dps = dps_value
+				
 				if fs.hb_damage_number_type == damage_number_types.readable then
 					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)
 				else
@@ -592,6 +593,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				local damage_has_started_position
+				ui_content.dps = dps_value
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
 					damage_has_started_position = Vector3(x_position, y_position - dps_y_offset, z_position)

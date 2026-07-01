@@ -1311,7 +1311,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "floating",
+			default_value = "flashy",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{

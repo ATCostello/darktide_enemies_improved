@@ -298,12 +298,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			mod.update_enemies(dt, t)
 		end
 
-		-- force refresh cache every 2 minutes (ish) to help mid-mission memory build up...
-		if self._total_update_time > 120 then
-			self._total_update_time = 0
-			mod.clear_caches()
-		end
-
 		-- pulse special attacks + stagger outlines (combined into single cache iteration)
 		local has_specials = fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable
 		local has_stagger = fs.outline_stagger_horde_enable or fs.outline_stagger_enable
@@ -425,7 +419,6 @@ mod.force_remove_unit_markers = function(unit)
 	if entry then
 		entry._ei_marker_created = false
 		entry._ei_marker_pending = nil
-
 		mod.disable_enemy_outlines(unit, entry)
 		mod.remove_alert_outline(entry)
 		mod.remove_stagger_outline(entry)
@@ -501,9 +494,11 @@ mod.scan_enemies = function()
 
 	local cache = mod.enemy_cache
 
-	-- mark unseen
+	-- mark unseen (preserve DPS-window dead units so they continue rendering)
 	for _, data in next, cache do
-		data.seen = false
+		if not data._dead_at then
+			data.seen = false
+		end
 	end
 
 	-- Return cull cell entries to pool before clearing
@@ -532,7 +527,6 @@ mod.scan_enemies = function()
 
 				cache[unit] = nil
 				mod.marked_dead[unit] = nil
-
 				goto skip_breed
 			end
 
@@ -543,7 +537,6 @@ mod.scan_enemies = function()
 
 					cache[unit] = nil
 					mod.marked_dead[unit] = nil
-
 					goto skip_breed
 				end
 			end
@@ -1082,6 +1075,8 @@ mod.remove_dead = function()
 
 	local player_pos = Unit.world_position(player_unit, 1)
 	local max_dist_sq = (mod.frame_settings.draw_distance or 50) ^ 2
+	local fs = mod.frame_settings
+	local t = mod.get_time()
 	local mark_dead = false
 	local remove_table = _units_to_remove
 
@@ -1091,11 +1086,31 @@ mod.remove_dead = function()
 
 		-- Dead check
 		if not mod.detect_alive(unit) then
-			remove = true
-			mark_dead = true
+			if fs.hb_show_dps then
+				if not entry._dead_at then
+					entry._dead_at = t
+				end
+			else
+				remove = true
+				mark_dead = true
+			end
 		else
 			local health_extension = entry and entry.health_ext
 			if health_extension and health_extension:current_health_percent() <= 0 then
+				if fs.hb_show_dps then
+					if not entry._dead_at then
+						entry._dead_at = t
+					end
+				else
+					remove = true
+					mark_dead = true
+				end
+			end
+		end
+
+		-- Deferred DPS removal: clean up after damage_number_duration + 1s
+		if not remove and entry._dead_at then
+			if t - entry._dead_at > fs.damage_number_duration + 1 then
 				remove = true
 				mark_dead = true
 			end
@@ -1152,7 +1167,7 @@ mod.remove_dead = function()
 				Managers.event:trigger("remove_world_marker", id)
 			end
 			id = mod.enemy_healthbars[unit]
-			if id and not fs.hb_show_dps then
+			if id then
 				Managers.event:trigger("remove_world_marker", id)
 			end
 			id = mod.enemy_debuffs[unit]
@@ -1172,17 +1187,15 @@ mod.remove_dead = function()
 			mod.marked_dead[unit] = nil
 		end
 
-		if not fs.hb_show_dps then
-			mod.enemy_healthbars[unit] = nil
-		end
+		mod.enemy_healthbars[unit] = nil
+		mod.enemy_debuffs[unit] = nil
+		mod.enemy_markers[unit] = nil
 
 		-- Clean up per-unit data that accumulates if healthbars module is loaded
 		if mod._cleanup_unit_health_data then
 			mod._cleanup_unit_health_data(unit)
 		end
 
-		mod.enemy_debuffs[unit] = nil
-		mod.enemy_markers[unit] = nil
 		mod.enemy_cache[unit] = nil
 	end
 end
@@ -1213,7 +1226,6 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_debuffs)
 
 	table_clear(mod.enemy_cache)
-	--table_clear(mod.marked_dead)
 
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)

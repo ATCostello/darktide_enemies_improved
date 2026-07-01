@@ -26,7 +26,7 @@ mod.update_enemy_debuffs = function(entry, t)
 		return
 	end
 
-	if entry._ei_marker_pending then
+	if entry._ei_marker_pending or entry._ei_marker_created then
 		return
 	end
 
