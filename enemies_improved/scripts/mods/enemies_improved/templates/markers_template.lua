@@ -415,11 +415,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content.health_extension = health_ext
 			end
 
-			local has_damage = false
-			if health_ext then
-				has_damage = health_extension:total_damage_taken() > 0
-			end
-
 			-- Only show if they ARE damaged
 			if marker_display == "hide_unless_damaged" and time_since_last_damage > 5 then
 				content.draw_mkr = false
