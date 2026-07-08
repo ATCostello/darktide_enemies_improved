@@ -29,15 +29,6 @@ if mod.DEBUG then
 end
 
 mod.detect_alive = function(unit)
-	if not unit then
-		return false
-	end
-	if unit and Unit_alive(unit) then
-		return true
-	end
-	if unit and HEALTH_ALIVE[unit] then
-		return true
-	end
 	if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 		return true
 	end
@@ -1221,6 +1212,9 @@ mod.remove_dead = function()
 						mark_dead = true
 					end
 				end
+			else
+				remove = true
+				mark_dead = true
 			end
 		end
 

@@ -135,10 +135,6 @@ template.on_enter = function(widget, marker, template)
 end
 
 template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
-	if not marker or not widget then
-		return
-	end
-
 	widget._next_update = widget._next_update or 0
 	if t < widget._next_update then
 		return
@@ -219,7 +215,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
 	local has_markers = content.m_built or false
 	local has_debuffs = fs.debuff_enable and widget._active and #widget._active > 0 or false
-	local visible = saved_draw or has_healthbar or has_markers or has_debuffs
+	local visible = mod.detect_alive(unit) and (saved_draw or has_healthbar or has_markers or has_debuffs) or false
 
 	marker.draw = visible
 
@@ -231,7 +227,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.alpha_multiplier = 0
 	end
 
-	if not mod.detect_alive(unit) then
+	local unit = marker.unit
+	local health_extension = ScriptUnit.has_extension(unit, "health_system")
+	local is_dead = not health_extension or not health_extension:is_alive()
+
+	if is_dead then
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
 		marker.remove = true
