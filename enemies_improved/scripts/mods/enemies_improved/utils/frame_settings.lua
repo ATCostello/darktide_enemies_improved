@@ -311,6 +311,7 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_stacks_show_x_space = mod:get("debuff_stacks_show_x_space")
 	fs.debuff_icon_scale = mod:get("debuff_icon_scale")
 	fs.debuff_stack_on_icon = mod:get("debuff_stack_on_icon")
+	fs.debuff_boss_healthbar_enable = mod:get("debuff_boss_healthbar_enable")
 	fs.debuff_horizontal = mod:get("debuff_horizontal")
 	fs.debuff_stacks_font_size = mod:get("debuff_stacks_font_size") or 16
 	fs.debuff_names_font_size = mod:get("debuff_names_font_size") or 16

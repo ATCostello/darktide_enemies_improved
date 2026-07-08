@@ -34,7 +34,7 @@ local math_floor = math.floor
 template.name = "enemy_markers"
 template.unit_node = "root_point"
 template.min_distance = 0
-template.position_offset = { 0, 0, fs.marker_y_offset }
+template.position_offset = { 0, 0, fs.hb_y_offset }
 
 template.size = size
 template.icon_size = icon_size
@@ -295,7 +295,7 @@ template.on_enter = function(widget, marker, template)
 		return
 	end
 
-	template.position_offset = { 0, 0, fs.marker_y_offset }
+	template.position_offset = { 0, 0, fs.hb_y_offset }
 	widget.alpha_multiplier = 0
 	content.m_built = false
 

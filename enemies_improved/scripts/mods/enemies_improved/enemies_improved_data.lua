@@ -1329,7 +1329,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "damage_number_y_offset",
 			type = "numeric",
-			default_value = 1,
+			default_value = 0,
 			decimals_number = 2,
 			step_size_value = 0.1,
 			range = {
@@ -1480,6 +1480,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "debuff_horde_enable_tooltip",
+		},
+		{
+			setting_id = "debuff_boss_healthbar_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_boss_healthbar_enable_tooltip",
 		},
 		{
 			setting_id = "debuff_horizontal",

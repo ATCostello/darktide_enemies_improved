@@ -573,9 +573,11 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 		-- reuse same table reference
 		local text_color = ui_style.text_color
 
+		local hb_off_y = (100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
 		local num_damage_numbers = #damage_numbers
 		local z_position = position[3]
-		local y_position = position[2]
+		local y_position = position[2] + hb_off_y
+		position[2] = y_position
 		local x_position = position[1]
 		local damage_has_started = ui_content.damage_has_started
 		local dt = ui_renderer.dt

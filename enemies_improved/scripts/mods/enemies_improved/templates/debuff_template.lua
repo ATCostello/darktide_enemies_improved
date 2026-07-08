@@ -50,13 +50,9 @@ local active_pool = {}
 template.size = size
 template.name = "enemy_debuff"
 
---if fs.debuff_show_on_body then
---	template.unit_node = "root_point"
---	template.position_offset = { 0, 0, 0 }
---else
 template.unit_node = "root_point"
 template.position_offset = { 0, 0, fs.hb_y_offset }
---end
+
 
 template.max_visible_rows = max_visible_rows_setting
 
@@ -305,11 +301,8 @@ end
 template.on_enter = function(widget, marker, template)
 	local fs = mod.frame_settings
 
-	--if fs.debuff_show_on_body then
-	--	template.position_offset = { 0, 0, 0 }
-	--else
 	template.position_offset = { 0, 0, fs.hb_y_offset }
-	--end
+
 
 	local content = widget.content
 	local style = widget.style
@@ -585,12 +578,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		end
 	end
-
+	
 	-- CUSTOM STAGGER DEBUFF
 	local enemyentry = mod.enemy_cache[unit]
 	
-	dbg_a = active
-
 	if enemyentry and fs.debuff_stagger_enable then
 		if enemyentry.staggered then
 			local now = mod.get_time()
@@ -889,6 +880,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 		end
 
+		-- When debuff_show_on_body is active, add a screen-space offset to push debuffs
+		-- from head level down to body level, without affecting healthbar/marker positions.
+		if fs.debuff_show_on_body then
+			local body_breed = content.breed
+			local body_offset = body_breed and body_breed.base_height and body_breed.base_height * 40 * fs.text_scale * fs.debuff_y_offset
+				or hb_size_height * 3 * fs.debuff_y_offset
+			y_base = y_base + body_offset
+		end
+
 		local state = state_table[name]
 		if not state then
 			state = {
@@ -965,14 +965,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-------------------------------------------------------------------
 	-- Height / healthbar position logic
+	-- Always position above head (does NOT affect debuff screen-space y offsets)
 	-------------------------------------------------------------------
 	if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
-		if not fs.debuff_show_on_body then
-			root_position.z = root_position.z + content.breed.base_height + 0.5
-		else
-			root_position.z = root_position.z + (content.breed.base_height * 0.5 * fs.debuff_y_offset)
-		end
+		root_position.z = root_position.z + content.breed.base_height + 0.5
 
 		if not marker.world_position then
 			marker.world_position = Vector3Box(root_position)

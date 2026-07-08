@@ -59,6 +59,8 @@ local Outlines = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/m
 local Healthbars = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/healthbars")
 local Markers = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/markers")
 local Debuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/debuffs")
+local BossDebuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/bossdebuffs")
+
 local SpecialAttacks = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/specialattacks")
 local AnimationHandler =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animations/animationhandler")
@@ -247,13 +249,6 @@ end
 
 mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	add_custom_templates(self)
-end)
-
--- toggle boss healthbar
-mod:hook_safe("HudElementBossHealth", "update", function(self)
-	if not fs.hb_toggle_base_boss_healthbar then
-		self:_set_active(false)
-	end
 end)
 
 -----------------------------------------------------------------------

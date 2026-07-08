@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.0TEST3"
+mod.version = "2.0.0TEST4"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1820,6 +1820,14 @@ table.insert(localisations_to_add, {
 	debuff_gap_padding_scale_tooltip = {
 		en = "Adjust the padding gap between the rows of debuffs. A lower value will make the rows tighter together, a higher number will make them move apart.",
 		["zh-cn"] = "调整减益行之间的间距，数值越小越紧凑。",
+	},
+	debuff_boss_healthbar_enable = {
+		en = "Show boss debuffs on base-game boss healthbar?",
+		["zh-cn"] = "在Boss原始血条上显示减益效果？",
+	},
+	debuff_boss_healthbar_enable_tooltip = {
+		en = "Shows active debuffs (bleed, burn, rending, etc.) on the boss healthbar at the top of the screen. Uses the same debuff detection system.",
+		["zh-cn"] = "在屏幕顶部的Boss原始血条上显示当前减益效果（流血、燃烧、脆弱等）。",
 	},
 	debuff_horizontal = {
 		en = "Toggle Horizontal Debuff Mode?",
