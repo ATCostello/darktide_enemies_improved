@@ -994,23 +994,26 @@ table.insert(localisations_to_add, {
 		en = "Select a colour for the background of the overhead markers.",
 		["zh-cn"] = "设置头顶标记的背景颜色。",
 	},
-	markers_show_only_damaged = {
-		en = "Only show markers for damaged enemies?",
+	marker_display_option = {
+		en = "Overhead Marker Display Option",
 	},
-	markers_show_only_damaged_tooltip = {
-		en = "Only show overhead markers for enemies that have taken damage.",
+	marker_display_option_tooltip = {
+		en = "Controls when overhead markers are shown.\n\nAlways show: Markers are always visible.\nHide unless damaged: Markers hide after 5 seconds of no damage taken, reappear on damage.\nHide when damaged: Markers hide after 5 seconds if damage has been taken, show otherwise.",
 	},
-	markers_show_only_undamaged = {
-		en = "Only show markers for undamaged enemies?",
+	always_show = {
+		en = "Always show",
 	},
-	markers_show_only_undamaged_tooltip = {
-		en = "Only show overhead markers for enemies that have NOT taken any damage.",
+	hide_unless_damaged = {
+		en = "Show only when damaged",
+	},
+	hide_when_damaged = {
+		en = "Hide when damaged",
 	},
 	markers_show_only_aimed = {
 		en = "Only show markers when aiming at enemy?",
 	},
 	markers_show_only_aimed_tooltip = {
-		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair. Works together with the damaged/undamaged filters above (all conditions must be met).",
+		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair.",
 	},
 })
 

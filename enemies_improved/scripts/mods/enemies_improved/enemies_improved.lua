@@ -1,4 +1,5 @@
 local mod = get_mod("enemies_improved")
+
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
 local Managers_player = Managers.player
@@ -285,7 +286,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	-- Re-register custom marker templates in case the HUD marker table was rebuilt
 	add_custom_templates(self)
 
-	dbg_d = self
 	if fs.only_in_meatgrinder then
 		local current_level = Managers.state.mission and Managers.state.mission:mission()
 

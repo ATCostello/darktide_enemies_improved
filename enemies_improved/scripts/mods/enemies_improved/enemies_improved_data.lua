@@ -903,6 +903,17 @@ table.insert(mod.settings_widgets, {
 			tooltip = "overhead_marker_uses_healthbar_colour_tooltip",
 		},
 		{
+			setting_id = "marker_display_option",
+			type = "dropdown",
+			options = {
+				{ text = "always_show", value = "always_show" },
+				{ text = "hide_unless_damaged", value = "hide_unless_damaged" },
+				{ text = "hide_when_damaged", value = "hide_when_damaged" },
+			},
+			default_value = "always_show",
+			tooltip = "marker_display_option_tooltip",
+		},
+		{
 			setting_id = "marker_bg_colour",
 			type = "group",
 			tab = "Markers",
@@ -949,18 +960,7 @@ table.insert(mod.settings_widgets, {
 				},
 			},
 		},
-		{
-			setting_id = "markers_show_only_damaged",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "markers_show_only_damaged_tooltip",
-		},
-		{
-			setting_id = "markers_show_only_undamaged",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "markers_show_only_undamaged_tooltip",
-		},
+		
 	},
 })
 
@@ -1311,7 +1311,7 @@ table.insert(mod.settings_widgets, {
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "flashy",
+			default_value = "readable",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{

@@ -597,6 +597,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.draw_hb = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
+			return
 		else
 			content.dead = true
 			content.hb_built = false

@@ -399,33 +399,44 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_mkr = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
+		content.m_built = false
+		return
 	end
 
-	if is_alive and (fs.markers_show_only_damaged or fs.markers_show_only_undamaged) then
-		local time_since_last_damage = t - (content.last_damage_taken_time or 0)
+	if is_alive then
+		local marker_display = fs.marker_display_option or "always_show"
 
-		local health_ext = content.health_extension
-		if not health_ext then
-			health_ext = ScriptUnit_has_extension(unit, "health_system")
-			content.health_extension = health_ext
-		end
-		local has_damage = false
-		if health_ext then
-			has_damage = health_extension:total_damage_taken() > 0
-		end
+		if marker_display ~= "always_show" then
+			local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
-		if fs.markers_show_only_damaged and not has_damage and time_since_last_damage > 5 then
-			content.draw_mkr = false
-			marker.alpha_multiplier = 0
-			widget.alpha_multiplier = 0
-			return
-		end
-		if fs.markers_show_only_undamaged and has_damage then
-			content.draw_mkr = false
-			marker.alpha_multiplier = 0
-			widget.alpha_multiplier = 0
-			content.m_built = false
-			return
+			local health_ext = content.health_extension
+			if not health_ext then
+				health_ext = ScriptUnit_has_extension(unit, "health_system")
+				content.health_extension = health_ext
+			end
+
+			local has_damage = false
+			if health_ext then
+				has_damage = health_extension:total_damage_taken() > 0
+			end
+
+			-- Only show if they ARE damaged
+			if marker_display == "hide_unless_damaged" and time_since_last_damage > 5 then
+				content.draw_mkr = false
+				marker.alpha_multiplier = 0
+				widget.alpha_multiplier = 0
+				content.m_built = false
+				return
+			end
+
+			-- Hide if they are damaged
+			if marker_display == "hide_when_damaged" and time_since_last_damage < 5 then
+				content.draw_mkr = false
+				marker.alpha_multiplier = 0
+				widget.alpha_multiplier = 0
+				content.m_built = false
+				return
+			end
 		end
 	end
 

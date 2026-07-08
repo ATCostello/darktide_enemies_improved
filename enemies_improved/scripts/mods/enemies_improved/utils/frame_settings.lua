@@ -138,8 +138,7 @@ mod.build_frame_settings = function(dt)
 		b,
 	}
 
-	fs.markers_show_only_damaged = mod:get("markers_show_only_damaged")
-	fs.markers_show_only_undamaged = mod:get("markers_show_only_undamaged")
+	fs.marker_display_option = mod:get("marker_display_option")
 	fs.markers_show_only_aimed = mod:get("markers_show_only_aimed")
 
 	-- HEALTHBARS

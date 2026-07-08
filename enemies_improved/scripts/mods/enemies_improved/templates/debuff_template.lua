@@ -418,6 +418,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_dbf  = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
+		return
 	end
 
 	-- don't process hordes if disabled
