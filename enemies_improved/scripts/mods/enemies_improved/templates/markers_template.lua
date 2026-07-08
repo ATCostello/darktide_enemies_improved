@@ -401,7 +401,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget.alpha_multiplier = 0
 	end
 
-	if is_alive and fs.markers_show_only_damaged or fs.markers_show_only_undamaged then
+	if is_alive and (fs.markers_show_only_damaged or fs.markers_show_only_undamaged) then
 		local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
 		local health_ext = content.health_extension
@@ -411,10 +411,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 		local has_damage = false
 		if health_ext then
-			local ok, result = pcall(health_ext.total_damage_taken, health_ext)
-			if ok then
-				has_damage = result > 0
-			end
+			has_damage = health_extension:total_damage_taken() > 0
 		end
 
 		if fs.markers_show_only_damaged and not has_damage and time_since_last_damage > 5 then
@@ -423,10 +420,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			widget.alpha_multiplier = 0
 			return
 		end
-		if fs.markers_show_only_undamaged and has_damage and time_since_last_damage > 5 then
+		if fs.markers_show_only_undamaged and has_damage then
 			content.draw_mkr = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
+			content.m_built = false
 			return
 		end
 	end

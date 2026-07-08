@@ -26,6 +26,13 @@ mod.update_enemy_debuffs = function(entry, t)
 		return
 	end
 
+	-- Safety: clear stuck pending state after short time
+	if entry._ei_marker_pending and entry._ei_marker_pending_t then
+		if t - entry._ei_marker_pending_t > 2 then
+			entry._ei_marker_pending = nil
+		end
+	end
+
 	if entry._ei_marker_pending or entry._ei_marker_created then
 		return
 	end
@@ -45,6 +52,7 @@ mod.update_enemy_debuffs = function(entry, t)
 	end
 
 	entry._ei_marker_pending = true
+	entry._ei_marker_pending_t = t
 
 	Managers_event:trigger("add_world_marker_unit", "enemies_improved", unit, function(marker_id)
 		_on_ei_marker_created(marker_id, entry, unit)

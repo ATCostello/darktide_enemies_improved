@@ -577,7 +577,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_hb = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		return
 	end
 
 	-- early out
@@ -585,7 +584,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_hb = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		return
 	end
 
 	content.draw_hb = true
@@ -599,7 +597,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.draw_hb = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
-			return
 		else
 			content.dead = true
 			content.hb_built = false
@@ -649,7 +646,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content.draw_hb = false
 				marker.alpha_multiplier = 0
 				widget.alpha_multiplier = 0
-				return
 			end
 		end
 	end
@@ -665,15 +661,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_dead = true
 
 	if health_extension and is_alive then
-		health_current = health_extension:current_health() or 0
-		health_max = health_extension:max_health() or 0
+		local ok, v = pcall(function() return health_extension:current_health() end)
+		if ok then health_current = v or 0 end
+		ok, v = pcall(function() return health_extension:max_health() end)
+		if ok then health_max = v or 0 end
 
 		if health_current > health_max then
 			health_max = health_current
 		end
 
-		health_percent = health_extension:current_health_percent() or 0
-		is_dead = not health_extension:is_alive()
+		ok, v = pcall(function() return health_extension:current_health_percent() end)
+		if ok then health_percent = v or 0 end
+		ok, v = pcall(function() return health_extension:is_alive() end)
+		if ok then is_dead = not v end
 	end
 
 	local toughness_extension = content.toughness_extension
@@ -721,7 +721,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
 			content.in_horde_cluster = false
-			return
 		end
 
 		content.in_horde_cluster = in_horde_cluster
@@ -746,8 +745,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				if entry and entry.health_ext and mod.detect_alive(u) then
 					local he = entry.health_ext
-					total_current = total_current + (he:current_health() or 0)
-					total_max_instant = total_max_instant + (he:max_health() or 0)
+					local ok, v = pcall(function() return he:current_health() end)
+					if ok then total_current = total_current + (v or 0) end
+					ok, v = pcall(function() return he:max_health() end)
+					if ok then total_max_instant = total_max_instant + (v or 0) end
 				end
 			end
 
@@ -853,7 +854,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_hb = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		return
 	end
 
 	local bar_logic = marker.bar_logic

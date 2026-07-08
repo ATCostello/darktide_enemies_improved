@@ -149,8 +149,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-
-		return
 	end
 
 	-- Global aimed-only filter: hides ALL enemies_improved content
@@ -159,7 +157,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
-		return
 	end
 
 	-- Sub-templates check widget._next_update and marker.draw internally.
@@ -232,6 +229,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		widget.alpha_multiplier = 0
 		marker.alpha_multiplier = 0
+	end
+
+	if not mod.detect_alive(unit) then
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		marker.remove = true
 	end
 end
 
