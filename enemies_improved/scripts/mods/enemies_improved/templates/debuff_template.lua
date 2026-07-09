@@ -408,16 +408,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not unit then
 		content.draw_dbf  = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 	end
 
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
 		content.draw_dbf  = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -427,8 +423,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
 		content.draw_dbf  = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -638,8 +632,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- dont draw or do calculations if there are no debuffs applied..
 	if #active < 1 then
 		content.draw_dbf  = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 	end
 
 	for i = active_count + 1, #active do
@@ -1333,22 +1325,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					stack_text_style.text_color[4] = fs.secondary_colour[4] or 255
 				end
 
-				content.line_of_sight_progress = line_of_sight_progress
-				widget.alpha_multiplier = line_of_sight_progress or 1
-				marker.alpha_multiplier = line_of_sight_progress or 1
-
 				if #widget._active > 0 then
 					content.draw_dbf  = true
 				else
 					content.draw_dbf  = false
-					marker.alpha_multiplier = 0
-					widget.alpha_multiplier = 0
 				end
 
 				if not marker.is_inside_frustum then
 					content.draw_dbf  = false
-					marker.alpha_multiplier = 0
-					widget.alpha_multiplier = 0
 				end
 
 				-- apply scaling

@@ -290,13 +290,10 @@ template.on_enter = function(widget, marker, template)
 
 	if not marker.unit or not Unit_alive(marker.unit) then
 		content.draw_mkr = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
 	template.position_offset = { 0, 0, fs.hb_y_offset }
-	widget.alpha_multiplier = 0
 	content.m_built = false
 
 	content.draw_mkr = false -- force hidden until ready...
@@ -371,8 +368,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not unit or not Unit_alive(unit) then
 		content.draw_mkr = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -386,8 +381,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if content.m_allowed == false then
 		content.draw_mkr = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		return
 	end
 
@@ -397,8 +390,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		content.draw_mkr = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 		content.m_built = false
 		return
 	end
@@ -418,8 +409,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			-- Only show if they ARE damaged
 			if marker_display == "hide_unless_damaged" and time_since_last_damage > 5 then
 				content.draw_mkr = false
-				marker.alpha_multiplier = 0
-				widget.alpha_multiplier = 0
 				content.m_built = false
 				return
 			end
@@ -427,8 +416,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			-- Hide if they are damaged
 			if marker_display == "hide_when_damaged" and time_since_last_damage < 5 then
 				content.draw_mkr = false
-				marker.alpha_multiplier = 0
-				widget.alpha_multiplier = 0
 				content.m_built = false
 				return
 			end
@@ -541,14 +528,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
 	end
 
-	content.line_of_sight_progress = line_of_sight_progress
-	widget.alpha_multiplier = line_of_sight_progress or 1
-	marker.alpha_multiplier = line_of_sight_progress or 1
-
 	if not marker.is_inside_frustum then
 		content.draw_mkr = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
 	end
 
 	if content.draw_mkr then

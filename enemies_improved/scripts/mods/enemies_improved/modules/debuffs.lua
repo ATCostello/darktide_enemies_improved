@@ -39,6 +39,10 @@ mod.update_enemy_debuffs = function(entry, t)
 
 	local unit = entry.unit
 
+	if not mod.detect_alive(unit) then
+		return
+	end
+
 	local enemy_debuffs = mod.enemy_debuffs
 	local marked_dead = mod.marked_dead
 

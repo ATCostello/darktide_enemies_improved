@@ -215,14 +215,17 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
 	local has_markers = content.m_built or false
 	local has_debuffs = fs.debuff_enable and widget._active and #widget._active > 0 or false
-	local visible = mod.detect_alive(unit) and (saved_draw or has_healthbar or has_markers or has_debuffs) or false
-
+	local dps_visible = fs.hb_show_dps and content.dead
+	local visible = (mod.detect_alive(unit) or dps_visible)
+			and (saved_draw or has_healthbar or has_markers or has_debuffs or dps_visible)
+		or false
+		
 	marker.draw = visible
 
 	if visible then
 		widget.alpha_multiplier = los
 		marker.alpha_multiplier = los
-	else
+	elseif not fs.hb_show_dps then
 		widget.alpha_multiplier = 0
 		marker.alpha_multiplier = 0
 	end
@@ -231,7 +234,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local health_extension = ScriptUnit.has_extension(unit, "health_system")
 	local is_dead = not health_extension or not health_extension:is_alive()
 
-	if is_dead then
+	if is_dead and not fs.hb_show_dps then
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
 		marker.remove = true

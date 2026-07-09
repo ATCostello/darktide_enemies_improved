@@ -21,6 +21,15 @@ local Unit_alive = Unit.alive
 local Actor_unit = Actor.unit
 local World_physics_world = World.physics_world
 local Quaternion_forward = Quaternion.forward
+local pairs = pairs
+
+local function table_size(t)
+	local n = 0
+	for _ in pairs(t) do
+		n = n + 1
+	end
+	return n
+end
 
 -- debug mode toggle!!!
 mod.DEBUG = false
@@ -103,6 +112,8 @@ mod.enemy_debuffs = {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 mod.enabled = true
+mod._debug_table_timer = 0
+mod._periodic_cache_clear_timer = 0
 
 local MAX_ENEMIES_PER_FRAME = 100
 local _enemy_units_temp = {}
@@ -195,7 +206,6 @@ mod.on_game_state_changed = function(state, state_name)
 
 	-- empty caches
 	mod.clear_caches()
-	table_clear(mod.marked_dead)
 
 	if mod.DEBUG and mod.anim_db_dirty then
 		--mod.save_anim_db()
@@ -388,6 +398,30 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 					end
 				end
 			end
+		end
+
+		-- DEBUG: print important/global table sizes every ~10 seconds to monitor memory leaks
+		--[[mod._debug_table_timer = mod._debug_table_timer + dt
+		if mod._debug_table_timer >= 10 then
+			mod._debug_table_timer = 0
+			mod:echo(string.format(
+				"[DEBUG] enemy_cache:%d  enemy_markers:%d  enemy_healthbars:%d  enemy_debuffs:%d  marked_dead:%d  source_unit_cache:%d  _horde_clusters:%d  _cull_cells:%d",
+				table_size(mod.enemy_cache),
+				table_size(mod.enemy_markers),
+				table_size(mod.enemy_healthbars),
+				table_size(mod.enemy_debuffs),
+				table_size(mod.marked_dead),
+				table_size(mod.source_unit_cache),
+				table_size(_horde_clusters),
+				table_size(_cull_cells)
+			))
+		end]]
+
+		-- PERIODIC FULL CACHE CLEAR — runs every ~5 minutes to flush any accumulated stale data
+		mod._periodic_cache_clear_timer = mod._periodic_cache_clear_timer + dt
+		if mod._periodic_cache_clear_timer >= 300 then
+			mod._periodic_cache_clear_timer = 0
+			mod.clear_caches()
 		end
 	end
 end)
@@ -1338,10 +1372,16 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_debuffs)
 
 	table_clear(mod.enemy_cache)
+	table_clear(mod.marked_dead)
 
 	table_clear(_enemy_units_temp)
+	table_clear(_horde_units_all)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
+	table_clear(_cull_cells)
+	table_clear(_cull_pool)
+	_cull_pool_count = 0
+	table_clear(_units_to_remove)
 end
 
 mod.update_horde_clusters = function(temp, to_process)
