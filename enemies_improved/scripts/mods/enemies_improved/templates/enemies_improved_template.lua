@@ -216,6 +216,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_markers = content.m_built or false
 	local has_debuffs = fs.debuff_enable and widget._active and #widget._active > 0 or false
 	local dps_visible = fs.hb_show_dps and content.dead
+
+	-- Re-apply aimed filter after sub-templates: suppress their results for non-aimed units
+	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
+		has_healthbar = false
+		has_markers = false
+		has_debuffs = false
+		dps_visible = false
+	end
+
 	local visible = (mod.detect_alive(unit) or dps_visible)
 			and (saved_draw or has_healthbar or has_markers or has_debuffs or dps_visible)
 		or false

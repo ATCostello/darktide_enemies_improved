@@ -654,18 +654,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_dead = true
 
 	if health_extension and is_alive then
-		local ok, v = pcall(function() return health_extension:current_health() end)
+		local ok, v = pcall(health_extension.current_health, health_extension)
 		if ok then health_current = v or 0 end
-		ok, v = pcall(function() return health_extension:max_health() end)
+		ok, v = pcall(health_extension.max_health, health_extension)
 		if ok then health_max = v or 0 end
 
 		if health_current > health_max then
 			health_max = health_current
 		end
 
-		ok, v = pcall(function() return health_extension:current_health_percent() end)
+		ok, v = pcall(health_extension.current_health_percent, health_extension)
 		if ok then health_percent = v or 0 end
-		ok, v = pcall(function() return health_extension:is_alive() end)
+		ok, v = pcall(health_extension.is_alive, health_extension)
 		if ok then is_dead = not v end
 	end
 
@@ -736,9 +736,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				if entry and entry.health_ext and mod.detect_alive(u) then
 					local he = entry.health_ext
-					local ok, v = pcall(function() return he:current_health() end)
+					local ok, v = pcall(he.current_health, he)
 					if ok then total_current = total_current + (v or 0) end
-					ok, v = pcall(function() return he:max_health() end)
+					ok, v = pcall(he.max_health, he)
 					if ok then total_max_instant = total_max_instant + (v or 0) end
 				end
 			end

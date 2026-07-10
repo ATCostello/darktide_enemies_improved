@@ -1041,8 +1041,20 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_horde_clusters_enable",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "hb_horde_clusters_enable_tooltip",
+		},
+		{
+			setting_id = "hb_horde_clusters_size",
+			type = "numeric",
+			default_value = 10,
+			range = {
+				3,
+				20,
+			},
+			decimals_number = 0,
+			step_size_value = 1,
+			tooltip = "hb_horde_clusters_size_tooltip",
 		},
 		{
 			setting_id = "hb_hide_after_no_damage",

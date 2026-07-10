@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.2"
+mod.version = "2.0.3"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1256,6 +1256,12 @@ table.insert(localisations_to_add, {
 	hb_horde_clusters_enable_tooltip = {
 		en = "Toggles clustered healthbars for horde enemies.\nThis works when there is a large gathering of 'horde' type enemies in close proximity.\n\nTheir healthbar will combine into one large healthbar and follow around the horde.",
 		["zh-cn"] = "大量尸潮怪聚集时，合并为一个聚合血条。",
+	},
+	hb_horde_clusters_size = {
+		en = "Cluster Size",
+	},
+	hb_horde_clusters_size_tooltip = {
+		en = "Adjust the number of the same enemies in close proximity to be considered as a 'cluster' for the clustered healthbars.",
 	},
 	hb_hide_after_no_damage = {
 		en = "Hide healthbars after no damage received?",

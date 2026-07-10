@@ -21,15 +21,6 @@ local Unit_alive = Unit.alive
 local Actor_unit = Actor.unit
 local World_physics_world = World.physics_world
 local Quaternion_forward = Quaternion.forward
-local pairs = pairs
-
-local function table_size(t)
-	local n = 0
-	for _ in pairs(t) do
-		n = n + 1
-	end
-	return n
-end
 
 -- debug mode toggle!!!
 mod.DEBUG = false
@@ -112,8 +103,6 @@ mod.enemy_debuffs = {}
 mod.marked_dead = {}
 mod.source_unit_cache = mod.source_unit_cache or {}
 mod.enabled = true
-mod._debug_table_timer = 0
-mod._periodic_cache_clear_timer = 0
 
 local MAX_ENEMIES_PER_FRAME = 100
 local _enemy_units_temp = {}
@@ -127,6 +116,12 @@ local _pos_vec = Vector3.zero()
 
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
+
+-- Reusable tables for _build_horde_clusters (avoid per-frame allocations)
+local _spatial_hash = {}
+local _visited = {}
+local _z_samples = {}
+local _bfs_queue = {}
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -206,6 +201,7 @@ mod.on_game_state_changed = function(state, state_name)
 
 	-- empty caches
 	mod.clear_caches()
+	table_clear(mod.marked_dead)
 
 	if mod.DEBUG and mod.anim_db_dirty then
 		--mod.save_anim_db()
@@ -280,6 +276,8 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	add_custom_templates(self)
 end)
 
+mod.aimed_unit = {}
+mod._periodic_cache_clear_timer = 0
 -----------------------------------------------------------------------
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
@@ -300,9 +298,11 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
-		-- Aim detection: run every frame, independent of throttle
-		mod.aimed_unit = {}
-		mod.do_aim_raycast()
+		-- Aim detection (clear enemy cache of non-aimed at enemies)
+		if fs.markers_show_only_aimed then
+			table.clear(mod.aimed_unit)
+			mod.do_aim_raycast()
+		end
 
 		-- throttle updates according to enemy amounts to help keep performance in check...
 		local enemy_count = 0
@@ -399,23 +399,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 				end
 			end
 		end
-
-		-- DEBUG: print important/global table sizes every ~10 seconds to monitor memory leaks
-		--[[mod._debug_table_timer = mod._debug_table_timer + dt
-		if mod._debug_table_timer >= 10 then
-			mod._debug_table_timer = 0
-			mod:echo(string.format(
-				"[DEBUG] enemy_cache:%d  enemy_markers:%d  enemy_healthbars:%d  enemy_debuffs:%d  marked_dead:%d  source_unit_cache:%d  _horde_clusters:%d  _cull_cells:%d",
-				table_size(mod.enemy_cache),
-				table_size(mod.enemy_markers),
-				table_size(mod.enemy_healthbars),
-				table_size(mod.enemy_debuffs),
-				table_size(mod.marked_dead),
-				table_size(mod.source_unit_cache),
-				table_size(_horde_clusters),
-				table_size(_cull_cells)
-			))
-		end]]
 
 		-- PERIODIC FULL CACHE CLEAR — runs every ~5 minutes to flush any accumulated stale data
 		mod._periodic_cache_clear_timer = mod._periodic_cache_clear_timer + dt
@@ -635,6 +618,14 @@ mod.scan_enemies = function()
 		table_clear(list)
 	end
 	table_clear(_cull_cells)
+
+	-- Cap pool size to prevent unbounded growth
+	if _cull_pool_count > 512 then
+		for i = 513, _cull_pool_count do
+			_cull_pool[i] = nil
+		end
+		_cull_pool_count = 512
+	end
 
 	local world = Managers.world:world("level_world")
 	local physics_world_cache = world and World.get_data(world, "physics_world")
@@ -863,11 +854,13 @@ local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
 local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
-local HORDE_MIN_UNITS_FOR_CLUSTER = 8
+local HORDE_MIN_UNITS_FOR_CLUSTER = fs.hb_horde_clusters_size or 8
 
 local function _build_horde_clusters(units, num_units)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
+
+	HORDE_MIN_UNITS_FOR_CLUSTER = fs.hb_horde_clusters_size
 
 	-- Return early if player is dead
 	local player = Managers.player:local_player(1)
@@ -884,7 +877,15 @@ local function _build_horde_clusters(units, num_units)
 	end
 
 	local clusters = _horde_clusters
-	local spatial = {}
+	local spatial = _spatial_hash
+	local visited = _visited
+
+	-- Clear reusable tables for this frame
+	for _, cell in pairs(spatial) do
+		table_clear(cell)
+	end
+	table_clear(spatial)
+	table_clear(visited)
 
 	-- Step 1: build spatial hash
 	for i = 1, num_units do
@@ -935,12 +936,11 @@ local function _build_horde_clusters(units, num_units)
 		end
 	end
 
-	local visited = {}
-
 	-- Step 2: cluster via BFS
 	for i = 1, num_units do
 		local unit = units[i]
-		local z_samples = {}
+		local z_samples = _z_samples
+		table_clear(z_samples)
 
 		if not visited[unit] and mod.detect_alive(unit) then
 			local entry = mod.enemy_cache[unit]
@@ -952,7 +952,9 @@ local function _build_horde_clusters(units, num_units)
 			end
 
 			local cluster_units = {}
-			local queue = { unit }
+			local queue = _bfs_queue
+			table_clear(queue)
+			queue[1] = unit
 			visited[unit] = true
 
 			local sum_x, sum_y, sum_z = 0, 0, 0
@@ -1142,15 +1144,11 @@ local function _build_horde_clusters(units, num_units)
 					if e and mod.detect_alive(u) then
 						local he = e.health_ext
 						if he then
-							local ok, v = pcall(function()
-								return he:current_health()
-							end)
+							local ok, v = pcall(he.current_health, he)
 							if ok then
 								total_current = total_current + (v or 0)
 							end
-							ok, v = pcall(function()
-								return he:max_health()
-							end)
+							ok, v = pcall(he.max_health, he)
 							if ok then
 								total_max = total_max + (v or 0)
 							end
@@ -1233,9 +1231,7 @@ mod.remove_dead = function()
 		else
 			local health_extension = entry and entry.health_ext
 			if health_extension then
-				local ok, pct = pcall(function()
-					return health_extension:current_health_percent()
-				end)
+				local ok, pct = pcall(health_extension.current_health_percent, health_extension)
 				if ok and pct <= 0 then
 					if fs.hb_show_dps then
 						if not entry._dead_at then
@@ -1372,16 +1368,10 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_debuffs)
 
 	table_clear(mod.enemy_cache)
-	table_clear(mod.marked_dead)
 
 	table_clear(_enemy_units_temp)
-	table_clear(_horde_units_all)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
-	table_clear(_cull_cells)
-	table_clear(_cull_pool)
-	_cull_pool_count = 0
-	table_clear(_units_to_remove)
 end
 
 mod.update_horde_clusters = function(temp, to_process)
