@@ -98,6 +98,8 @@ end
 
 mod.load_anim_db = function()
 	local local_anim_db = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animations/anim_db")
+	-- purge old anim_db in case of mod reloading.
+	table.clear(mod.anim_db)
 
 	if local_anim_db then
 		mod.anim_db = local_anim_db
