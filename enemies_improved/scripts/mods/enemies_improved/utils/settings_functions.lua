@@ -26,6 +26,10 @@ local enemy_type_settings = {
 	["healthbar_icon_type_colour_G"] = 150,
 	["healthbar_icon_type_colour_B"] = 0,
 
+	["debuff_type_enable"] = true,
+
+	["healthbar_type_y_offset"] = 0,
+
 	["reset_type_to_default"] = false,
 }
 
@@ -49,6 +53,10 @@ local enemy_override_settings = {
 
 	["outline_distance_individual_enable"] = false,
 	["outline_distance_individual_value"] = 30,
+
+	["debuff_individual_enable"] = true,
+
+	["healthbar_individual_y_offset"] = 0,
 
 	["reset_individual_to_default"] = false,
 }
@@ -495,7 +503,11 @@ mod.update_dmf_settings_colours = function(setting_id)
 
 		local view = Managers.ui:view_instance("dmf_options_view")
 
-		if view and view._settings_category_widgets and view._settings_category_widgets[mod.custom_localize("mod_name")] then
+		if
+			view
+			and view._settings_category_widgets
+			and view._settings_category_widgets[mod.custom_localize("mod_name")]
+		then
 			for _, data in next, view._settings_category_widgets[mod.custom_localize("mod_name")] do
 				local widget = data.widget
 				if not widget or not widget.content.text then

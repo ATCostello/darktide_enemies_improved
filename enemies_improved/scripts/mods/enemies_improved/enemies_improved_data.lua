@@ -251,6 +251,8 @@ mod.debuffs = {
 		type = "utility",
 		group = "toxin_damage",
 	},
+
+	weapon_malfunction = { name = "weapon_malfunction", type = "utility", group = "generic" },
 }
 
 mod.default_debuffs = table.clone(mod.debuffs)
@@ -535,6 +537,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "markers_show_only_aimed_tooltip",
 		},
 		{
+			setting_id = "only_tagged_enemies",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "only_tagged_enemies_tooltip",
+		},
+		{
 			setting_id = "enable_depth_fading",
 			type = "checkbox",
 			default_value = true,
@@ -563,6 +571,114 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "outlines_enable_tooltip",
+		},
+		{
+			setting_id = "outline_tagged_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_tagged_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_colour_tooltip",
+				},
+				{
+					setting_id = "outline_tagged_colour_G",
+					type = "numeric",
+					default_value = 1,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_colour_tooltip",
+				},
+				{
+					setting_id = "outline_tagged_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "outline_tagged_passive_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_tagged_passive_colour_R",
+					type = "numeric",
+					default_value = 204,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_passive_colour_tooltip",
+				},
+				{
+					setting_id = "outline_tagged_passive_colour_G",
+					type = "numeric",
+					default_value = 191,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_passive_colour_tooltip",
+				},
+				{
+					setting_id = "outline_tagged_passive_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = { 0, 255 },
+					tooltip = "outline_tagged_passive_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "outline_owned_companion_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_owned_companion_colour_R",
+					type = "numeric",
+					default_value = 0,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+				{
+					setting_id = "outline_owned_companion_colour_G",
+					type = "numeric",
+					default_value = 102,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+				{
+					setting_id = "outline_owned_companion_colour_B",
+					type = "numeric",
+					default_value = 26,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "outline_allied_companion_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "outline_allied_companion_colour_R",
+					type = "numeric",
+					default_value = 179,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+				{
+					setting_id = "outline_allied_companion_colour_G",
+					type = "numeric",
+					default_value = 255,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+				{
+					setting_id = "outline_allied_companion_colour_B",
+					type = "numeric",
+					default_value = 204,
+					range = { 0, 255 },
+					tooltip = "outline_companion_colour_tooltip",
+				},
+			},
 		},
 		--[[{
 			setting_id = "outlines_style",
@@ -865,6 +981,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "markers_horde_enable_tooltip",
+		},
+		{
+			setting_id = "markers_non_horde_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "markers_non_horde_enable_tooltip",
 		},
 		{
 			setting_id = "marker_size",
@@ -1592,6 +1714,16 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_names_font_size_tooltip",
 		},
 		{
+			setting_id = "boss_debuff_stack_font_size",
+			type = "numeric",
+			default_value = 14,
+			range = {
+				8,
+				48,
+			},
+			tooltip = "boss_debuff_stack_font_size_tooltip",
+		},
+		{
 			setting_id = "debuff_icon_scale",
 			type = "numeric",
 			default_value = 1,
@@ -1965,6 +2097,24 @@ mod.group_settings_widgets = {
 			},
 		},
 	},
+	{
+		setting_id = "debuff_type_enable",
+		type = "checkbox",
+		default_value = true,
+		tooltip = "debuff_type_enable_tooltip",
+	},
+	{
+		setting_id = "healthbar_type_y_offset",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			-1,
+			2,
+		},
+		decimals_number = 1,
+		step_size_value = 0.1,
+		tooltip = "healthbar_type_y_offset_tooltip",
+	},
 }
 
 table.insert(mod.settings_widgets, {
@@ -1989,7 +2139,12 @@ mod.individual_override_settings = {
 		default_value = false,
 		tooltip = "markers_individual_toggle_tooltip",
 	},
-
+	{
+		setting_id = "debuff_individual_enable",
+		type = "checkbox",
+		default_value = true,
+		tooltip = "debuff_individual_enable_tooltip",
+	},
 	--{
 	--	setting_id = "reset_individual_to_default",
 	--	type = "checkbox",
@@ -2126,6 +2281,18 @@ mod.individual_override_settings = {
 				tooltip = "outline_individual_colour_tooltip",
 			},
 		},
+	},
+	{
+		setting_id = "healthbar_individual_y_offset",
+		type = "numeric",
+		default_value = 0,
+		range = {
+			-1,
+			2,
+		},
+		decimals_number = 1,
+		step_size_value = 0.1,
+		tooltip = "healthbar_individual_y_offset_tooltip",
 	},
 }
 

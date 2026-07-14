@@ -572,6 +572,11 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "震撼手雷硬直",
 	},
 
+	weapon_malfunction = {
+		en = "Malfunction",
+		["zh-cn"] = "故障",
+	},
+
 	-- Skitarii
 	phosphor_rending_debuff = {
 		en = "Brittleness (Phosphor)",
@@ -778,6 +783,27 @@ table.insert(localisations_to_add, {
 		en = "Global toggle for outlines of enemies. Specific enemy types may be disabled or configured further below.",
 		["zh-cn"] = "全局开关敌人轮廓，可在下方单独配置各类型敌人。",
 	},
+	outline_tagged_colour = {
+		en = "Tagged enemy outline colour",
+	},
+	outline_tagged_colour_tooltip = {
+		en = "Colour of the outline when you actively tag an enemy.",
+	},
+	outline_tagged_passive_colour = {
+		en = "Focus enemy outline colour",
+	},
+	outline_tagged_passive_colour_tooltip = {
+		en = "Colour of the outline when a teammate tags an enemy (passive/focus).",
+	},
+	outline_owned_companion_colour = {
+		en = "Owned companion outline colour",
+	},
+	outline_allied_companion_colour = {
+		en = "Allied companion outline colour",
+	},
+	outline_companion_colour_tooltip = {
+		en = "Colour of the outline for companion units.",
+	},
 	font_type = {
 		en = "Choose a font style (Global)",
 		["zh-cn"] = "字体样式（全局）",
@@ -938,6 +964,12 @@ table.insert(localisations_to_add, {
 		en = "Enables the overhead marker for horde enemies, such as poxwalkers.",
 		["zh-cn"] = "为疫变步行者等尸潮怪显示头顶标记。",
 	},
+	markers_non_horde_enable = {
+		en = "Enable Overhead Markers for non-horde enemies?",
+	},
+	markers_non_horde_enable_tooltip = {
+		en = "Enables the overhead marker for non-horde enemies, such as elites, specials, and monsters.",
+	},
 	overhead_marker_uses_healthbar_colour = {
 		en = "Use healthbar colours for overhead markers?",
 		["zh-cn"] = "头顶标记使用血条颜色？",
@@ -1014,6 +1046,12 @@ table.insert(localisations_to_add, {
 	},
 	markers_show_only_aimed_tooltip = {
 		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair.",
+	},
+	only_tagged_enemies = {
+		en = "Only show for tagged enemies?",
+	},
+	only_tagged_enemies_tooltip = {
+		en = "Only show overhead markers, healthbars, and debuffs for enemies that have been tagged by a teammate.",
 	},
 })
 
@@ -1858,6 +1896,12 @@ table.insert(localisations_to_add, {
 	debuff_names_font_size_tooltip = {
 		en = "Adjust the font size of the debuff names (if debuff names are enabled).",
 	},
+	boss_debuff_stack_font_size = {
+		en = "Boss Healthbar Debuff Stack Font Size",
+	},
+	boss_debuff_stack_font_size_tooltip = {
+		en = "Adjust the font size of the stack/percentage counters on the boss healthbar debuff display.",
+	},
 })
 
 -- Group settings
@@ -1993,6 +2037,20 @@ table.insert(localisations_to_add, {
 		en = "Adjust the colour of the enemy type specific icon.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		["zh-cn"] = "设置当前敌人类型的图标颜色，数值0~255。",
 	},
+
+	-- debuffs
+	debuff_type_enable = {
+		en = "Enable debuffs?",
+	},
+	debuff_type_enable_tooltip = {
+		en = "Toggle debuffs for your selected enemy type/class",
+	},
+	healthbar_type_y_offset = {
+		en = "Healthbar Y offset (Enemy Type Specific)",
+	},
+	healthbar_type_y_offset_tooltip = {
+		en = "Adjust the Y offset (height) for healthbars of this enemy type. Overrides the global Y offset for this type.",
+	},
 })
 
 -- enemy individual overrides localisations
@@ -2093,6 +2151,12 @@ table.insert(localisations_to_add, {
 		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
 		["zh-cn"] = "为选定敌人单独强制开关头顶标记，不受全局标记总控影响，可单独指定特定敌人显示标记",
 	},
+	debuff_individual_enable = {
+		en = "Toggle debuffs override?",
+	},
+	debuff_individual_enable_tooltip = {
+		en = "Toggle the debuff icons overriding for your selected enemy. This will take effect whether the global debuff icons are enabled or not. To allow only specific enemies to have the debuff icons.",
+	},
 	distance_individual_enable = {
 		en = "Override draw distance?",
 		["zh-cn"] = "单独覆盖渲染距离",
@@ -2140,6 +2204,12 @@ table.insert(localisations_to_add, {
 	healthbar_individual_height_tooltip = {
 		en = "Override the height of the healthbar for this specific enemy.",
 		["zh-cn"] = "自定义该敌人血条的高度。",
+	},
+	healthbar_individual_y_offset = {
+		en = "Healthbar Y offset (Enemy Specific)",
+	},
+	healthbar_individual_y_offset_tooltip = {
+		en = "Adjust the Y offset (height) for the healthbar of this specific enemy. Overrides both the global and type-level Y offset.",
 	},
 })
 

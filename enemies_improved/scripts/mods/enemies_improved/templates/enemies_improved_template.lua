@@ -9,6 +9,7 @@ local EnemyHealthbarTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
 local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
 local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
+local ScriptUnit_extension = ScriptUnit.extension
 
 template.name = "enemies_improved"
 template.unit_node = "root_point"
@@ -125,7 +126,24 @@ template.create_widget_defintion = function(template, scenegraph_id)
 end
 
 template.on_enter = function(widget, marker, template)
-	template.position_offset = { 0, 0, fs.hb_y_offset }
+	local unit = marker.unit
+	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+
+	local y_offset = fs.hb_y_offset
+
+	if breed then
+		local breed_name = breed.name
+		local breed_type = mod.find_breed_category(unit)
+
+		if breed_name and fs.breed_healthbar_y_offset[breed_name] then
+			y_offset = fs.breed_healthbar_y_offset[breed_name]
+		elseif breed_type and fs.breed_type_healthbar_y_offset[breed_type] then
+			y_offset = fs.breed_type_healthbar_y_offset[breed_type]
+		end
+	end
+
+	template.position_offset = { 0, 0, y_offset }
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 	template.check_line_of_sight = fs.check_line_of_sight
 
@@ -150,6 +168,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Global aimed-only filter: hides ALL enemies_improved content
 	local unit = marker.unit
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+	end
+
+	-- Global tagged-only filter: hides ALL enemies_improved content for non-tagged enemies
+	if fs.only_tagged_enemies and unit and not mod.tagged_units[unit] then
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
@@ -188,9 +213,38 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.m_built = false
 	end
 
+	-- Apply per-type / per-individual healthbar Y offset AFTER markers template
+	-- (markers template writes marker.world_position, so we must come after it)
+	--[[if content.breed and marker.world_position then
+		local breed = content.breed
+		local breed_name = breed.name
+		local breed_type = content._breed_type
+
+		local y_offset = 0
+
+		if breed_name and fs.breed_healthbar_y_offset[breed_name] then
+			y_offset = fs.breed_healthbar_y_offset[breed_name]
+		elseif breed_type and fs.breed_type_healthbar_y_offset[breed_type] then
+			y_offset = fs.breed_type_healthbar_y_offset[breed_type]
+		end
+
+		if y_offset ~= 0 then
+			local pos = marker.world_position:unbox()
+			marker.world_position:store(Vector3(pos.x, pos.y, pos.z + y_offset))
+		end
+	end]]
+
 	widget._next_update = 0
 
-	if fs.debuff_enable then
+	local debuffs_enabled = fs.debuff_enable
+
+	if content.breed then
+		if fs.breed_debuff_toggle[content.breed.name] then
+			debuffs_enabled = fs.breed_debuff_toggle[content.breed.name]
+		end
+	end
+
+	if debuffs_enabled then
 		EnemyDebuffTemplate.update_function(parent, ui_renderer, widget, marker, EnemyDebuffTemplate, dt, t)
 	end
 
@@ -225,10 +279,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		dps_visible = false
 	end
 
+	-- Re-apply tagged filter after sub-templates: suppress their results for non-tagged units
+	if fs.only_tagged_enemies and unit and not mod.tagged_units[unit] then
+		has_healthbar = false
+		has_markers = false
+		has_debuffs = false
+		dps_visible = false
+	end
+
 	local visible = (mod.detect_alive(unit) or dps_visible)
 			and (saved_draw or has_healthbar or has_markers or has_debuffs or dps_visible)
 		or false
-		
+
 	marker.draw = visible
 
 	if visible then

@@ -50,6 +50,11 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
+	-- Non-horde filter (elites, specials, monsters, etc.)
+	if not entry.is_horde and not fs.markers_non_horde_enable then
+		return
+	end
+
 	if entry._ei_marker_created or entry._ei_marker_pending then
 		return
 	end

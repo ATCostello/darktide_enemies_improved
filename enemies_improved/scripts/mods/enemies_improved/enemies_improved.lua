@@ -277,6 +277,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 end)
 
 mod.aimed_unit = {}
+mod.tagged_units = {}
 mod._periodic_cache_clear_timer = 0
 -----------------------------------------------------------------------
 -- Hook into the markers update to recalculate enemies.
@@ -302,6 +303,11 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		if fs.markers_show_only_aimed then
 			table_clear(mod.aimed_unit)
 			mod.do_aim_raycast()
+		end
+
+		-- Tagged detection (clear enemy cache of non-tagged enemies)
+		if fs.only_tagged_enemies then
+			mod.do_tagged_scan()
 		end
 
 		-- throttle updates according to enemy amounts to help keep performance in check...
@@ -1427,6 +1433,25 @@ mod.do_aim_raycast = function()
 						mod.aimed_unit[unit] = true
 					end
 				end
+			end
+		end
+	end
+end
+
+-- Build a set of units that are currently tagged via the smart-tag system.
+mod.do_tagged_scan = function()
+	table_clear(mod.tagged_units)
+
+	local smart_tag_system = Managers.state.extension:system("smart_tag_system")
+	if not smart_tag_system then
+		return
+	end
+
+	for unit in next, mod.enemy_cache do
+		if Unit_alive(unit) then
+			local tag_id = smart_tag_system:unit_tag_id(unit)
+			if tag_id then
+				mod.tagged_units[unit] = true
 			end
 		end
 	end

@@ -21,7 +21,6 @@ local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local pool = {}
-local debuff_defs_cache
 
 local function calc_stack_buff_percentage(val, stacks, stat_name)
 	local stat_buff_type = stat_buff_types[stat_name]
@@ -39,16 +38,13 @@ local function calc_stack_buff_percentage(val, stacks, stat_name)
 	return math_floor(perc * 10 + 0.5) * 0.1
 end
 
-local function create_boss_debuff_widget_definition()
-	if debuff_defs_cache then
-		return debuff_defs_cache
-	end
-
+local function create_boss_debuff_widget_definition(group_index, x_offset, y_offset)
 	local passes = {}
 	local content = {}
 	local style = {}
-	local base_y = 25
+	local base_y = 25 + y_offset
 	local row_step = 30
+	local x_shift = x_offset
 
 	for i = 1, MAX_ROWS do
 		local icon_id = "debuff_icon_" .. i
@@ -72,8 +68,8 @@ local function create_boss_debuff_widget_definition()
 			scale_to_material = true,
 			horizontal_alignment = "left",
 			vertical_alignment = "center",
-			offset = { BOSS_DEBUFF_X_START + 1, row_offset_y + 1, 5 },
-			default_offset = { BOSS_DEBUFF_X_START + 1, row_offset_y + 1, 5 },
+			offset = { BOSS_DEBUFF_X_START + 1 + x_shift, row_offset_y + 1, 5 },
+			default_offset = { BOSS_DEBUFF_X_START + 1 + x_shift, row_offset_y + 1, 5 },
 			size = { 28, 28 },
 			default_size = { 28, 28 },
 			color = { 255, 0, 0, 0 },
@@ -92,8 +88,8 @@ local function create_boss_debuff_widget_definition()
 			scale_to_material = true,
 			horizontal_alignment = "left",
 			vertical_alignment = "center",
-			offset = { BOSS_DEBUFF_X_START, row_offset_y, 6 },
-			default_offset = { BOSS_DEBUFF_X_START, row_offset_y, 6 },
+			offset = { BOSS_DEBUFF_X_START + x_shift, row_offset_y, 6 },
+			default_offset = { BOSS_DEBUFF_X_START + x_shift, row_offset_y, 6 },
 			size = { 27, 27 },
 			default_size = { 27, 27 },
 			color = { 255, 255, 255, 255 },
@@ -114,8 +110,8 @@ local function create_boss_debuff_widget_definition()
 			vertical_alignment = "center",
 			text_horizontal_alignment = "left",
 			text_vertical_alignment = "center",
-			offset = { BOSS_DEBUFF_X_START + 145, row_offset_y, 8 },
-			default_offset = { BOSS_DEBUFF_X_START + 145, row_offset_y, 8 },
+			offset = { BOSS_DEBUFF_X_START + 145 + x_shift, row_offset_y, 8 },
+			default_offset = { BOSS_DEBUFF_X_START + 145 + x_shift, row_offset_y, 8 },
 			font_type = "proxima_nova_bold",
 			font_size = 14,
 			default_font_size = 14,
@@ -142,8 +138,8 @@ local function create_boss_debuff_widget_definition()
 			vertical_alignment = "center",
 			text_horizontal_alignment = "left",
 			text_vertical_alignment = "center",
-			offset = { BOSS_DEBUFF_X_START + 35, row_offset_y, 7 },
-			default_offset = { BOSS_DEBUFF_X_START + 35, row_offset_y, 7 },
+			offset = { BOSS_DEBUFF_X_START + 35 + x_shift, row_offset_y, 7 },
+			default_offset = { BOSS_DEBUFF_X_START + 35 + x_shift, row_offset_y, 7 },
 			font_type = "proxima_nova_bold",
 			font_size = 13,
 			default_font_size = 13,
@@ -159,13 +155,12 @@ local function create_boss_debuff_widget_definition()
 		}
 	end
 
-	debuff_defs_cache = {
+	return {
 		scenegraph_id = "background",
 		passes = passes,
 		content = content,
 		style = style,
 	}
-	return debuff_defs_cache
 end
 
 local function scan_boss_debuffs(unit, widget)
@@ -288,16 +283,23 @@ local function scan_boss_debuffs(unit, widget)
 		local grouped_dot_map = widget._grouped_dot or {}
 		local grouped_utility_map = widget._grouped_util or {}
 
-		for k in next, grouped_dot_map do grouped_dot_map[k] = nil end
-		for k in next, grouped_utility_map do grouped_utility_map[k] = nil end
+		for k in next, grouped_dot_map do
+			grouped_dot_map[k] = nil
+		end
+		for k in next, grouped_utility_map do
+			grouped_utility_map[k] = nil
+		end
 
 		for i = 1, active_count do
 			local entry = active[i]
 			local name = entry.name
 			local max_stacks = entry.max_stacks
-			local icon = mod.debuffs and mod.debuffs[name] and mod.debuffs[name].group
-				and mod.debuff_styles[mod.debuffs[name].group]
-				and mod.debuff_styles[mod.debuffs[name].group].icon or nil
+			local icon = mod.debuffs
+					and mod.debuffs[name]
+					and mod.debuffs[name].group
+					and mod.debuff_styles[mod.debuffs[name].group]
+					and mod.debuff_styles[mod.debuffs[name].group].icon
+				or nil
 			local debuff_type = entry.type
 
 			icon = icon or name
@@ -326,9 +328,11 @@ local function scan_boss_debuffs(unit, widget)
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
 						local sbt = stat_buff_types[stat_name]
 						if sbt == "multiplicative_multiplier" then
-							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0) + (val - 1) * effective_stacks
+							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0)
+								+ (val - 1) * effective_stacks
 						else
-							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0) + val * effective_stacks
+							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0)
+								+ val * effective_stacks
 						end
 					end
 				end
@@ -338,9 +342,13 @@ local function scan_boss_debuffs(unit, widget)
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
 						local sbt = stat_buff_types[stat_name]
 						if sbt == "multiplicative_multiplier" then
-							existing._conditional_stat_total[stat_name] = (existing._conditional_stat_total[stat_name] or 0) + (val - 1) * effective_stacks
+							existing._conditional_stat_total[stat_name] = (
+								existing._conditional_stat_total[stat_name] or 0
+							) + (val - 1) * effective_stacks
 						else
-							existing._conditional_stat_total[stat_name] = (existing._conditional_stat_total[stat_name] or 0) + val * effective_stacks
+							existing._conditional_stat_total[stat_name] = (
+								existing._conditional_stat_total[stat_name] or 0
+							) + val * effective_stacks
 						end
 					end
 				end
@@ -424,6 +432,9 @@ local function update_debuff_display(dt, t, widget)
 	local stack_speed = 8
 
 	local active_lookup = {}
+	local boss_stack_font_size = fs.boss_debuff_stack_font_size or 14
+	local x_shift = widget._x_shift or 0
+	local y_shift = widget._y_shift or 0
 
 	for index = 1, active_count do
 		local debuff = active[index]
@@ -461,7 +472,9 @@ local function update_debuff_display(dt, t, widget)
 		state.alpha = (alpha < 255) and alpha or 255
 
 		local lerp_t = dt * slide_speed
-		if lerp_t > 1 then lerp_t = 1 end
+		if lerp_t > 1 then
+			lerp_t = 1
+		end
 		state.y = math_lerp(state.y, y_base, lerp_t)
 
 		if stacks ~= state.prev_stacks then
@@ -474,11 +487,15 @@ local function update_debuff_display(dt, t, widget)
 		state.prev_stacks = stacks
 
 		local stack_lerp_t = dt * stack_speed
-		if stack_lerp_t > 1 then stack_lerp_t = 1 end
+		if stack_lerp_t > 1 then
+			stack_lerp_t = 1
+		end
 		state.scale = math_lerp(state.scale, 0, stack_lerp_t)
 
 		local icon_lerp_t = dt * 6
-		if icon_lerp_t > 1 then icon_lerp_t = 1 end
+		if icon_lerp_t > 1 then
+			icon_lerp_t = 1
+		end
 		state.icon_scale = math_lerp(state.icon_scale, 0, icon_lerp_t)
 
 		if fs.debuff_names and state.name_visible then
@@ -559,25 +576,25 @@ local function update_debuff_display(dt, t, widget)
 
 			if is_horizontal then
 				local o = icon_shadow_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 1 + col_offset
-				o[2] = row_offset_y + 1
+				o[1] = BOSS_DEBUFF_X_START + 1 + col_offset + x_shift
+				o[2] = row_offset_y + 1 + y_shift
 				o = icon_shadow_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 1 + col_offset
-				o[2] = row_offset_y + 1
+				o[1] = BOSS_DEBUFF_X_START + 1 + col_offset + x_shift
+				o[2] = row_offset_y + 1 + y_shift
 
 				o = icon_style.offset
-				o[1] = BOSS_DEBUFF_X_START + col_offset
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + col_offset + x_shift
+				o[2] = row_offset_y + y_shift
 				o = icon_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + col_offset
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + col_offset + x_shift
+				o[2] = row_offset_y + y_shift
 
 				o = stack_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset + x_shift
+				o[2] = row_offset_y + y_shift
 				o = stack_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset + x_shift
+				o[2] = row_offset_y + y_shift
 
 				content[name_text_id] = ""
 			else
@@ -592,32 +609,32 @@ local function update_debuff_display(dt, t, widget)
 				end
 
 				local o = icon_shadow_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 1
-				o[2] = row_offset_y + 1
+				o[1] = BOSS_DEBUFF_X_START + 1 + x_shift
+				o[2] = row_offset_y + 1 + y_shift
 				o = icon_shadow_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 1
-				o[2] = row_offset_y + 1
+				o[1] = BOSS_DEBUFF_X_START + 1 + x_shift
+				o[2] = row_offset_y + 1 + y_shift
 
 				o = icon_style.offset
-				o[1] = BOSS_DEBUFF_X_START
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + x_shift
+				o[2] = row_offset_y + y_shift
 				o = icon_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + x_shift
+				o[2] = row_offset_y + y_shift
 
 				o = stack_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 145
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 145 + x_shift
+				o[2] = row_offset_y + y_shift
 				o = stack_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 145
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 145 + x_shift
+				o[2] = row_offset_y + y_shift
 
 				o = name_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 35
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 35 + x_shift
+				o[2] = row_offset_y + y_shift
 				o = name_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 35
-				o[2] = row_offset_y
+				o[1] = BOSS_DEBUFF_X_START + 35 + x_shift
+				o[2] = row_offset_y + y_shift
 			end
 
 			local at_max_stacks = false
@@ -628,7 +645,9 @@ local function update_debuff_display(dt, t, widget)
 
 			if state then
 				local debuff_group = mod.debuffs and mod.debuffs[name] and mod.debuffs[name].group
-				local debuff_icon = debuff_group and mod.debuff_styles[debuff_group] and mod.debuff_styles[debuff_group].icon
+				local debuff_icon = debuff_group
+					and mod.debuff_styles[debuff_group]
+					and mod.debuff_styles[debuff_group].icon
 				content[icon_id] = debuff_icon or "content/ui/materials/icons/generic/danger"
 
 				-- Percentage calculation
@@ -639,7 +658,9 @@ local function update_debuff_display(dt, t, widget)
 						if stat_name and total_val then
 							local perc = total_val * 100
 							local nearest = math_floor((perc + 5) / 10) * 10
-							if math.abs(perc - nearest) <= 1 then perc = nearest end
+							if math.abs(perc - nearest) <= 1 then
+								perc = nearest
+							end
 							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
 						end
 					end
@@ -648,7 +669,9 @@ local function update_debuff_display(dt, t, widget)
 						if stat_name and total_val then
 							local perc = total_val * 100
 							local nearest = math_floor((perc + 5) / 10) * 10
-							if math.abs(perc - nearest) <= 1 then perc = nearest end
+							if math.abs(perc - nearest) <= 1 then
+								perc = nearest
+							end
 							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
 						end
 					end
@@ -685,31 +708,33 @@ local function update_debuff_display(dt, t, widget)
 				content[stack_text_id] = stack_str
 
 				if is_horizontal then
-				content[name_text_id] = ""
-			elseif fs.debuff_names then
-				if state.name_visible then
-					local loc = ""
-					if fs.debuffs_abrv then
-						loc = mod.custom_localize(name .. "_abrv")
+					content[name_text_id] = ""
+				elseif fs.debuff_names then
+					if state.name_visible then
+						local loc = ""
+						if fs.debuffs_abrv then
+							loc = mod.custom_localize(name .. "_abrv")
+						else
+							loc = mod.custom_localize(name)
+						end
+						if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
+							loc = mod.custom_localize(name)
+						end
+						if debuff.combined then
+							loc = string.gsub(loc, "%s*%b()%s*", "")
+							loc = string.gsub(loc, "%s+$", "")
+						end
+						content[name_text_id] = loc
 					else
-						loc = mod.custom_localize(name)
+						content[name_text_id] = ""
 					end
-					if loc == "" or loc == nil or string.starts(tostring(loc), "<") then
-						loc = mod.custom_localize(name)
-					end
-					if debuff.combined then
-						loc = string.gsub(loc, "%s*%b()%s*", "")
-						loc = string.gsub(loc, "%s+$", "")
-					end
-					content[name_text_id] = loc
 				else
 					content[name_text_id] = ""
 				end
-			else
-				content[name_text_id] = ""
-			end
 
-				local colour = debuff_group and mod.debuff_styles[debuff_group] and mod.debuff_styles[debuff_group].colour
+				local colour = debuff_group
+						and mod.debuff_styles[debuff_group]
+						and mod.debuff_styles[debuff_group].colour
 					or { 255, 255, 255, 255 }
 
 				icon_style.color[2] = colour[2] or 255
@@ -735,6 +760,8 @@ local function update_debuff_display(dt, t, widget)
 					stack_text_style.text_color[3] = fs.secondary_colour[3] or 220
 					stack_text_style.text_color[4] = fs.secondary_colour[4] or 220
 				end
+
+				stack_text_style.font_size = boss_stack_font_size
 			end
 		else
 			content[icon_id] = nil
@@ -744,24 +771,60 @@ local function update_debuff_display(dt, t, widget)
 	end
 end
 
--- Hooks
+local get_x_offset = function(health_widget)
+	local x_offset = 0
 
+	if not health_widget then
+		return x_offset
+	else
+		x_offset = health_widget.offset[1]
+
+		if x_offset == 0 then
+			x_offset = health_widget.style.bar.offset[1]
+		end
+	end
+
+	return x_offset
+end
+
+local get_y_offset = function(health_widget)
+	local y_offset = 0
+
+	if not health_widget then
+		return y_offset
+	else
+		y_offset = health_widget.offset[2]
+
+		if y_offset == 0 then
+			y_offset = health_widget.style.bar.offset[2]
+		end
+	end
+
+	return y_offset
+end
+
+-- Hooks
 mod:hook_safe("HudElementBossHealth", "init", function(self, parent, draw_layer, start_scale)
 	local groups = self._widget_groups
 	if not groups then
 		return
 	end
 
-	local def = create_boss_debuff_widget_definition()
-
 	for i = 1, #groups do
-		groups[i].boss_debuff = self:_create_widget("boss_debuffs_" .. i, def)
-		groups[i].boss_debuff._active = {}
-		groups[i].boss_debuff._active_count = 0
-		groups[i].boss_debuff._state = {}
-		groups[i].boss_debuff._combined = {}
-		groups[i].boss_debuff._grouped_dot = {}
-		groups[i].boss_debuff._grouped_util = {}
+		if groups[i] then
+			local x_offset = get_x_offset(groups[i].health)
+			local y_offset = get_y_offset(groups[i].health)
+			local def = create_boss_debuff_widget_definition(i, x_offset, y_offset)
+			groups[i].boss_debuff = self:_create_widget("boss_debuffs_" .. i, def)
+			groups[i].boss_debuff._active = {}
+			groups[i].boss_debuff._active_count = 0
+			groups[i].boss_debuff._state = {}
+			groups[i].boss_debuff._combined = {}
+			groups[i].boss_debuff._grouped_dot = {}
+			groups[i].boss_debuff._grouped_util = {}
+			groups[i].boss_debuff._x_shift = x_offset
+			groups[i].boss_debuff._y_shift = y_offset
+		end
 	end
 end)
 
@@ -771,7 +834,7 @@ mod:hook_safe("HudElementBossHealth", "update", function(self, dt, t, ui_rendere
 	if not fs.hb_toggle_base_boss_healthbar then
 		self:_set_active(false)
 	end
-	
+
 	if not fs.debuff_boss_healthbar_enable or not fs.debuff_enable or not self._is_active then
 		return
 	end
@@ -794,6 +857,11 @@ mod:hook_safe("HudElementBossHealth", "update", function(self, dt, t, ui_rendere
 		if unit and ALIVE[unit] then
 			local debuff_widget = widget_group and widget_group.boss_debuff
 			if debuff_widget then
+				local x_offset = get_x_offset(widget_group.health)
+				local y_offset = get_y_offset(widget_group.health)
+
+				debuff_widget._x_shift = x_offset
+				debuff_widget._y_shift = y_offset
 				scan_boss_debuffs(unit, debuff_widget)
 				update_debuff_display(dt, t, debuff_widget)
 			end
@@ -806,17 +874,31 @@ mod:hook_safe("HudElementBossHealth", "event_boss_encounter_end", function(self,
 	if not widget_groups then
 		return
 	end
+
+	-- Determine which widget groups are still occupied by surviving bosses
+	local active_targets_array = self._active_targets_array or {}
+	local num_active = #active_targets_array
+	local occupied = {}
+
+	for i = 1, num_active do
+		local idx = num_active > 1 and i + 1 or i
+		occupied[idx] = true
+	end
+
+	-- Clear only the unoccupied group(s) (the dying boss's group)
 	for i = 1, #widget_groups do
-		local widget = widget_groups[i] and widget_groups[i].boss_debuff
-		if widget then
-			for j = 1, MAX_ROWS do
-				widget.content["debuff_icon_" .. j] = nil
-				widget.content["stack_counter_" .. j] = nil
-				widget.content["debuff_name_" .. j] = nil
+		if not occupied[i] then
+			local widget = widget_groups[i] and widget_groups[i].boss_debuff
+			if widget then
+				for j = 1, MAX_ROWS do
+					widget.content["debuff_icon_" .. j] = nil
+					widget.content["stack_counter_" .. j] = nil
+					widget.content["debuff_name_" .. j] = nil
+				end
+				widget._active = {}
+				widget._active_count = 0
+				widget._state = {}
 			end
-			widget._active = {}
-			widget._active_count = 0
-			widget._state = {}
 		end
 	end
 end)

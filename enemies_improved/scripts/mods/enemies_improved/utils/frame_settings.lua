@@ -28,6 +28,10 @@ mod.build_frame_settings = function(dt)
 	fs.breed_healthbar_force = {}
 	fs.breed_type_outline_enabled = {}
 	fs.breed_type_healthbar_enabled = {}
+	fs.breed_type_healthbar_y_offset = {}
+	fs.breed_debuff_toggle = {}
+	fs.breed_type_debuff_enabled = {}
+	fs.breed_healthbar_y_offset = {}
 
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
@@ -53,16 +57,21 @@ mod.build_frame_settings = function(dt)
 			end
 
 			fs.breed_marker_toggle[enemy] = mod:get("markers_" .. enemy .. "_toggle")
+			fs.breed_debuff_toggle[enemy] = mod:get("debuff_" .. enemy .. "_enable")
 			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
 			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
 			fs.breed_healthbar_force[enemy] = mod:get("healthbar_" .. enemy .. "_force")
+			fs.breed_healthbar_y_offset[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset")
 		end
 	end
+
 	for _, options in next, mod.breed_types do
 		local breed = options.value
 		if breed and breed ~= "select" then
 			fs.breed_type_outline_enabled[breed] = mod:get("outline_" .. breed .. "_enable")
+			fs.breed_type_debuff_enabled[breed] = mod:get("debuff_" .. breed .. "_enable")
 			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
+			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset") or 0
 		end
 	end
 
@@ -116,6 +125,7 @@ mod.build_frame_settings = function(dt)
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
 	fs.markers_horde_enable = mod:get("markers_horde_enable")
+	fs.markers_non_horde_enable = mod:get("markers_non_horde_enable")
 	fs.marker_size = mod:get("marker_size") * fs.global_scale
 	fs.markers_health_enable = mod:get("markers_health_enable")
 	fs.marker_y_offset = mod:get("marker_y_offset") * fs.global_scale
@@ -140,6 +150,7 @@ mod.build_frame_settings = function(dt)
 
 	fs.marker_display_option = mod:get("marker_display_option")
 	fs.markers_show_only_aimed = mod:get("markers_show_only_aimed")
+	fs.only_tagged_enemies = mod:get("only_tagged_enemies")
 
 	-- HEALTHBARS
 	fs.healthbar_enable = mod:get("healthbar_enable")
@@ -315,6 +326,7 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_horizontal = mod:get("debuff_horizontal")
 	fs.debuff_stacks_font_size = mod:get("debuff_stacks_font_size") or 16
 	fs.debuff_names_font_size = mod:get("debuff_names_font_size") or 16
+	fs.boss_debuff_stack_font_size = mod:get("boss_debuff_stack_font_size") or 14
 
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")
