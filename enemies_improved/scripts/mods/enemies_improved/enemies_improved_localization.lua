@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.7"
+mod.version = "2.0.8"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -785,95 +785,124 @@ table.insert(localisations_to_add, {
 	},
 	outline_tagged_colour = {
 		en = "Tagged enemy outline colour",
+		["zh-cn"] = "自身标记敌人轮廓颜色",
 	},
 	outline_tagged_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_tagged_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_tagged_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 	outline_tagged_colour_tooltip = {
 		en = "Colour of the outline when you actively tag an enemy.",
+		["zh-cn"] = "你手动标记敌人时显示的轮廓颜色。",
 	},
 
 	outline_veteran_tagged_colour = {
 		en = "Veteran's Focus Target tag outline colour",
+		["zh-cn"] = "老兵专注标记轮廓颜色",
 	},
 	outline_veteran_tagged_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_veteran_tagged_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_veteran_tagged_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 	outline_veteran_tagged_colour_tooltip = {
 		en = "Colour for Veteran's Focus Target tag.",
+		["zh-cn"] = "老兵天赋「专注目标」标记对应的高亮轮廓颜色。",
 	},
 
 	outline_tagged_passive_colour = {
 		en = "Tagged enemy (Passive) outline colour",
+		["zh-cn"] = "队友标记敌人轮廓颜色",
 	},
 	outline_tagged_passive_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_tagged_passive_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_tagged_passive_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 	outline_tagged_passive_colour_tooltip = {
 		en = "Colour of the outline when a teammate tags an enemy (passive/focus).",
+		["zh-cn"] = "队友标记敌人时显示的轮廓颜色。",
 	},
 	outline_owned_companion_colour = {
 		en = "Owned companion outline colour",
+		["zh-cn"] = "自身召唤物轮廓颜色",
 	},
 	outline_owned_companion_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_owned_companion_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_owned_companion_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 
 	outline_allied_companion_colour = {
 		en = "Allied companion outline colour",
+		["zh-cn"] = "队友召唤物轮廓颜色",
 	},
 	outline_allied_companion_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_allied_companion_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_allied_companion_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 
 	outline_companion_colour = {
 		en = "Companion tagged enemy outline colour",
+		["zh-cn"] = "随从单位轮廓颜色",
 	},
 	outline_companion_colour_tooltip = {
 		en = "Colour of the outline for companion units.",
+		["zh-cn"] = "所有召唤随从单位的高亮轮廓颜色。",
 	},
 	outline_companion_colour_R = {
 		en = "Tagged Outline Colour: Red",
+		["zh-cn"] = "标记轮廓：红色",
 	},
 	outline_companion_colour_G = {
 		en = "Tagged Outline Colour: Green",
+		["zh-cn"] = "标记轮廓：绿色",
 	},
 	outline_companion_colour_B = {
 		en = "Tagged Outline Colour: Blue",
+		["zh-cn"] = "标记轮廓：蓝色",
 	},
 
 	outline_settings = {
 		en = "Outline Settings",
+		["zh-cn"] = "轮廓高亮设置",
 	},
 	font_type = {
 		en = "Choose a font style (Global)",
@@ -1099,30 +1128,39 @@ table.insert(localisations_to_add, {
 	},
 	marker_display_option = {
 		en = "Overhead Marker Display Option",
+		["zh-cn"] = "头顶标记显示方式",
 	},
 	marker_display_option_tooltip = {
 		en = "Controls when overhead markers are shown.\n\nAlways show: Markers are always visible.\nHide unless damaged: Markers hide after 5 seconds of no damage taken, reappear on damage.\nHide when damaged: Markers hide after 5 seconds if damage has been taken, show otherwise.",
+		["zh-cn"] = "控制头顶标记的显示时机。\n永久显示：标记一直可见。\n仅受伤时显示：敌人5秒未受到伤害就隐藏标记，受到伤害后重新显示。\n受伤后隐藏：敌人受到伤害5秒后隐藏标记，未受伤时正常显示。",
 	},
 	always_show = {
 		en = "Always show",
+		["zh-cn"] = "永久显示",
 	},
 	hide_unless_damaged = {
 		en = "Show only when damaged",
+		["zh-cn"] = "仅敌人受伤时显示",
 	},
 	hide_when_damaged = {
 		en = "Hide when damaged",
+		["zh-cn"] = "敌人受伤后隐藏",
 	},
 	markers_show_only_aimed = {
 		en = "Only show markers when aiming at enemy?",
+		["zh-cn"] = "仅准星对准敌人才显示标记？",
 	},
 	markers_show_only_aimed_tooltip = {
 		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair.",
+		["zh-cn"] = "只对当前准星瞄准的敌人显示头顶标记和血条。",
 	},
 	only_tagged_enemies = {
 		en = "Only show for tagged enemies?",
+		["zh-cn"] = "仅被标记的敌人才显示？",
 	},
 	only_tagged_enemies_tooltip = {
 		en = "Only show overhead markers, healthbars, and debuffs for enemies that have been tagged by a teammate.",
+		["zh-cn"] = "只有被队友标记的敌人，才会显示头顶标记、血条以及减益效果。",
 	},
 })
 
@@ -1214,15 +1252,19 @@ table.insert(localisations_to_add, {
 	},
 	hb_enable_bar = {
 		en = "Show healthbar bar?",
+		["zh-cn"] = "显示血量进度条？",
 	},
 	hb_enable_bar_tooltip = {
 		en = "Toggle the healthbar visual bar itself. If disabled, the bar will be hidden but text/numbers can still show.",
+		["zh-cn"] = "开关可视化血量条。关闭进度条后，文字和数值仍然可以正常显示。",
 	},
 	hb_enable_text = {
 		en = "Show healthbar text?",
+		["zh-cn"] = "显示血条文字内容？",
 	},
 	hb_enable_text_tooltip = {
 		en = "Toggle the healthbar text (name, health numbers, armour type). If disabled, text will be hidden but the bar can still show.",
+		["zh-cn"] = "开关血条上的文字（敌人名称、血量数值、护甲类型），关闭文字后血量条依旧正常显示。",
 	},
 	hb_y_offset = {
 		en = "Adjust Y offset for healthbars",
@@ -1654,33 +1696,43 @@ table.insert(localisations_to_add, {
 	},
 	hb_toggle_base_boss_healthbar = {
 		en = "Show default boss healthbars?",
+		["zh-cn"] = "显示原版头目血条？",
 	},
 	hb_toggle_base_boss_healthbar_tooltip = {
 		en = "Toggles the base-game boss healthbars at the top of the screen. If disabled, the boss healthbars will be hidden.",
+		["zh-cn"] = "开启或关闭游戏原生屏幕顶部的头目血条，关闭后原版头目血条会隐藏。",
 	},
 	hb_endcaps_enabled = {
 		en = "Toggle endcaps on healthbars?",
+		["zh-cn"] = "启用血条末端标记？",
 	},
 	hb_endcaps_enabled_tooltip = {
 		en = "Toggles a small white rectangle at the end of the current health/toughness to help distinguish current health against the background.",
+		["zh-cn"] = "在当前血量和坚韧条末端添加白色短标记，便于在复杂背景下看清剩余数值边界。",
 	},
 	toughness_electric = {
 		en = "Toggle 'lightning' effect on toughness bar?",
+		["zh-cn"] = "开启坚韧条闪电特效？",
 	},
 	toughness_electric_tooltip = {
 		en = "Toggles a lightning effect that is overlayed on the current toughness bar.",
+		["zh-cn"] = "给坚韧进度条添加一层闪电动态特效。",
 	},
 	healthbar_colour_preset = {
 		en = "Healthbar Colour Preset",
+		["zh-cn"] = "血条配色预设",
 	},
 	healthbar_colour_preset_tooltip = {
 		en = "Pick a preset to apply to all enemy healthbars. Note that the individual overrides will override this.\n\nWARNING: This WILL reset your group overrides to these colours.",
+		["zh-cn"] = "选择一套配色应用到全部敌人血条，单独敌人的自定义设置优先级高于该预设。\n警告：执行后会重置所有敌人分组的自定义颜色。",
 	},
 	red = {
 		en = "Full Red",
+		["zh-cn"] = "全红色",
 	},
 	colourful = {
 		en = "Colourful (Enemy Type Dependent)",
+		["zh-cn"] = "彩色模式（按敌人类型区分）",
 	},
 })
 
@@ -1957,21 +2009,27 @@ table.insert(localisations_to_add, {
 	},
 	debuff_stacks_font_size = {
 		en = "Debuff Stacks Font Size",
+		["zh-cn"] = "减益层数字体大小",
 	},
 	debuff_stacks_font_size_tooltip = {
 		en = "Adjust the font size of the debuff stack/percentage counters.",
+		["zh-cn"] = "调整减益层数与百分比数字的字体尺寸。",
 	},
 	debuff_names_font_size = {
 		en = "Debuff Name Font Size",
+		["zh-cn"] = "减益名称字体大小",
 	},
 	debuff_names_font_size_tooltip = {
 		en = "Adjust the font size of the debuff names (if debuff names are enabled).",
+		["zh-cn"] = "调整减益名称文字的字体大小（前提是开启减益名称显示）。",
 	},
 	boss_debuff_stack_font_size = {
 		en = "Boss Healthbar Debuff Stack Font Size",
+		["zh-cn"] = "头目血条减益层数字号",
 	},
 	boss_debuff_stack_font_size_tooltip = {
 		en = "Adjust the font size of the stack/percentage counters on the boss healthbar debuff display.",
+		["zh-cn"] = "调整显示在原版头目血条上的减益层数数字大小。",
 	},
 })
 
@@ -2112,15 +2170,19 @@ table.insert(localisations_to_add, {
 	-- debuffs
 	debuff_type_enable = {
 		en = "Enable debuffs?",
+		["zh-cn"] = "启用减益显示？",
 	},
 	debuff_type_enable_tooltip = {
 		en = "Toggle debuffs for your selected enemy type/class",
+		["zh-cn"] = "为当前选中的敌人分类开启或关闭减益显示。",
 	},
 	healthbar_type_y_offset = {
 		en = "Healthbar Y offset (Enemy Type Specific)",
+		["zh-cn"] = "血条垂直偏移（分类独立设置）",
 	},
 	healthbar_type_y_offset_tooltip = {
 		en = "Adjust the Y offset (height) for healthbars of this enemy type. Overrides the global Y offset for this type.",
+		["zh-cn"] = "调整该类型敌人血条的高度，此项优先级高于全局垂直偏移设置。",
 	},
 })
 
@@ -2307,79 +2369,104 @@ table.insert(localisations_to_add, {
 	},
 	outline_group_overrides = {
 		en = "Outline Group Overrides",
+		["zh-cn"] = "敌人分类‑轮廓独立设置",
 	},
 	healthbar_group_overrides = {
 		en = "Healthbar Group Overrides",
+		["zh-cn"] = "敌人分类‑血条独立设置",
 	},
 	healthbar_icon_group_overrides = {
 		en = "Healthbar Icon Group Overrides",
+		["zh-cn"] = "敌人分类‑图标独立设置",
 	},
 	debuff_group_overrides = {
 		en = "Debuff Group Overrides",
+		["zh-cn"] = "敌人分类‑减益独立设置",
 	},
 	outline_individual_overrides = {
 		en = "Outline Overrides",
+		["zh-cn"] = "单体敌人‑轮廓独立设置",
 	},
 	healthbar_individual_overrides = {
 		en = "Healthbar Overrides",
+		["zh-cn"] = "单体敌人‑血条独立设置",
 	},
 	healthbar_icon_individual_overrides = {
 		en = "Healthbar Icon Overrides",
+		["zh-cn"] = "单体敌人‑图标独立设置",
 	},
 	markers_individual_overrides = {
 		en = "Markers Overrides",
+		["zh-cn"] = "单体敌人‑头顶标记独立设置",
 	},
 	debuffs_individual_overrides = {
 		en = "Debuffs Overrides",
+		["zh-cn"] = "单体敌人‑减益独立设置",
 	},
 	distance_individual_overrides = {
 		en = "Distance Overrides",
+		["zh-cn"] = "单体敌人‑渲染距离独立设置",
 	},
 
 	general_visibility_settings = {
 		en = "General Visibility Settings",
+		["zh-cn"] = "全局可见性设置",
 	},
 	general_font_settings = {
 		en = "General Font Settings",
+		["zh-cn"] = "全局字体设置",
 	},
 	marker_toggles = {
 		en = "Marker Toggles",
+		["zh-cn"] = "标记开关选项",
 	},
 	marker_customisation_settings = {
 		en = "Marker Customisation Settings",
+		["zh-cn"] = "标记自定义设置",
 	},
 	healthbar_visibility_settings = {
 		en = "Healthbar Visibility Settings",
+		["zh-cn"] = "血条显示控制",
 	},
 	healthbar_customisation_settings = {
 		en = "Healthbar Customisation Settings",
+		["zh-cn"] = "血条自定义选项",
 	},
 	healthbar_ghostbar_customisation_settings = {
 		en = "Healthbar Ghostbar Customisation Settings",
+		["zh-cn"] = "延迟虚影条自定义设置",
 	},
 	healthbar_icon_customisation_settings = {
 		en = "Healthbar Icon Customisation Settings",
+		["zh-cn"] = "血条图标自定义设置",
 	},
 	healthbar_horde_customisation_settings = {
 		en = "Healthbar Horde Customisation Settings",
+		["zh-cn"] = "尸潮怪血条自定义设置",
 	},
 	debuff_customisation_settings = {
 		en = "Debuff Customisation Settings",
+		["zh-cn"] = "减益总体自定义设置",
 	},
 	debuff_toggle_settings = {
 		en = "Debuff Toggle Settings",
+		["zh-cn"] = "单独减益开关设置",
 	},
 	debuff_name_customisation_settings = {
 		en = "Debuff Name Customisation Settings",
+		["zh-cn"] = "减益文字自定义设置",
 	},
 	debuff_stacks_customisation_settings = {
 		en = "Debuff Stacks Customisation Settings",
+		["zh-cn"] = "减益层数自定义设置",
 	},
 	debuff_icon_customisation_settings = {
 		en = "Debuff Icon Customisation Settings",
+		["zh-cn"] = "减益图标自定义设置",
 	},
 	debuff_positioning_settings = {
 		en = "Debuff Positioning Settings",
+		["zh-cn"] = "减益位置偏移设置",
 	},
 })
 
