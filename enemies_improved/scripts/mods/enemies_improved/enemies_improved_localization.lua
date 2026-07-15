@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.4"
+mod.version = "2.0.5"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -780,11 +780,20 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "启用轮廓（全局）",
 	},
 	outlines_enable_tooltip = {
-		en = "Global toggle for outlines of enemies. Specific enemy types may be disabled or configured further below.",
+		en = "Global toggle for outlines of enemies. Head to the group/individual override sections to adjust outlines per enemy.",
 		["zh-cn"] = "全局开关敌人轮廓，可在下方单独配置各类型敌人。",
 	},
 	outline_tagged_colour = {
 		en = "Tagged enemy outline colour",
+	},
+	outline_tagged_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_tagged_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_tagged_colour_B = {
+		en = "Tagged Outline Colour: Blue",
 	},
 	outline_tagged_colour_tooltip = {
 		en = "Colour of the outline when you actively tag an enemy.",
@@ -792,17 +801,59 @@ table.insert(localisations_to_add, {
 	outline_tagged_passive_colour = {
 		en = "Focus enemy outline colour",
 	},
+	outline_tagged_passive_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_tagged_passive_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_tagged_passive_colour_B = {
+		en = "Tagged Outline Colour: Blue",
+	},
 	outline_tagged_passive_colour_tooltip = {
 		en = "Colour of the outline when a teammate tags an enemy (passive/focus).",
 	},
 	outline_owned_companion_colour = {
 		en = "Owned companion outline colour",
 	},
+	outline_owned_companion_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_owned_companion_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_owned_companion_colour_B = {
+		en = "Tagged Outline Colour: Blue",
+	},
+
 	outline_allied_companion_colour = {
 		en = "Allied companion outline colour",
 	},
+	outline_allied_companion_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_allied_companion_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_allied_companion_colour_B = {
+		en = "Tagged Outline Colour: Blue",
+	},
+
 	outline_companion_colour_tooltip = {
 		en = "Colour of the outline for companion units.",
+	},
+	outline_companion_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_companion_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_companion_colour_B = {
+		en = "Tagged Outline Colour: Blue",
+	},
+
+	outline_settings = {
+		en = "Outline Settings",
 	},
 	font_type = {
 		en = "Choose a font style (Global)",
@@ -2233,6 +2284,82 @@ table.insert(localisations_to_add, {
 	off_screen_throttle_rate_tooltip = {
 		en = "Adjust the rate at which all off-screen elements in enemies improved are updated. This only affects enemies that you cannot currently see in your view.\n\nShouldn't really need to touch this, I recommend between 150-200 for a smooth experience.\n\nMaking this higher may help gain some fps in dense situations, but may introduce a delay to the widgets appearing, as they will have a longer delay between updates.\n\nThis slider is shown roughly in milliseconds, so a value of 100 will update roughly 10 times per second, a value of 50 will update roughly 20 times per second etc. ",
 		["zh-cn"] = "调整本模组所有屏幕外UI元素的更新速率，仅作用于视野外的敌人。\n\n通常无需修改，为保证流畅体验，推荐值为 150-200。\n\n提高该数值可在敌人密集场景提升帧率，但会延长UI显示延迟。\n\n单位为毫秒，数值100代表每秒更新10次，数值50代表每秒更新20次。",
+	},
+	outline_group_overrides = {
+		en = "Outline Group Overrides",
+	},
+	healthbar_group_overrides = {
+		en = "Healthbar Group Overrides",
+	},
+	healthbar_icon_group_overrides = {
+		en = "Healthbar Icon Group Overrides",
+	},
+	debuff_group_overrides = {
+		en = "Debuff Group Overrides",
+	},
+	outline_individual_overrides = {
+		en = "Outline Overrides",
+	},
+	healthbar_individual_overrides = {
+		en = "Healthbar Overrides",
+	},
+	healthbar_icon_individual_overrides = {
+		en = "Healthbar Icon Overrides",
+	},
+	markers_individual_overrides = {
+		en = "Markers Overrides",
+	},
+	debuffs_individual_overrides = {
+		en = "Debuffs Overrides",
+	},
+	distance_individual_overrides = {
+		en = "Distance Overrides",
+	},
+
+	general_visibility_settings = {
+		en = "General Visibility Settings",
+	},
+	general_font_settings = {
+		en = "General Font Settings",
+	},
+	marker_toggles = {
+		en = "Marker Toggles",
+	},
+	marker_customisation_settings = {
+		en = "Marker Customisation Settings",
+	},
+	healthbar_visibility_settings = {
+		en = "Healthbar Visibility Settings",
+	},
+	healthbar_customisation_settings = {
+		en = "Healthbar Customisation Settings",
+	},
+	healthbar_ghostbar_customisation_settings = {
+		en = "Healthbar Ghostbar Customisation Settings",
+	},
+	healthbar_icon_customisation_settings = {
+		en = "Healthbar Icon Customisation Settings",
+	},
+	healthbar_horde_customisation_settings = {
+		en = "Healthbar Horde Customisation Settings",
+	},
+	debuff_customisation_settings = {
+		en = "Debuff Customisation Settings",
+	},
+	debuff_toggle_settings = {
+		en = "Debuff Toggle Settings",
+	},
+	debuff_name_customisation_settings = {
+		en = "Debuff Name Customisation Settings",
+	},
+	debuff_stacks_customisation_settings = {
+		en = "Debuff Stacks Customisation Settings",
+	},
+	debuff_icon_customisation_settings = {
+		en = "Debuff Icon Customisation Settings",
+	},
+	debuff_positioning_settings = {
+		en = "Debuff Positioning Settings",
 	},
 })
 
