@@ -26,8 +26,7 @@ local function calc_stack_buff_percentage(val, stacks, stat_name)
 	local stat_buff_type = stat_buff_types[stat_name]
 	local perc = 0
 	if stat_buff_type == "multiplicative_multiplier" then
-		val = val - 1
-		perc = (val * stacks) * 100
+		perc = (val ^ stacks - 1) * 100
 	elseif stat_buff_type == "additive_multiplier" then
 		perc = (val * stacks) * 100
 	end
@@ -323,33 +322,23 @@ local function scan_boss_debuffs(unit, widget)
 				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
 
 				if entry.stat_buffs then
-					existing._stat_total = existing._stat_total or {}
+					existing._stat_contributions = existing._stat_contributions or {}
 					for stat_name, val in pairs(entry.stat_buffs) do
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						local sbt = stat_buff_types[stat_name]
-						if sbt == "multiplicative_multiplier" then
-							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0)
-								+ (val - 1) * effective_stacks
-						else
-							existing._stat_total[stat_name] = (existing._stat_total[stat_name] or 0)
-								+ val * effective_stacks
-						end
+						existing._stat_contributions[stat_name] = {
+							val = val,
+							stacks = effective_stacks,
+						}
 					end
 				end
 				if entry.conditional_stat_buffs then
-					existing._conditional_stat_total = existing._conditional_stat_total or {}
+					existing._conditional_stat_contributions = existing._conditional_stat_contributions or {}
 					for stat_name, val in pairs(entry.conditional_stat_buffs) do
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						local sbt = stat_buff_types[stat_name]
-						if sbt == "multiplicative_multiplier" then
-							existing._conditional_stat_total[stat_name] = (
-								existing._conditional_stat_total[stat_name] or 0
-							) + (val - 1) * effective_stacks
-						else
-							existing._conditional_stat_total[stat_name] = (
-								existing._conditional_stat_total[stat_name] or 0
-							) + val * effective_stacks
-						end
+						existing._conditional_stat_contributions[stat_name] = {
+							val = val,
+							stacks = effective_stacks,
+						}
 					end
 				end
 			else
@@ -365,30 +354,24 @@ local function scan_boss_debuffs(unit, widget)
 					type = debuff_type,
 				}
 				if entry.stat_buffs then
-					local stat_total = {}
+					new_entry._stat_contributions = {}
 					for stat_name, val in pairs(entry.stat_buffs) do
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						local sbt = stat_buff_types[stat_name]
-						if sbt == "multiplicative_multiplier" then
-							stat_total[stat_name] = (val - 1) * effective_stacks
-						else
-							stat_total[stat_name] = val * effective_stacks
-						end
+						new_entry._stat_contributions[stat_name] = {
+							val = val,
+							stacks = effective_stacks,
+						}
 					end
-					new_entry._stat_total = stat_total
 				end
 				if entry.conditional_stat_buffs then
-					local conditional_stat_total = {}
+					new_entry._conditional_stat_contributions = {}
 					for stat_name, val in pairs(entry.conditional_stat_buffs) do
 						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						local sbt = stat_buff_types[stat_name]
-						if sbt == "multiplicative_multiplier" then
-							conditional_stat_total[stat_name] = (val - 1) * effective_stacks
-						else
-							conditional_stat_total[stat_name] = val * effective_stacks
-						end
+						new_entry._conditional_stat_contributions[stat_name] = {
+							val = val,
+							stacks = effective_stacks,
+						}
 					end
-					new_entry._conditional_stat_total = conditional_stat_total
 				end
 				combined[combined_count] = new_entry
 				if debuff_type == "dot" then
@@ -653,27 +636,47 @@ local function update_debuff_display(dt, t, widget)
 				-- Percentage calculation
 				local stack_buff_percentage = ""
 
-				if debuff.combined and debuff._stat_total then
-					for stat_name, total_val in pairs(debuff._stat_total) do
-						if stat_name and total_val then
-							local perc = total_val * 100
-							local nearest = math_floor((perc + 5) / 10) * 10
-							if math.abs(perc - nearest) <= 1 then
-								perc = nearest
+				if debuff.combined and debuff._stat_contributions then
+					local total_perc = 0
+					for stat_name, contrib in pairs(debuff._stat_contributions) do
+						if stat_name and contrib and contrib.val and contrib.stacks then
+							local stat_buff_type = stat_buff_types[stat_name]
+							local raw = 0
+							if stat_buff_type == "multiplicative_multiplier" then
+								raw = (contrib.val ^ contrib.stacks - 1) * 100
+							else
+								raw = contrib.val * contrib.stacks * 100
 							end
-							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
+							local nearest = math_floor((raw + 5) / 10) * 10
+							if math.abs(raw - nearest) <= 1 then
+								raw = nearest
+							end
+							total_perc = total_perc + math_floor(raw * 10 + 0.5) * 0.1
 						end
 					end
-				elseif debuff.combined and debuff._conditional_stat_total then
-					for stat_name, total_val in pairs(debuff._conditional_stat_total) do
-						if stat_name and total_val then
-							local perc = total_val * 100
-							local nearest = math_floor((perc + 5) / 10) * 10
-							if math.abs(perc - nearest) <= 1 then
-								perc = nearest
+					if total_perc ~= 0 then
+						stack_buff_percentage = total_perc
+					end
+				elseif debuff.combined and debuff._conditional_stat_contributions then
+					local total_perc = 0
+					for stat_name, contrib in pairs(debuff._conditional_stat_contributions) do
+						if stat_name and contrib and contrib.val and contrib.stacks then
+							local stat_buff_type = stat_buff_types[stat_name]
+							local raw = 0
+							if stat_buff_type == "multiplicative_multiplier" then
+								raw = (contrib.val ^ contrib.stacks - 1) * 100
+							else
+								raw = contrib.val * contrib.stacks * 100
 							end
-							stack_buff_percentage = math_floor(perc * 10 + 0.5) * 0.1
+							local nearest = math_floor((raw + 5) / 10) * 10
+							if math.abs(raw - nearest) <= 1 then
+								raw = nearest
+							end
+							total_perc = total_perc + math_floor(raw * 10 + 0.5) * 0.1
 						end
+					end
+					if total_perc ~= 0 then
+						stack_buff_percentage = total_perc
 					end
 				elseif stat_buffs then
 					for stat_name, val in next, stat_buffs do

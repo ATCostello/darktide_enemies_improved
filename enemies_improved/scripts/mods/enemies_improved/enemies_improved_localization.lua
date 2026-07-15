@@ -429,6 +429,10 @@ table.insert(localisations_to_add, {
 		en = "Brittleness (Saw Blade)",
 		["zh-cn"] = "脆弱",
 	},
+	shotgun_special_rending_debuff = {
+		en = "Brittleness (Shotgun)",
+		["zh-cn"] = "脆弱",
+	},
 
 	increase_impact_received_while_staggered = {
 		en = "Increased Impact Taken",

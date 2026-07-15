@@ -113,6 +113,7 @@ mod.debuffs = {
 	rending_debuff_medium = { name = "rending_debuff_medium", type = "utility", group = "rending" },
 	rending_burn_debuff = { name = "rending_burn_debuff", type = "utility", group = "rending" },
 	saw_rending_debuff = { name = "saw_rending_debuff", type = "utility", group = "rending" },
+	shotgun_special_rending_debuff = { name = "shotgun_special_rending_debuff", type = "utility", group = "rending" },
 
 	increase_impact_received_while_staggered = {
 		name = "increase_impact_received_while_staggered",
@@ -1320,57 +1321,63 @@ table.insert(mod.settings_widgets, {
 			},
 			tooltip = "hb_size_height_tooltip",
 		},
+	},
+})
 
-		setting_id = "healthbar_ghostbar_customisation_settings",
-		type = "group",
-		sub_widgets = {
-			{
-				setting_id = "hb_toggle_ghostbar",
-				type = "checkbox",
-				default_value = true,
-				tooltip = "hb_toggle_ghostbar_tooltip",
-			},
-			{
-				setting_id = "hb_ghostbar_opacity",
-				type = "numeric",
-				default_value = 0.7,
-				range = {
-					0.1,
-					1,
-				},
-				decimals_number = 1,
-				step_size_value = 0.1,
-				tooltip = "hb_ghostbar_opacity_tooltip",
-			},
-			{
-				setting_id = "hb_toggle_ghostbar_colour",
-				type = "checkbox",
-				default_value = false,
-				tooltip = "hb_toggle_ghostbar_colour_tooltip",
-			},
+table.insert(mod.settings_widgets, {
+	setting_id = "healthbar_ghostbar_customisation_settings",
+	type = "group",
+	tab = "Healthbar",
+	sub_widgets = {
+		{
+			setting_id = "hb_toggle_ghostbar",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "hb_toggle_ghostbar_tooltip",
 		},
+		{
+			setting_id = "hb_ghostbar_opacity",
+			type = "numeric",
+			default_value = 0.7,
+			range = {
+				0.1,
+				1,
+			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "hb_ghostbar_opacity_tooltip",
+		},
+		{
+			setting_id = "hb_toggle_ghostbar_colour",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_toggle_ghostbar_colour_tooltip",
+		},
+	},
+})
 
-		setting_id = "healthbar_icon_customisation_settings",
-		type = "group",
-		sub_widgets = {
-			{
-				setting_id = "healthbar_type_icon_enable",
-				type = "checkbox",
-				default_value = true,
-				tooltip = "healthbar_type_icon_enable_tooltip",
+table.insert(mod.settings_widgets, {
+	setting_id = "healthbar_icon_customisation_settings",
+	type = "group",
+	tab = "Healthbar",
+	sub_widgets = {
+		{
+			setting_id = "healthbar_type_icon_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "healthbar_type_icon_enable_tooltip",
+		},
+		{
+			setting_id = "healthbar_type_icon_scale",
+			type = "numeric",
+			default_value = 1.05,
+			range = {
+				1,
+				3,
 			},
-			{
-				setting_id = "healthbar_type_icon_scale",
-				type = "numeric",
-				default_value = 1.05,
-				range = {
-					1,
-					3,
-				},
-				decimals_number = 1,
-				step_size_value = 0.1,
-				tooltip = "healthbar_type_icon_scale_tooltip",
-			},
+			decimals_number = 1,
+			step_size_value = 0.1,
+			tooltip = "healthbar_type_icon_scale_tooltip",
 		},
 	},
 })

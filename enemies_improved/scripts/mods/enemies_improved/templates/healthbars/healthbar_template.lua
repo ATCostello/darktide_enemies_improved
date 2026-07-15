@@ -487,16 +487,18 @@ template.on_enter = function(widget, marker, template)
 
 	local ghost_color = style.ghost_bar.color
 
-	if fs.hb_toggle_ghostbar_colour then
-		-- colourful
-		ghost_color[2] = bar_color[2] * fs.hb_ghostbar_opacity
-		ghost_color[3] = bar_color[3] * fs.hb_ghostbar_opacity
-		ghost_color[4] = bar_color[4] * fs.hb_ghostbar_opacity
-	else
-		-- white
-		ghost_color[2] = 255 * fs.hb_ghostbar_opacity
-		ghost_color[3] = 255 * fs.hb_ghostbar_opacity
-		ghost_color[4] = 255 * fs.hb_ghostbar_opacity
+	if fs.hb_ghostbar_opacity then
+		if fs.hb_toggle_ghostbar_colour then
+			-- colourful
+			ghost_color[2] = bar_color[2] * fs.hb_ghostbar_opacity
+			ghost_color[3] = bar_color[3] * fs.hb_ghostbar_opacity
+			ghost_color[4] = bar_color[4] * fs.hb_ghostbar_opacity
+		else
+			-- white
+			ghost_color[2] = 255 * fs.hb_ghostbar_opacity
+			ghost_color[3] = 255 * fs.hb_ghostbar_opacity
+			ghost_color[4] = 255 * fs.hb_ghostbar_opacity
+		end
 	end
 
 	local icon_offset_y = 0
@@ -655,18 +657,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if health_extension and is_alive then
 		local ok, v = pcall(health_extension.current_health, health_extension)
-		if ok then health_current = v or 0 end
+		if ok then
+			health_current = v or 0
+		end
 		ok, v = pcall(health_extension.max_health, health_extension)
-		if ok then health_max = v or 0 end
+		if ok then
+			health_max = v or 0
+		end
 
 		if health_current > health_max then
 			health_max = health_current
 		end
 
 		ok, v = pcall(health_extension.current_health_percent, health_extension)
-		if ok then health_percent = v or 0 end
+		if ok then
+			health_percent = v or 0
+		end
 		ok, v = pcall(health_extension.is_alive, health_extension)
-		if ok then is_dead = not v end
+		if ok then
+			is_dead = not v
+		end
 	end
 
 	local toughness_extension = content.toughness_extension
@@ -737,9 +747,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				if entry and entry.health_ext and mod.detect_alive(u) then
 					local he = entry.health_ext
 					local ok, v = pcall(he.current_health, he)
-					if ok then total_current = total_current + (v or 0) end
+					if ok then
+						total_current = total_current + (v or 0)
+					end
 					ok, v = pcall(he.max_health, he)
-					if ok then total_max_instant = total_max_instant + (v or 0) end
+					if ok then
+						total_max_instant = total_max_instant + (v or 0)
+					end
 				end
 			end
 

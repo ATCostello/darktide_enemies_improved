@@ -353,14 +353,24 @@ template.on_enter = function(widget, marker, template)
 	content.keywords = buff_extension and buff_extension:keywords()
 end
 
+-- debug function to monitor the actual amount of buffs applied to enemies (So it can be checked against my calculations)
+--[[
+mod:hook_safe(CLASS.Buff, "_calculate_stat_buffs", function(self, current_stat_buffs, stat_buffs, conditional)
+	if not stat_buffs then
+		return
+	end
+	dbg_a = current_stat_buffs
+end)
+]]
+
+
 -- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
 local function calc_stack_buff_percentage(val, stacks, stat_name)
 	local stat_buff_type = stat_buff_types[stat_name]
 	local perc = 0
 
 	if stat_buff_type == "multiplicative_multiplier" then
-		val = val - 1
-		perc = (val * stacks) * 100
+		perc = (val ^ stacks - 1) * 100
 	elseif stat_buff_type == "additive_multiplier" then
 		perc = (val * stacks) * 100
 	end
@@ -454,7 +464,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed = content.breed
 	local debuffs = content.debuffs or {}
 	local keywords = content.keywords or {}
-
+	--dbg_b =content
+	
 	-- Gather active debuffs that we care about
 	widget._active = widget._active or {}
 	local active = widget._active
@@ -1217,7 +1228,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 							local stat_buff_type = stat_buff_types[stat_name]
 							local raw = 0
 							if stat_buff_type == "multiplicative_multiplier" then
-								raw = (contrib.val - 1) * contrib.stacks * 100
+								raw = (contrib.val ^ contrib.stacks - 1) * 100
 							else
 								raw = contrib.val * contrib.stacks * 100
 							end
