@@ -608,6 +608,7 @@ mod.apply_enemy_outlines = function(settings)
 	local tpg = mod:get("outline_tagged_passive_colour_G")
 	local tpb = mod:get("outline_tagged_passive_colour_B")
 
+	-- tag
 	if tpr and tpg and tpb then
 		settings.MinionOutlineExtension.smart_tagged_enemy_passive = {
 			color = { tpr / 255, tpg / 255, tpb / 255 },
@@ -626,38 +627,49 @@ mod.apply_enemy_outlines = function(settings)
 		}
 	end
 
-	-- owned_companion
-	local ocr = mod:get("outline_owned_companion_colour_R")
-	local ocg = mod:get("outline_owned_companion_colour_G")
-	local ocb = mod:get("outline_owned_companion_colour_B")
-
-	if ocr and ocg and ocb then
-		settings.CompanionOutlineExtension.owned_companion = {
-			color = { ocr / 255, ocg / 255, ocb / 255 },
+	-- veteran_smart_tag
+	local tr = mod:get("outline_veteran_tagged_colour_R")
+	local tg = mod:get("outline_veteran_tagged_colour_G")
+	local tb = mod:get("outline_veteran_tagged_colour_B")
+	if tr and tg and tb then
+		settings.MinionOutlineExtension.veteran_smart_tag = {
+			color = { tr / 255, tg / 255, tb / 255 },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 2,
+			priority = 1,
 			visibility_check = function(unit)
 				return true
 			end,
 		}
 	end
 
-	-- allied_companion
-	local acr = mod:get("outline_allied_companion_colour_R")
-	local acg = mod:get("outline_allied_companion_colour_G")
-	local acb = mod:get("outline_allied_companion_colour_B")
+	-- companion tag
+	local tr = mod:get("outline_companion_colour_R")
+	local tg = mod:get("outline_companion_colour_G")
+	local tb = mod:get("outline_companion_colour_B")
 
-	if acr and acg and acb then
-		settings.CompanionOutlineExtension.allied_companion = {
-			color = { acr / 255, acg / 255, acb / 255 },
+	if tr and tg and tb then
+		settings.MinionOutlineExtension.adamant_smart_tag = {
+			color = { tr / 255, tg / 255, tb / 255 },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 2,
+			priority = 1,
+			visibility_check = function(unit)
+				return true
+			end,
+		}
+
+		settings.MinionOutlineExtension.clarity_of_aim_focus = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline",
+				"minion_outline_reversed_depth",
+			},
+			priority = 1,
 			visibility_check = function(unit)
 				return true
 			end,

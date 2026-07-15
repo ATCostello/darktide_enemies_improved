@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.5"
+mod.version = "2.0.6"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -798,8 +798,25 @@ table.insert(localisations_to_add, {
 	outline_tagged_colour_tooltip = {
 		en = "Colour of the outline when you actively tag an enemy.",
 	},
+
+	outline_veteran_tagged_colour = {
+		en = "Veteran's Focus Target tag outline colour",
+	},
+	outline_veteran_tagged_colour_R = {
+		en = "Tagged Outline Colour: Red",
+	},
+	outline_veteran_tagged_colour_G = {
+		en = "Tagged Outline Colour: Green",
+	},
+	outline_veteran_tagged_colour_B = {
+		en = "Tagged Outline Colour: Blue",
+	},
+	outline_veteran_tagged_colour_tooltip = {
+		en = "Colour for Veteran's Focus Target tag.",
+	},
+
 	outline_tagged_passive_colour = {
-		en = "Focus enemy outline colour",
+		en = "Tagged enemy (Passive) outline colour",
 	},
 	outline_tagged_passive_colour_R = {
 		en = "Tagged Outline Colour: Red",
@@ -839,6 +856,9 @@ table.insert(localisations_to_add, {
 		en = "Tagged Outline Colour: Blue",
 	},
 
+	outline_companion_colour = {
+		en = "Companion tagged enemy outline colour",
+	},
 	outline_companion_colour_tooltip = {
 		en = "Colour of the outline for companion units.",
 	},
