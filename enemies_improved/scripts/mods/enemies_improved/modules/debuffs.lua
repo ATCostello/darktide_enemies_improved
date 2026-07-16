@@ -26,18 +26,6 @@ mod.update_enemy_debuffs = function(entry, t)
 		return
 	end
 
-	-- Per-individual debuff toggle (explicit disable overrides type)
-	local breed_name = entry.breed_name
-	if breed_name and fs.breed_debuff_toggle[breed_name] == false then
-		return
-	end
-
-	-- Per-type debuff toggle
-	local breed_type = entry.breed_type
-	if breed_type and fs.breed_type_debuff_enabled[breed_type] == false then
-		return
-	end
-
 	-- Safety: clear stuck pending state after short time
 	if entry._ei_marker_pending and entry._ei_marker_pending_t then
 		if t - entry._ei_marker_pending_t > 2 then

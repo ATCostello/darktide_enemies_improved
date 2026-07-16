@@ -102,6 +102,7 @@ template.fade_settings = {
 template.create_widget_defintion = function(template, scenegraph_id)
 	local fs = mod.frame_settings
 	local mkr_y_offset = fs.marker_y_offset * 100 or 0
+
 	return UIWidget.create_definition({
 		{
 			pass_type = "texture",
@@ -364,6 +365,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget._next_update = t + fs.general_throttle_rate * 1.5
 	else
 		widget._next_update = t + fs.general_throttle_rate * 2
+	end
+
+	local entry = mod.enemy_cache[unit]
+
+	-- Horde filter
+	if entry and entry.is_horde and not fs.markers_horde_enable then
+		content.draw_mkr = false
+		return
+	end
+
+	-- Non-horde filter (elites, specials, monsters, etc.)
+	if entry and not entry.is_horde and not fs.markers_non_horde_enable then
+		content.draw_mkr = false
+		return
 	end
 
 	if not unit or not Unit_alive(unit) then

@@ -2121,6 +2121,12 @@ mod.group_settings_widgets = {
 				tooltip = "healthbar_type_enable_tooltip",
 			},
 			{
+				setting_id = "healthbar_type_y_offset_enabled",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "healthbar_type_y_offset_enabled_tooltip",
+			},
+			{
 				setting_id = "healthbar_type_y_offset",
 				type = "numeric",
 				default_value = 0,
@@ -2327,6 +2333,12 @@ mod.individual_override_settings = {
 				type = "checkbox",
 				default_value = false,
 				tooltip = "healthbar_individual_force_tooltip",
+			},
+			{
+				setting_id = "healthbar_individual_y_offset_enabled",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "healthbar_individual_y_offset_enabled_tooltip",
 			},
 			{
 				setting_id = "healthbar_individual_y_offset",

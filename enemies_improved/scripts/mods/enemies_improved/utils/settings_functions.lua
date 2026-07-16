@@ -29,6 +29,7 @@ local enemy_type_settings = {
 	["debuff_type_enable"] = true,
 
 	["healthbar_type_y_offset"] = 0,
+	["healthbar_type_y_offset_enabled"] = false,
 
 	["reset_type_to_default"] = false,
 }
@@ -57,6 +58,7 @@ local enemy_override_settings = {
 	["debuff_individual_enable"] = true,
 
 	["healthbar_individual_y_offset"] = 0,
+	["healthbar_individual_y_offset_enabled"] = false,
 
 	["reset_individual_to_default"] = false,
 }

@@ -133,7 +133,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = icon_id .. "_shadow",
 			value_id = icon_id,
 			visibility_function = function(content, style)
-				return content[icon_id] ~= nil and fs.debuff_icons
+				return content.dbf_built and content[icon_id] ~= nil and fs.debuff_icons
 			end,
 		}
 
@@ -174,7 +174,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			style_id = icon_id,
 			value_id = icon_id,
 			visibility_function = function(content, style)
-				return content[icon_id] ~= nil and fs.debuff_icons
+				return content.dbf_built and content[icon_id] ~= nil and fs.debuff_icons
 			end,
 		}
 
@@ -206,7 +206,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			value_id = stack_text_id,
 			visibility_function = function(content, style)
 				local v = content[stack_text_id]
-				return v ~= nil and v ~= ""
+				return content.dbf_built and v ~= nil and v ~= ""
 			end,
 		}
 
@@ -252,7 +252,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 					return false
 				end
 				local v = content[name_text_id]
-				return v ~= nil and v ~= ""
+				return content.dbf_built and v ~= nil and v ~= ""
 			end,
 		}
 
@@ -310,7 +310,7 @@ template.on_enter = function(widget, marker, template)
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
 	local buff_extension = ScriptUnit_extension(unit, "buff_system")
-
+	content.dbf_built = false
 	content.draw_dbf  = false
 
 	hb_size_width = fs.hb_size_width
@@ -416,14 +416,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local need_sort = false
 	local fs = mod.frame_settings
 
+	content.draw_dbf  = true
+	content.dbf_built = false
+	
 	if not unit then
-		content.draw_dbf  = false
+		content.dbf_built  = false
+		return
 	end
 
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		content.draw_dbf  = false
+		content.dead = true
+		content.dbf_built = false
 		return
 	end
 
@@ -432,12 +437,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		fs.debuff_horde_enable == false
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
-		content.draw_dbf  = false
+		content.dbf_built  = false
 		return
 	end
 
-	content.draw_dbf  = true
-	
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
 	if template.check_line_of_sight then
@@ -466,6 +469,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local keywords = content.keywords or {}
 	--dbg_b =content
 	
+	local entry = mod.enemy_cache[unit]
+
+	-- Per-individual debuff toggle (explicit disable overrides type)
+	local breed_name = entry and entry.breed_name
+	if breed_name and fs.breed_debuff_toggle[breed_name] == false then
+		content.dbf_built  = false
+		return
+	end
+
+	-- Per-type debuff toggle
+	local breed_type = entry and entry.breed_type
+	if breed_type and fs.breed_type_debuff_enabled[breed_type] == false then
+		content.dbf_built  = false
+		return
+	end
+
 	-- Gather active debuffs that we care about
 	widget._active = widget._active or {}
 	local active = widget._active
@@ -818,6 +837,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-------------------------------------------------------------------
+	-- Pre-compute body center screen offset for debuff_show_on_body
+	-- Uses Camera.world_to_screen to get the true perspective-projected
+	-- delta between head and body center, then pre-divides by marker.scale
+	-- to compensate for the downstream scale multiplication on offsets.
+	-------------------------------------------------------------------
+	local _body_screen_offset_y = nil
+	if fs.debuff_show_on_body then
+		local camera = parent._parent and parent._parent:player_camera()
+		local breed = content.breed
+		local head_pos = marker.world_position and marker.world_position:unbox()
+		if camera and breed and breed.base_height and head_pos and unit then
+			local root_pos = Unit.world_position(unit, 1)
+			if root_pos then
+				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + breed.base_height * 0.5)
+				local head_screen = Camera.world_to_screen(camera, head_pos)
+				local body_screen = Camera.world_to_screen(camera, body_center)
+				if head_screen and body_screen and marker.scale and marker.scale > 0.001 then
+					_body_screen_offset_y = (body_screen.y - head_screen.y) / marker.scale
+				end
+			end
+		end
+	end
+
+	-------------------------------------------------------------------
 	-- UPDATE STATE (KEYED BY DEBUFF NAME)
 	-------------------------------------------------------------------
 	for index = 1, active_count do
@@ -828,70 +871,53 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local y_base = 0
 
 		if fs.debuff_show_on_body then
-			y_base = 0
-		end
-
-		if split_debuff_types then
-			if debuff.type == "dot" then
-				if fs.debuff_show_on_body then
-					y_base = (-hb_size_height - 8 * fs.debuff_gap_padding_scale)
-						+ (calculate_icon_size()) * fs.text_scale
-				elseif fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing" then
-					y_base = (-hb_size_height - 16) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				else
-					y_base = (-hb_size_height - 34) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				end
-			elseif debuff.type == "utility" then
-				if fs.debuff_show_on_body then
-					y_base = (hb_size_height + 8 * fs.debuff_gap_padding_scale)
-						+ (calculate_icon_size()) * fs.text_scale
-				elseif
-					fs.healthbar_enable
-					and fs.hb_text_bottom_left_02 == "nothing"
-					and fs.hb_text_bottom_left_01 == "nothing"
-				then
-					y_base = (hb_size_height + 16) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				elseif
-					fs.healthbar_enable
-					and fs.hb_text_bottom_left_02 == "nothing"
-					and fs.hb_text_bottom_left_01 ~= "nothing"
-				then
-					y_base = (hb_size_height + 40) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (hb_size_height + (15 * fs.marker_size)) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				else
-					y_base = (hb_size_height + 60) * fs.text_scale
-					--y_base = y_base * fs.debuff_y_offset
-				end
+			-- Pin debuffs to body center using camera-projected screen delta
+			if _body_screen_offset_y then
+				y_base = _body_screen_offset_y
+			else
+				-- Fallback: approximate body center offset
+				y_base = -(content.breed and content.breed.base_height or 1) * 20 * fs.text_scale
 			end
 		else
-			if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") or fs.debuff_show_on_body then
-				y_base = (-hb_size_height - 16) * fs.text_scale
-				--y_base = y_base * fs.debuff_y_offset
-			elseif fs.markers_enable and not fs.healthbar_enable then
-				y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
-				--y_base = y_base * fs.debuff_y_offset
+			if split_debuff_types then
+				if debuff.type == "dot" then
+					if fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing" then
+						y_base = (-hb_size_height - 16) * fs.text_scale
+					elseif fs.markers_enable and not fs.healthbar_enable then
+						y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
+					else
+						y_base = (-hb_size_height - 34) * fs.text_scale
+					end
+				elseif debuff.type == "utility" then
+					if
+						fs.healthbar_enable
+						and fs.hb_text_bottom_left_02 == "nothing"
+						and fs.hb_text_bottom_left_01 == "nothing"
+					then
+						y_base = (hb_size_height + 16) * fs.text_scale
+					elseif
+						fs.healthbar_enable
+						and fs.hb_text_bottom_left_02 == "nothing"
+						and fs.hb_text_bottom_left_01 ~= "nothing"
+					then
+						y_base = (hb_size_height + 40) * fs.text_scale
+					elseif fs.markers_enable and not fs.healthbar_enable then
+						y_base = (hb_size_height + (15 * fs.marker_size)) * fs.text_scale
+					else
+						y_base = (hb_size_height + 60) * fs.text_scale
+					end
+				end
 			else
-				y_base = (-hb_size_height - 34) * fs.text_scale
-				--y_base = y_base * fs.debuff_y_offset
+				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") then
+					y_base = (-hb_size_height - 16) * fs.text_scale
+				elseif fs.markers_enable and not fs.healthbar_enable then
+					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
+				else
+					y_base = (-hb_size_height - 34) * fs.text_scale
+				end
 			end
-		end
 
-		-- When debuff_show_on_body is active, add a screen-space offset to push debuffs
-		-- from head level down to body level, without affecting healthbar/marker positions.
-		if fs.debuff_show_on_body then
-			local body_breed = content.breed
-			local body_offset = body_breed and body_breed.base_height and body_breed.base_height * 40 * fs.text_scale * fs.debuff_y_offset
-				or hb_size_height * 3 * fs.debuff_y_offset
-			y_base = y_base + body_offset
+			y_base = y_base * fs.debuff_y_offset * marker.scale
 		end
 
 		local state = state_table[name]
@@ -1349,6 +1375,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- apply scaling
 				if content.draw_dbf  then
 					local scale = marker.scale
+					content.dbf_built = true
 
 					icon_style.size[1] = icon_style.default_size[1] * scale
 					icon_style.size[2] = icon_style.default_size[2] * scale
@@ -1386,6 +1413,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 					name_text_style.offset[1] = math.floor(name_text_style.default_offset[1] * scale)
 					name_text_style.offset[2] = math.floor(name_text_style.default_offset[2] * scale)
+				else
+					content.dbf_built = false
 				end
 			end
 		else

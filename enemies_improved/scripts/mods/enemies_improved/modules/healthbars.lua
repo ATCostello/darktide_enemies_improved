@@ -38,23 +38,14 @@ mod.update_enemy_healthbars = function(entry, t)
 
 	local unit = entry.unit
 
-	-- Handle cluster invalidation
+	-- Handle cluster invalidation: non-rep horde units should not have a healthbar,
+	-- but the world marker must stay alive so overhead markers and debuffs still work.
 	if mod.frame_settings.horde_clusters_enable and entry.is_horde then
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 
-		-- If this unit HAD a healthbar but is no longer a valid cluster rep then remove it
 		if entry._ei_marker_created then
 			if not cluster or cluster.rep_unit ~= unit then
-				local marker_id = mod.enemy_healthbars[unit]
-
-				if marker_id then
-					Managers.event:trigger("remove_world_marker", marker_id)
-					mod.enemy_healthbars[unit] = nil
-				end
-
-				entry._ei_marker_created = false
-				entry._ei_marker_pending = nil
-
+				mod.enemy_healthbars[unit] = nil
 				return
 			end
 		end

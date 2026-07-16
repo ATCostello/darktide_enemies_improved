@@ -29,9 +29,12 @@ mod.build_frame_settings = function(dt)
 	fs.breed_type_outline_enabled = {}
 	fs.breed_type_healthbar_enabled = {}
 	fs.breed_type_healthbar_y_offset = {}
+	fs.breed_type_healthbar_y_offset_enabled = {}
+
 	fs.breed_debuff_toggle = {}
 	fs.breed_type_debuff_enabled = {}
 	fs.breed_healthbar_y_offset = {}
+	fs.breed_healthbar_y_offset_enabled = {}
 
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
@@ -61,6 +64,8 @@ mod.build_frame_settings = function(dt)
 			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
 			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
 			fs.breed_healthbar_force[enemy] = mod:get("healthbar_" .. enemy .. "_force")
+
+			fs.breed_healthbar_y_offset_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset_enabled")
 			fs.breed_healthbar_y_offset[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset")
 		end
 	end
@@ -71,6 +76,7 @@ mod.build_frame_settings = function(dt)
 			fs.breed_type_outline_enabled[breed] = mod:get("outline_" .. breed .. "_enable")
 			fs.breed_type_debuff_enabled[breed] = mod:get("debuff_" .. breed .. "_enable")
 			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
+			fs.breed_type_healthbar_y_offset_enabled[breed] = mod:get("healthbar_" .. breed .. "_y_offset_enabled")
 			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset") or 0
 		end
 	end

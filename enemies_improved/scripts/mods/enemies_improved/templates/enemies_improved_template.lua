@@ -136,9 +136,17 @@ template.on_enter = function(widget, marker, template)
 		local breed_name = breed.name
 		local breed_type = mod.find_breed_category(unit)
 
-		if breed_name and fs.breed_healthbar_y_offset[breed_name] then
+		if
+			breed_name
+			and fs.breed_healthbar_y_offset_enabled[breed_name]
+			and fs.breed_healthbar_y_offset[breed_name]
+		then
 			y_offset = fs.breed_healthbar_y_offset[breed_name]
-		elseif breed_type and fs.breed_type_healthbar_y_offset[breed_type] then
+		elseif
+			breed_type
+			and fs.breed_type_healthbar_y_offset_enabled[breed_type]
+			and fs.breed_type_healthbar_y_offset[breed_type]
+		then
 			y_offset = fs.breed_type_healthbar_y_offset[breed_type]
 		end
 	end
@@ -246,6 +254,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if debuffs_enabled then
 		EnemyDebuffTemplate.update_function(parent, ui_renderer, widget, marker, EnemyDebuffTemplate, dt, t)
+	else
+		content.dbf_built = false
 	end
 
 	-- Throttle: restore or compute the next update time.
@@ -268,7 +278,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
 	local has_markers = content.m_built or false
-	local has_debuffs = fs.debuff_enable and widget._active and #widget._active > 0 or false
+	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false
 	local dps_visible = fs.hb_show_dps and content.dead
 
 	-- Re-apply aimed filter after sub-templates: suppress their results for non-aimed units

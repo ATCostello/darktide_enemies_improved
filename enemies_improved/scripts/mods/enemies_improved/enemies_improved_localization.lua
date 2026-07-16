@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.8"
+mod.version = "2.0.9"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -2187,6 +2187,18 @@ table.insert(localisations_to_add, {
 	healthbar_type_y_offset_tooltip = {
 		en = "Adjust the Y offset (height) for healthbars of this enemy type. Overrides the global Y offset for this type.",
 		["zh-cn"] = "调整该类型敌人血条的高度，此项优先级高于全局垂直偏移设置。",
+	},
+	healthbar_type_y_offset_enabled = {
+		en = "Enable Y offset override?",
+	},
+	healthbar_type_y_offset_enabled_tooltip = {
+		en = "Toggle the Y offset override for this specific enemy type.",
+	},
+	healthbar_individual_y_offset_enabled = {
+		en = "Enable Y offset override?",
+	},
+	healthbar_individual_y_offset_enabled_tooltip = {
+		en = "Toggle the Y offset override for this specific enemy.",
 	},
 })
 
