@@ -35,7 +35,12 @@ mod.update_enemy_markers = function(entry, t)
 	-- Check individual toggle (cached in fs)
 	local individual_enabled = false
 	if enemy_individual then
-		if fs.breed_marker_toggle[enemy_individual] == true then
+		if
+			fs
+			and fs.breed_marker_toggle
+			and fs.breed_marker_toggle[enemy_individual]
+			and fs.breed_marker_toggle[enemy_individual] == true
+		then
 			individual_enabled = true
 		end
 	end

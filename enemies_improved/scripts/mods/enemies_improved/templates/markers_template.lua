@@ -317,7 +317,7 @@ template.on_enter = function(widget, marker, template)
 	local enemy_individual = content.breed and content.breed.name
 
 	if enemy_individual then
-		local enabled = fs.breed_marker_toggle[enemy_individual]
+		local enabled = fs.breed_marker_toggle and fs.breed_marker_toggle[enemy_individual] or nil
 
 		if enabled ~= nil then
 			content.m_allowed = enabled
@@ -369,19 +369,30 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local entry = mod.enemy_cache[unit]
 
+	if not unit or not Unit_alive(unit) then
+		content.draw_mkr = false
+		return
+	end
+
+	local enemy_individual = content.breed and content.breed.name
+	local override_enabled = false
+
+	if enemy_individual then
+		local enabled = fs.breed_marker_toggle and fs.breed_marker_toggle[enemy_individual] or nil
+
+		if enabled ~= nil then
+			override_enabled = enabled
+		end
+	end
+
 	-- Horde filter
-	if entry and entry.is_horde and not fs.markers_horde_enable then
+	if entry and entry.is_horde and not fs.markers_horde_enable and not override_enabled then
 		content.draw_mkr = false
 		return
 	end
 
 	-- Non-horde filter (elites, specials, monsters, etc.)
-	if entry and not entry.is_horde and not fs.markers_non_horde_enable then
-		content.draw_mkr = false
-		return
-	end
-
-	if not unit or not Unit_alive(unit) then
+	if entry and not entry.is_horde and not fs.markers_non_horde_enable and not override_enabled then
 		content.draw_mkr = false
 		return
 	end

@@ -473,13 +473,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Per-individual debuff toggle (explicit disable overrides type)
 	local breed_name = entry and entry.breed_name
-	if breed_name and fs.breed_debuff_toggle[breed_name] == false then
+	local breed_type = entry and entry.breed_type
+
+	if breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name] and fs.breed_debuff_toggle[breed_name] == false then
 		content.dbf_built  = false
 		return
 	end
 
 	-- Per-type debuff toggle
-	local breed_type = entry and entry.breed_type
 	if breed_type and fs.breed_type_debuff_enabled[breed_type] == false then
 		content.dbf_built  = false
 		return
@@ -662,7 +663,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- dont draw or do calculations if there are no debuffs applied..
 	if #active < 1 then
-		content.draw_dbf  = false
+		content.dbf_built  = false
+		return
 	end
 
 	for i = active_count + 1, #active do
@@ -842,8 +844,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- delta between head and body center, then pre-divides by marker.scale
 	-- to compensate for the downstream scale multiplication on offsets.
 	-------------------------------------------------------------------
+	local show_on_body = fs.debuff_show_on_body or 
+	(breed_name and fs.breed_debuff_show_on_body_override and fs.breed_debuff_show_on_body_override[breed_name]) or 
+	(breed_type and fs.breed_type_debuff_show_on_body_override and fs.breed_type_debuff_show_on_body_override[breed_type]) or
+	false
+
 	local _body_screen_offset_y = nil
-	if fs.debuff_show_on_body then
+	if show_on_body then
 		local camera = parent._parent and parent._parent:player_camera()
 		local breed = content.breed
 		local head_pos = marker.world_position and marker.world_position:unbox()
@@ -870,7 +877,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local duration = debuff.duration
 		local y_base = 0
 
-		if fs.debuff_show_on_body then
+		if show_on_body then
 			-- Pin debuffs to body center using camera-projected screen delta
 			if _body_screen_offset_y then
 				y_base = _body_screen_offset_y
@@ -917,7 +924,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 			end
 
-			y_base = y_base * fs.debuff_y_offset * marker.scale
+			y_base = y_base * fs.debuff_y_offset
 		end
 
 		local state = state_table[name]
@@ -998,7 +1005,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Height / healthbar position logic
 	-- Always position above head (does NOT affect debuff screen-space y offsets)
 	-------------------------------------------------------------------
-	if content.breed and is_alive then
+	--[[if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height + 0.5
 
@@ -1007,7 +1014,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			marker.world_position:store(root_position)
 		end
-	end
+	end]]
 
 	-------------------------------------------------------------------
 	-- DRAW ROWS

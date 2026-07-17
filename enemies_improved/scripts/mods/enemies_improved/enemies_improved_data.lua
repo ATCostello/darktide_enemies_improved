@@ -1061,7 +1061,7 @@ table.insert(mod.settings_widgets, {
 				1,
 			},
 			decimals_number = 1,
-			step_size_value = 0.1,
+			step_size_value = 0.01,
 			tooltip = "marker_y_offset_tooltip",
 		},
 		{
@@ -1298,7 +1298,7 @@ table.insert(mod.settings_widgets, {
 				2,
 			},
 			decimals_number = 1,
-			step_size_value = 0.1,
+			step_size_value = 0.01,
 			tooltip = "hb_y_offset_tooltip",
 		},
 		{
@@ -1516,7 +1516,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_damage_numbers_add_total",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "hb_damage_numbers_add_total_tooltip",
 		},
 		{
@@ -1543,7 +1543,7 @@ table.insert(mod.settings_widgets, {
 			type = "numeric",
 			default_value = 0,
 			decimals_number = 2,
-			step_size_value = 0.1,
+			step_size_value = 0.01,
 			range = {
 				-2,
 				2,
@@ -1999,25 +1999,25 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "debuff_x_offset",
 			type = "numeric",
-			default_value = 0.56,
+			default_value = 0.54,
 			range = {
 				0.1,
 				2,
 			},
 			decimals_number = 2,
-			step_size_value = 0.1,
+			step_size_value = 0.01,
 			tooltip = "debuff_x_offset_tooltip",
 		},
 		{
 			setting_id = "debuff_y_offset",
 			type = "numeric",
-			default_value = 0.8,
+			default_value = 0.84,
 			range = {
 				0.1,
 				2,
 			},
 			decimals_number = 2,
-			step_size_value = 0.1,
+			step_size_value = 0.01,
 			tooltip = "debuff_y_offset_tooltip",
 		},
 	},
@@ -2135,7 +2135,7 @@ mod.group_settings_widgets = {
 					2,
 				},
 				decimals_number = 1,
-				step_size_value = 0.1,
+				step_size_value = 0.01,
 				tooltip = "healthbar_type_y_offset_tooltip",
 			},
 			{
@@ -2261,6 +2261,12 @@ mod.group_settings_widgets = {
 				default_value = true,
 				tooltip = "debuff_type_enable_tooltip",
 			},
+			{
+				setting_id = "debuff_type_show_on_body_override",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "debuff_show_on_body_tooltip",
+			},
 		},
 	},
 }
@@ -2349,7 +2355,7 @@ mod.individual_override_settings = {
 					2,
 				},
 				decimals_number = 1,
-				step_size_value = 0.1,
+				step_size_value = 0.01,
 				tooltip = "healthbar_individual_y_offset_tooltip",
 			},
 			{
@@ -2421,6 +2427,12 @@ mod.individual_override_settings = {
 				type = "checkbox",
 				default_value = true,
 				tooltip = "debuff_individual_enable_tooltip",
+			},
+			{
+				setting_id = "debuff_individual_show_on_body_override",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "debuff_show_on_body_tooltip",
 			},
 		},
 	},

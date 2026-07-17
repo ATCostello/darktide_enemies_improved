@@ -41,7 +41,7 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 	local passes = {}
 	local content = {}
 	local style = {}
-	local base_y = 25 + y_offset
+	local base_y = 35 + y_offset
 	local row_step = 30
 	local x_shift = x_offset
 
@@ -418,6 +418,7 @@ local function update_debuff_display(dt, t, widget)
 	local boss_stack_font_size = fs.boss_debuff_stack_font_size or 14
 	local x_shift = widget._x_shift or 0
 	local y_shift = widget._y_shift or 0
+	local has_toughness_bar = widget._has_toughness or false
 
 	for index = 1, active_count do
 		local debuff = active[index]
@@ -546,15 +547,20 @@ local function update_debuff_display(dt, t, widget)
 
 			local col_offset = (row_i - 1) * col_step
 			local row_offset_y
+			local base_row_offset_y_amount = 35
+
+			if has_toughness_bar then
+				base_row_offset_y_amount = 45
+			end
 
 			if fs.split_debuff_types then
 				if debuff.type == "dot" then
 					row_offset_y = -35
 				else
-					row_offset_y = 35
+					row_offset_y = base_row_offset_y_amount
 				end
 			else
-				row_offset_y = 35
+				row_offset_y = base_row_offset_y_amount
 			end
 
 			if is_horizontal then
@@ -774,33 +780,105 @@ local function update_debuff_display(dt, t, widget)
 	end
 end
 
-local get_x_offset = function(health_widget)
+local get_x_offset = function(widget)
 	local x_offset = 0
+
+	if not widget then
+		return 0
+	end
+
+	local health_widget = widget.health
 
 	if not health_widget then
 		return x_offset
 	else
-		x_offset = health_widget.offset[1]
-
-		if x_offset == 0 then
-			x_offset = health_widget.style.bar.offset[1]
+		if health_widget.offset and health_widget.style and health_widget.style.bar then
+			x_offset = health_widget.offset[1] + health_widget.style.bar.offset[1]
 		end
 	end
 
 	return x_offset
 end
 
-local get_y_offset = function(health_widget)
+local row_offsets = {}
+
+local has_toughness_bar = function(widget)
+	if not widget then
+		return false
+	end
+
+	local toughness_widget = widget.toughness
+	local has_toughness = false
+
+	if toughness_widget and toughness_widget.visible then
+		has_toughness = true
+	end
+
+	return has_toughness
+end
+
+local get_y_offset = function(widget)
 	local y_offset = 0
+
+	if not widget then
+		return 0
+	end
+
+	local health_widget = widget.health
+	local toughness_widget = widget.toughness
+	local has_toughness = has_toughness_bar(widget)
+	local toughness_bar_height = 6
 
 	if not health_widget then
 		return y_offset
 	else
-		y_offset = health_widget.offset[2]
-
-		if y_offset == 0 then
-			y_offset = health_widget.style.bar.offset[2]
+		-- increase offsets based on row to fit our boss debuffs better
+		local base_amount = 40
+		if has_toughness then
+			if
+				toughness_widget
+				and toughness_widget.style
+				and toughness_widget.style.bar
+				and toughness_widget.style.bar.size
+			then
+				toughness_bar_height = toughness_widget.style.bar.size[2]
+			end
+			base_amount = base_amount + toughness_bar_height
 		end
+
+		local increase_amount = base_amount
+
+		-- calculate which row this widget is on
+		if row_offsets then
+			for i = 1, #row_offsets do
+				if health_widget.offset[2] == row_offsets[i] then
+					increase_amount = (i - 1) * base_amount
+				end
+			end
+		end
+
+		-- increase offsets
+		for widget_name, w in pairs(widget) do
+			for style_name, style in pairs(w.style) do
+				if not style.default_offset then
+					style.default_offset = {
+						style.offset[1],
+						style.offset[2],
+					}
+				end
+				style.offset[2] = style.default_offset[2] + increase_amount
+			end
+		end
+
+		if has_toughness then
+			y_offset = health_widget.offset[2] + increase_amount - (toughness_bar_height * 2)
+		else
+			y_offset = health_widget.offset[2] + increase_amount
+		end
+
+		--if y_offset == 0 then
+		--	y_offset = health_widget.style.bar.offset[2]
+		--end
 	end
 
 	return y_offset
@@ -813,10 +891,21 @@ mod:hook_safe("HudElementBossHealth", "init", function(self, parent, draw_layer,
 		return
 	end
 
+	-- calculate number of rows via offset
+	for i = 1, #groups do
+		if groups[i] and groups[i].health.offset then
+			if not table.contains(row_offsets, groups[i].health.offset[2]) then
+				table.insert(row_offsets, groups[i].health.offset[2])
+			end
+		end
+	end
+	table.sort(row_offsets)
+
+	-- apply offsets and debuffs
 	for i = 1, #groups do
 		if groups[i] then
-			local x_offset = get_x_offset(groups[i].health)
-			local y_offset = get_y_offset(groups[i].health)
+			local x_offset = get_x_offset(groups[i])
+			local y_offset = get_y_offset(groups[i])
 			local def = create_boss_debuff_widget_definition(i, x_offset, y_offset)
 			groups[i].boss_debuff = self:_create_widget("boss_debuffs_" .. i, def)
 			groups[i].boss_debuff._active = {}
@@ -827,6 +916,7 @@ mod:hook_safe("HudElementBossHealth", "init", function(self, parent, draw_layer,
 			groups[i].boss_debuff._grouped_util = {}
 			groups[i].boss_debuff._x_shift = x_offset
 			groups[i].boss_debuff._y_shift = y_offset
+			groups[i].boss_debuff._has_toughness = has_toughness_bar(groups[i])
 		end
 	end
 end)
@@ -860,11 +950,13 @@ mod:hook_safe("HudElementBossHealth", "update", function(self, dt, t, ui_rendere
 		if unit and ALIVE[unit] then
 			local debuff_widget = widget_group and widget_group.boss_debuff
 			if debuff_widget then
-				local x_offset = get_x_offset(widget_group.health)
-				local y_offset = get_y_offset(widget_group.health)
+				local x_offset = get_x_offset(widget_group)
+				local y_offset = get_y_offset(widget_group)
 
 				debuff_widget._x_shift = x_offset
 				debuff_widget._y_shift = y_offset
+				debuff_widget._has_toughness = has_toughness_bar(widget_group)
+
 				scan_boss_debuffs(unit, debuff_widget)
 				update_debuff_display(dt, t, debuff_widget)
 			end

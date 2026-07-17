@@ -31,6 +31,8 @@ local enemy_type_settings = {
 	["healthbar_type_y_offset"] = 0,
 	["healthbar_type_y_offset_enabled"] = false,
 
+	["debuff_type_show_on_body_override"] = false,
+
 	["reset_type_to_default"] = false,
 }
 
@@ -60,6 +62,8 @@ local enemy_override_settings = {
 	["healthbar_individual_y_offset"] = 0,
 	["healthbar_individual_y_offset_enabled"] = false,
 
+	["debuff_individual_show_on_body_override"] = false,
+
 	["reset_individual_to_default"] = false,
 }
 
@@ -76,6 +80,11 @@ mod.reset_type_to_default = function(enemy_type)
 	mod:set("outline_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
 
+	mod:set("debuff_" .. enemy_type .. "_enable", nil)
+	mod:set("debuff_" .. enemy_type .. "_show_on_body_override", nil)
+
+	mod:set("healthbar_" .. enemy_type .. "_y_offset_enabled", nil)
+
 	local reset_message = mod.custom_localize("reset_type_to_default_message") or ""
 	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
 
@@ -85,13 +94,26 @@ end
 mod.reset_individual_to_default = function(enemy_type)
 	-- reset all options to nil so that the defaults will be loaded...
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
+	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
 	mod:set("healthbar_" .. enemy_type .. "_force", nil)
 
 	mod:set("distance_" .. enemy_type .. "_enable", nil)
 	mod:set("distance_" .. enemy_type .. "_value", nil)
 
+	mod:set("outline_" .. enemy_type .. "_enable", nil)
+	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
+
 	mod:set("outline_distance_" .. enemy_type .. "_enable", nil)
 	mod:set("outline_distance_" .. enemy_type .. "_value", nil)
+
+	mod:set("markers_" .. enemy_type .. "_enable", nil)
+
+	mod:set("debuff_" .. enemy_type .. "_enable", nil)
+
+	mod:set("healthbar_" .. enemy_type .. "_y_offset_enabled", nil)
+	mod:set("healthbar_" .. enemy_type .. "_y_offset", nil)
+
+	mod:set("debuff_" .. enemy_type .. "_show_on_body_override", nil)
 
 	local reset_message = mod.custom_localize("reset_individual_to_default_message") or ""
 	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))

@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.9"
+mod.version = "2.0.10"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1814,6 +1814,14 @@ table.insert(localisations_to_add, {
 		en = "Show debuffs on body of enemy?",
 		["zh-cn"] = "减益显示在敌人身上",
 	},
+	debuff_type_show_on_body_override = {
+		en = "Override show debuffs on body of enemy?",
+		["zh-cn"] = "减益显示在敌人身上",
+	},
+	debuff_individual_show_on_body_override = {
+		en = "Override show debuffs on body of enemy?",
+		["zh-cn"] = "减益显示在敌人身上",
+	},
 	debuff_show_on_body_tooltip = {
 		en = "Toggles positioning of the debuff tracker.\n\nIf enabled, the debuffs will be displays in the middle of the enemy model, allowing for easier tracking - but may get in the way.\n\nIf disabled, the debuffs will be placed alongside the healthbar above the head of the enemy.",
 		["zh-cn"] = "开启：减益显示在敌人身体中央；关闭：显示在头顶血条旁。",
@@ -1925,7 +1933,7 @@ table.insert(localisations_to_add, {
 	},
 	debuff_x_offset = {
 		en = "Debuffs X offset scale",
-		["zh-cn"] = "减益水平偏移",
+		["zh-cn"] = "减益水平偏���",
 	},
 	debuff_x_offset_tooltip = {
 		en = "Adjust the left + right position of the debuffs. A lower value moves right, a higher value moves left. Adjust to your liking, or to fit to your widget config.",
@@ -1936,7 +1944,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "减益垂直偏移",
 	},
 	debuff_y_offset_tooltip = {
-		en = "Adjust the up + down position of the debuffs.\n\nOnly applies if debuffs are shown on the body, not stuck to the healthbar.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
+		en = "Adjust the up + down position of the debuffs.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
 		["zh-cn"] = "调整减益的上下位置，仅在显示在身体上时生效。",
 	},
 	debuff_gap_name_icon_offset = {

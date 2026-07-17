@@ -209,12 +209,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Markers: global toggle or per-breed individual override.
 	local markers_enabled = fs.markers_enable
 
-	if not markers_enabled and content.breed then
-		if fs.breed_marker_toggle[content.breed.name] == true then
-			markers_enabled = true
-		end
-	end
-
 	if markers_enabled then
 		EnemyMarkersTemplate.update_function(parent, ui_renderer, widget, marker, EnemyMarkersTemplate, dt, t)
 	else
@@ -247,7 +241,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local debuffs_enabled = fs.debuff_enable
 
 	if content.breed then
-		if fs.breed_debuff_toggle[content.breed.name] then
+		if fs and fs.breed_debuff_toggle and fs.breed_debuff_toggle[content.breed.name] then
 			debuffs_enabled = fs.breed_debuff_toggle[content.breed.name]
 		end
 	end

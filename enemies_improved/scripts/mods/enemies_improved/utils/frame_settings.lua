@@ -36,6 +36,10 @@ mod.build_frame_settings = function(dt)
 	fs.breed_healthbar_y_offset = {}
 	fs.breed_healthbar_y_offset_enabled = {}
 
+	fs.breed_type_debuff_show_on_body_override = {}
+	fs.breed_debuff_show_on_body_override = {}
+
+	-- INDIVIDUAL OVERRIDES
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
 		if enemy then
@@ -67,9 +71,14 @@ mod.build_frame_settings = function(dt)
 
 			fs.breed_healthbar_y_offset_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset_enabled")
 			fs.breed_healthbar_y_offset[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset")
+					and -mod:get("healthbar_" .. enemy .. "_y_offset")
+				or nil
+
+			fs.breed_debuff_show_on_body_override[enemy] = mod:get("debuff_" .. enemy .. "_show_on_body_override")
 		end
 	end
 
+	-- GROUP OVERRIDES
 	for _, options in next, mod.breed_types do
 		local breed = options.value
 		if breed and breed ~= "select" then
@@ -77,7 +86,11 @@ mod.build_frame_settings = function(dt)
 			fs.breed_type_debuff_enabled[breed] = mod:get("debuff_" .. breed .. "_enable")
 			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
 			fs.breed_type_healthbar_y_offset_enabled[breed] = mod:get("healthbar_" .. breed .. "_y_offset_enabled")
-			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset") or 0
+			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset")
+					and -mod:get("healthbar_" .. breed .. "_y_offset")
+				or nil
+
+			fs.breed_type_debuff_show_on_body_override[breed] = mod:get("debuff_" .. breed .. "_show_on_body_override")
 		end
 	end
 
@@ -189,7 +202,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
 	fs.hb_size_width = mod:get("hb_size_width") * fs.global_scale
 	fs.hb_size_height = mod:get("hb_size_height") * fs.global_scale
-	fs.hb_y_offset = mod:get("hb_y_offset")
+	fs.hb_y_offset = -mod:get("hb_y_offset")
 	fs.hb_damage_number_type = mod:get("hb_damage_number_types")
 	fs.hb_damage_numbers_track_friendly = mod:get("hb_damage_numbers_track_friendly")
 	fs.hb_damage_numbers_add_total = mod:get("hb_damage_numbers_add_total")
