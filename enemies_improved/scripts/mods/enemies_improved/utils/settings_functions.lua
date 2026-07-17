@@ -32,6 +32,7 @@ local enemy_type_settings = {
 	["healthbar_type_y_offset_enabled"] = false,
 
 	["debuff_type_show_on_body_override"] = false,
+	["marker_type_enable"] = false,
 
 	["reset_type_to_default"] = false,
 }

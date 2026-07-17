@@ -354,15 +354,12 @@ template.on_enter = function(widget, marker, template)
 end
 
 -- debug function to monitor the actual amount of buffs applied to enemies (So it can be checked against my calculations)
---[[
-mod:hook_safe(CLASS.Buff, "_calculate_stat_buffs", function(self, current_stat_buffs, stat_buffs, conditional)
+--[[mod:hook_safe(CLASS.Buff, "_calculate_stat_buffs", function(self, current_stat_buffs, stat_buffs, conditional)
 	if not stat_buffs then
 		return
 	end
 	dbg_a = current_stat_buffs
-end)
-]]
-
+end)]]
 
 -- Calculate the stack buff percentage (Clamped to nearest 10 if close enough due to rounding)
 local function calc_stack_buff_percentage(val, stacks, stat_name)
@@ -857,7 +854,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if camera and breed and breed.base_height and head_pos and unit then
 			local root_pos = Unit.world_position(unit, 1)
 			if root_pos then
-				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + breed.base_height * 0.5)
+				local body_center = Vector3(root_pos.x, root_pos.y, (root_pos.z + breed.base_height * 0.8) * fs.debuff_y_offset)
 				local head_screen = Camera.world_to_screen(camera, head_pos)
 				local body_screen = Camera.world_to_screen(camera, body_center)
 				if head_screen and body_screen and marker.scale and marker.scale > 0.001 then
@@ -867,6 +864,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	local debuff_y_offset =  show_on_body and 1 or fs.debuff_y_offset
 	-------------------------------------------------------------------
 	-- UPDATE STATE (KEYED BY DEBUFF NAME)
 	-------------------------------------------------------------------
@@ -875,7 +873,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local name = debuff.name
 		local stacks = debuff.stacks
 		local duration = debuff.duration
-		local y_base = 0
+		local y_base = 1
 
 		if show_on_body then
 			-- Pin debuffs to body center using camera-projected screen delta
@@ -885,15 +883,27 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- Fallback: approximate body center offset
 				y_base = -(content.breed and content.breed.base_height or 1) * 20 * fs.text_scale
 			end
+
+			if split_debuff_types then
+				if debuff.type == "dot" then
+					y_base = y_base
+				elseif debuff.type == "utility" then
+					if fs.debuff_horizontal then
+						y_base = y_base + (calculate_icon_size() * fs.text_scale)
+					else
+						y_base = y_base + (calculate_icon_size() * 2 * fs.text_scale)
+					end
+				end
+			end
 		else
 			if split_debuff_types then
 				if debuff.type == "dot" then
 					if fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing" then
 						y_base = (-hb_size_height - 16) * fs.text_scale
-					elseif fs.markers_enable and not fs.healthbar_enable then
-						y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
+					elseif fs.healthbar_enable then
+						y_base = (-hb_size_height - 40) * fs.text_scale
 					else
-						y_base = (-hb_size_height - 34) * fs.text_scale
+						y_base = y_base * fs.text_scale
 					end
 				elseif debuff.type == "utility" then
 					if
@@ -908,23 +918,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						and fs.hb_text_bottom_left_01 ~= "nothing"
 					then
 						y_base = (hb_size_height + 40) * fs.text_scale
-					elseif fs.markers_enable and not fs.healthbar_enable then
-						y_base = (hb_size_height + (15 * fs.marker_size)) * fs.text_scale
 					else
-						y_base = (hb_size_height + 60) * fs.text_scale
+						y_base = (calculate_icon_size() * 2) * fs.text_scale
 					end
 				end
 			else
 				if (fs.healthbar_enable and fs.hb_text_top_left_01 == "nothing") then
 					y_base = (-hb_size_height - 16) * fs.text_scale
-				elseif fs.markers_enable and not fs.healthbar_enable then
-					y_base = (-hb_size_height - (15 * fs.marker_size)) * fs.text_scale
 				else
 					y_base = (-hb_size_height - 34) * fs.text_scale
 				end
 			end
 
-			y_base = y_base * fs.debuff_y_offset
+			y_base = y_base * debuff_y_offset
 		end
 
 		local state = state_table[name]
@@ -1056,9 +1062,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					if debuff.type == "dot" then
 						base_y_fixed = state.y - (calculate_icon_size() * fs.text_scale)
 					elseif debuff.type == "utility" then
-						base_y_fixed = state.y + (calculate_icon_size() * 1.1 * fs.text_scale)
-						if fs.hb_damage_number_type == "readable" and mod.num_damage_numbers and mod.num_damage_numbers > 0 then
-							base_y_fixed = base_y_fixed + 16 * fs.debuff_y_offset
+						if show_on_body then
+							base_y_fixed = state.y + 1.1 * fs.text_scale
+						else
+							base_y_fixed = state.y + (calculate_icon_size() * 1.1 * fs.text_scale)
+							if fs.hb_damage_number_type == "readable" and mod.num_damage_numbers and mod.num_damage_numbers > 0 then
+								base_y_fixed = base_y_fixed + 16 * debuff_y_offset
+							end
 						end
 					end
 				end				
@@ -1066,38 +1076,38 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				-- ICON SHADOW
 				local o = icon_shadow_style.offset
 				o[1] = icon_x + col_offset_x + base_offset + 1
-				o[2] = base_y_fixed * fs.debuff_y_offset + 1
+				o[2] = base_y_fixed * debuff_y_offset + 1
 
 				local o = icon_shadow_style.default_offset
 				o[1] = icon_x + col_offset_x + base_offset + 1
-				o[2] = base_y_fixed * fs.debuff_y_offset + 1
+				o[2] = base_y_fixed * debuff_y_offset + 1
 
 				-- ICON
 				local o = icon_style.offset
 				o[1] = icon_x + col_offset_x + base_offset
-				o[2] = base_y_fixed * fs.debuff_y_offset
+				o[2] = base_y_fixed * debuff_y_offset
 
 				local o = icon_style.default_offset
 				o[1] = icon_x + col_offset_x + base_offset
-				o[2] = base_y_fixed * fs.debuff_y_offset
+				o[2] = base_y_fixed * debuff_y_offset
 
 				-- STACK
 				if fs.debuff_stack_on_icon then
 					local o = stack_text_style.offset
 					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size()) 
-					o[2] = base_y_fixed * fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
+					o[2] = base_y_fixed * debuff_y_offset + (calculate_icon_size() / 1.5) 
 
 					local o = stack_text_style.default_offset
 					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size()) 
-					o[2] = base_y_fixed	* fs.debuff_y_offset + (calculate_icon_size() / 1.5) 
+					o[2] = base_y_fixed	* debuff_y_offset + (calculate_icon_size() / 1.5) 
 				else
 					local o = stack_text_style.offset
 					o[1] = stack_x + col_offset_x + base_offset
-					o[2] = base_y_fixed * fs.debuff_y_offset
+					o[2] = base_y_fixed * debuff_y_offset
 
 					local o = stack_text_style.default_offset
 					o[1] = stack_x + col_offset_x + base_offset
-					o[2] = base_y_fixed * fs.debuff_y_offset
+					o[2] = base_y_fixed * debuff_y_offset
 				end
 
 				-- FORCE NO NAME
@@ -1148,7 +1158,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						local row_offset_y = state.y + ((row_i - 1) * row_step)
 
 						if fs.hb_damage_number_type == "readable" and mod.num_damage_numbers and mod.num_damage_numbers > 0 then
-							row_offset_y = state.y + 16 * fs.debuff_y_offset + ((row_i - 1) * row_step)
+							row_offset_y = state.y + 16 * debuff_y_offset + ((row_i - 1) * row_step)
 						end
 
 						local o = icon_shadow_style.offset
@@ -1178,6 +1188,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 							o[1] = stack_x + base_offset
 							o[2] = row_offset_y
 						end
+
 						local o = name_text_style.offset
 						o[1] = name_x + base_offset
 						o[2] = row_offset_y

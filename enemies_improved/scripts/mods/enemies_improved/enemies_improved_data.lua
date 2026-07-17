@@ -481,6 +481,21 @@ local enemy_type_options = {
 	},
 }
 
+local override_options = {
+	{
+		text = "dont_override",
+		value = "dont_override",
+	},
+	{
+		text = "true_override",
+		value = "true_override",
+	},
+	{
+		text = "false_override",
+		value = "false_override",
+	},
+}
+
 mod.outline_types = {
 	{ text = "minion_outline", value = "minion_outline" },
 	{ text = "minion_outline_reversed_depth", value = "minion_outline_reversed_depth" },
@@ -2267,6 +2282,30 @@ mod.group_settings_widgets = {
 				default_value = false,
 				tooltip = "debuff_show_on_body_tooltip",
 			},
+		},
+	},
+
+	{
+		setting_id = "marker_group_overrides",
+		type = "group",
+		sub_widgets = {
+
+			{
+				setting_id = "marker_type_enable",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "marker_type_enable_tooltip",
+			},
+
+			--[[
+			{
+				setting_id = "marker_type_enable",
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
+				tooltip = "marker_type_enable_tooltip",
+			},
+			]]
 		},
 	},
 }

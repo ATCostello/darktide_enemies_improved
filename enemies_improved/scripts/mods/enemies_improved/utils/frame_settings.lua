@@ -39,6 +39,8 @@ mod.build_frame_settings = function(dt)
 	fs.breed_type_debuff_show_on_body_override = {}
 	fs.breed_debuff_show_on_body_override = {}
 
+	fs.breed_marker_type_enabled = {}
+
 	-- INDIVIDUAL OVERRIDES
 	for _, options in next, mod.breed_names do
 		local enemy = options.value
@@ -89,7 +91,7 @@ mod.build_frame_settings = function(dt)
 			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset")
 					and -mod:get("healthbar_" .. breed .. "_y_offset")
 				or nil
-
+			fs.breed_marker_type_enabled[breed] = mod:get("marker_" .. breed .. "_enable")
 			fs.breed_type_debuff_show_on_body_override[breed] = mod:get("debuff_" .. breed .. "_show_on_body_override")
 		end
 	end

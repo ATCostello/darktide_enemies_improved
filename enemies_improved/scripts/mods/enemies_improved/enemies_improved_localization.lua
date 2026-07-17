@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.12"
+mod.version = "2.0.13"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1823,7 +1823,7 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "减益显示在敌人身上",
 	},
 	debuff_show_on_body_tooltip = {
-		en = "Toggles positioning of the debuff tracker.\n\nIf enabled, the debuffs will be displays in the middle of the enemy model, allowing for easier tracking - but may get in the way.\n\nIf disabled, the debuffs will be placed alongside the healthbar above the head of the enemy.",
+		en = "Toggles positioning of the debuff tracker.\n\nIf enabled, the debuffs will be displays in the middle of the enemy model, allowing for easier tracking - but may get in the way.\n\nIf disabled, the debuffs will be placed alongside the healthbar above the head of the enemy.\n\nThe overrides in group/individual overrides tab will force enable this setting for your specific enemies. So disable the global option for those to work.",
 		["zh-cn"] = "开启：减益显示在敌人身体中央；关闭：显示在头顶血条旁。",
 	},
 	debuff_horde_enable = {
@@ -2207,6 +2207,16 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_y_offset_enabled_tooltip = {
 		en = "Toggle the Y offset override for this specific enemy.",
+	},
+
+	marker_group_overrides = {
+		en = "Marker Group Overrides",
+	},
+	marker_type_enable = {
+		en = "Enable markers?",
+	},
+	marker_type_enable_tooltip = {
+		en = "Toggle markers for your selected enemy type",
 	},
 })
 
