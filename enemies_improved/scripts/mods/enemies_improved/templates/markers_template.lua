@@ -448,23 +448,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- marker height
-	--[[if content.breed and is_alive then
-		local root_position = Unit.world_position(unit, 1)
-
-		if mod.frame_settings.healthbar_enable then
-			root_position.z = root_position.z + content.breed.base_height + 0.1
-		else
-			root_position.z = root_position.z + content.breed.base_height + 0.5
-		end
-
-		if not marker.world_position then
-			marker.world_position = Vector3Box(root_position)
-		else
-			marker.world_position:store(root_position)
-		end
-	end]]
-
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 
 	local line_of_sight_progress = content.line_of_sight_progress or 0

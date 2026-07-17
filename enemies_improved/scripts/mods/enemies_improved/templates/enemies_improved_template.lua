@@ -126,6 +126,8 @@ template.create_widget_defintion = function(template, scenegraph_id)
 end
 
 template.on_enter = function(widget, marker, template)
+	local content = widget.content
+
 	local unit = marker.unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
 	local breed = unit_data_extension and unit_data_extension:breed()
@@ -155,8 +157,24 @@ template.on_enter = function(widget, marker, template)
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 	template.check_line_of_sight = fs.check_line_of_sight
 
+	if content.breed then
+		local root_position = Unit.world_position(unit, 1)
+
+		if root_position then
+			root_position.z = root_position.z + content.breed.base_height + 0.5
+
+			if not marker.world_position then
+				marker.world_position = Vector3Box(root_position)
+			else
+				marker.world_position:store(root_position)
+			end
+		end
+	end
+
 	EnemyHealthbarTemplate.on_enter(widget, marker, EnemyHealthbarTemplate)
+
 	EnemyMarkersTemplate.on_enter(widget, marker, EnemyMarkersTemplate)
+
 	EnemyDebuffTemplate.on_enter(widget, marker, EnemyDebuffTemplate)
 end
 
@@ -175,6 +193,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- Global aimed-only filter: hides ALL enemies_improved content
 	local unit = marker.unit
+	if not unit then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		return
+	end
+
+	local is_alive = mod.detect_alive(unit)
+
+	if not is_alive then
+		marker.draw = false
+		marker.alpha_multiplier = 0
+		widget.alpha_multiplier = 0
+		return
+	end
+
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
 		marker.draw = false
 		marker.alpha_multiplier = 0
@@ -197,12 +231,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local content = widget.content
 
-	-- Skip sub-templates when their global toggle is off.
-	if fs.healthbar_enable then
-		EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
-	else
-		content.hb_built = false
+	if content.breed and mod.detect_alive(unit) then
+		local root_position = Unit.world_position(unit, 1)
+		root_position.z = root_position.z + content.breed.base_height + 0.5
+
+		if not marker.world_position then
+			marker.world_position = Vector3Box(root_position)
+		else
+			marker.world_position:store(root_position)
+		end
 	end
+
+	-- Skip sub-templates when their global toggle is off.
+	EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
 
 	widget._next_update = 0
 
@@ -214,27 +255,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		content.m_built = false
 	end
-
-	-- Apply per-type / per-individual healthbar Y offset AFTER markers template
-	-- (markers template writes marker.world_position, so we must come after it)
-	--[[if content.breed and marker.world_position then
-		local breed = content.breed
-		local breed_name = breed.name
-		local breed_type = content._breed_type
-
-		local y_offset = 0
-
-		if breed_name and fs.breed_healthbar_y_offset[breed_name] then
-			y_offset = fs.breed_healthbar_y_offset[breed_name]
-		elseif breed_type and fs.breed_type_healthbar_y_offset[breed_type] then
-			y_offset = fs.breed_type_healthbar_y_offset[breed_type]
-		end
-
-		if y_offset ~= 0 then
-			local pos = marker.world_position:unbox()
-			marker.world_position:store(Vector3(pos.x, pos.y, pos.z + y_offset))
-		end
-	end]]
 
 	widget._next_update = 0
 

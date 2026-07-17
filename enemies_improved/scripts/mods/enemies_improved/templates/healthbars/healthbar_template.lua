@@ -517,22 +517,6 @@ template.on_enter = function(widget, marker, template)
 	template.damage_number_settings.dps_font_size = 18 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.expand_bonus_scale = 4 * fs.text_scale * fs.damage_number_scale
 	template.show_dps = fs.hb_show_dps
-
-	if content.breed then
-		template.damage_number_settings.y_offset = -content.breed.base_height * 0.7
-
-		local root_position = Unit.world_position(unit, 1)
-
-		if root_position then
-			root_position.z = root_position.z + content.breed.base_height + 0.5
-
-			if not marker.world_position then
-				marker.world_position = Vector3Box(root_position)
-			else
-				marker.world_position:store(root_position)
-			end
-		end
-	end
 end
 
 local function _get_network_values(game_session, game_object_id)
@@ -840,18 +824,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		-- Non-horde or clusters disabled
 
 		peak_cluster_max_by_rep[unit] = nil
-
-		-- ADJUST POSITION (FOLLOW UNIT)
-		if content.breed and is_alive then
-			local root_position = Unit.world_position(unit, 1)
-			root_position.z = root_position.z + content.breed.base_height + 0.5
-
-			if not marker.world_position then
-				marker.world_position = Vector3Box(root_position)
-			else
-				marker.world_position:store(root_position)
-			end
-		end
 	end
 
 	-- if horde individual bars is disabled, but clustered is enabled, only show clustered...
@@ -1131,7 +1103,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content._last_damage_value = latest_damage_number and latest_damage_number.value
 		end
 	end
-	--if fs.healthbar_enable then
+
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
@@ -1359,6 +1331,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if not table.contains(mod.latest_damaged_enemies, unit) then
 			content.draw_hb = false
 		end
+	end
+
+	if not fs.healthbar_enable then
+		content.draw_hb = false
+		return
 	end
 
 	if content.draw_hb and line_of_sight_progress > 0 then

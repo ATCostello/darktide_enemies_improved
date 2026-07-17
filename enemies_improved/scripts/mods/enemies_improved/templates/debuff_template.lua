@@ -1002,21 +1002,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-------------------------------------------------------------------
-	-- Height / healthbar position logic
-	-- Always position above head (does NOT affect debuff screen-space y offsets)
-	-------------------------------------------------------------------
-	--[[if content.breed and is_alive then
-		local root_position = Unit.world_position(unit, 1)
-		root_position.z = root_position.z + content.breed.base_height + 0.5
-
-		if not marker.world_position then
-			marker.world_position = Vector3Box(root_position)
-		else
-			marker.world_position:store(root_position)
-		end
-	end]]
-
-	-------------------------------------------------------------------
 	-- DRAW ROWS
 	-------------------------------------------------------------------
 	local dot_index = 0
