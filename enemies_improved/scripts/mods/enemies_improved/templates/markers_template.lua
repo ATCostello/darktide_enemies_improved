@@ -449,7 +449,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- marker height
-	if content.breed and is_alive then
+	--[[if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
 
 		if mod.frame_settings.healthbar_enable then
@@ -463,7 +463,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		else
 			marker.world_position:store(root_position)
 		end
-	end
+	end]]
 
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 

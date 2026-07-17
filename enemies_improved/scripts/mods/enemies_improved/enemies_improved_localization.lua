@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.10"
+mod.version = "2.0.11"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
