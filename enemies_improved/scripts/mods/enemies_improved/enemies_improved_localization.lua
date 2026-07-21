@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.13"
+mod.version = "2.0.14"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1254,6 +1254,14 @@ table.insert(localisations_to_add, {
 		en = "Globally toggles healthbars for enemies. Specific enemy types can be enabled/disabled further below.",
 		["zh-cn"] = "全局开关敌人血条，可在下方单独配置各类型。",
 	},
+	healthbar_only_in_meatgrinder = {
+		en = "Only show healthbars in Meat Grinder?",
+		["zh-cn"] = "仅在灵能室显示血条？",
+	},
+	healthbar_only_in_meatgrinder_tooltip = {
+		en = "Toggle to only show healthbars in the Meat Grinder. Other features like debuffs, markers, and outlines will still work normally in live matches.",
+		["zh-cn"] = "开启后仅在灵能室内显示血条。在正式对局中，减益、标记和轮廓等其他功能仍正常工作。",
+	},
 	hb_enable_bar = {
 		en = "Show healthbar bar?",
 		["zh-cn"] = "显示血量进度条？",
@@ -2042,6 +2050,18 @@ table.insert(localisations_to_add, {
 	boss_debuff_stack_font_size_tooltip = {
 		en = "Adjust the font size of the stack/percentage counters on the boss healthbar debuff display.",
 		["zh-cn"] = "调整显示在原版头目血条上的减益层数数字大小。",
+	},
+	boss_debuff_icon_size = {
+		en = "Boss Debuff Icon Scale",
+		["zh-cn"] = "Boss减益图标缩放",
+	},
+	boss_debuff_icon_size_tooltip = {
+		en = "Adjust the size of debuff icons displayed on the boss healthbar. This only affects boss debuffs, not regular enemy debuffs.",
+		["zh-cn"] = "调整Boss血条上减益图标的大小。仅影响Boss减益，不影响普通敌人减益。",
+	},
+	boss_debuff_settings = {
+		en = "Boss Debuff Settings",
+		["zh-cn"] = "Boss减益设置",
 	},
 })
 

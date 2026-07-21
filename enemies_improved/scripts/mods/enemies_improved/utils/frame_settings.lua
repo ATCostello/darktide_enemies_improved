@@ -254,6 +254,7 @@ mod.build_frame_settings = function(dt)
 		b_ws,
 	}
 	fs.hb_toggle_base_boss_healthbar = mod:get("hb_toggle_base_boss_healthbar")
+	fs.healthbar_only_in_meatgrinder = mod:get("healthbar_only_in_meatgrinder")
 	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
 	fs.healthbar_colour_preset = mod:get("healthbar_colour_preset")
 
@@ -348,6 +349,7 @@ mod.build_frame_settings = function(dt)
 	fs.debuff_stacks_font_size = mod:get("debuff_stacks_font_size") or 16
 	fs.debuff_names_font_size = mod:get("debuff_names_font_size") or 16
 	fs.boss_debuff_stack_font_size = mod:get("boss_debuff_stack_font_size") or 14
+	fs.boss_debuff_icon_size = mod:get("boss_debuff_icon_size") or 1
 
 	local r = mod:get("debuff_max_stacks_colour_R")
 	local g = mod:get("debuff_max_stacks_colour_G")

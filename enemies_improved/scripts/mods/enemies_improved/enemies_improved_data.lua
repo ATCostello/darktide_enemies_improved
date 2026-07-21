@@ -3,9 +3,14 @@ local next = next
 local fs = mod.frame_settings
 
 mod.debuff_styles = {
+	x = {
+		icon = "content/ui/materials/icons/weapons/actions/linesman",
+		colour = { 255, 200, 150, 110 },
+	},
+
 	generic = {
 		icon = "content/ui/materials/icons/weapons/actions/linesman",
-		colour = { 255, 150, 150, 150 },
+		colour = { 255, 200, 150, 110 },
 	},
 
 	bleed = {
@@ -1142,7 +1147,7 @@ table.insert(mod.settings_widgets, {
 })
 
 -- HEALTHBAR
-table.insert(mod.settings_widgets, {
+	table.insert(mod.settings_widgets, {
 	setting_id = "healthbar_settings",
 	type = "group",
 	tab = "Healthbar",
@@ -1159,6 +1164,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = true,
 			tooltip = "hb_toggle_base_boss_healthbar_tooltip",
+		},
+		{
+			setting_id = "healthbar_only_in_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "healthbar_only_in_meatgrinder_tooltip",
 		},
 	},
 })
@@ -1706,12 +1717,6 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "debuff_horde_enable_tooltip",
 		},
-		{
-			setting_id = "debuff_boss_healthbar_enable",
-			type = "checkbox",
-			default_value = true,
-			tooltip = "debuff_boss_healthbar_enable_tooltip",
-		},
 	},
 })
 table.insert(mod.settings_widgets, {
@@ -1742,6 +1747,41 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "debuff_show_on_body_tooltip",
+		},
+	},
+})
+table.insert(mod.settings_widgets, {
+	setting_id = "boss_debuff_settings",
+	type = "group",
+	tab = "Debuffs",
+	sub_widgets = {
+		{
+			setting_id = "debuff_boss_healthbar_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_boss_healthbar_enable_tooltip",
+		},
+		{
+			setting_id = "boss_debuff_icon_size",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.5,
+				2,
+			},
+			decimals_number = 2,
+			step_size_value = 0.1,
+			tooltip = "boss_debuff_icon_size_tooltip",
+		},
+		{
+			setting_id = "boss_debuff_stack_font_size",
+			type = "numeric",
+			default_value = 14,
+			range = {
+				8,
+				48,
+			},
+			tooltip = "boss_debuff_stack_font_size_tooltip",
 		},
 	},
 })
@@ -1882,17 +1922,6 @@ table.insert(mod.settings_widgets, {
 				48,
 			},
 			tooltip = "debuff_stacks_font_size_tooltip",
-		},
-
-		{
-			setting_id = "boss_debuff_stack_font_size",
-			type = "numeric",
-			default_value = 14,
-			range = {
-				8,
-				48,
-			},
-			tooltip = "boss_debuff_stack_font_size_tooltip",
 		},
 
 		{

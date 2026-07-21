@@ -566,6 +566,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- early out
 	if not content.draw_hb and not marker.is_inside_frustum then
 		content.draw_hb = false
+		return
+	end
+
+	if fs.healthbar_only_in_meatgrinder then
+		local current_level = Managers_state.mission and Managers_state.mission:mission()
+		if not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range") then
+			content.draw_hb = false
+			return
+		end
 	end
 
 	content.draw_hb = true

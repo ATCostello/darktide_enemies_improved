@@ -21,6 +21,7 @@ local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local pool = {}
+local fs = mod.frame_settings
 
 local function calc_stack_buff_percentage(val, stacks, stat_name)
 	local stat_buff_type = stat_buff_types[stat_name]
@@ -42,7 +43,11 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 	local content = {}
 	local style = {}
 	local base_y = 35 + y_offset
-	local row_step = 30
+	local boss_icon_scale = fs.boss_debuff_icon_size or 1
+	local ts = fs.text_scale or 1
+	local boss_font_size = fs.boss_debuff_stack_font_size or 14
+	local icon_sz = 27 * boss_icon_scale * ts
+	local row_step = math.max(icon_sz, boss_font_size * ts) + 4 * ts
 	local x_shift = x_offset
 
 	for i = 1, MAX_ROWS do
@@ -69,8 +74,8 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 			vertical_alignment = "center",
 			offset = { BOSS_DEBUFF_X_START + 1 + x_shift, row_offset_y + 1, 5 },
 			default_offset = { BOSS_DEBUFF_X_START + 1 + x_shift, row_offset_y + 1, 5 },
-			size = { 28, 28 },
-			default_size = { 28, 28 },
+			size = { icon_sz + 1, icon_sz + 1 },
+			default_size = { icon_sz + 1, icon_sz + 1 },
 			color = { 255, 0, 0, 0 },
 			default_alpha = 255,
 		}
@@ -89,8 +94,8 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 			vertical_alignment = "center",
 			offset = { BOSS_DEBUFF_X_START + x_shift, row_offset_y, 6 },
 			default_offset = { BOSS_DEBUFF_X_START + x_shift, row_offset_y, 6 },
-			size = { 27, 27 },
-			default_size = { 27, 27 },
+			size = { icon_sz, icon_sz },
+			default_size = { icon_sz, icon_sz },
 			color = { 255, 255, 255, 255 },
 			default_alpha = 255,
 		}
@@ -112,8 +117,8 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 			offset = { BOSS_DEBUFF_X_START + 145 + x_shift, row_offset_y, 8 },
 			default_offset = { BOSS_DEBUFF_X_START + 145 + x_shift, row_offset_y, 8 },
 			font_type = "proxima_nova_bold",
-			font_size = 14,
-			default_font_size = 14,
+			font_size = 14 * ts,
+			default_font_size = 14 * ts,
 			text_color = { 220, 220, 220, 220 },
 			size = { 100, 20 },
 			default_size = { 100, 20 },
@@ -140,8 +145,8 @@ local function create_boss_debuff_widget_definition(group_index, x_offset, y_off
 			offset = { BOSS_DEBUFF_X_START + 35 + x_shift, row_offset_y, 7 },
 			default_offset = { BOSS_DEBUFF_X_START + 35 + x_shift, row_offset_y, 7 },
 			font_type = "proxima_nova_bold",
-			font_size = 13,
-			default_font_size = 13,
+			font_size = 13 * ts,
+			default_font_size = 13 * ts,
 			text_color = { 200, 200, 200, 200 },
 			size = { 110, 22 },
 			default_size = { 110, 22 },
@@ -194,21 +199,23 @@ local function scan_boss_debuffs(unit, widget)
 					else
 						entry = {}
 					end
-					entry.name = keyword
-					entry.stacks = 1
-					entry.type = "dot"
-					active[active_count] = entry
-				elseif debuff_type == "utility" and fs.debuff_utility_enable ~= false then
-					active_count = active_count + 1
-					local entry = pool[#pool]
-					if entry then
-						pool[#pool] = nil
-					else
-						entry = {}
-					end
-					entry.name = keyword
-					entry.stacks = 1
-					entry.type = "utility"
+				entry.name = keyword
+				entry.stacks = 1
+				entry.max_stacks = 1
+				entry.type = "dot"
+				active[active_count] = entry
+			elseif debuff_type == "utility" and fs.debuff_utility_enable ~= false then
+				active_count = active_count + 1
+				local entry = pool[#pool]
+				if entry then
+					pool[#pool] = nil
+				else
+					entry = {}
+				end
+				entry.name = keyword
+				entry.stacks = 1
+				entry.max_stacks = 1
+				entry.type = "utility"
 					active[active_count] = entry
 				end
 			end
@@ -318,62 +325,70 @@ local function scan_boss_debuffs(unit, widget)
 					duration = (existing.duration or 0) + (entry.duration or 0)
 				end
 				existing.duration = duration
-				existing.stat_buffs = existing.stat_buffs or entry.stat_buffs
-				existing.conditional_stat_buffs = existing.conditional_stat_buffs or entry.conditional_stat_buffs
+			if entry.stat_buffs then
+				existing.stat_buffs = existing.stat_buffs or {}
+				for stat_name, val in pairs(entry.stat_buffs) do
+					existing.stat_buffs[stat_name] = val
+				end
+			end
+			if entry.conditional_stat_buffs then
+				existing.conditional_stat_buffs = existing.conditional_stat_buffs or {}
+				for stat_name, val in pairs(entry.conditional_stat_buffs) do
+					existing.conditional_stat_buffs[stat_name] = val
+				end
+			end
 
-				if entry.stat_buffs then
-					existing._stat_contributions = existing._stat_contributions or {}
-					for stat_name, val in pairs(entry.stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						existing._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
+			existing._stat_contributions = existing._stat_contributions or {}
+			if entry.stat_buffs then
+				for stat_name, val in pairs(entry.stat_buffs) do
+					local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+					existing._stat_contributions[stat_name] = {
+						val = val,
+						stacks = effective_stacks,
+					}
 				end
-				if entry.conditional_stat_buffs then
-					existing._conditional_stat_contributions = existing._conditional_stat_contributions or {}
-					for stat_name, val in pairs(entry.conditional_stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						existing._conditional_stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
+			end
+			if entry.conditional_stat_buffs then
+				for stat_name, val in pairs(entry.conditional_stat_buffs) do
+					local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+					existing._stat_contributions[stat_name] = {
+						val = val,
+						stacks = effective_stacks,
+					}
 				end
-			else
-				combined_count = combined_count + 1
-				local new_entry = {
-					name = name,
-					stacks = entry.stacks,
-					max_stacks = entry.max_stacks,
-					duration = entry.duration,
-					stat_buffs = entry.stat_buffs,
-					conditional_stat_buffs = entry.conditional_stat_buffs,
-					combined = true,
-					type = debuff_type,
-				}
-				if entry.stat_buffs then
-					new_entry._stat_contributions = {}
-					for stat_name, val in pairs(entry.stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						new_entry._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
+			end
+		else
+			combined_count = combined_count + 1
+			local new_entry = {
+				name = name,
+				stacks = entry.stacks,
+				max_stacks = entry.max_stacks,
+				duration = entry.duration,
+				stat_buffs = entry.stat_buffs and table.clone(entry.stat_buffs) or nil,
+				conditional_stat_buffs = entry.conditional_stat_buffs and table.clone(entry.conditional_stat_buffs) or nil,
+				combined = true,
+				type = debuff_type,
+			}
+			new_entry._stat_contributions = {}
+			if entry.stat_buffs then
+				for stat_name, val in pairs(entry.stat_buffs) do
+					local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+					new_entry._stat_contributions[stat_name] = {
+						val = val,
+						stacks = effective_stacks,
+					}
 				end
-				if entry.conditional_stat_buffs then
-					new_entry._conditional_stat_contributions = {}
-					for stat_name, val in pairs(entry.conditional_stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						new_entry._conditional_stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
+			end
+			if entry.conditional_stat_buffs then
+				for stat_name, val in pairs(entry.conditional_stat_buffs) do
+					local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+					new_entry._stat_contributions[stat_name] = {
+						val = val,
+						stacks = effective_stacks,
+					}
 				end
-				combined[combined_count] = new_entry
+			end
+			combined[combined_count] = new_entry
 				if debuff_type == "dot" then
 					grouped_dot_map[icon] = new_entry
 				elseif debuff_type == "utility" then
@@ -509,7 +524,14 @@ local function update_debuff_display(dt, t, widget)
 	local dot_index = 0
 	local util_index = 0
 	local is_horizontal = true
-	local col_step = 60
+	local boss_icon_scale = fs.boss_debuff_icon_size or 1
+	local ts = fs.text_scale or 1
+	local boss_font_size = fs.boss_debuff_stack_font_size or 14
+	local base_icon = 27 * boss_icon_scale * ts
+	local row_step = math.max(base_icon, boss_font_size * ts) + 4 * ts
+	local col_step = (base_icon + boss_font_size * ts * 3 + 5 * ts) * (fs.debuff_gap_padding_scale or 1)
+	local stack_offset_x = base_icon + 5 * ts
+	local name_offset_x = base_icon + 8 * ts
 
 	for i = 1, MAX_ROWS do
 		local icon_id = "debuff_icon_" .. i
@@ -524,6 +546,20 @@ local function update_debuff_display(dt, t, widget)
 		local debuff = active[i]
 
 		if debuff then
+			-- Update icon sizes at runtime so boss_debuff_icon_size takes effect
+			if icon_style then
+				icon_style.size[1] = base_icon
+				icon_style.size[2] = base_icon
+				icon_style.default_size[1] = base_icon
+				icon_style.default_size[2] = base_icon
+			end
+			if icon_shadow_style then
+				icon_shadow_style.size[1] = base_icon + 1
+				icon_shadow_style.size[2] = base_icon + 1
+				icon_shadow_style.default_size[1] = base_icon + 1
+				icon_shadow_style.default_size[2] = base_icon + 1
+			end
+
 			local row_i
 			if fs.split_debuff_types then
 				if debuff.type == "dot" then
@@ -579,21 +615,21 @@ local function update_debuff_display(dt, t, widget)
 				o[2] = row_offset_y + y_shift
 
 				o = stack_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset + x_shift
+				o[1] = BOSS_DEBUFF_X_START + stack_offset_x + col_offset + x_shift
 				o[2] = row_offset_y + y_shift
 				o = stack_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 32 + col_offset + x_shift
+				o[1] = BOSS_DEBUFF_X_START + stack_offset_x + col_offset + x_shift
 				o[2] = row_offset_y + y_shift
 
 				content[name_text_id] = ""
 			else
-				row_offset_y = 25 + ((row_i - 1) * 30)
+				row_offset_y = 25 + ((row_i - 1) * row_step)
 
 				if fs.split_debuff_types then
 					if debuff.type == "dot" then
-						row_offset_y = -35 + ((row_i - 1) * 30)
+						row_offset_y = -35 + ((row_i - 1) * row_step)
 					elseif debuff.type == "utility" then
-						row_offset_y = 25 + ((row_i - 1) * 30)
+						row_offset_y = 25 + ((row_i - 1) * row_step)
 					end
 				end
 
@@ -612,17 +648,17 @@ local function update_debuff_display(dt, t, widget)
 				o[2] = row_offset_y + y_shift
 
 				o = stack_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 145 + x_shift
+				o[1] = BOSS_DEBUFF_X_START + (145 * ts) + x_shift
 				o[2] = row_offset_y + y_shift
 				o = stack_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 145 + x_shift
+				o[1] = BOSS_DEBUFF_X_START + (145 * ts) + x_shift
 				o[2] = row_offset_y + y_shift
 
 				o = name_text_style.offset
-				o[1] = BOSS_DEBUFF_X_START + 35 + x_shift
+				o[1] = BOSS_DEBUFF_X_START + name_offset_x + x_shift
 				o[2] = row_offset_y + y_shift
 				o = name_text_style.default_offset
-				o[1] = BOSS_DEBUFF_X_START + 35 + x_shift
+				o[1] = BOSS_DEBUFF_X_START + name_offset_x + x_shift
 				o[2] = row_offset_y + y_shift
 			end
 
@@ -645,27 +681,6 @@ local function update_debuff_display(dt, t, widget)
 				if debuff.combined and debuff._stat_contributions then
 					local total_perc = 0
 					for stat_name, contrib in pairs(debuff._stat_contributions) do
-						if stat_name and contrib and contrib.val and contrib.stacks then
-							local stat_buff_type = stat_buff_types[stat_name]
-							local raw = 0
-							if stat_buff_type == "multiplicative_multiplier" then
-								raw = (contrib.val ^ contrib.stacks - 1) * 100
-							else
-								raw = contrib.val * contrib.stacks * 100
-							end
-							local nearest = math_floor((raw + 5) / 10) * 10
-							if math.abs(raw - nearest) <= 1 then
-								raw = nearest
-							end
-							total_perc = total_perc + math_floor(raw * 10 + 0.5) * 0.1
-						end
-					end
-					if total_perc ~= 0 then
-						stack_buff_percentage = total_perc
-					end
-				elseif debuff.combined and debuff._conditional_stat_contributions then
-					local total_perc = 0
-					for stat_name, contrib in pairs(debuff._conditional_stat_contributions) do
 						if stat_name and contrib and contrib.val and contrib.stacks then
 							local stat_buff_type = stat_buff_types[stat_name]
 							local raw = 0
@@ -770,7 +785,7 @@ local function update_debuff_display(dt, t, widget)
 					stack_text_style.text_color[4] = fs.secondary_colour[4] or 220
 				end
 
-				stack_text_style.font_size = boss_stack_font_size
+				stack_text_style.font_size = boss_stack_font_size * ts
 			end
 		else
 			content[icon_id] = nil

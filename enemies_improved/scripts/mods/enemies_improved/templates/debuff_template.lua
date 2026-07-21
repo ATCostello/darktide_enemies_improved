@@ -846,6 +846,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	(breed_type and fs.breed_type_debuff_show_on_body_override and fs.breed_type_debuff_show_on_body_override[breed_type]) or
 	false
 
+	local debuff_y_offset =  fs.debuff_y_offset
+
 	local _body_screen_offset_y = nil
 	if show_on_body then
 		local camera = parent._parent and parent._parent:player_camera()
@@ -854,7 +856,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if camera and breed and breed.base_height and head_pos and unit then
 			local root_pos = Unit.world_position(unit, 1)
 			if root_pos then
-				local body_center = Vector3(root_pos.x, root_pos.y, (root_pos.z + breed.base_height * 0.8) * fs.debuff_y_offset)
+				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + (breed.base_height * 0.8))
 				local head_screen = Camera.world_to_screen(camera, head_pos)
 				local body_screen = Camera.world_to_screen(camera, body_center)
 				if head_screen and body_screen and marker.scale and marker.scale > 0.001 then
@@ -862,9 +864,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				end
 			end
 		end
+
+		-- smoothing
+		if _body_screen_offset_y then
+			if widget._smoothed_body_offset_y then
+				_body_screen_offset_y = widget._smoothed_body_offset_y + (_body_screen_offset_y - widget._smoothed_body_offset_y) * math.min(dt * 100, 1)
+			end
+			widget._smoothed_body_offset_y = _body_screen_offset_y
+		end
 	end
 
-	local debuff_y_offset =  show_on_body and 1 or fs.debuff_y_offset
 	-------------------------------------------------------------------
 	-- UPDATE STATE (KEYED BY DEBUFF NAME)
 	-------------------------------------------------------------------

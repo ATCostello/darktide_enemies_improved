@@ -32,6 +32,13 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
+	if fs.healthbar_only_in_meatgrinder then
+		local current_level = Managers.state.mission and Managers.state.mission:mission()
+		if not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range") then
+			return
+		end
+	end
+
 	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
 		return
 	end
