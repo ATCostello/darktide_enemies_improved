@@ -1,6 +1,12 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 local next = next
+local string_find = string.find
+local string_gsub = string.gsub
+
+-- Re-entrancy guard: prevents recursive on_setting_changed calls
+-- (e.g. init_healthbar_defaults calling mod:set which triggers on_setting_changed again)
+local _in_settings_update = false
 
 -----------------------------------------------------------------------
 -- Settings changed
@@ -18,6 +24,7 @@ local enemy_type_settings = {
 	["healthbar_type_colour_R"] = 255,
 	["healthbar_type_colour_G"] = 0,
 	["healthbar_type_colour_B"] = 0,
+	["healthbar_type_always_show"] = false,
 
 	["healthbar_icon_type_enable"] = true,
 	["healthbar_icon_type_scale"] = 1,
@@ -43,6 +50,7 @@ local enemy_override_settings = {
 	["markers_individual_toggle"] = false,
 	["healthbar_individual_enable"] = false,
 	["healthbar_individual_force"] = false,
+	["healthbar_individual_always_show"] = false,
 	["healthbar_individual_colour_R"] = 255,
 	["healthbar_individual_colour_G"] = 0,
 	["healthbar_individual_colour_B"] = 0,
@@ -72,6 +80,7 @@ mod.reset_type_to_default = function(enemy_type)
 	-- reset all options to nil so that the defaults will be loaded...
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
 	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
+	mod:set("healthbar_" .. enemy_type .. "_always_show", nil)
 
 	mod:set("healthbar_icon_" .. enemy_type .. "_enable", nil)
 	mod:set("healthbar_icon_" .. enemy_type .. "_scale", nil)
@@ -97,6 +106,7 @@ mod.reset_individual_to_default = function(enemy_type)
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
 	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
 	mod:set("healthbar_" .. enemy_type .. "_force", nil)
+	mod:set("healthbar_" .. enemy_type .. "_always_show", nil)
 
 	mod:set("distance_" .. enemy_type .. "_enable", nil)
 	mod:set("distance_" .. enemy_type .. "_value", nil)
@@ -126,22 +136,10 @@ local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
 mod.set_breed_colours = function()
-	if mod:get("healthbar_colour_preset") == "red" then
-		mod.BREED_COLOURS = {
-			horde = { 255, 255, 40, 40 },
-			elite = { 255, 255, 40, 40 },
-			captain = { 255, 255, 40, 40 },
-			disabler = { 255, 255, 40, 40 },
-			witch = { 255, 255, 40, 40 },
-			monster = { 255, 255, 40, 40 },
-			sniper = { 255, 255, 40, 40 },
-			far = { 255, 255, 40, 40 },
-			special = { 255, 255, 40, 40 },
-			enemy = { 255, 255, 40, 40 },
-			shield = { 255, 255, 40, 40 },
-		}
-	elseif mod:get("healthbar_colour_preset") == "colourful" then
-		mod.BREED_COLOURS = {
+	local bc = mod.BREED_COLOURS
+	if not bc then
+		-- First call: create the table and initialize all sub-tables
+		bc = {
 			horde = { 255, 150, 60, 60 },
 			elite = { 255, 0, 120, 255 },
 			captain = { 255, 255, 140, 0 },
@@ -154,25 +152,56 @@ mod.set_breed_colours = function()
 			enemy = { 255, 200, 200, 200 },
 			shield = { 255, 200, 200, 200 },
 		}
-	else
-		mod.BREED_COLOURS = {
-			horde = { 255, 150, 60, 60 },
-			elite = { 255, 0, 120, 255 },
-			captain = { 255, 255, 140, 0 },
-			disabler = { 255, 255, 255, 0 },
-			witch = { 255, 255, 0, 180 },
-			monster = { 255, 180, 0, 255 },
-			sniper = { 255, 255, 0, 0 },
-			far = { 255, 0, 255, 120 },
-			special = { 255, 255, 0, 255 },
-			enemy = { 255, 200, 200, 200 },
-			shield = { 255, 200, 200, 200 },
-		}
+		mod.BREED_COLOURS = bc
 	end
-	mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+	local preset = mod:get("healthbar_colour_preset")
+	if preset == "red" then
+		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 255, 40, 40
+		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 255, 40, 40
+		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 40, 40
+		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 40, 40
+		bc.witch[1], bc.witch[2], bc.witch[3], bc.witch[4] = 255, 255, 40, 40
+		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 255, 40, 40
+		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 40, 40
+		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 255, 40, 40
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 40, 40
+		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 255, 40, 40
+		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 255, 40, 40
+	elseif preset == "colourful" then
+		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 150, 60, 60
+		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 0, 120, 255
+		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 140, 0
+		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 255, 0
+		bc.witch[1], bc.witch[2], bc.witch[3], bc.witch[4] = 255, 255, 0, 180
+		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
+		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
+		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
+		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
+	else
+		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 150, 60, 60
+		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 0, 120, 255
+		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 140, 0
+		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 255, 0
+		bc.witch[1], bc.witch[2], bc.witch[3], bc.witch[4] = 255, 255, 0, 180
+		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
+		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
+		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
+		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
+	end
 end
 
 mod.healthbar_colour_preset_changed = function()
+	-- Clone current BREED_COLOURS as DEFAULT before modifying (one-time per preset change)
+	local bc = mod.BREED_COLOURS
+	if not bc then
+		mod.set_breed_colours()
+		bc = mod.BREED_COLOURS
+	end
+	mod.BREED_COLOURS_DEFAULT = table.clone(bc)
 	mod.set_breed_colours()
 	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
 		local r = color[2]
@@ -188,6 +217,9 @@ end
 
 mod.init_healthbar_defaults = function()
 	mod.set_breed_colours()
+	if not mod.BREED_COLOURS_DEFAULT then
+		mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+	end
 	-- bar colours
 	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
 		local r = color[2]
@@ -574,6 +606,25 @@ mod.load_toggled_debuffs_state = function()
 end
 
 mod.on_setting_changed = function(setting_id)
+	-- Re-entrancy guard: skip if we are already inside an update cycle
+	-- (prevents recursive calls from mod:set() inside init_healthbar_defaults, etc.)
+	if _in_settings_update then
+		return
+	end
+	_in_settings_update = true
+
+	local ok, err = pcall(function()
+		mod._on_setting_changed_impl(setting_id)
+	end)
+
+	_in_settings_update = false
+
+	if not ok then
+		mod:error("on_setting_changed error: " .. tostring(err))
+	end
+end
+
+mod._on_setting_changed_impl = function(setting_id)
 	local fs = mod.frame_settings
 
 	if setting_id == "debuff_toggles" then
@@ -642,9 +693,15 @@ mod.on_setting_changed = function(setting_id)
 
 	mod.update_breed_colours()
 
-	-- rebuild outlines
-	local outline_settings = require("scripts/settings/outline/outline_settings")
-	mod.apply_enemy_outlines(outline_settings)
+	-- Only rebuild outlines when outline-related settings changed
+	if setting_id == "outlines_enable"
+		or string_find(setting_id, "outline_")
+		or setting_id == "enemy_group"
+		or setting_id == "individual_overrides"
+	then
+		local outline_settings = require("scripts/settings/outline/outline_settings")
+		mod.apply_enemy_outlines(outline_settings)
+	end
 
 	-- update breed settings
 	mod.update_breed_icons()
@@ -661,8 +718,6 @@ mod.on_setting_changed = function(setting_id)
 	if mod:get(reset_setting_id_individual) == true then
 		mod:set(reset_setting_id_individual, false)
 	end
-
-	mod.update_settings_values()
 
 	-- update colours when the dropdown selectors are changed...
 	if setting_id == "individual_overrides" or setting_id == "enemy_group" then

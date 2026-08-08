@@ -5,6 +5,19 @@ local template = {}
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
+local MARKER_TYPE_ICONS = {
+	boss = "content/ui/materials/icons/difficulty/flat/difficulty_skull_damnation",
+	elite = "content/ui/materials/hud/interactions/icons/enemy_priority",
+	far = "content/ui/materials/icons/circumstances/assault_01",
+	special = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
+	disabler = "content/ui/materials/icons/generic/exclamation_mark",
+	sniper = "content/ui/materials/icons/weapons/actions/ads",
+	captain = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
+	witch = "content/ui/materials/hud/icons/speaker",
+	shield = "content/ui/materials/hud/interactions/icons/void_shield",
+	horde = "content/ui/materials/icons/system/page_indicator_02_idle"
+}
+
 -----------------------------------------------------------------------
 -- Cached settings / constants
 -----------------------------------------------------------------------
@@ -122,14 +135,14 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				default_alpha = fs.marker_bg_colour[1],
 			},
 			change_function = function(content, style)
-				if not fs.markers_health_enable then
-					content.background = "content/ui/materials/icons/system/page_indicator_02_idle"
-				else
+				if fs.marker_visual_style == "simple_health" then
 					content.background = "content/ui/materials/hud/interactions/frames/point_of_interest_back"
+				else
+					content.background = "content/ui/materials/icons/system/page_indicator_02_idle"
 				end
 			end,
 			visibility_function = function(content, style)
-				return content.m_built
+				return content.m_built and fs.marker_visual_style ~= "type_icon"
 			end,
 		},
 
@@ -185,7 +198,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			end,
 
 			visibility_function = function(content, style)
-				return fs.markers_health_enable and content.m_built
+				return fs.marker_visual_style == "simple_health" and content.m_built
 			end,
 		},
 
@@ -276,6 +289,32 @@ template.create_widget_defintion = function(template, scenegraph_id)
 				style.angle = content.angle
 			end,
 		},
+		{
+			pass_type = "texture",
+			style_id = "type_icon",
+			value = "content/ui/materials/icons/system/page_indicator_02_idle",
+			value_id = "type_icon",
+			style = {
+				horizontal_alignment = "center",
+				vertical_alignment = "center",
+				size = icon_size,
+				default_size = icon_size,
+
+				offset = { 0, mkr_y_offset, 4 },
+				default_offset = { 0, mkr_y_offset, 4 },
+
+				color = { 255, 255, 255, 255 },
+				default_alpha = 255,
+			},
+			change_function = function(content, style)
+				if content.type_icon_path then
+					content.type_icon = content.type_icon_path
+				end
+			end,
+			visibility_function = function(content, style)
+				return fs.marker_visual_style == "type_icon" and content.m_built and content.marker_type_icon_show
+			end,
+		},
 	}, scenegraph_id)
 end
 
@@ -362,9 +401,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	elseif marker.distance < 50 then
 		widget._next_update = t + fs.general_throttle_rate
 	elseif marker.distance < 70 then
-		widget._next_update = t + fs.general_throttle_rate * 1.5
-	else
 		widget._next_update = t + fs.general_throttle_rate * 2
+	else
+		widget._next_update = t + fs.general_throttle_rate * 3
 	end
 
 	local entry = mod.enemy_cache[unit]
@@ -512,7 +551,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- adjust colour of overhead marker to healthbar colour
 	if fs.overhead_marker_uses_healthbar_colour then
-		if fs.markers_health_enable then
+		if fs.marker_visual_style == "simple_health" then
 			style.marker_health.color[2] = bar_color[2]
 			style.marker_health.color[3] = bar_color[3]
 			style.marker_health.color[4] = bar_color[4]
@@ -541,7 +580,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.color[4] = spec_col[4]
 	else
 		--content.is_clamped = false
-		content.special_attack_imminent = false
+	content.special_attack_imminent = false
+	content.marker_type_icon_show = false
+	content.type_icon_path = nil
 
 		style.arrow.color[2] = 255
 		style.arrow.color[3] = 255
@@ -549,6 +590,33 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		style.marker_health.size[1] = (background_size[1] / 2) * marker_scale
 		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
+	end
+
+	-----------------------------------------------------------------------
+	-- Enemy type icon on overhead marker (non-boss enemies)
+	-----------------------------------------------------------------------
+	content.marker_type_icon_show = true
+
+	if fs.marker_visual_style == "type_icon" then
+		local icon_breed_type = breed_type or content.breed_type
+
+		if icon_breed_type and icon_breed_type ~= "monster" and icon_breed_type ~= "horde" then
+			local icon_settings = mod.ICON_SETTINGS[icon_breed_type]
+			local icon_path = MARKER_TYPE_ICONS[icon_breed_type]
+
+			if icon_settings and icon_settings.enabled and icon_path then
+				--content.marker_type_icon_show = true
+				content.type_icon_path = icon_path
+				content.type_icon = icon_path
+
+				local icon_color = mod.ICON_COLOURS[icon_breed_type]
+				if icon_color then
+					style.type_icon.color[2] = icon_color[2]
+					style.type_icon.color[3] = icon_color[3]
+					style.type_icon.color[4] = icon_color[4]
+				end
+			end
+		end
 	end
 
 	if not marker.is_inside_frustum then

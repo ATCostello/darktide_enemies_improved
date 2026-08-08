@@ -300,8 +300,12 @@ local _create_definition = function(template, scenegraph_id)
 
 				local scaled_bar_width = content.scaled_bar_width or 0
 				local scaled_toughness_width = scaled_bar_width * toughness_fraction
+				local scale = content.scale or 1
+				local scaled_bar_height = content.scaled_bar_height or style.default_size[2]
 
 				style.offset[1] = -scaled_bar_width * 0.5 + scaled_toughness_width
+				style.size[2] = scaled_bar_height
+				style.size[1] = 2 * scale
 			end,
 			visibility_function = function(content)
 				if
@@ -336,8 +340,12 @@ local _create_definition = function(template, scenegraph_id)
 
 				local scaled_bar_width = content.scaled_bar_width or 0
 				local scaled_health_width = scaled_bar_width * health_fraction
+				local scale = content.scale or 1
+				local scaled_bar_height = content.scaled_bar_height or style.default_size[2]
 
 				style.offset[1] = -scaled_bar_width * 0.5 + scaled_health_width
+				style.size[2] = scaled_bar_height
+				style.size[1] = 2 * scale
 			end,
 			visibility_function = function(content)
 				if

@@ -39,11 +39,24 @@ mod.update_enemy_healthbars = function(entry, t)
 		end
 	end
 
-	if entry.is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) then
+	-- Horde filter: block unless horde enabled, clusters enabled, an individual or group override is on, or debuffed
+	local breed_name = entry.breed_name
+	local individual_enabled = breed_name and fs.breed_healthbar_enabled and fs.breed_healthbar_enabled[breed_name]
+	local individual_force = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
+	local group_enabled = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+	local unit = entry.unit
+	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
+
+	if
+		entry.is_horde
+		and (not fs.horde_enable and not fs.horde_clusters_enable)
+		and not individual_enabled
+		and not individual_force
+		and not group_enabled
+		and not debuffed_override
+	then
 		return
 	end
-
-	local unit = entry.unit
 
 	-- Handle cluster invalidation: non-rep horde units should not have a healthbar,
 	-- but the world marker must stay alive so overhead markers and debuffs still work.

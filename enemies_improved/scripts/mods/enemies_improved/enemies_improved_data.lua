@@ -95,18 +95,21 @@ mod.debuff_styles = {
 }
 
 mod.debuffs = {
+	-- Keyword debuffs (states)
+	bleeding = { name = "bleeding", type = "dot", group = "bleed" },
+	electrocuted = { name = "electrocuted", type = "dot", group = "shock" },
+	burning = { name = "burning", type = "dot", group = "fire" },
+
 	-- DOT
 	bleed = { name = "bleed", type = "dot", group = "bleed" },
-	bleeding = { name = "bleeding", type = "dot", group = "bleed" },
+	bleed_long = { name = "bleed_long", type = "dot", group = "bleed" },
 
 	flamer_assault = { name = "flamer_assault", type = "dot", group = "fire" },
 	flame_grenade_liquid_area = { name = "flame_grenade_liquid_area", type = "dot", group = "fire" },
-	burning = { name = "burning", type = "dot", group = "fire" },
 
 	warp_fire = { name = "warp_fire", type = "dot", group = "warp" },
 
 	shock_effect = { name = "shock_effect", type = "dot", group = "shock" },
-	electrocuted = { name = "electrocuted", type = "dot", group = "shock" },
 
 	neurotoxin_interval_buff = { name = "neurotoxin_interval_buff", type = "dot", group = "toxin" },
 	neurotoxin_interval_buff2 = { name = "neurotoxin_interval_buff2", type = "dot", group = "toxin" },
@@ -567,6 +570,18 @@ table.insert(mod.settings_widgets, {
 			tooltip = "markers_show_only_aimed_tooltip",
 		},
 		{
+			setting_id = "aim_cone_angle",
+			type = "numeric",
+			default_value = 8,
+			decimals_number = 1,
+			step_size_value = 0.5,
+			range = {
+				1,
+				30,
+			},
+			tooltip = "aim_cone_angle_tooltip",
+		},
+		{
 			setting_id = "only_tagged_enemies",
 			type = "checkbox",
 			default_value = false,
@@ -589,6 +604,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "only_in_meatgrinder_tooltip",
+		},
+		{
+			setting_id = "always_show_in_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "always_show_in_meatgrinder_tooltip",
 		},
 		--[[{
 			setting_id = "check_line_of_sight",
@@ -890,6 +911,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "outlines_enable_tooltip",
 		},
 		{
+			setting_id = "outline_tagged_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "outline_tagged_enable_tooltip",
+		},
+		{
 			setting_id = "outline_tagged_colour",
 			type = "group",
 			sub_widgets = {
@@ -915,6 +942,12 @@ table.insert(mod.settings_widgets, {
 					tooltip = "outline_tagged_colour_tooltip",
 				},
 			},
+		},
+		{
+			setting_id = "outline_tagged_passive_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "outline_tagged_passive_enable_tooltip",
 		},
 		{
 			setting_id = "outline_tagged_passive_colour",
@@ -944,6 +977,12 @@ table.insert(mod.settings_widgets, {
 			},
 		},
 		{
+			setting_id = "outline_companion_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "outline_companion_enable_tooltip",
+		},
+		{
 			setting_id = "outline_companion_colour",
 			type = "group",
 			sub_widgets = {
@@ -969,6 +1008,12 @@ table.insert(mod.settings_widgets, {
 					tooltip = "outline_companion_colour_tooltip",
 				},
 			},
+		},
+		{
+			setting_id = "outline_veteran_tagged_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "outline_veteran_tagged_enable_tooltip",
 		},
 		{
 			setting_id = "outline_veteran_tagged_colour",
@@ -1085,10 +1130,15 @@ table.insert(mod.settings_widgets, {
 			tooltip = "marker_y_offset_tooltip",
 		},
 		{
-			setting_id = "markers_health_enable",
-			type = "checkbox",
-			default_value = false,
-			tooltip = "markers_health_enable_tooltip",
+			setting_id = "marker_visual_style",
+			type = "dropdown",
+			options = {
+				{ text = "marker_style_diamond", value = "diamond" },
+				{ text = "marker_style_simple_health", value = "simple_health" },
+				{ text = "marker_style_type_icon", value = "type_icon" },
+			},
+			default_value = "diamond",
+			tooltip = "marker_visual_style_tooltip",
 		},
 		{
 			setting_id = "overhead_marker_uses_healthbar_colour",
@@ -1184,6 +1234,12 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "hb_hide_after_no_damage_tooltip",
+		},
+		{
+			setting_id = "hb_show_when_debuffed",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_show_when_debuffed_tooltip",
 		},
 		{
 			setting_id = "hb_damage_show_only_latest",
@@ -1712,6 +1768,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "debuff_utility_enable_tooltip",
 		},
 		{
+			setting_id = "debuff_keyword_enable",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "debuff_keyword_enable_tooltip",
+		},
+		{
 			setting_id = "debuff_horde_enable",
 			type = "checkbox",
 			default_value = false,
@@ -2165,6 +2227,12 @@ mod.group_settings_widgets = {
 				tooltip = "healthbar_type_enable_tooltip",
 			},
 			{
+				setting_id = "healthbar_type_always_show",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "healthbar_type_always_show_tooltip",
+			},
+			{
 				setting_id = "healthbar_type_y_offset_enabled",
 				type = "checkbox",
 				default_value = false,
@@ -2407,6 +2475,12 @@ mod.individual_override_settings = {
 				type = "checkbox",
 				default_value = false,
 				tooltip = "healthbar_individual_force_tooltip",
+			},
+			{
+				setting_id = "healthbar_individual_always_show",
+				type = "checkbox",
+				default_value = false,
+				tooltip = "healthbar_individual_always_show_tooltip",
 			},
 			{
 				setting_id = "healthbar_individual_y_offset_enabled",

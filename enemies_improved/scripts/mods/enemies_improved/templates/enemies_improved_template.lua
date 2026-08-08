@@ -184,6 +184,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
+	local content = widget.content
+
 	if not marker.is_inside_frustum then
 		widget._next_update = t + fs.off_screen_throttle_rate
 		marker.draw = false
@@ -197,16 +199,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		marker.draw = false
 		marker.alpha_multiplier = 0
 		widget.alpha_multiplier = 0
+		marker.remove = true
 		return
 	end
 
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		marker.draw = false
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
-		return
+		if not fs.hb_show_dps then
+			marker.draw = false
+			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
+			return
+		end
 	end
 
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
@@ -228,8 +233,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local saved_draw = marker.draw
 	widget._next_update = 0
 	marker.draw = true
-
-	local content = widget.content
 
 	if content.breed and mod.detect_alive(unit) then
 		local root_position = Unit.world_position(unit, 1)
@@ -293,7 +296,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
 	local has_markers = content.m_built or false
 	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false
-	local dps_visible = fs.hb_show_dps and content.dead
+	local dps_visible = fs.hb_show_dps
 
 	-- Re-apply aimed filter after sub-templates: suppress their results for non-aimed units
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
@@ -317,22 +320,24 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	marker.draw = visible
 
-	if visible then
-		widget.alpha_multiplier = los
-		marker.alpha_multiplier = los
-	elseif not fs.hb_show_dps then
-		widget.alpha_multiplier = 0
-		marker.alpha_multiplier = 0
-	end
+	if marker.is_inside_frustum then
+		if visible then
+			widget.alpha_multiplier = los
+			marker.alpha_multiplier = los
+		elseif not fs.hb_show_dps then
+			widget.alpha_multiplier = 0
+			marker.alpha_multiplier = 0
+		end
 
-	local unit = marker.unit
-	local health_extension = ScriptUnit.has_extension(unit, "health_system")
-	local is_dead = not health_extension or not health_extension:is_alive()
+		local unit = marker.unit
+		local health_extension = ScriptUnit.has_extension(unit, "health_system")
+		local is_dead = not health_extension or not health_extension:is_alive()
 
-	if is_dead and not fs.hb_show_dps then
-		marker.alpha_multiplier = 0
-		widget.alpha_multiplier = 0
-		marker.remove = true
+		if is_dead and not fs.hb_show_dps then
+			marker.alpha_multiplier = 0
+			widget.alpha_multiplier = 0
+			marker.remove = true
+		end
 	end
 end
 

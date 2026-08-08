@@ -422,9 +422,9 @@ mod.get_marker_by_id = function(id)
 	local markers_by_id = world_markers and world_markers._markers_by_id
 
 	-- DEBUG TO CREATE MARKER LIST
-	if mod.DEBUG then
-		mod.dbg_markers = world_markers._markers_by_type
-	end
+	--if mod.DEBUG then
+		--dbg_markers = world_markers._markers_by_type
+	--end
 
 	if markers_by_id then
 		return markers_by_id[id]
@@ -647,6 +647,10 @@ mod.scan_enemies = function()
 			if forward_bonus <= 0 then
 				mod.force_remove_unit_markers(unit)
 
+				if mod._cleanup_unit_health_data then
+					mod._cleanup_unit_health_data(unit)
+				end
+
 				cache[unit] = nil
 				mod.marked_dead[unit] = nil
 				goto skip_breed
@@ -656,6 +660,10 @@ mod.scan_enemies = function()
 			if physics_world_cache then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache) then
 					mod.force_remove_unit_markers(unit)
+
+					if mod._cleanup_unit_health_data then
+						mod._cleanup_unit_health_data(unit)
+					end
 
 					cache[unit] = nil
 					mod.marked_dead[unit] = nil
@@ -1375,6 +1383,15 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
 
+	table_clear(mod.latest_damaged_enemies)
+	table_clear(mod.latest_damaged_enemies_set)
+	table_clear(mod.aimed_unit)
+	table_clear(mod.tagged_units)
+
+	if mod._clear_unit_health_data then
+		mod._clear_unit_health_data()
+	end
+
 	table_clear(_enemy_units_temp)
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
@@ -1387,6 +1404,10 @@ mod.clear_caches = function()
 	table_clear(_cull_pool)
 	table_clear(_cull_cells)
 	table_clear(_units_to_remove)
+
+	if mod._clear_outline_caches then
+		mod._clear_outline_caches()
+	end
 end
 
 mod.update_horde_clusters = function(temp, to_process)
@@ -1415,7 +1436,7 @@ mod.do_aim_raycast = function()
 	local cam_pos = Camera.local_position(camera)
 	local px, py, pz = cam_pos.x, cam_pos.y, cam_pos.z
 	local forward = Quaternion.forward(Camera.local_rotation(camera))
-	local cone_cos = math.cos(math.rad(8))
+	local cone_cos = math.cos(math.rad(fs.aim_cone_angle or 8))
 	local draw_dist_sq = fs.draw_distance * fs.draw_distance
 
 	for unit in pairs(mod.enemy_cache) do
@@ -1426,7 +1447,20 @@ mod.do_aim_raycast = function()
 				local dy = enemy_pos.y - py
 				local dz = (enemy_pos.z - pz) * 0.3
 				local dist_sq = dx * dx + dy * dy + dz * dz
-				if dist_sq < draw_dist_sq and dist_sq > 0 then
+
+				-- Use the same per-enemy effective distance as the draw-distance filter,
+				-- so individual overrides larger than the global draw distance still count as aimed.
+				local entry = mod.enemy_cache[unit]
+				local effective_max_dist_sq = draw_dist_sq
+				local breed_name = entry and entry.breed_name
+				if breed_name and fs.breed_dist_enabled and fs.breed_dist_enabled[breed_name] then
+					local ind_dist = fs.breed_dist_value[breed_name]
+					if ind_dist then
+						effective_max_dist_sq = ind_dist * ind_dist
+					end
+				end
+
+				if dist_sq < effective_max_dist_sq and dist_sq > 0 then
 					local dist = math.sqrt(dist_sq)
 					local dot = (dx * forward.x + dy * forward.y + dz * forward.z) / dist
 					if dot > cone_cos then
@@ -1641,4 +1675,44 @@ mod.find_breed_category = function(unit)
 			return "enemy"
 		end
 	end
+end
+
+-- Returns true if the unit currently has any active debuff tracked by the mod
+mod.unit_has_active_debuff = function(unit)
+	if not unit or not mod.debuffs then
+		return false
+	end
+
+	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
+	if not buff_extension then
+		return false
+	end
+
+	local ok, keywords = pcall(function()
+		return buff_extension:keywords()
+	end)
+	if ok and keywords then
+		for name, _ in pairs(keywords) do
+			if mod.debuffs[name] then
+				return true
+			end
+		end
+	end
+
+	local ok2, buffs = pcall(function()
+		return buff_extension:buffs()
+	end)
+	if ok2 and buffs then
+		for i = 1, #buffs do
+			local buff = buffs[i]
+			local ok3, name = pcall(function()
+				return buff:template_name()
+			end)
+			if ok3 and name and mod.debuffs[name] then
+				return true
+			end
+		end
+	end
+
+	return false
 end

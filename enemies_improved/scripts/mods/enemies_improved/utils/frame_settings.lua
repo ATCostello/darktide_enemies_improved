@@ -1,6 +1,28 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
+local function table_clear(t)
+	for k in pairs(t) do
+		t[k] = nil
+	end
+end
+
+local function ensure_array(t, i1, i2, i3, i4)
+	if not t then
+		return { i1, i2, i3, i4 }
+	end
+	t[1], t[2], t[3], t[4] = i1, i2, i3, i4
+	return t
+end
+
+local function ensure_array_indexed(t, i2, i3, i4)
+	if not t then
+		return { [2] = i2, [3] = i3, [4] = i4 }
+	end
+	t[2], t[3], t[4] = i2, i3, i4
+	return t
+end
+
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
 
@@ -18,28 +40,54 @@ mod.build_frame_settings = function(dt)
 	-- broadphase range: must encompass all individual distance overrides
 	-- Also build per-breed cache tables to avoid mod:get() + string concat in hot paths
 	fs.draw_distance_broadphase = fs.draw_distance
-	fs.breed_dist_enabled = {}
-	fs.breed_dist_value = {}
-	fs.breed_outline_dist_enabled = {}
-	fs.breed_outline_dist_value = {}
-	fs.breed_marker_toggle = {}
-	fs.breed_outline_enabled = {}
-	fs.breed_healthbar_enabled = {}
-	fs.breed_healthbar_force = {}
-	fs.breed_type_outline_enabled = {}
-	fs.breed_type_healthbar_enabled = {}
-	fs.breed_type_healthbar_y_offset = {}
-	fs.breed_type_healthbar_y_offset_enabled = {}
 
-	fs.breed_debuff_toggle = {}
-	fs.breed_type_debuff_enabled = {}
-	fs.breed_healthbar_y_offset = {}
-	fs.breed_healthbar_y_offset_enabled = {}
-
-	fs.breed_type_debuff_show_on_body_override = {}
-	fs.breed_debuff_show_on_body_override = {}
-
-	fs.breed_marker_type_enabled = {}
+	-- Initialize sub-tables on first call, clear on subsequent calls
+	if not fs._initialized then
+		fs._initialized = true
+		fs.breed_dist_enabled = {}
+		fs.breed_dist_value = {}
+		fs.breed_outline_dist_enabled = {}
+		fs.breed_outline_dist_value = {}
+		fs.breed_marker_toggle = {}
+		fs.breed_outline_enabled = {}
+		fs.breed_healthbar_enabled = {}
+		fs.breed_healthbar_force = {}
+		fs.breed_healthbar_always_show = {}
+		fs.breed_type_outline_enabled = {}
+		fs.breed_type_healthbar_enabled = {}
+		fs.breed_type_healthbar_always_show = {}
+		fs.breed_type_healthbar_y_offset = {}
+		fs.breed_type_healthbar_y_offset_enabled = {}
+		fs.breed_debuff_toggle = {}
+		fs.breed_type_debuff_enabled = {}
+		fs.breed_healthbar_y_offset = {}
+		fs.breed_healthbar_y_offset_enabled = {}
+		fs.breed_type_debuff_show_on_body_override = {}
+		fs.breed_debuff_show_on_body_override = {}
+		fs.breed_marker_type_enabled = {}
+	else
+		table_clear(fs.breed_dist_enabled)
+		table_clear(fs.breed_dist_value)
+		table_clear(fs.breed_outline_dist_enabled)
+		table_clear(fs.breed_outline_dist_value)
+		table_clear(fs.breed_marker_toggle)
+		table_clear(fs.breed_outline_enabled)
+		table_clear(fs.breed_healthbar_enabled)
+		table_clear(fs.breed_healthbar_force)
+		table_clear(fs.breed_healthbar_always_show)
+		table_clear(fs.breed_type_outline_enabled)
+		table_clear(fs.breed_type_healthbar_enabled)
+		table_clear(fs.breed_type_healthbar_always_show)
+		table_clear(fs.breed_type_healthbar_y_offset)
+		table_clear(fs.breed_type_healthbar_y_offset_enabled)
+		table_clear(fs.breed_debuff_toggle)
+		table_clear(fs.breed_type_debuff_enabled)
+		table_clear(fs.breed_healthbar_y_offset)
+		table_clear(fs.breed_healthbar_y_offset_enabled)
+		table_clear(fs.breed_type_debuff_show_on_body_override)
+		table_clear(fs.breed_debuff_show_on_body_override)
+		table_clear(fs.breed_marker_type_enabled)
+	end
 
 	-- INDIVIDUAL OVERRIDES
 	for _, options in next, mod.breed_names do
@@ -70,6 +118,7 @@ mod.build_frame_settings = function(dt)
 			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
 			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
 			fs.breed_healthbar_force[enemy] = mod:get("healthbar_" .. enemy .. "_force")
+			fs.breed_healthbar_always_show[enemy] = mod:get("healthbar_" .. enemy .. "_always_show")
 
 			fs.breed_healthbar_y_offset_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset_enabled")
 			fs.breed_healthbar_y_offset[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset")
@@ -87,6 +136,7 @@ mod.build_frame_settings = function(dt)
 			fs.breed_type_outline_enabled[breed] = mod:get("outline_" .. breed .. "_enable")
 			fs.breed_type_debuff_enabled[breed] = mod:get("debuff_" .. breed .. "_enable")
 			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
+			fs.breed_type_healthbar_always_show[breed] = mod:get("healthbar_" .. breed .. "_always_show")
 			fs.breed_type_healthbar_y_offset_enabled[breed] = mod:get("healthbar_" .. breed .. "_y_offset_enabled")
 			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset")
 					and -mod:get("healthbar_" .. breed .. "_y_offset")
@@ -117,12 +167,7 @@ mod.build_frame_settings = function(dt)
 		b = 220
 	end
 
-	fs.main_colour = {
-		255,
-		r,
-		g,
-		b,
-	}
+	fs.main_colour = ensure_array(fs.main_colour, 255, r, g, b)
 
 	local rs = mod:get("secondary_font_colour_R")
 	local gs = mod:get("secondary_font_colour_G")
@@ -134,23 +179,30 @@ mod.build_frame_settings = function(dt)
 		bs = 150
 	end
 
-	fs.secondary_colour = {
-		255,
-		rs,
-		gs,
-		bs,
-	}
+	fs.secondary_colour = ensure_array(fs.secondary_colour, 255, rs, gs, bs)
 
 	fs.global_opacity = mod:get("global_opacity") or 1
 	fs.only_in_meatgrinder = mod:get("only_in_meatgrinder")
+	fs.always_show_in_meatgrinder = mod:get("always_show_in_meatgrinder")
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
 	fs.markers_horde_enable = mod:get("markers_horde_enable")
 	fs.markers_non_horde_enable = mod:get("markers_non_horde_enable")
 	fs.marker_size = mod:get("marker_size") * fs.global_scale
-	fs.markers_health_enable = mod:get("markers_health_enable")
 	fs.marker_y_offset = mod:get("marker_y_offset") * fs.global_scale
 	fs.overhead_marker_uses_healthbar_colour = mod:get("overhead_marker_uses_healthbar_colour")
+
+	local marker_visual_style = mod:get("marker_visual_style")
+	if not marker_visual_style then
+		if mod:get("markers_health_enable") then
+			marker_visual_style = "simple_health"
+		elseif mod:get("marker_type_icon_enable") then
+			marker_visual_style = "type_icon"
+		else
+			marker_visual_style = "diamond"
+		end
+	end
+	fs.marker_visual_style = marker_visual_style
 	local a = mod:get("marker_bg_colour_A")
 	local r = mod:get("marker_bg_colour_R")
 	local g = mod:get("marker_bg_colour_G")
@@ -162,15 +214,11 @@ mod.build_frame_settings = function(dt)
 		b = 220
 	end
 
-	fs.marker_bg_colour = {
-		a,
-		r,
-		g,
-		b,
-	}
+	fs.marker_bg_colour = ensure_array(fs.marker_bg_colour, a, r, g, b)
 
 	fs.marker_display_option = mod:get("marker_display_option")
 	fs.markers_show_only_aimed = mod:get("markers_show_only_aimed")
+	fs.aim_cone_angle = mod:get("aim_cone_angle") or 8
 	fs.only_tagged_enemies = mod:get("only_tagged_enemies")
 
 	-- HEALTHBARS
@@ -187,6 +235,7 @@ mod.build_frame_settings = function(dt)
 	fs.show_damage_numbers = mod:get("hb_show_damage_numbers")
 	fs.show_armor_types = mod:get("hb_show_armour_types")
 	fs.hide_after_no_damage = mod:get("hb_hide_after_no_damage")
+	fs.hb_show_when_debuffed = mod:get("hb_show_when_debuffed")
 	fs.horde_hide_after_no_damage = mod:get("hb_horde_hide_after_no_damage")
 	fs.horde_enable = mod:get("hb_horde_enable")
 	fs.horde_clusters_enable = mod:get("hb_horde_clusters_enable")
@@ -230,12 +279,7 @@ mod.build_frame_settings = function(dt)
 		b_crit = 13
 	end
 
-	fs.damage_number_crit_colour = {
-		255,
-		r_crit,
-		g_crit,
-		b_crit,
-	}
+	fs.damage_number_crit_colour = ensure_array(fs.damage_number_crit_colour, 255, r_crit, g_crit, b_crit)
 
 	local r_ws = mod:get("damage_number_weakspot_colour_R")
 	local g_ws = mod:get("damage_number_weakspot_colour_G")
@@ -247,12 +291,8 @@ mod.build_frame_settings = function(dt)
 		b_ws = 107
 	end
 
-	fs.damage_number_weakspot_colour = {
-		255,
-		r_ws,
-		g_ws,
-		b_ws,
-	}
+	fs.damage_number_weakspot_colour = ensure_array(fs.damage_number_weakspot_colour, 255, r_ws, g_ws, b_ws)
+
 	fs.hb_toggle_base_boss_healthbar = mod:get("hb_toggle_base_boss_healthbar")
 	fs.healthbar_only_in_meatgrinder = mod:get("healthbar_only_in_meatgrinder")
 	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
@@ -274,12 +314,7 @@ mod.build_frame_settings = function(dt)
 		b = 220
 	end
 
-	fs.toughness_colour = {
-		255,
-		r,
-		g,
-		b,
-	}
+	fs.toughness_colour = ensure_array(fs.toughness_colour, 255, r, g, b)
 
 	-- SPECIAL ATTACKS
 	fs.marker_specials_enable = mod:get("marker_specials_enable")
@@ -291,11 +326,7 @@ mod.build_frame_settings = function(dt)
 	local spec_r = mod:get("outline_specials_colour_R")
 	local spec_g = mod:get("outline_specials_colour_G")
 	local spec_b = mod:get("outline_specials_colour_B")
-	fs.outline_specials_colour = {
-		[2] = spec_r or 255,
-		[3] = spec_g or 0,
-		[4] = spec_b or 0,
-	}
+	fs.outline_specials_colour = ensure_array_indexed(fs.outline_specials_colour, spec_r or 255, spec_g or 0, spec_b or 0)
 
 	-- STAGGER SETTINGS
 	fs.debuff_stagger_enable = mod:get("debuff_stagger_enable")
@@ -313,15 +344,11 @@ mod.build_frame_settings = function(dt)
 		b = 220
 	end
 
-	fs.outline_stagger_colour = {
-		255,
-		r,
-		g,
-		b,
-	}
+	fs.outline_stagger_colour = ensure_array(fs.outline_stagger_colour, 255, r, g, b)
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")
+	fs.debuff_keyword_enable = mod:get("debuff_keyword_enable")
 	fs.debuff_dot_enable = mod:get("debuff_dot_enable")
 	fs.debuff_utility_enable = mod:get("debuff_utility_enable")
 	fs.debuff_names = mod:get("debuff_names")

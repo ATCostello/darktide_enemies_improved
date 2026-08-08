@@ -9,15 +9,27 @@ local PhysicsWorld = PhysicsWorld
 local ScriptUnit = ScriptUnit
 local Vector3 = Vector3
 local next = next
+local type = type
 local Unit_alive = Unit.alive
+local Unit_has_node = Unit.has_node
+local Unit_node = Unit.node
+local Unit_world_position = Unit.world_position
+local Actor_unit = Actor.unit
+local ScriptUnit_has_extension = ScriptUnit.has_extension
 local Managers_ui = Managers.ui
 
 -- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
+local _cached_physics_world = nil
+local _physics_world_checked = false
 local fs = mod.frame_settings
 
 local function get_outline_system()
+	if _outline_system_checked then
+		return _outline_system
+	end
+
 	local extension_manager = Managers.state.extension
 
 	if not extension_manager then
@@ -28,7 +40,27 @@ local function get_outline_system()
 		return nil
 	end
 
-	return extension_manager:system("outline_system")
+	_outline_system = extension_manager:system("outline_system")
+	_outline_system_checked = true
+	return _outline_system
+end
+
+local function get_physics_world()
+	if _physics_world_checked then
+		return _cached_physics_world
+	end
+
+	local world = Managers.world:world("level_world")
+	_cached_physics_world = world and World.get_data(world, "physics_world") or nil
+	_physics_world_checked = true
+	return _cached_physics_world
+end
+
+mod._clear_outline_caches = function()
+	_outline_system = nil
+	_outline_system_checked = false
+	_cached_physics_world = nil
+	_physics_world_checked = false
 end
 
 mod.remove_outline = function(unit, outline, outline_system)
@@ -103,12 +135,20 @@ mod.disable_enemy_outlines = function(unit, entry)
 	local breed = entry.breed
 	local breed_name = breed and breed.name
 
-	local type_outline = entry._outline_name_type or ("enemies_" .. breed_type)
+	local type_outline = entry._outline_name_type
+	if not type_outline then
+		type_outline = "enemies_" .. breed_type
+		entry._outline_name_type = type_outline
+	end
 	mod.remove_outline(unit, type_outline, outline_system)
 	entry._outline_applied = false
 
 	if breed_name then
-		local individual_outline = entry._outline_name_individual or ("enemies_" .. breed_name)
+		local individual_outline = entry._outline_name_individual
+		if not individual_outline then
+			individual_outline = "enemies_" .. breed_name
+			entry._outline_name_individual = individual_outline
+		end
 		mod.remove_outline(unit, individual_outline, outline_system)
 		entry._outline_applied = false
 	end
@@ -130,8 +170,11 @@ mod.pulse_enemy_outline = function(entry)
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
-	local world = Managers.world:world("level_world")
-	local physics_world = World.get_data(world, "physics_world")
+
+	local physics_world = get_physics_world()
+	if not physics_world then
+		return
+	end
 
 	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
 
@@ -224,35 +267,25 @@ mod.outline_safety_cleanup = function()
 	end
 end
 
-mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
-	if not player_unit or not enemy_unit then
+-- Raycast from player_pos towards target_pos; returns true when the path is clear
+-- or the only thing hit is the enemy unit itself.
+local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, enemy_unit)
+	if not target_pos then
 		return false
 	end
 
-	if not Unit.alive(player_unit) or not Unit.alive(enemy_unit) then
-		return false
-	end
+	local dx = target_pos.x - player_pos.x
+	local dy = target_pos.y - player_pos.y
+	local dz = target_pos.z - player_pos.z
+	local distance_sq = dx * dx + dy * dy + dz * dz
 
-	local unit_data_extension = ScriptUnit.has_extension(player_unit, "unit_data_system")
-	if not unit_data_extension then
-		return false
-	end
-	local first_person_component = unit_data_extension:read_component("first_person")
-	local player_pos = first_person_component.position
-
-	local node = Unit.has_node(enemy_unit, "j_head") and Unit.node(enemy_unit, "j_head") or 0
-	local enemy_pos = Unit.world_position(enemy_unit, node)
-
-	local direction = enemy_pos - player_pos
-	local distance_sq = Vector3.length_squared(direction)
-
-	-- avoid sqrt unless needed
 	if distance_sq == 0 then
 		return true
 	end
 
 	local distance = math.sqrt(distance_sq)
-	local dir = direction / distance
+	local inv_dist = 1 / distance
+	local dir = Vector3(dx * inv_dist, dy * inv_dist, dz * inv_dist)
 
 	local hit = PhysicsWorld.raycast(
 		physics_world,
@@ -270,11 +303,42 @@ mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 
 	if type(hit) == "table" then
 		local actor = hit[4]
-		local hit_unit = actor and Actor.unit(actor)
+		local hit_unit = actor and Actor_unit(actor)
 		return hit_unit == enemy_unit
 	end
 
 	return false
+end
+
+-- Line of sight is considered clear when either the enemy's head OR spine is visible.
+mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
+	if not player_unit or not enemy_unit then
+		return false
+	end
+
+	if not Unit_alive(player_unit) or not Unit_alive(enemy_unit) then
+		return false
+	end
+
+	local player_node = Unit_has_node(player_unit, "j_head") and Unit_node(player_unit, "j_head") or 0
+	local player_pos = Unit_world_position(player_unit, player_node)
+	if not player_pos then
+		return false
+	end
+
+	local head_node = Unit_has_node(enemy_unit, "j_head") and Unit_node(enemy_unit, "j_head") or 0
+	local head_pos = Unit_world_position(enemy_unit, head_node)
+
+	if _los_raycast_hits_enemy(physics_world, player_pos, head_pos, enemy_unit) then
+		return true
+	end
+
+	local spine_node = Unit_has_node(enemy_unit, "j_spine1") and Unit_node(enemy_unit, "j_spine1")
+		or Unit_has_node(enemy_unit, "j_spine") and Unit_node(enemy_unit, "j_spine")
+		or 0
+	local spine_pos = spine_node ~= head_node and Unit_world_position(enemy_unit, spine_node) or nil
+
+	return _los_raycast_hits_enemy(physics_world, player_pos, spine_pos, enemy_unit)
 end
 
 mod.get_forward_dot = function(player_unit, enemy_unit)
@@ -298,7 +362,6 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 		return 1
 	end
 
-	local camera_position = Camera.local_position(camera)
 	local camera_rotation = Camera.local_rotation(camera)
 	local forward = Quaternion.forward(camera_rotation)
 
@@ -312,17 +375,17 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 		return 0
 	end
 
-	-- Flattened direction
-	local to_enemy = Vector3.flat(enemy_pos - player_pos)
+	-- Flattened direction (scalar math, no Vector3 allocations)
+	local dx = enemy_pos.x - player_pos.x
+	local dy = enemy_pos.y - player_pos.y
+	local len_sq = dx * dx + dy * dy
 
-	local len_sq = Vector3.length_squared(to_enemy)
 	if len_sq == 0 then
 		return 1
 	end
 
-	to_enemy = to_enemy / math.sqrt(len_sq)
-
-	local dot = Vector3.dot(forward, to_enemy)
+	local inv_len = 1 / math.sqrt(len_sq)
+	local dot = forward.x * dx * inv_len + forward.y * dy * inv_len
 
 	return dot
 end
@@ -383,8 +446,7 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	local world = Managers.world:world("level_world")
-	local physics_world = World.get_data(world, "physics_world")
+	local physics_world = get_physics_world()
 
 	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
 
@@ -584,12 +646,27 @@ mod.apply_enemy_outlines = function(settings)
 
 	-- VANILLA OUTLINE COLOUR OVERRIDES
 
+	-- Enable toggles for the vanilla outline overrides (default on)
+	local outline_override_toggles = {
+		"outline_tagged_enable",
+		"outline_tagged_passive_enable",
+		"outline_companion_enable",
+		"outline_veteran_tagged_enable",
+	}
+
+	for i = 1, #outline_override_toggles do
+		local toggle_id = outline_override_toggles[i]
+		if mod:get(toggle_id) == nil then
+			mod:set(toggle_id, true)
+		end
+	end
+
 	-- smart_tagged_enemy (active tag)
 	local tr = mod:get("outline_tagged_colour_R")
 	local tg = mod:get("outline_tagged_colour_G")
 	local tb = mod:get("outline_tagged_colour_B")
 
-	if tr and tg and tb then
+	if tr and tg and tb and mod:get("outline_tagged_enable") then
 		settings.MinionOutlineExtension.smart_tagged_enemy = {
 			color = { tr / 255, tg / 255, tb / 255 },
 			material_layers = {
@@ -609,7 +686,7 @@ mod.apply_enemy_outlines = function(settings)
 	local tpb = mod:get("outline_tagged_passive_colour_B")
 
 	-- tag
-	if tpr and tpg and tpb then
+	if tpr and tpg and tpb and mod:get("outline_tagged_passive_enable") then
 		settings.MinionOutlineExtension.smart_tagged_enemy_passive = {
 			color = { tpr / 255, tpg / 255, tpb / 255 },
 			material_layers = {
@@ -631,7 +708,7 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_veteran_tagged_colour_R")
 	local tg = mod:get("outline_veteran_tagged_colour_G")
 	local tb = mod:get("outline_veteran_tagged_colour_B")
-	if tr and tg and tb then
+	if tr and tg and tb and mod:get("outline_veteran_tagged_enable") then
 		settings.MinionOutlineExtension.veteran_smart_tag = {
 			color = { tr / 255, tg / 255, tb / 255 },
 			material_layers = {
@@ -650,7 +727,7 @@ mod.apply_enemy_outlines = function(settings)
 	local tg = mod:get("outline_companion_colour_G")
 	local tb = mod:get("outline_companion_colour_B")
 
-	if tr and tg and tb then
+	if tr and tg and tb and mod:get("outline_companion_enable") then
 		settings.MinionOutlineExtension.adamant_smart_tag = {
 			color = { tr / 255, tg / 255, tb / 255 },
 			material_layers = {

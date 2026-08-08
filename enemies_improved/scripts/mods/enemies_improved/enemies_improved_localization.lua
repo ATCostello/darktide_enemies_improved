@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.0.14"
+mod.version = "2.1.0"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -326,6 +326,10 @@ table.insert(localisations_to_add, {
 	bleed = {
 		en = "Bleed",
 		["zh-cn"] = "流血",
+	},
+	bleed_long = {
+		en = "Bleed (Long)",
+		["zh-cn"] = "流血（持续）",
 	},
 	bleeding = {
 		en = "Bleeding",
@@ -787,6 +791,14 @@ table.insert(localisations_to_add, {
 		en = "Global toggle for outlines of enemies. Head to the group/individual override sections to adjust outlines per enemy.",
 		["zh-cn"] = "全局开关敌人轮廓，可在下方单独配置各类型敌人。",
 	},
+	outline_tagged_enable = {
+		en = "Enable tagged enemy outline override",
+		["zh-cn"] = "启用标记敌人轮廓覆盖",
+	},
+	outline_tagged_enable_tooltip = {
+		en = "Enable the custom outline colour for enemies you actively tag.",
+		["zh-cn"] = "启用你手动标记敌人时使用的自定义轮廓颜色。",
+	},
 	outline_tagged_colour = {
 		en = "Tagged enemy outline colour",
 		["zh-cn"] = "自身标记敌人轮廓颜色",
@@ -808,6 +820,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "你手动标记敌人时显示的轮廓颜色。",
 	},
 
+	outline_veteran_tagged_enable = {
+		en = "Enable Veteran focus target outline override",
+		["zh-cn"] = "启用老兵专注目标轮廓覆盖",
+	},
+	outline_veteran_tagged_enable_tooltip = {
+		en = "Enable the custom outline colour for Veteran's Focus Target tag.",
+		["zh-cn"] = "启用老兵「专注目标」标记使用的自定义轮廓颜色。",
+	},
 	outline_veteran_tagged_colour = {
 		en = "Veteran's Focus Target tag outline colour",
 		["zh-cn"] = "老兵专注标记轮廓颜色",
@@ -829,6 +849,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "老兵天赋「专注目标」标记对应的高亮轮廓颜色。",
 	},
 
+	outline_tagged_passive_enable = {
+		en = "Enable passive tagged enemy outline override",
+		["zh-cn"] = "启用队友标记敌人轮廓覆盖",
+	},
+	outline_tagged_passive_enable_tooltip = {
+		en = "Enable the custom outline colour for enemies tagged by your teammates.",
+		["zh-cn"] = "启用队友标记敌人时使用的自定义轮廓颜色。",
+	},
 	outline_tagged_passive_colour = {
 		en = "Tagged enemy (Passive) outline colour",
 		["zh-cn"] = "队友标记敌人轮廓颜色",
@@ -883,6 +911,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "标记轮廓：蓝色",
 	},
 
+	outline_companion_enable = {
+		en = "Enable companion outline override",
+		["zh-cn"] = "启用随从单位轮廓覆盖",
+	},
+	outline_companion_enable_tooltip = {
+		en = "Enable the custom outline colour for companion units.",
+		["zh-cn"] = "启用所有召唤随从单位使用的自定义轮廓颜色。",
+	},
 	outline_companion_colour = {
 		en = "Companion tagged enemy outline colour",
 		["zh-cn"] = "随从单位轮廓颜色",
@@ -975,6 +1011,14 @@ table.insert(localisations_to_add, {
 	only_in_meatgrinder_tooltip = {
 		en = "Toggle to show Enemies Improved widgets in the meat grinder ONLY. This means that in live matches, or anywhere outside the meat grinder - you will not see any enemies improved changes.",
 		["zh-cn"] = "开启后，仅在灵能室内显示敌人增强模组的UI组件。在正式对局或灵能室以外的区域，将不会生效任何敌人增强相关改动。",
+	},
+	always_show_in_meatgrinder = {
+		en = "Always show in Meat Grinder?",
+		["zh-cn"] = "在灵能室内始终显示？",
+	},
+	always_show_in_meatgrinder_tooltip = {
+		en = "While inside the Meat Grinder, skip the 'hide after no damage' logic so healthbars and damage numbers always stay visible. Useful for testing. Does nothing outside the Meat Grinder.",
+		["zh-cn"] = "在灵能室内时，跳过“无伤害后隐藏”逻辑，使血条和伤害数字始终可见。便于测试。对灵能室以外的区域无效。",
 	},
 })
 
@@ -1082,6 +1126,26 @@ table.insert(localisations_to_add, {
 		en = "Toggles the overhead markers to use the enemies' healthbar colour instead of the default colour.",
 		["zh-cn"] = "开启后头顶标记使用敌人血条颜色，而非默认颜色。",
 	},
+	marker_visual_style = {
+		en = "Overhead Marker Style",
+		["zh-cn"] = "头顶标记样式",
+	},
+	marker_visual_style_tooltip = {
+		en = "Selects which visual is used as the overhead marker.\n\nDiamond: The default diamond marker.\nSimple health tracker: Shows a quadrant-based (25, 50, 75, 100) health tracker using the healthbar colours.\nEnemy type icon: Replaces the marker with the enemy type icon (elite, special, sniper, etc.). Uses the healthbar icon colours and per-type icon toggles.",
+		["zh-cn"] = "选择头顶标记使用的样式。\n菱形：默认的菱形标记。\n简易血量：显示四段式（25/50/75/100）血量指示，使用血条颜色。\n敌人类型图标：用敌人类型图标（精英、特感、狙击手等）替换标记。使用血条的图标颜色与各类别的图标开关。",
+	},
+	marker_style_diamond = {
+		en = "Diamond",
+		["zh-cn"] = "菱形",
+	},
+	marker_style_simple_health = {
+		en = "Simple health tracker",
+		["zh-cn"] = "简易血量",
+	},
+	marker_style_type_icon = {
+		en = "Enemy type icon",
+		["zh-cn"] = "敌人类型图标",
+	},
 	marker_size = {
 		en = "Marker Scale",
 		["zh-cn"] = "标记大小",
@@ -1089,14 +1153,6 @@ table.insert(localisations_to_add, {
 	marker_size_tooltip = {
 		en = "Adjust the scale of the overhead marker.",
 		["zh-cn"] = "调整头顶标记的缩放比例。",
-	},
-	markers_health_enable = {
-		en = "Toggle simple health tracker",
-		["zh-cn"] = "启用简易血量显示",
-	},
-	markers_health_enable_tooltip = {
-		en = "Toggles a simple quadrant-based (25, 50, 75, 100) health tracker on the overhead marker. \n\nUses the healthbar colours. \n\nCan be useful if you want a minimal way to get an insight on the health of enemies.",
-		["zh-cn"] = "在头顶标记上显示简易血量（25/50/75/100），使用血条颜色。",
 	},
 	marker_y_offset = {
 		en = "Adjust Y offset for overhead markers",
@@ -1157,6 +1213,14 @@ table.insert(localisations_to_add, {
 	markers_show_only_aimed_tooltip = {
 		en = "Only show overhead markers and healthbars for the enemy you are currently aiming at with your crosshair.",
 		["zh-cn"] = "只对当前准星瞄准的敌人显示头顶标记和血条。",
+	},
+	aim_cone_angle = {
+		en = "Aim detection cone angle (degrees)",
+		["zh-cn"] = "准星瞄准判定角度（度）",
+	},
+	aim_cone_angle_tooltip = {
+		en = "Sets the width of the cone used to decide which enemies count as 'aimed at'. Higher values make the aim filter more forgiving.",
+		["zh-cn"] = "设置判定“被瞄准”的锥形角度，数值越大越容易判定为正在瞄准。",
 	},
 	only_tagged_enemies = {
 		en = "Only show for tagged enemies?",
@@ -1433,6 +1497,14 @@ table.insert(localisations_to_add, {
 	hb_hide_after_no_damage_tooltip = {
 		en = "Toggle hiding of healthbars for non-horde enemies after a short delay of no damage taken. Can be used to reduce visual clutter.\n\nIf disabled, healthbars will always be visible.",
 		["zh-cn"] = "停止攻击后短暂延迟自动隐藏血条，减少画面杂乱。关闭则永久显示。",
+	},
+	hb_show_when_debuffed = {
+		en = "Show healthbars for debuffed enemies?",
+		["zh-cn"] = "受减益效果的敌人显示血条？",
+	},
+	hb_show_when_debuffed_tooltip = {
+		en = "Keeps healthbars visible (and shows them for horde enemies) while the enemy has an active debuff such as bleeding, burning, or being stunned. Useful for tracking damage-over-time effects.",
+		["zh-cn"] = "敌人身上存在流血、燃烧、硬控等减益效果时，保持血条显示（尸潮怪也会显示），方便追踪持续伤害。",
 	},
 	hb_horde_hide_after_no_damage = {
 		en = "Hide horde healthbars after no damage received?",
@@ -1777,6 +1849,14 @@ table.insert(localisations_to_add, {
 	debuff_utility_enable_tooltip = {
 		en = "Utility debuffs are displayed downwards and include things like rending, damage increases, weakening.",
 		["zh-cn"] = "脆弱、增伤、虚弱等功能效果向下显示。",
+	},
+	debuff_keyword_enable = {
+		en = "Enable keyword state debuffs",
+		["zh-cn"] = "显示状态减益",
+	},
+	debuff_keyword_enable_tooltip = {
+		en = "State debuffs detected from buff keywords, such as bleeding, electrocuted and burning.",
+		["zh-cn"] = "通过关键字检测的状态减益，如流血、触电和燃烧。",
 	},
 	split_debuff_types = {
 		en = "Split DoT and Utility debuffs?",
@@ -2133,6 +2213,14 @@ table.insert(localisations_to_add, {
 		en = "Toggle healthbars for your selected enemy type/class",
 		["zh-cn"] = "为当前选中敌人类型开启/关闭血条。",
 	},
+	healthbar_type_always_show = {
+		en = "Always show healthbar?",
+		["zh-cn"] = "始终显示血条？",
+	},
+	healthbar_type_always_show_tooltip = {
+		en = "When enabled, the global 'Hide healthbar after no damage' setting will be ignored for this enemy type, so their healthbars never fade out.",
+		["zh-cn"] = "开启后，该敌人类型将忽略全局“无伤害后隐藏血条”设置，血条不会淡出。",
+	},
 	healthbar_type_colour = {
 		en = "Healthbar colour (Enemy Type Specific)",
 		["zh-cn"] = "血条颜色（类型专属）",
@@ -2281,6 +2369,14 @@ table.insert(localisations_to_add, {
 	healthbar_individual_force_tooltip = {
 		en = "When enabled, the healthbar will always be shown for this enemy, even if the enemy type group has healthbars disabled.",
 		["zh-cn"] = "开启后该敌人始终显示血条，即使其类型分组已禁用血条。",
+	},
+	healthbar_individual_always_show = {
+		en = "Always show healthbar?",
+		["zh-cn"] = "始终显示血条？",
+	},
+	healthbar_individual_always_show_tooltip = {
+		en = "When enabled, the global 'Hide healthbar after no damage' setting will be ignored for this specific enemy, so their healthbar never fades out.",
+		["zh-cn"] = "开启后，该敌人将忽略全局“无伤害后隐藏血条”设置，血条不会淡出。",
 	},
 	healthbar_individual_colour = {
 		en = "Healthbar colour (Enemy Specific)",

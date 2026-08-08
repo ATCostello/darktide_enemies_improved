@@ -122,6 +122,8 @@ template.damage_number_settings = {
 local previous_health = {}
 local last_damaged_time = {}
 local peak_cluster_max_by_rep = {}
+local damage_number_pool = {}
+mod.damage_number_pool = damage_number_pool
 
 local armor_type_string_lookup = {
 	armored = "loc_weapon_stats_display_armored",
@@ -133,6 +135,7 @@ local armor_type_string_lookup = {
 }
 
 mod.latest_damaged_enemies = {}
+mod.latest_damaged_enemies_set = {}
 
 -----------------------------------------------------------------------
 -- Damage number dispatcher
@@ -302,7 +305,7 @@ template.on_enter = function(widget, marker, template)
 	local content = widget.content
 	local style = widget.style
 
-	template.position_offset = { 0, 0, fs.hb_y_offset }
+	template.position_offset[3] = fs.hb_y_offset
 
 	content.hb_built = false
 	content.draw_hb = false
@@ -563,7 +566,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.draw_hb = false
 	end
 
-	-- early out
 	if not content.draw_hb and not marker.is_inside_frustum then
 		content.draw_hb = false
 		return
@@ -997,10 +999,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			if fs.hb_damage_show_only_latest then
 				-- add new unit to the end
 				table.insert(mod.latest_damaged_enemies, unit)
+				mod.latest_damaged_enemies_set[unit] = true
 
 				-- remove oldest entries if we exceed the limit
 				while #mod.latest_damaged_enemies > fs.hb_damage_show_only_latest_value do
-					table_remove(mod.latest_damaged_enemies, 1)
+					local removed = table_remove(mod.latest_damaged_enemies, 1)
+					mod.latest_damaged_enemies_set[removed] = nil
 				end
 			end
 
@@ -1026,18 +1030,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 			if fs.show_damage_numbers or fs.hb_text_show_damage then
 				if content.add_on_next_number or was_critical or should_add then
-					local damage_number = {
-						expand_time = 0,
-						time = 0,
-						start_time = t,
-						duration = damage_number_settings.duration,
-						value = damage_diff,
-						expand_duration = damage_number_settings.expand_duration,
-						random_number = math_random(),
-						float_right = math_random() > 0.5,
-					}
+					local damage_number = damage_number_pool[#damage_number_pool]
+					if damage_number then
+						damage_number_pool[#damage_number_pool] = nil
+					else
+						damage_number = {}
+					end
+					damage_number.expand_time = 0
+					damage_number.time = 0
+					damage_number.start_time = t
+					damage_number.duration = damage_number_settings.duration
+					damage_number.value = damage_diff
+					damage_number.expand_duration = damage_number_settings.expand_duration
+					damage_number.random_number = math_random()
+					damage_number.float_right = math_random() > 0.5
+					damage_number.hit_world_position = nil
+					damage_number.shrink_start_t = nil
+					damage_number.y_position = nil
+
 					local breed_local = content.breed
-					local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
 
 					if is_weakspot(breed_local, content.last_hit_zone_name) then
 						damage_number.hit_weakspot = true
@@ -1051,7 +1062,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 					-- Prevent runaway memory usage
 					if #damage_numbers > 20 then
-						table_remove(damage_numbers, 1)
+						local removed = table_remove(damage_numbers, 1)
+						damage_number_pool[#damage_number_pool + 1] = removed
 					end
 
 					if content.add_on_next_number then
@@ -1113,12 +1125,22 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
+	-- killed in the same frame damage was taken: seed DPS data so it shows on the death frame
+	if damage_taken_since_last > 0 and health_extension and is_dead and fs.hb_show_dps then
+		content.damage_taken = total_damage_taken
+		content.last_damage_taken_time = t
+		if not content.damage_has_started then
+			content.damage_has_started = true
+		end
+	end
+
 	-------------------------------------------------------------------
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
 
-	local size = { fs.hb_size_width, fs.hb_size_height }
-	template.size = size
+	local size = template.size
+	size[1] = fs.hb_size_width
+	size[2] = fs.hb_size_height
 
 	-- only do healthbar calculations if theyre enabled... Still lets the damage numbers do their thing :)
 	if health_fraction and health_ghost_fraction then
@@ -1320,16 +1342,57 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- only hide non-clustered horde units when horde disabled
+	-- (unless the individual horde breed has its own healthbar toggle/force enabled,
+	-- the horde group override is on, or the unit is debuffed)
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
-		content.draw_hb = false
+		local horde_individual = breed and breed.name
+		local individual_hb_enabled = horde_individual and fs.breed_healthbar_enabled and fs.breed_healthbar_enabled[horde_individual]
+		local individual_hb_force = horde_individual and fs.breed_healthbar_force and fs.breed_healthbar_force[horde_individual]
+		local group_hb_enabled = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+
+		if
+			not individual_hb_enabled
+			and not individual_hb_force
+			and not group_hb_enabled
+			and not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit))
+		then
+			content.draw_hb = false
+		end
 	end
 
-	if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
-		content.draw_hb = false
+	-- always show in the meat grinder skips the hide-after-no-damage logic (useful for testing)
+	local skip_hide_after_no_damage = false
+	if fs.always_show_in_meatgrinder then
+		local current_level = Managers_state.mission and Managers_state.mission:mission()
+		if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
+			skip_hide_after_no_damage = true
+		end
 	end
 
-	if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
-		content.draw_hb = false
+	-- enemies with an active debuff keep their healthbar visible to track DOTs
+	if not skip_hide_after_no_damage and fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit) then
+		skip_hide_after_no_damage = true
+	end
+
+	-- per enemy type / individual "always show" overrides also skip the hide-after-no-damage logic
+	local enemy_individual = breed and breed.name
+	if not skip_hide_after_no_damage then
+		if fs.breed_type_healthbar_always_show and fs.breed_type_healthbar_always_show[breed_type] then
+			skip_hide_after_no_damage = true
+		end
+		if fs.breed_healthbar_always_show and fs.breed_healthbar_always_show[enemy_individual] then
+			skip_hide_after_no_damage = true
+		end
+	end
+
+	if not skip_hide_after_no_damage then
+		if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
+			content.draw_hb = false
+		end
+
+		if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
+			content.draw_hb = false
+		end
 	end
 
 	if not marker.is_inside_frustum then
@@ -1337,7 +1400,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if fs.hb_damage_show_only_latest then
-		if not table.contains(mod.latest_damaged_enemies, unit) then
+		if not mod.latest_damaged_enemies_set[unit] then
 			content.draw_hb = false
 		end
 	end
@@ -1351,7 +1414,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if fs.healthbar_enable and not content.dead then
 			content.hb_built = true
 		end
-		if fs.show_damage_numbers then
+		if fs.show_damage_numbers or fs.hb_show_dps then
 			content.dn_built = true
 		end
 
@@ -1385,6 +1448,14 @@ mod._cleanup_unit_health_data = function(unit)
 	previous_health[unit] = nil
 	last_damaged_time[unit] = nil
 	peak_cluster_max_by_rep[unit] = nil
+end
+
+local table_clear = table.clear
+
+mod._clear_unit_health_data = function()
+	table_clear(previous_health)
+	table_clear(last_damaged_time)
+	table_clear(peak_cluster_max_by_rep)
 end
 
 return template

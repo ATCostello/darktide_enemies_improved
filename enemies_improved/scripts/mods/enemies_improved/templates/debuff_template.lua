@@ -380,6 +380,77 @@ local function calc_stack_buff_percentage(val, stacks, stat_name)
 	return math_floor(perc * 10 + 0.5) * 0.1
 end
 
+-- Pick a single representative percentage from a stat_buffs table.
+-- Only stats typed as additive/multiplicative multipliers produce a non-zero percentage
+-- (value/max_value stats are ignored), so plain stack debuffs fall back to stack counts.
+local function best_stat_buff_percentage(stat_buffs, stacks)
+	local best = nil
+	for stat_name, val in next, stat_buffs do
+		if stat_name and val then
+			local perc = calc_stack_buff_percentage(val, stacks, stat_name)
+			if perc ~= 0 then
+				if not best or math.abs(perc) > math.abs(best) then
+					best = perc
+				end
+			end
+		end
+	end
+	return best
+end
+
+-- Collect the raw stat contributions of one source entry.
+-- additive_multiplier accumulates (val * stacks), multiplicative_multiplier multiplies (val ^ stacks).
+local function collect_source_contributions(entry)
+	local contributions = {}
+	if entry.stat_buffs then
+		for stat_name, val in pairs(entry.stat_buffs) do
+			if stat_name and val then
+				local stat_buff_type = stat_buff_types[stat_name]
+				local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+				if stat_buff_type == "multiplicative_multiplier" then
+					contributions[stat_name] = (contributions[stat_name] or 1) * (val ^ effective_stacks)
+				elseif stat_buff_type == "additive_multiplier" then
+					contributions[stat_name] = (contributions[stat_name] or 0) + val * effective_stacks
+				end
+			end
+		end
+	end
+	if entry.conditional_stat_buffs then
+		for stat_name, val in pairs(entry.conditional_stat_buffs) do
+			if stat_name and val then
+				local stat_buff_type = stat_buff_types[stat_name]
+				local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
+				if stat_buff_type == "multiplicative_multiplier" then
+					contributions[stat_name] = (contributions[stat_name] or 1) * (val ^ effective_stacks)
+				elseif stat_buff_type == "additive_multiplier" then
+					contributions[stat_name] = (contributions[stat_name] or 0) + val * effective_stacks
+				end
+			end
+		end
+	end
+	return contributions
+end
+
+-- Merge one source's stat contribution into an aggregate table.
+-- Parallel stats within a single source count once (representative with the largest magnitude,
+-- e.g. phosphor_burn's vs_melee/vs_ranged hit mass); the same stat across sources accumulates.
+local function merge_source_contributions(aggregate, entry)
+	local contributions = collect_source_contributions(entry)
+	local rep_stat, rep_value
+	for stat_name, value in pairs(contributions) do
+		if not rep_stat or math.abs(value) > math.abs(rep_value) then
+			rep_stat, rep_value = stat_name, value
+		end
+	end
+	if rep_stat and rep_value then
+		if stat_buff_types[rep_stat] == "multiplicative_multiplier" then
+			aggregate[rep_stat] = (aggregate[rep_stat] or 1) * rep_value
+		else
+			aggregate[rep_stat] = (aggregate[rep_stat] or 0) + rep_value
+		end
+	end
+end
+
 -----------------------------------------------------------------------
 -- Update function
 -----------------------------------------------------------------------
@@ -499,7 +570,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local name = keyword
 			
 			-- DOT STUFF
-			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
+			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_keyword_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
@@ -519,7 +590,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			-- UTILITY STUFF
-			if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
+			if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_keyword_enable then
 				local stacks = 1
 
 				active_count = active_count + 1
@@ -734,24 +805,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				-- accumulate actual stat contributions (capped per source) for correct combined percentage
 				existing._stat_contributions = existing._stat_contributions or {}
-				if entry.stat_buffs then
-					for stat_name, val in pairs(entry.stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						existing._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
-				end
-				if entry.conditional_stat_buffs then
-					for stat_name, val in pairs(entry.conditional_stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						existing._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
-				end
+				merge_source_contributions(existing._stat_contributions, entry)
 			else
 				combined_count = combined_count + 1
 
@@ -767,24 +821,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				}
 
 				new_entry._stat_contributions = {}
-				if entry.stat_buffs then
-					for stat_name, val in pairs(entry.stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						new_entry._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
-				end
-				if entry.conditional_stat_buffs then
-					for stat_name, val in pairs(entry.conditional_stat_buffs) do
-						local effective_stacks = math.min(entry.stacks or 1, entry.max_stacks or math.huge)
-						new_entry._stat_contributions[stat_name] = {
-							val = val,
-							stacks = effective_stacks,
-						}
-					end
-				end
+				merge_source_contributions(new_entry._stat_contributions, entry)
 
 				combined[combined_count] = new_entry
 
@@ -1262,13 +1299,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				if debuff.combined and debuff._stat_contributions then
 					local total_perc = 0
 					for stat_name, contrib in pairs(debuff._stat_contributions) do
-						if stat_name and contrib and contrib.val and contrib.stacks then
+						if stat_name and contrib then
 							local stat_buff_type = stat_buff_types[stat_name]
 							local raw = 0
 							if stat_buff_type == "multiplicative_multiplier" then
-								raw = (contrib.val ^ contrib.stacks - 1) * 100
-							else
-								raw = contrib.val * contrib.stacks * 100
+								raw = (contrib - 1) * 100
+							elseif stat_buff_type == "additive_multiplier" then
+								raw = contrib * 100
 							end
 							local nearest = math_floor((raw + 5) / 10) * 10
 							if math.abs(raw - nearest) <= 1 then
@@ -1281,19 +1318,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 						stack_buff_percentage = total_perc
 					end
 				elseif stat_buffs then
-					for stat_name, val in next, stat_buffs do
-						if stat_name and val then
-							local loc = mod.custom_localize(stat_name)
-							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
-						end
-					end
+					stack_buff_percentage = best_stat_buff_percentage(stat_buffs, stacks) or ""
 				elseif conditional_stat_buffs then
-					for stat_name, val in next, conditional_stat_buffs do
-						if stat_name and val then
-							local loc = mod.custom_localize(stat_name)
-							stack_buff_percentage = calc_stack_buff_percentage(val, stacks, stat_name)
-						end
-					end
+					stack_buff_percentage = best_stat_buff_percentage(conditional_stat_buffs, stacks) or ""
 				end
 
 				-- Update stack text
