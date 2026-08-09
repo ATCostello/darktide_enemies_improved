@@ -92,9 +92,6 @@ mod.apply_marker_fade = function(self)
 	for i = #marker_list, 1, -1 do
 		marker_list[i] = nil
 	end
-	if mod.DEBUG then
-		mod.markers_by_id = markers_by_id
-	end
 
 	-- BUILD MARKER LIST
 	for marker_id, marker in next, markers_by_id do

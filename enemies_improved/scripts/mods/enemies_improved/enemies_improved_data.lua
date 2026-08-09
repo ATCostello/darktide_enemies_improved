@@ -2645,9 +2645,9 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "general_throttle_rate",
 			type = "numeric",
-			default_value = 20,
+			default_value = 10,
 			range = {
-				10,
+				5,
 				100,
 			},
 			decimals_number = 0,
@@ -2657,7 +2657,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "off_screen_throttle_rate",
 			type = "numeric",
-			default_value = 120,
+			default_value = 50,
 			range = {
 				10,
 				300,

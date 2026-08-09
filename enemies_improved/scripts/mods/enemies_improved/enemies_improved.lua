@@ -26,6 +26,14 @@ local Quaternion_forward = Quaternion.forward
 mod.DEBUG = false
 if mod.DEBUG then
 	dbg_mod = mod
+
+	local MemProfile = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/mem_profile")
+	mod.mem_profile = MemProfile
+
+	mod.update = function(dt)
+		mod.mem_profile.tick(dt)
+		mod.mem_profile.render_gui()
+	end
 end
 
 mod.detect_alive = function(unit)
@@ -122,6 +130,25 @@ local _spatial_hash = {}
 local _visited = {}
 local _z_samples = {}
 local _bfs_queue = {}
+
+-- track variables with the memory profiler for growth/leak monitoring
+if mod.DEBUG then
+	local mem = mod.mem_profile
+	mem.track("cluster._horde_clusters", _horde_clusters)
+	mem.track("cluster._horde_cluster_by_unit", _horde_cluster_by_unit)
+	mem.track("cluster._cull_pool", _cull_pool)
+	mem.track("cluster._spatial_hash", _spatial_hash)
+	mem.track("cluster._visited", _visited)
+	mem.track("cluster._z_samples", _z_samples)
+	mem.track("cluster._bfs_queue", _bfs_queue)
+	mem.track("mod._broadphase_results", mod._broadphase_results)
+	mem.track("mod.enemy_cache", mod.enemy_cache)
+	mem.track("mod.enemy_markers", mod.enemy_markers)
+	mem.track("mod.enemy_healthbars", mod.enemy_healthbars)
+	mem.track("mod.enemy_debuffs", mod.enemy_debuffs)
+	mem.track("mod.marked_dead", mod.marked_dead)
+	mem.track("mod.source_unit_cache", mod.source_unit_cache)
+end
 
 local COLOUR_LOOKUP = {
 	Gold = { 255, 232, 188, 109 },
@@ -276,9 +303,60 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	add_custom_templates(self)
 end)
 
+-- Vanilla _unregister_marker never frees the marker widget: it stays referenced in HudElementBase._widgets_by_name (and the element's _widgets render list) forever, leaking memory every time a marker is removed.
+-- This hook captures the marker before vanilla drops all references to it, then release the widget afterwards.
+mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, id)
+	local marker = self._markers and self._markers[id]
+	if not marker then
+		local markers_by_id = self._markers_by_id
+		if markers_by_id then
+			marker = markers_by_id[id]
+		end
+	end
+	local widget = marker and marker.widget
+
+	previous_hook(self, id)
+
+	if widget then
+		local widgets_by_name = self._widgets_by_name
+
+		if widgets_by_name then
+			local widget_name = marker.widget_name
+
+			if widget_name and widgets_by_name[widget_name] == widget then
+				widgets_by_name[widget_name] = nil
+			else
+				for name, w in pairs(widgets_by_name) do
+					if w == widget then
+						widgets_by_name[name] = nil
+						break
+					end
+				end
+			end
+		end
+
+		local widgets = self._widgets
+
+		if widgets then
+			for i = 1, #widgets do
+				if widgets[i] == widget then
+					table_remove(widgets, i)
+					break
+				end
+			end
+		end
+	end
+end)
+
 mod.aimed_unit = {}
 mod.tagged_units = {}
 mod._periodic_cache_clear_timer = 0
+
+if mod.DEBUG then
+	mod.mem_profile.track("mod.aimed_unit", mod.aimed_unit)
+	mod.mem_profile.track("mod.tagged_units", mod.tagged_units)
+end
+
 -----------------------------------------------------------------------
 -- Hook into the markers update to recalculate enemies.
 -----------------------------------------------------------------------
@@ -423,7 +501,7 @@ mod.get_marker_by_id = function(id)
 
 	-- DEBUG TO CREATE MARKER LIST
 	--if mod.DEBUG then
-		--dbg_markers = world_markers._markers_by_type
+	--dbg_markers = world_markers._markers_by_type
 	--end
 
 	if markers_by_id then
@@ -463,6 +541,10 @@ mod.force_remove_unit_markers = function(unit)
 	if entry then
 		entry._ei_marker_created = false
 		entry._ei_marker_pending = nil
+		-- Release marker entry references so the (now removed) marker + widget can be GC'd
+		entry.marker = nil
+		entry.healthbar = nil
+		entry.dot_debuffs = nil
 		mod.disable_enemy_outlines(unit, entry)
 		mod.remove_alert_outline(entry)
 		mod.remove_stagger_outline(entry)
@@ -693,7 +775,7 @@ mod.scan_enemies = function()
 
 			-- build animation map for this enemy
 			if mod.DEBUG then
-				mod.init_breed_anim_db(unit, breed, breed.name)
+				--mod.init_breed_anim_db(unit, breed, breed.name)
 			end
 
 			-- collect ALL horde units BEFORE culling

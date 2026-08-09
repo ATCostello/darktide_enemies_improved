@@ -21,6 +21,10 @@ local NAME_FADE_OUT = 1
 local NAME_TOTAL = NAME_FADE_IN + NAME_VISIBLE + NAME_FADE_OUT
 
 local pool = {}
+
+if mod.DEBUG then
+	mod.mem_profile.track("bossdebuff.pool", pool)
+end
 local fs = mod.frame_settings
 
 local function calc_stack_buff_percentage(val, stacks, stat_name)

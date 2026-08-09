@@ -22,7 +22,7 @@ mod.anim_db = mod.anim_db or {}
 mod.anim_db_dirty = false
 
 if mod.DEBUG then
-	mod.dbg_breedactions = BreedActions
+	--mod.dbg_breedactions = BreedActions
 end
 
 local function serialize_table(val, indent)
@@ -92,7 +92,7 @@ mod.save_anim_db = function()
 	mod.anim_db_dirty = false
 
 	if mod.DEBUG then
-		mod:echo("[ANIM_DB] Saved successfully")
+		--mod:echo("[ANIM_DB] Saved successfully")
 	end
 end
 
@@ -104,12 +104,12 @@ mod.load_anim_db = function()
 	if local_anim_db then
 		mod.anim_db = local_anim_db
 		if mod.DEBUG then
-			mod:echo("[ANIM_DB] Loaded from storage")
+			--mod:echo("[ANIM_DB] Loaded from storage")
 		end
 	else
 		mod.anim_db = {}
 		if mod.DEBUG then
-			mod:echo("[ANIM_DB] Failed to load from storage, creating new.")
+			--mod:echo("[ANIM_DB] Failed to load from storage, creating new.")
 		end
 	end
 end
@@ -134,7 +134,7 @@ mod.clean_anim_db = function()
 	end
 
 	if mod.DEBUG then
-		mod:echo("[ANIM_DB] Cleaned invalid mappings")
+		--mod:echo("[ANIM_DB] Cleaned invalid mappings")
 	end
 end
 

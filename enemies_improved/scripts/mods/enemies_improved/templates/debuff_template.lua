@@ -47,6 +47,10 @@ end
 
 local active_pool = {}
 
+if mod.DEBUG then
+	mod.mem_profile.track("debuff.active_pool", active_pool)
+end
+
 template.size = size
 template.name = "enemy_debuff"
 

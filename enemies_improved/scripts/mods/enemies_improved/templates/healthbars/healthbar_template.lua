@@ -125,6 +125,14 @@ local peak_cluster_max_by_rep = {}
 local damage_number_pool = {}
 mod.damage_number_pool = damage_number_pool
 
+if mod.DEBUG then
+	local mem = mod.mem_profile
+	mem.track("healthbar.previous_health", previous_health)
+	mem.track("healthbar.last_damaged_time", last_damaged_time)
+	mem.track("healthbar.peak_cluster_max_by_rep", peak_cluster_max_by_rep)
+	mem.track("healthbar.damage_number_pool", damage_number_pool)
+end
+
 local armor_type_string_lookup = {
 	armored = "loc_weapon_stats_display_armored",
 	berserker = "loc_weapon_stats_display_berzerker",
@@ -136,6 +144,11 @@ local armor_type_string_lookup = {
 
 mod.latest_damaged_enemies = {}
 mod.latest_damaged_enemies_set = {}
+
+if mod.DEBUG then
+	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
+	mod.mem_profile.track("mod.latest_damaged_enemies_set", mod.latest_damaged_enemies_set)
+end
 
 -----------------------------------------------------------------------
 -- Damage number dispatcher
@@ -1337,6 +1350,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.draw_hb = false
 			mod.enemy_healthbars[unit] = nil
 			marker.remove = true
+			-- Release marker entry references so the (now removed) marker + widget can be GC'd
+			local cache_entry = mod.enemy_cache[unit]
+			if cache_entry then
+				cache_entry.marker = nil
+				cache_entry.healthbar = nil
+				cache_entry.dot_debuffs = nil
+			end
 			--Managers.event:trigger("remove_world_marker", marker.id)
 		end
 	end
