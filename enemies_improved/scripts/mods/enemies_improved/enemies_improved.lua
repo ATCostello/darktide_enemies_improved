@@ -305,23 +305,20 @@ end)
 
 -- Vanilla _unregister_marker never frees the marker widget: it stays referenced in HudElementBase._widgets_by_name (and the element's _widgets render list) forever, leaking memory every time a marker is removed.
 -- This hook captures the marker before vanilla drops all references to it, then release the widget afterwards.
-mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, id)
-	local marker = self._markers and self._markers[id]
-	if not marker then
-		local markers_by_id = self._markers_by_id
-		if markers_by_id then
-			marker = markers_by_id[id]
-		end
-	end
+mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, marker)
 	local widget = marker and marker.widget
 
-	previous_hook(self, id)
+	previous_hook(self, marker)
 
 	if widget then
 		local widgets_by_name = self._widgets_by_name
 
 		if widgets_by_name then
 			local widget_name = marker.widget_name
+
+			if not widget_name and marker.id then
+				widget_name = "marker_widget_id_" .. marker.id
+			end
 
 			if widget_name and widgets_by_name[widget_name] == widget then
 				widgets_by_name[widget_name] = nil
@@ -486,7 +483,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 		-- PERIODIC FULL CACHE CLEAR — runs every ~2 minutes to flush any accumulated stale data
 		mod._periodic_cache_clear_timer = mod._periodic_cache_clear_timer + dt
-		if mod._periodic_cache_clear_timer >= 120 then
+		if mod._periodic_cache_clear_timer >= 60 then
 			mod._periodic_cache_clear_timer = 0
 			mod.clear_caches()
 		end
@@ -586,6 +583,24 @@ mod.remove_all_ei_markers = function()
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
+
+	-- Free orphaned marker widgets are still referenced by name in _widgets_by_name.
+	-- Vanilla never removes marker widgets on unregister, so this reclaims any widget whose marker id is no longer registered (including previously leaked ones).
+	local widgets_by_name = world_markers._widgets_by_name
+	local markers_by_id = world_markers._markers_by_id
+
+	if widgets_by_name and markers_by_id then
+		local prefix = "marker_widget_id_"
+
+		for name, w in pairs(widgets_by_name) do
+			if type(name) == "string" and string.sub(name, 1, #prefix) == prefix then
+				local id = tonumber(string.sub(name, #prefix + 1))
+				if id and not markers_by_id[id] then
+					widgets_by_name[name] = nil
+				end
+			end
+		end
+	end
 end
 
 -- Clean up markers whose unit has no cache entry at all (mod reload, stale callbacks, etc.)
