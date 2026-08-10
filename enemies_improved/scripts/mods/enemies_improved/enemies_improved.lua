@@ -1287,12 +1287,20 @@ end
 -----------------------------------------------------------------------
 
 mod.get_time = function()
-	local tm = Managers.time
+	local tm = Managers and Managers.time
+	local fallback = os.clock() or 0
 	if tm then
-		return tm:time("gameplay")
+		if tm:has_timer("gameplay") then
+			return tm:time("gameplay") or fallback
+		end
+		if tm:has_timer("ui") then
+			return tm:time("ui") or fallback
+		end
+		if tm:has_timer("main") then
+			return tm:time("main") or fallback
+		end
 	end
-
-	return 0
+	return fallback
 end
 
 mod.ts = function()
@@ -1480,8 +1488,8 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
 
-	table_clear(mod.latest_damaged_enemies)
-	table_clear(mod.latest_damaged_enemies_set)
+	--table_clear(mod.latest_damaged_enemies)
+	--table_clear(mod.latest_damaged_enemies_set)
 	table_clear(mod.aimed_unit)
 	table_clear(mod.tagged_units)
 

@@ -77,6 +77,8 @@ local math_floor = math.floor
 
 local string_format = string.format
 local table_remove = table.remove
+local table_insert = table.insert
+local table_contains = table.contains
 local table_index_of = table.index_of
 local table_clone = table.clone
 local next = next
@@ -143,11 +145,9 @@ local armor_type_string_lookup = {
 }
 
 mod.latest_damaged_enemies = {}
-mod.latest_damaged_enemies_set = {}
 
 if mod.DEBUG then
 	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
-	mod.mem_profile.track("mod.latest_damaged_enemies_set", mod.latest_damaged_enemies_set)
 end
 
 -----------------------------------------------------------------------
@@ -1011,13 +1011,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if show_damage_number then
 			if fs.hb_damage_show_only_latest then
 				-- add new unit to the end
-				table.insert(mod.latest_damaged_enemies, unit)
-				mod.latest_damaged_enemies_set[unit] = true
+				if not table_contains(mod.latest_damaged_enemies, unit) then
+					table_insert(mod.latest_damaged_enemies, unit)
+				end
 
 				-- remove oldest entries if we exceed the limit
 				while #mod.latest_damaged_enemies > fs.hb_damage_show_only_latest_value do
-					local removed = table_remove(mod.latest_damaged_enemies, 1)
-					mod.latest_damaged_enemies_set[removed] = nil
+					table_remove(mod.latest_damaged_enemies, 1)
 				end
 			end
 
@@ -1420,7 +1420,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if fs.hb_damage_show_only_latest then
-		if not mod.latest_damaged_enemies_set[unit] then
+		if table_contains(mod.latest_damaged_enemies, unit) then
+			content.draw_hb = true
+		else
 			content.draw_hb = false
 		end
 	end

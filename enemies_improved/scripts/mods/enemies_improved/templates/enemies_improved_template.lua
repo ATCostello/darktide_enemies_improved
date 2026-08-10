@@ -126,6 +126,10 @@ template.create_widget_defintion = function(template, scenegraph_id)
 end
 
 template.on_enter = function(widget, marker, template)
+	marker.draw = false
+	marker.alpha_multiplier = 0
+	widget.alpha_multiplier = 0
+
 	local content = widget.content
 
 	local unit = marker.unit
