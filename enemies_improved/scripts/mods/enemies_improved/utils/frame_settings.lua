@@ -263,6 +263,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_ghostbar_opacity = mod:get("hb_ghostbar_opacity")
 	fs.hb_toggle_ghostbar_colour = mod:get("hb_toggle_ghostbar_colour")
 	fs.readable_max_damage_numbers = mod:get("readable_max_damage_numbers")
+	fs.readable_damage_number_gap = mod:get("readable_damage_number_gap") or 1
 	fs.hb_show_dps = mod:get("hb_show_dps")
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")

@@ -530,11 +530,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local breed_settings = content.breed_settings
 		if breed_settings then
 			local tags = breed_settings.tags
-			local individual_breed_type = mod.find_breed_category_by_tags(tags)
+			local individual_breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
 
-			if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
-				individual_breed_type = "elite"
-			end
+			--if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
+			--	individual_breed_type = "elite"
+			--end
 
 			if individual_breed_type == content.breed_type then
 				if content.healthbar_enabled then

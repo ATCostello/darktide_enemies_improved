@@ -268,6 +268,10 @@ mod.on_all_mods_loaded = function()
 	mod.update_breed_colours()
 	mod.update_breed_icons()
 
+	-- frame settings were built at script-load time, before the defaults above were
+	-- applied; rebuild so newly-applied defaults (e.g. vanguard healthbars off) take effect
+	mod.build_frame_settings()
+
 	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
 

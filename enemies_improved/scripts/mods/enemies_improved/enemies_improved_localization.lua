@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.1.2"
+mod.version = "2.1.3"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -114,10 +114,10 @@ mod.gather_enemy_names_by_breed_types = function()
 		-- skip things that shouldn't be here
 		if name ~= "attack_valkyrie" then
 			local tags = options.tags
-			local breed_type = mod.find_breed_category_by_tags(tags)
-			if name == "renegade_vanguard" or name == "cultist_vanguard" then
-				breed_type = "elite"
-			end
+			local breed_type = mod.find_breed_category_by_tags(tags, name)
+			--if name == "renegade_vanguard" or name == "cultist_vanguard" then
+			--	breed_type = "elite"
+			--end
 
 			if breed_type then
 				enemies[i] =
@@ -1694,6 +1694,12 @@ table.insert(localisations_to_add, {
 		en = "Set a cap for the max damage numbers to show for the Readable damage number type.",
 		["zh-cn"] = "设置清晰样式伤害数字的最大显示值。",
 	},
+	readable_damage_number_gap = {
+		en = "Readable damage number gap",
+	},
+	readable_damage_number_gap_tooltip = {
+		en = "Adjusts the horizontal spacing between each Readable damage number. Higher values spread the numbers further apart.",
+	},
 	toughness_colour = {
 		en = "Toughness Bar Settings",
 		["zh-cn"] = "坚韧条设置",
@@ -1956,11 +1962,11 @@ table.insert(localisations_to_add, {
 	},
 
 	debuff_group_colour = {
-		en = "Debuff Group Overrides",
+		en = "Debuff Overrides",
 		["zh-cn"] = "减益分组颜色覆盖",
 	},
 	debuff_group_selected = {
-		en = "Debuff Group",
+		en = "Debuff",
 		["zh-cn"] = "减益分组",
 	},
 	debuff_group_selected_tooltip = {

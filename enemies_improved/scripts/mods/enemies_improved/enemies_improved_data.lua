@@ -266,6 +266,13 @@ mod.debuffs = {
 
 mod.default_debuffs = table.clone(mod.debuffs)
 
+-- keyword (state) debuffs that are disabled by default
+mod.default_disabled_debuffs = {
+	bleeding = true,
+	electrocuted = true,
+	burning = true,
+}
+
 -- add debuff selector entries
 mod.debuff_list = {}
 
@@ -1655,6 +1662,18 @@ table.insert(mod.settings_widgets, {
 				10,
 			},
 			tooltip = "readable_max_damage_numbers_tooltip",
+		},
+		{
+			setting_id = "readable_damage_number_gap",
+			type = "numeric",
+			default_value = 1,
+			decimals_number = 2,
+			step_size_value = 0.1,
+			range = {
+				0.5,
+				3,
+			},
+			tooltip = "readable_damage_number_gap_tooltip",
 		},
 		{
 			setting_id = "damage_number_flashy_speed",

@@ -195,20 +195,21 @@ mod.set_breed_colours = function()
 end
 
 mod.healthbar_colour_preset_changed = function()
-	-- Clone current BREED_COLOURS as DEFAULT before modifying (one-time per preset change)
-	local bc = mod.BREED_COLOURS
-	if not bc then
-		mod.set_breed_colours()
-		bc = mod.BREED_COLOURS
-	end
-	mod.BREED_COLOURS_DEFAULT = table.clone(bc)
+	-- Apply the selected preset to BREED_COLOURS, then reset the saved group colours to it
 	mod.set_breed_colours()
-	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
+	if not mod.BREED_COLOURS_DEFAULT then
+		mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+	end
+
+	-- Update the default colours to match the new preset so future individual overrides seed from it
+	mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
+
+	for breed, color in next, mod.BREED_COLOURS do
 		local r = color[2]
 		local g = color[3]
 		local b = color[4]
 
-		-- only set if not already saved
+		-- reset the saved group colours to the new preset
 		mod:set("healthbar_" .. breed .. "_colour_R", r)
 		mod:set("healthbar_" .. breed .. "_colour_G", g)
 		mod:set("healthbar_" .. breed .. "_colour_B", b)
@@ -220,6 +221,12 @@ mod.init_healthbar_defaults = function()
 	if not mod.BREED_COLOURS_DEFAULT then
 		mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 	end
+
+	-- vanguard (shield) healthbars are hidden by default unless explicitly enabled via group or individual overrides
+	if mod:get("healthbar_shield_enable") == nil then
+		mod:set("healthbar_shield_enable", false)
+	end
+
 	-- bar colours
 	for breed, color in next, mod.BREED_COLOURS_DEFAULT do
 		local r = color[2]
@@ -270,11 +277,11 @@ mod.init_healthbar_defaults = function()
 
 			if breed_settings then
 				local tags = breed_settings.tags
-				local breed_type = mod.find_breed_category_by_tags(tags)
+				local breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
 
-				if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
-					breed_type = "elite"
-				end
+				--if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
+				--	breed_type = "elite"
+				--end
 
 				-- healthbar
 				for breed, color in next, mod.BREED_COLOURS_DEFAULT do
@@ -601,6 +608,8 @@ mod.load_toggled_debuffs_state = function()
 
 		if debuff_setting ~= nil then
 			mod.update_debuff_toggles(debuff.name, debuff_setting)
+		elseif mod.default_disabled_debuffs[debuff.name] then
+			mod.update_debuff_toggles(debuff.name, false)
 		end
 	end
 end
@@ -635,7 +644,7 @@ mod._on_setting_changed_impl = function(setting_id)
 		if setting ~= nil then
 			mod:set("debuff_selected_enable", setting)
 		else
-			mod:set("debuff_selected_enable", true)
+			mod:set("debuff_selected_enable", not mod.default_disabled_debuffs[selected_option])
 		end
 	end
 

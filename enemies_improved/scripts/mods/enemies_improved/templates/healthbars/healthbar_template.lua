@@ -482,11 +482,11 @@ template.on_enter = function(widget, marker, template)
 
 			if breed_settings then
 				local tags = breed_settings.tags
-				local individual_breed_type = mod.find_breed_category_by_tags(tags)
+				local individual_breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
 
-				if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
-					individual_breed_type = "elite"
-				end
+				--if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
+				--	individual_breed_type = "elite"
+				--end
 
 				if individual_breed_type == breed_type then
 					if fs.breed_healthbar_enabled[enemy_individual] then
@@ -527,7 +527,7 @@ template.on_enter = function(widget, marker, template)
 	--template.damage_number_settings
 	template.damage_number_settings.duration = fs.damage_number_duration
 	template.damage_number_settings.x_offset = fs.hb_size_width * 0.35
-	template.damage_number_settings.x_offset_between_numbers = 16 * fs.text_scale * fs.damage_number_scale * 3
+	template.damage_number_settings.x_offset_between_numbers = 16 * fs.text_scale * fs.damage_number_scale * 3 * (fs.readable_damage_number_gap or 1)
 	template.damage_number_settings.default_font_size = 16 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.hundreds_font_size = 16 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.dps_font_size = 18 * fs.text_scale * fs.damage_number_scale
