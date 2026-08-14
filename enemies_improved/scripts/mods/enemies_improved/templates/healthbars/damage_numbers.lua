@@ -470,7 +470,8 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 
 			if fs.hb_show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
-				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
+				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
+				local dps_value = dps_damage / math_max(dps_timer, 1)
 				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				ui_content.dps = dps_value
@@ -597,7 +598,8 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 
 			if fs.hb_show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
-				local dps_value = (dps_timer > 1 and (ui_content.damage_taken / dps_timer)) or ui_content.damage_taken or 0
+				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
+				local dps_value = dps_damage / math_max(dps_timer, 1)
 				local text = string_format("%d DPS", dps_value)
 				local dps_y_offset = damage_number_settings.dps_y_offset
 				ui_content.dps = dps_value

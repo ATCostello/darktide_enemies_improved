@@ -150,6 +150,53 @@ if mod.DEBUG then
 	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
 end
 
+local function healthbar_enabled_for(unit, breed, breed_type)
+	if breed_type == "horde" then
+		local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
+
+		if cluster and cluster.rep_unit ~= unit then
+			return false
+		end
+
+		local in_horde_cluster = cluster and fs.horde_clusters_enable and fs.healthbar_enable
+
+		if not fs.horde_enable and not in_horde_cluster then
+			local horde_individual = breed and breed.name
+			local individual_hb_enabled = horde_individual
+					and fs.breed_healthbar_enabled
+					and fs.breed_healthbar_enabled[horde_individual]
+			local individual_hb_force = horde_individual
+					and fs.breed_healthbar_force
+					and fs.breed_healthbar_force[horde_individual]
+			local group_hb_enabled = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+
+			if
+				not individual_hb_enabled
+				and not individual_hb_force
+				and not group_hb_enabled
+				and not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit))
+			then
+				return false
+			end
+		end
+	end
+
+	if breed_type then
+		local group_hb_enabled = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[breed_type]
+
+		if group_hb_enabled ~= nil and not group_hb_enabled then
+			local enemy_individual = breed and breed.name
+			local force_enabled = enemy_individual and fs.breed_healthbar_force and fs.breed_healthbar_force[enemy_individual]
+
+			if not force_enabled then
+				return false
+			end
+		end
+	end
+
+	return true
+end
+
 -----------------------------------------------------------------------
 -- Damage number dispatcher
 -----------------------------------------------------------------------
@@ -324,6 +371,7 @@ template.on_enter = function(widget, marker, template)
 	content.draw_hb = false
 
 	content.damage_taken = 0
+	content.dps_damage = 0
 	content.damage_numbers = {}
 	content.spawn_progress_timer = 0
 
@@ -1007,12 +1055,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if damage_taken_since_last > 0 and health_extension and not is_dead then
 		content.visibility_delay = damage_number_settings.visibility_delay
 		content.damage_taken = total_damage_taken
+		content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last
 
 		if show_damage_number then
 			if fs.hb_damage_show_only_latest then
-				-- add new unit to the end
-				if not table_contains(mod.latest_damaged_enemies, unit) then
-					table_insert(mod.latest_damaged_enemies, unit)
+				if healthbar_enabled_for(unit, breed, breed_type) then
+					-- add new unit to the end
+					if not table_contains(mod.latest_damaged_enemies, unit) then
+						table_insert(mod.latest_damaged_enemies, unit)
+					end
 				end
 
 				-- remove oldest entries if we exceed the limit
@@ -1141,6 +1192,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- killed in the same frame damage was taken: seed DPS data so it shows on the death frame
 	if damage_taken_since_last > 0 and health_extension and is_dead and fs.hb_show_dps then
 		content.damage_taken = total_damage_taken
+		content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last
 		content.last_damage_taken_time = t
 		if not content.damage_has_started then
 			content.damage_has_started = true
@@ -1421,7 +1473,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.hb_damage_show_only_latest then
 		if table_contains(mod.latest_damaged_enemies, unit) then
-			content.draw_hb = true
+			if healthbar_enabled_for(unit, breed, breed_type) then
+				content.draw_hb = true
+			else
+				content.draw_hb = false
+			end
 		else
 			content.draw_hb = false
 		end
