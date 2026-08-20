@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.1.5"
+mod.version = "2.1.6"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -14,14 +14,20 @@ local function lerp(a, b, t)
 	return a + (b - a) * t
 end
 
+local function utf8_chars(s)
+	local chars = {}
+	for char in string.gmatch(s, "[%z\1-\127\194-\244][\128-\191]*") do
+		table.insert(chars, char)
+	end
+	return chars
+end
+
 mod.gradientText = function(text, startColor, endColor, colorSpaces)
 	local result = ""
-	local length = #text
+	local chars = utf8_chars(text)
 	local visibleIndex = 0
 
-	-- Count visible characters
-	for i = 1, length do
-		local char = text:sub(i, i)
+	for _, char in ipairs(chars) do
 		if colorSpaces or char ~= " " then
 			visibleIndex = visibleIndex + 1
 		end
@@ -29,9 +35,7 @@ mod.gradientText = function(text, startColor, endColor, colorSpaces)
 
 	local currentIndex = 0
 
-	for i = 1, length do
-		local char = text:sub(i, i)
-
+	for _, char in ipairs(chars) do
 		if not colorSpaces and char == " " then
 			result = result .. char
 		else
@@ -46,7 +50,7 @@ mod.gradientText = function(text, startColor, endColor, colorSpaces)
 		end
 	end
 
-	result = "{#color(" .. colours.title .. ")} " .. result .. "{#reset()}"
+	result = "{#color(" .. colours.title .. ")}" .. result .. "{#reset()}"
 	return result
 end
 
@@ -3024,7 +3028,7 @@ table.insert(localisations_to_add, {
 	healthbar_individual_colour_tooltip = {
 		en = "Adjust the colour of the overrided enemy healthbar's current health value.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
 		ru = "Настройте цвет текущего здоровья для переопределённой полоски данного врага. Значения от 0 до 255.",
-		["zh-cn"] = "设置该敌人专属血条颜色，数值0~255。",
+		["zh-cn"] = "设置���敌人专属血条颜色，数值0~255。",
 	},
 	outline_individual_enable = {
 		en = "Enable outline override?",

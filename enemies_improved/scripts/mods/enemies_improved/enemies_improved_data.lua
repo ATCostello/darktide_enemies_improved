@@ -910,6 +910,7 @@ table.insert(mod.settings_widgets, {
 	setting_id = "outline_settings",
 	type = "group",
 	tab = "Outlines",
+	tooltip = "outlines_enable_tooltip",
 	sub_widgets = {
 		{
 			setting_id = "outlines_enable",
@@ -926,6 +927,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "outline_tagged_colour",
 			type = "group",
+			tooltip = "outline_tagged_colour_tooltip",
 			sub_widgets = {
 				{
 					setting_id = "outline_tagged_colour_R",
@@ -1204,7 +1206,7 @@ table.insert(mod.settings_widgets, {
 })
 
 -- HEALTHBAR
-	table.insert(mod.settings_widgets, {
+table.insert(mod.settings_widgets, {
 	setting_id = "healthbar_settings",
 	type = "group",
 	tab = "Healthbar",
