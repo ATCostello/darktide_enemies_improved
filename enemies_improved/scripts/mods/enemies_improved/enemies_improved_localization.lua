@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.1.6"
+mod.version = "2.1.7"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -50,7 +50,7 @@ mod.gradientText = function(text, startColor, endColor, colorSpaces)
 		end
 	end
 
-	result = "{#color(" .. colours.title .. ")}" .. result .. "{#reset()}"
+	result = "{#color(" .. colours.title .. ")} " .. result .. "{#reset()}"
 	return result
 end
 

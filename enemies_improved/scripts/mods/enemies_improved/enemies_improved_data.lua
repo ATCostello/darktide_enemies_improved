@@ -282,6 +282,11 @@ for _, debuff in next, mod.debuffs do
 		value = debuff.name,
 		sort = debuff.name,
 		icon = mod.debuff_styles[debuff.group].icon,
+		icon_style = {
+			color = mod.debuff_styles[debuff.group].colour,
+			default_color = mod.debuff_styles[debuff.group].colour,
+			hover_color = mod.debuff_styles[debuff.group].colour,
+		},
 		icon_colour = mod.debuff_styles[debuff.group].colour,
 	}
 end
@@ -299,6 +304,11 @@ for group_name, debuff in next, mod.debuff_styles do
 		value = group_name,
 		sort = group_name,
 		icon = mod.debuff_styles[group_name].icon,
+		icon_style = {
+			color = mod.debuff_styles[group_name].colour,
+			default_color = mod.debuff_styles[group_name].colour,
+			hover_color = mod.debuff_styles[group_name].colour,
+		},
 		icon_colour = mod.debuff_styles[group_name].colour,
 	}
 end
