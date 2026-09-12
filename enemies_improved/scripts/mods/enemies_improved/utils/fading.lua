@@ -69,7 +69,7 @@ mod.apply_marker_fade = function(self)
 
 	local wp = Unit.world_position(player_unit, 1)
 	local pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
-	
+
 	local px, py, pz = wp.x, wp.y, wp.z
 	local cx, cy, cz = cam_pos.x, cam_pos.y, cam_pos.z
 	local fx, fy, fz = cam_forward.x, cam_forward.y, cam_forward.z
@@ -85,6 +85,20 @@ mod.apply_marker_fade = function(self)
 	local ALIGNMENT_FAR = 0.96
 
 	local global_opacity = fs.global_opacity or 1
+
+	if fs.adjust_ads_opacity then
+		global_opacity = fs.global_opacity
+				and ((fs.is_ads and fs.global_opacity * fs.ads_opacity_mult) or fs.global_opacity)
+			or (fs.is_ads and 1 * fs.ads_opacity_mult)
+			or 1
+
+		if global_opacity > 1 then
+			global_opacity = 1
+		end
+		if global_opacity < 0 then
+			global_opacity = 0
+		end
+	end
 
 	local marker_list = mod._marker_list or {}
 	mod._marker_list = marker_list
