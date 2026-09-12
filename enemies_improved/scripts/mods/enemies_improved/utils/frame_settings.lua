@@ -1,6 +1,8 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
+local ScriptUnit_has_extension = ScriptUnit.has_extension
+
 local function table_clear(t)
 	for k in pairs(t) do
 		t[k] = nil
@@ -327,7 +329,8 @@ mod.build_frame_settings = function(dt)
 	local spec_r = mod:get("outline_specials_colour_R")
 	local spec_g = mod:get("outline_specials_colour_G")
 	local spec_b = mod:get("outline_specials_colour_B")
-	fs.outline_specials_colour = ensure_array_indexed(fs.outline_specials_colour, spec_r or 255, spec_g or 0, spec_b or 0)
+	fs.outline_specials_colour =
+		ensure_array_indexed(fs.outline_specials_colour, spec_r or 255, spec_g or 0, spec_b or 0)
 
 	-- STAGGER SETTINGS
 	fs.debuff_stagger_enable = mod:get("debuff_stagger_enable")
@@ -395,6 +398,33 @@ mod.build_frame_settings = function(dt)
 		g,
 		b,
 	}
+
+	fs.remove_tag_skull = mod:get("remove_tag_skull")
+
+	fs.ads_opacity_mult = mod:get("ads_opacity_mult")
+	fs.adjust_ads_opacity = mod:get("adjust_ads_opacity")
+end
+
+mod.set_is_ads = function(player_unit)
+	local fs = mod.frame_settings
+
+	if not fs.is_ads then
+		fs.is_ads = fs.is_ads or false
+	end
+
+	if not player_unit then
+		return
+	end
+
+	local unit_data_extension = ScriptUnit_has_extension(player_unit, "unit_data_system")
+
+	if not unit_data_extension then
+		return nil
+	end
+
+	local af = unit_data_extension:read_component("alternate_fire")
+
+	fs.is_ads = af and af.is_active or false
 end
 
 mod.build_frame_settings()

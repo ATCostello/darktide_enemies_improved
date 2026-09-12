@@ -989,6 +989,24 @@ table.insert(localisations_to_add, {
 		ru = "Глобальное включение контуров врагов. Перейдите в разделы групповых/индивидуальных переопределений для настройки контуров для каждого врага.",
 		["zh-cn"] = "全局开关敌人轮廓，可在下方单独配置各类型敌人。",
 	},
+	remove_tag_skull = {
+		en = "Remove tagged skull"
+	},
+	remove_tag_skull_tooltip = {
+		en = "Toggles the 'skull' icon which appears above enemies heads when they are tagged."
+	},
+	adjust_ads_opacity = {
+		en = "Adjust opacity with ADS"
+	},
+	adjust_ads_opacity_tooltip = {
+		en = "Allows you to apply an opacity multiplier when you are aiming down sight. Useful if you would like differing widget opacities depending on if you are aiming or not."
+	},
+	ads_opacity_mult = {
+		en = "ADS Opacity Multiplier"
+	},
+	ads_opacity_mult_tooltip = {
+		en = "Set the opacity multiplier for when you are aiming down sight. Reduces or increases your set opacity by this multiplier. "
+	},
 	outline_tagged_enable = {
 		en = "Enable tagged enemy outline override",
 		ru = "Включить переопределение контура для отмеченного врага",

@@ -297,6 +297,13 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Save line_of_sight_progress so final state is consistent regardless of debuff count.
 	local los = content.line_of_sight_progress or 1
 
+	if fs.adjust_ads_opacity then
+		los = content.line_of_sight_progress
+				and ((fs.is_ads and content.line_of_sight_progress * fs.ads_opacity_mult) or content.line_of_sight_progress)
+			or (fs.is_ads and 1 * fs.ads_opacity_mult)
+			or 1
+	end
+
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
 	local has_markers = content.m_built or false
 	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false

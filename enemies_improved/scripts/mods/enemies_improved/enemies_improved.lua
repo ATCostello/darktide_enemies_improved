@@ -465,22 +465,33 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 		end
 
 		-- Hide default health bars if custom healthbars are enabled!
-		if fs.healthbar_enable then
-			local markers = self._markers
-			if not markers or #markers == 0 then
-				return
-			end
+		local markers = self._markers
+		if not markers or #markers == 0 then
+			return
+		end
 
-			for i = 1, #markers do
-				local marker = markers[i]
-				local template = marker and marker.template
+		for i = 1, #markers do
+			local marker = markers[i]
+			local template = marker and marker.template
 
-				if template then
-					local name = template.name
-					if name and name ~= "enemies_improved" and string.find(name, "damage_indicator", 1, true) then
-						marker.draw = false
-						marker.alpha_multiplier = 0
-					end
+			if template then
+				local name = template.name
+
+				-- REMOVE BASE HEALTHBAR
+				if
+					fs.healthbar_enable
+					and name
+					and name ~= "enemies_improved"
+					and string.find(name, "damage_indicator", 1, true)
+				then
+					marker.draw = false
+					marker.alpha_multiplier = 0
+				end
+
+				-- REMOVE THREAT SKULLS
+				if fs.remove_tag_skull and marker.type and string.find(marker.type, "unit_threat", 1, true) then
+					marker.draw = false
+					marker.alpha_multiplier = 0
 				end
 			end
 		end
@@ -656,6 +667,8 @@ mod.scan_enemies = function()
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
+
+	mod.set_is_ads(player_unit)
 
 	local wp = Unit.world_position(player_unit, 1, _player_pos_vec)
 	local current_pos = wp and Vector3(wp.x, wp.y, wp.z) or nil

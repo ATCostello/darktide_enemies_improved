@@ -605,6 +605,30 @@ table.insert(mod.settings_widgets, {
 			tooltip = "only_tagged_enemies_tooltip",
 		},
 		{
+			setting_id = "remove_tag_skull",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "remove_tag_skull_tooltip",
+		},
+		{
+			setting_id = "adjust_ads_opacity",
+			type = "checkbox",
+			default_value = true,
+			tooltip = "adjust_ads_opacity_tooltip",
+		},
+		{
+			setting_id = "ads_opacity_mult",
+			type = "numeric",
+			default_value = 0.7,
+			decimals_number = 2,
+			step_size_value = 0.05,
+			range = {
+				0,
+				2,
+			},
+			tooltip = "ads_opacity_mult_tooltip",
+		},
+		{
 			setting_id = "enable_depth_fading",
 			type = "checkbox",
 			default_value = true,
