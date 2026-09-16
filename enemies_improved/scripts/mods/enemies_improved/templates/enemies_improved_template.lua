@@ -78,7 +78,6 @@ template.damage_number_settings = {
 	flashy_font_size_dmg_scale_range = { 15, 50 },
 }
 
--- Damage number functions (initialized from healthbar template)
 local damage_number_functions =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/damage_numbers")
 damage_number_functions.init(template)
@@ -90,7 +89,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	local marker_def = EnemyMarkersTemplate.create_widget_defintion(EnemyMarkersTemplate, scenegraph_id)
 	local debuff_def = EnemyDebuffTemplate.create_widget_defintion(EnemyDebuffTemplate, scenegraph_id)
 
-	-- Merge content and style tables so all sub-template data is present
 	for k, v in pairs(marker_def.content) do
 		hb_def.content[k] = v
 	end
@@ -105,7 +103,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		hb_def.style[k] = v
 	end
 
-	-- Merge passes (use add_definition_pass for proper initialization)
 	for i = 1, #marker_def.passes do
 		UIWidget.add_definition_pass(hb_def, marker_def.passes[i])
 	end
@@ -114,10 +111,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 		UIWidget.add_definition_pass(hb_def, debuff_def.passes[i])
 	end
 
-	-- Debuff icon content entries get filled with DefaultPassValues.texture by
-	-- add_definition_pass when no value is provided. Nil them out so the
-	-- visibility_function (content[icon_id] ~= nil) returns false until the
-	-- update function populates them with real icon materials.
 	for i = 1, template.max_visible_rows do
 		hb_def.content["debuff_icon_" .. i] = nil
 	end
@@ -131,6 +124,8 @@ template.on_enter = function(widget, marker, template)
 	widget.alpha_multiplier = 0
 
 	local content = widget.content
+
+	content._ei_scale_snapped = false
 
 	local unit = marker.unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
@@ -161,11 +156,11 @@ template.on_enter = function(widget, marker, template)
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 	template.check_line_of_sight = fs.check_line_of_sight
 
-	if content.breed then
+	if breed then
 		local root_position = Unit.world_position(unit, 1)
 
 		if root_position then
-			root_position.z = root_position.z + content.breed.base_height + 0.5
+			root_position.z = root_position.z + breed.base_height + 0.5
 
 			if not marker.world_position then
 				marker.world_position = Vector3Box(root_position)
@@ -231,8 +226,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget.alpha_multiplier = 0
 	end
 
-	-- Sub-templates check widget._next_update and marker.draw internally.
-	-- Save and force them so all three run their full logic this frame.
 	local saved_next_update = widget._next_update
 	local saved_draw = marker.draw
 	widget._next_update = 0
@@ -249,12 +242,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- Skip sub-templates when their global toggle is off.
+	if marker.distance and template.scale_settings and parent._get_scale then
+		if marker.ignore_scale then
+			marker.scale = 1
+		else
+			marker.scale = parent:_get_scale(template.scale_settings, marker.distance)
+		end
+	end
+
 	EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
 
 	widget._next_update = 0
 
-	-- Markers: global toggle or per-breed individual override.
 	local markers_enabled = fs.markers_enable
 
 	if markers_enabled then
@@ -279,7 +278,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.dbf_built = false
 	end
 
-	-- Throttle: restore or compute the next update time.
 	if saved_next_update and t < saved_next_update then
 		widget._next_update = saved_next_update
 	elseif marker.distance < 50 then
@@ -293,8 +291,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 	template.check_line_of_sight = fs.check_line_of_sight
 
-	-- Debuffs sets alpha_multiplier=0 + early-returns when no debuffs present.
-	-- Save line_of_sight_progress so final state is consistent regardless of debuff count.
 	local los = content.line_of_sight_progress or 1
 
 	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
@@ -302,7 +298,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false
 	local dps_visible = fs.hb_show_dps
 
-	-- Re-apply aimed filter after sub-templates: suppress their results for non-aimed units
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
 		has_healthbar = false
 		has_markers = false
@@ -310,7 +305,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		dps_visible = false
 	end
 
-	-- Re-apply tagged filter after sub-templates: suppress their results for non-tagged units
 	if fs.only_tagged_enemies and unit and not mod.tagged_units[unit] then
 		has_healthbar = false
 		has_markers = false
@@ -323,6 +317,43 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		or false
 
 	marker.draw = visible
+
+	if visible and not content._ei_scale_snapped then
+		local snap_scale = marker.scale or 1
+
+		if snap_scale ~= 1 then
+			for _, pass_style in pairs(widget.style) do
+				local default_size = pass_style.default_size
+
+				if default_size then
+					local current_size = pass_style.area_size or pass_style.texture_size or pass_style.size
+
+					if current_size then
+						current_size[1] = default_size[1] * snap_scale
+						current_size[2] = default_size[2] * snap_scale
+					end
+				end
+
+				local default_offset = pass_style.default_offset
+
+				if default_offset and pass_style.offset then
+					pass_style.offset[1] = default_offset[1] * snap_scale
+					pass_style.offset[2] = default_offset[2] * snap_scale
+				end
+
+				local default_pivot = pass_style.default_pivot
+
+				if default_pivot and pass_style.pivot then
+					pass_style.pivot[1] = default_pivot[1] * snap_scale
+					pass_style.pivot[2] = default_pivot[2] * snap_scale
+				end
+			end
+		end
+
+		content._ei_scale_snapped = true
+	elseif not visible then
+		content._ei_scale_snapped = false
+	end
 
 	if marker.is_inside_frustum then
 		if visible then

@@ -60,11 +60,11 @@ mod._on_ei_marker_created = function(marker_id, entry, unit)
 	end
 
 	entry.marker = mod.get_marker_by_id(marker_id)
-	entry.healthbar = mod.get_marker_by_id(marker_id)
-	entry.dot_debuffs = mod.get_marker_by_id(marker_id)
+
 	mod.enemy_markers[unit] = marker_id
 	mod.enemy_healthbars[unit] = marker_id
 	mod.enemy_debuffs[unit] = marker_id
+	
 	entry._ei_marker_created = true
 	entry._ei_marker_pending = nil
 
@@ -534,29 +534,29 @@ mod.force_remove_unit_markers = function(unit)
 		end
 	end
 
-	remove(mod.enemy_markers[unit])
-	remove(mod.enemy_healthbars[unit])
-	remove(mod.enemy_debuffs[unit])
-
-	mod.enemy_markers[unit] = nil
-	mod.enemy_healthbars[unit] = nil
-	mod.enemy_debuffs[unit] = nil
-
-	-- reset cluster state if this unit was a rep
-	local cluster = mod.get_horde_cluster_for_unit(unit)
-	if cluster and cluster.rep_unit == unit then
-		cluster._healthbar_created = false
-		cluster._healthbar_marker_id = nil
-	end
-
 	local entry = mod.enemy_cache[unit]
 	if entry then
+		if entry.marker then
+			remove(entry.marker.id)
+		end
+
+
+		mod.enemy_markers[unit] = nil
+		mod.enemy_healthbars[unit] = nil
+		mod.enemy_debuffs[unit] = nil
+
+		-- reset cluster state if this unit was a rep
+		local cluster = mod.get_horde_cluster_for_unit(unit)
+		if cluster and cluster.rep_unit == unit then
+			cluster._healthbar_created = false
+			cluster._healthbar_marker_id = nil
+		end
+
 		entry._ei_marker_created = false
 		entry._ei_marker_pending = nil
 		-- Release marker entry references so the (now removed) marker + widget can be GC'd
 		entry.marker = nil
-		entry.healthbar = nil
-		entry.dot_debuffs = nil
+
 		mod.disable_enemy_outlines(unit, entry)
 		mod.remove_alert_outline(entry)
 		mod.remove_stagger_outline(entry)
