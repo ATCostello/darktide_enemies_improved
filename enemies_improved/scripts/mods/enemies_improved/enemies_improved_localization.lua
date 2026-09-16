@@ -2767,9 +2767,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "启用轮廓",
 	},
 	outline_type_enable_tooltip = {
-		en = "Toggle outlines for your selected enemy type/class",
-		ru = "Включить/выключить контуры для выбранного типа/класса врага.",
-		["zh-cn"] = "为当前选中敌人类型开启/关闭轮廓。",
+		en = "Force outlines on/off for your selected enemy type/class, or follow the global outline toggle.",
+		ru = "Принудительно включить/выключить контуры для выбранного типа/класса врага или следовать глобальной настройке.",
+		["zh-cn"] = "为当前选中敌人类型强制开启/关闭轮廓，或跟随全局轮廓开关。",
 	},
 
 	outline_type_colour = {
@@ -2806,9 +2806,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "启用血条",
 	},
 	healthbar_type_enable_tooltip = {
-		en = "Toggle healthbars for your selected enemy type/class",
-		ru = "Включить/выключить полоски здоровья для выбранного типа/класса врага.",
-		["zh-cn"] = "为当前选中敌人类型开启/关闭血条。",
+		en = "Force healthbars on/off for your selected enemy type/class, or follow the global healthbar toggle.",
+		ru = "Принудительно включить/выключить полоски здоровья для выбранного типа/класса врага или следовать глобальной настройке.",
+		["zh-cn"] = "为当前选中敌人类型强制开启/关闭血条，或跟随全局血条开关。",
 	},
 	healthbar_type_always_show = {
 		en = "Always show healthbar?",
@@ -2909,9 +2909,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "启用减益显示？",
 	},
 	debuff_type_enable_tooltip = {
-		en = "Toggle debuffs for your selected enemy type/class",
-		ru = "Включить/выключить ослабления для выбранного типа/класса врага.",
-		["zh-cn"] = "为当前选中的敌人分类开启或关闭减益显示。",
+		en = "Force debuffs on/off for your selected enemy type/class, or follow the global debuff toggle.",
+		ru = "Принудительно включить/выключить ослабления для выбранного типа/класса врага или следовать глобальной настройке.",
+		["zh-cn"] = "为当前选中的敌人分类强制开启/关闭减益显示，或跟随全局减益开关。",
 	},
 	healthbar_type_y_offset = {
 		en = "Healthbar Y offset (Enemy Type Specific)",
@@ -3019,14 +3019,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "为选中敌人覆盖血条颜色。",
 	},
 	healthbar_individual_force = {
-		en = "Force healthbar on?",
-		ru = "Принудительно включить полоску?",
-		["zh-cn"] = "强制显示血条？",
+		en = "Force healthbar on/off?",
+		ru = "Принудительно включить/выключить полоску?",
+		["zh-cn"] = "强制开/关血条？",
 	},
 	healthbar_individual_force_tooltip = {
-		en = "When enabled, the healthbar will always be shown for this enemy, even if the enemy type group has healthbars disabled.",
-		ru = "При включении полоска здоровья всегда будет отображаться для этого врага, даже если в группе типа она отключена.",
-		["zh-cn"] = "开启后该敌人始终显示血条，即使其类型分组已禁用血条。",
+		en = "Force this enemy's healthbar on/off, or follow the type/global healthbar toggle. 'Force on' shows it even when the group is disabled; 'Force off' always hides it.",
+		ru = "Принудительно включить/выключить полоску здоровья для этого врага или следовать настройкам типа/глобальным. «Включено» показывает её даже при отключённой группе; «выключено» всегда скрывает.",
+		["zh-cn"] = "强制开启/关闭该敌人的血条，或跟随分类/全局血条开关。“强制开启”在分组禁用时仍显示；“强制关闭”始终隐藏。",
 	},
 	healthbar_individual_always_show = {
 		en = "Always show healthbar?",
@@ -3069,9 +3069,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "覆盖轮廓设置",
 	},
 	outline_individual_enable_tooltip = {
-		en = "Toggle outline overriding for your selected enemy. Note: Only enables or changes colours, disabling will not override the group settings.",
-		ru = "Включает переопределение контура для выбранного врага. Примечание: только включение или изменение цвета; отключение не переопределяет групповые настройки.",
-		["zh-cn"] = "为选中敌人覆盖轮廓设置，仅支持开启/改色。",
+		en = "Force the outline override on/off for your selected enemy, or follow the type/global outline settings. Note: this only enables or changes colours; 'force off' hides the outline entirely.",
+		ru = "Принудительно включить/выключить переопределение контура для выбранного врага или следовать настройкам типа/глобальным. Примечание: только включение или смена цвета; «выключено» полностью скрывает контур.",
+		["zh-cn"] = "为选中敌人强制开启/关闭轮廓覆盖，或跟随分类/全局轮廓设置。注意：仅支持开启或改色；“强制关闭”会完全隐藏轮廓。",
 	},
 	outline_individual_colour = {
 		en = "Outline colour (Enemy Specific)",
@@ -3114,9 +3114,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "覆盖减益设置",
 	},
 	debuff_individual_enable_tooltip = {
-		en = "Toggle the debuff icons overriding for your selected enemy. This will take effect whether the global debuff icons are enabled or not. To allow only specific enemies to have the debuff icons.",
-		ru = "Включает/выключает иконки ослаблений для выбранного врага, независимо от глобальной настройки. Позволяет показывать иконки только для определённых врагов.",
-		["zh-cn"] = "为选定敌人单独强制开关减益图标，不受全局减益图标总控影响，可单独指定特定敌人显示减益图标。",
+		en = "Force debuff icons on/off for your selected enemy, or follow the type/global debuff toggle. Useful for showing debuffs on only specific enemies.",
+		ru = "Принудительно включить/выключить иконки ослаблений для выбранного врага или следовать настройкам типа/глобальным. Удобно для показа ослаблений только у определённых врагов.",
+		["zh-cn"] = "为选定敌人强制开启/关闭减益图标，或跟随分类/全局减益开关。适合只为特定敌人显示减益。",
 	},
 	distance_individual_enable = {
 		en = "Override draw distance?",

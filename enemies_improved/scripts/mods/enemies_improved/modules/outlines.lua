@@ -94,7 +94,8 @@ mod.enable_enemy_outlines = function(unit, entry)
 	local breed_type = entry.breed_type or "enemy"
 
 	-- INDIVIDUAL OVERRIDE (cached in fs)
-	if breed_name and fs.breed_outline_enabled[breed_name] then
+	local individual_state = breed_name and fs.breed_outline_enabled[breed_name]
+	if individual_state == "true_override" then
 		local outline_name = entry._outline_name_individual
 		if not outline_name then
 			outline_name = "enemies_" .. breed_name
@@ -105,10 +106,12 @@ mod.enable_enemy_outlines = function(unit, entry)
 		mod.add_outline(unit, outline_name, outline_system)
 		entry._outline_applied = true
 		return
+	elseif individual_state == "false_override" then
+		return
 	end
 
-	-- CATEGORY (cached in fs)
-	if fs.breed_type_outline_enabled[breed_type] then
+	-- CATEGORY (cached in fs) -- only an explicit "force on" applies it
+	if fs.breed_type_outline_enabled[breed_type] == "true_override" then
 		local outline_name = entry._outline_name_type
 		if not outline_name then
 			outline_name = "enemies_" .. breed_type
@@ -479,18 +482,9 @@ mod.apply_enemy_outlines = function(settings)
 		local breed = entry.value
 		if breed ~= "select" then
 			local key = "outline_" .. breed .. "_enable"
-			local enabled = mod:get(key)
-
-			-- set default from above table if not expicitly set yet.
-			if enabled == nil then
-				enabled = mod.default_outline_enabled[breed]
-
-				if enabled == nil then
-					enabled = true
-				end
-
-				mod:set(key, enabled)
-			end
+			-- "follow global" (dont_override) keeps this type's historical default (off);
+			-- only an explicit "force on" registers the per-type outline.
+			local enabled = mod.override_value(mod:get(key), true) == "true_override"
 
 			local r = mod:get("outline_" .. breed .. "_colour_R")
 			local g = mod:get("outline_" .. breed .. "_colour_G")
@@ -543,7 +537,7 @@ mod.apply_enemy_outlines = function(settings)
 		local enemy_individual = options.value
 
 		if enemy_individual then
-			local enabled = fs.breed_outline_enabled[enemy_individual]
+			local enabled = fs.breed_outline_enabled[enemy_individual] == "true_override"
 
 			if enabled and mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] then
 				local r = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2]
@@ -590,7 +584,7 @@ mod.apply_enemy_outlines = function(settings)
 							return false
 						end
 
-						return fs.breed_outline_enabled[enemy_individual]
+						return enabled
 					end,
 				}
 			end

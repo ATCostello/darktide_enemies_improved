@@ -266,10 +266,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local debuffs_enabled = fs.debuff_enable
 
-	if content.breed then
-		if fs and fs.breed_debuff_toggle and fs.breed_debuff_toggle[content.breed.name] then
-			debuffs_enabled = fs.breed_debuff_toggle[content.breed.name]
-		end
+	local entry = mod.enemy_cache and mod.enemy_cache[unit]
+	local breed_name = content.breed and content.breed.name
+	local breed_type = entry and entry.breed_type
+	local individual_state = breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name]
+	local type_state = breed_type and fs.breed_type_debuff_enabled and fs.breed_type_debuff_enabled[breed_type]
+
+	if individual_state == "true_override" or type_state == "true_override" then
+		debuffs_enabled = true
+	elseif individual_state == "false_override" or type_state == "false_override" then
+		debuffs_enabled = false
 	end
 
 	if debuffs_enabled then

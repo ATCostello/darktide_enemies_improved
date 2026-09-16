@@ -25,17 +25,26 @@ local function ensure_array_indexed(t, i2, i3, i4)
 	return t
 end
 
-local function marker_override_value(v)
-	if v == "true_override" then
-		return "true_override"
-	elseif v == "false_override" then
-		return "false_override"
+-- Maps a saved value onto the 3-state dropdown.
+--   v == old checkbox default -> dont_override (behaviour unchanged: following the
+--     global toggle reproduces what the old default did)
+--   the other boolean         -> the matching force on/off override
+--   nil                       -> dont_override
+-- So old "on" for a default-off setting becomes "force on" (as requested), while old
+-- "off" for a default-on setting becomes "force off".
+local function override_value(v, old_default)
+	if v == "true_override" or v == "false_override" or v == "dont_override" then
+		return v
+	elseif v == nil or v == old_default then
+		return "dont_override"
 	elseif v == true then
 		return "true_override"
 	else
-		return "dont_override"
+		return "false_override"
 	end
 end
+
+mod.override_value = override_value
 
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
@@ -127,11 +136,11 @@ mod.build_frame_settings = function(dt)
 				end
 			end
 
-			fs.breed_marker_toggle[enemy] = marker_override_value(mod:get("markers_" .. enemy .. "_toggle"))
-			fs.breed_debuff_toggle[enemy] = mod:get("debuff_" .. enemy .. "_enable")
-			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
+			fs.breed_marker_toggle[enemy] = override_value(mod:get("markers_" .. enemy .. "_toggle"), false)
+			fs.breed_debuff_toggle[enemy] = override_value(mod:get("debuff_" .. enemy .. "_enable"), true)
+			fs.breed_outline_enabled[enemy] = override_value(mod:get("outline_" .. enemy .. "_enable"), false)
 			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
-			fs.breed_healthbar_force[enemy] = mod:get("healthbar_" .. enemy .. "_force")
+			fs.breed_healthbar_force[enemy] = override_value(mod:get("healthbar_" .. enemy .. "_force"), false)
 			fs.breed_healthbar_always_show[enemy] = mod:get("healthbar_" .. enemy .. "_always_show")
 
 			fs.breed_healthbar_y_offset_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_y_offset_enabled")
@@ -147,15 +156,15 @@ mod.build_frame_settings = function(dt)
 	for _, options in next, mod.breed_types do
 		local breed = options.value
 		if breed and breed ~= "select" then
-			fs.breed_type_outline_enabled[breed] = mod:get("outline_" .. breed .. "_enable")
-			fs.breed_type_debuff_enabled[breed] = mod:get("debuff_" .. breed .. "_enable")
-			fs.breed_type_healthbar_enabled[breed] = mod:get("healthbar_" .. breed .. "_enable")
+			fs.breed_type_outline_enabled[breed] = override_value(mod:get("outline_" .. breed .. "_enable"), true)
+			fs.breed_type_debuff_enabled[breed] = override_value(mod:get("debuff_" .. breed .. "_enable"), true)
+			fs.breed_type_healthbar_enabled[breed] = override_value(mod:get("healthbar_" .. breed .. "_enable"), true)
 			fs.breed_type_healthbar_always_show[breed] = mod:get("healthbar_" .. breed .. "_always_show")
 			fs.breed_type_healthbar_y_offset_enabled[breed] = mod:get("healthbar_" .. breed .. "_y_offset_enabled")
 			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset")
 					and -mod:get("healthbar_" .. breed .. "_y_offset")
 				or nil
-			fs.breed_marker_type_enabled[breed] = marker_override_value(mod:get("marker_" .. breed .. "_enable"))
+			fs.breed_marker_type_enabled[breed] = override_value(mod:get("marker_" .. breed .. "_enable"), false)
 			fs.breed_type_debuff_show_on_body_override[breed] = mod:get("debuff_" .. breed .. "_show_on_body_override")
 		end
 	end

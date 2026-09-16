@@ -543,18 +543,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	
 	local entry = mod.enemy_cache[unit]
 
-	-- Per-individual debuff toggle (explicit disable overrides type)
+	-- Per-individual / per-type debuff overrides: an explicit "force off" at either
+	-- level hides the debuffs, regardless of the global toggle.
 	local breed_name = entry and entry.breed_name
 	local breed_type = entry and entry.breed_type
 
-	if breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name] and fs.breed_debuff_toggle[breed_name] == false then
-		content.dbf_built  = false
-		return
-	end
+	local individual_state = breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name]
+	local type_state = breed_type and fs.breed_type_debuff_enabled and fs.breed_type_debuff_enabled[breed_type]
 
-	-- Per-type debuff toggle
-	if breed_type and fs.breed_type_debuff_enabled[breed_type] == false then
-		content.dbf_built  = false
+	if individual_state == "false_override" or type_state == "false_override" then
+		content.dbf_built = false
 		return
 	end
 

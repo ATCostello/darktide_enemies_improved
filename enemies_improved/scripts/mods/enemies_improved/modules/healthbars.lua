@@ -39,22 +39,27 @@ mod.update_enemy_healthbars = function(entry, t)
 		end
 	end
 
-	-- Horde filter: block unless horde enabled, clusters enabled, an individual or group override is on, or debuffed
+	-- Override filter: "force off" hides the bar, "force on" (or debuff) keeps it
+	-- alive even when the group / global toggle is disabled. Individual wins.
 	local breed_name = entry.breed_name
-	local individual_enabled = breed_name and fs.breed_healthbar_enabled and fs.breed_healthbar_enabled[breed_name]
-	local individual_force = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
-	local group_enabled = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+	local is_horde = entry.is_horde
+	local individual_state = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
+	local group_state = is_horde and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
 	local unit = entry.unit
 	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
 
-	if
-		entry.is_horde
-		and (not fs.horde_enable and not fs.horde_clusters_enable)
-		and not individual_enabled
-		and not individual_force
-		and not group_enabled
-		and not debuffed_override
-	then
+	local effective = individual_state
+	if effective ~= "true_override" and effective ~= "false_override" then
+		effective = group_state
+	end
+
+	if effective == "false_override" then
+		return
+	end
+
+	local forced_on = effective == "true_override" or debuffed_override
+
+	if is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) and not forced_on then
 		return
 	end
 

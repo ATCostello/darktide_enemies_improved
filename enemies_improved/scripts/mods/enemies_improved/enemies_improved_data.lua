@@ -2225,8 +2225,9 @@ mod.group_settings_widgets = {
 
 			{
 				setting_id = "outline_type_enable",
-				type = "checkbox",
-				default_value = true,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "outline_type_enable_tooltip",
 			},
 
@@ -2277,8 +2278,9 @@ mod.group_settings_widgets = {
 
 			{
 				setting_id = "healthbar_type_enable",
-				type = "checkbox",
-				default_value = true,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "healthbar_type_enable_tooltip",
 			},
 			{
@@ -2424,8 +2426,9 @@ mod.group_settings_widgets = {
 
 			{
 				setting_id = "debuff_type_enable",
-				type = "checkbox",
-				default_value = true,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "debuff_type_enable_tooltip",
 			},
 			{
@@ -2473,8 +2476,9 @@ mod.individual_override_settings = {
 				sub_widgets = {
 					{
 						setting_id = "outline_individual_enable",
-						type = "checkbox",
-						default_value = false,
+						type = "dropdown",
+						options = override_options,
+						default_value = "dont_override",
 						tooltip = "outline_individual_enable_tooltip",
 					},
 					{
@@ -2518,8 +2522,9 @@ mod.individual_override_settings = {
 		sub_widgets = {
 			{
 				setting_id = "healthbar_individual_force",
-				type = "checkbox",
-				default_value = false,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "healthbar_individual_force_tooltip",
 			},
 			{
@@ -2613,8 +2618,9 @@ mod.individual_override_settings = {
 		sub_widgets = {
 			{
 				setting_id = "debuff_individual_enable",
-				type = "checkbox",
-				default_value = true,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "debuff_individual_enable_tooltip",
 			},
 			{

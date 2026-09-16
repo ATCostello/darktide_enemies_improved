@@ -15,12 +15,12 @@ local _in_settings_update = false
 -- list of settings to monitor PER enemy type, needs to be updated if more types are added...
 -- REQUIRES "_type_" AS THAT IS WHERE THE SPECIFIC ENEMY GROUP NAME IS PLACED...
 local enemy_type_settings = {
-	["outline_type_enable"] = true,
+	["outline_type_enable"] = "dont_override",
 	["outline_type_colour_R"] = 50,
 	["outline_type_colour_G"] = 10,
 	["outline_type_colour_B"] = 0,
 
-	["healthbar_type_enable"] = true,
+	["healthbar_type_enable"] = "dont_override",
 	["healthbar_type_colour_R"] = 255,
 	["healthbar_type_colour_G"] = 0,
 	["healthbar_type_colour_B"] = 0,
@@ -33,7 +33,7 @@ local enemy_type_settings = {
 	["healthbar_icon_type_colour_G"] = 150,
 	["healthbar_icon_type_colour_B"] = 0,
 
-	["debuff_type_enable"] = true,
+	["debuff_type_enable"] = "dont_override",
 
 	["healthbar_type_y_offset"] = 0,
 	["healthbar_type_y_offset_enabled"] = false,
@@ -49,13 +49,13 @@ local enemy_override_settings = {
 
 	["markers_individual_toggle"] = "dont_override",
 	["healthbar_individual_enable"] = false,
-	["healthbar_individual_force"] = false,
+	["healthbar_individual_force"] = "dont_override",
 	["healthbar_individual_always_show"] = false,
 	["healthbar_individual_colour_R"] = 255,
 	["healthbar_individual_colour_G"] = 0,
 	["healthbar_individual_colour_B"] = 0,
 
-	["outline_individual_enable"] = false,
+	["outline_individual_enable"] = "dont_override",
 	["outline_individual_colour_R"] = 255,
 	["outline_individual_colour_G"] = 50,
 	["outline_individual_colour_B"] = 10,
@@ -66,7 +66,7 @@ local enemy_override_settings = {
 	["outline_distance_individual_enable"] = false,
 	["outline_distance_individual_value"] = 30,
 
-	["debuff_individual_enable"] = true,
+	["debuff_individual_enable"] = "dont_override",
 
 	["healthbar_individual_y_offset"] = 0,
 	["healthbar_individual_y_offset_enabled"] = false,
@@ -443,20 +443,44 @@ mod.set_debuff_colours = function(group_name)
 end
 
 mod.update_settings_values = function(setting_id)
-	-- Mirrors the marker override normalisation in frame_settings.lua so legacy
+	-- Mirrors the override normalisation in frame_settings.lua so legacy
 	-- boolean values saved by the old checkboxes map onto the dropdown options.
-	local is_marker_override = function(setting_name)
-		return setting_name == "marker_type_enable" or setting_name == "markers_individual_toggle"
+	local is_override_setting = function(setting_name)
+		return setting_name == "marker_type_enable"
+			or setting_name == "markers_individual_toggle"
+			or setting_name == "outline_type_enable"
+			or setting_name == "healthbar_type_enable"
+			or setting_name == "debuff_type_enable"
+			or setting_name == "outline_individual_enable"
+			or setting_name == "healthbar_individual_force"
+			or setting_name == "debuff_individual_enable"
 	end
 
-	local normalize_marker_override = function(v)
-		if v == "true_override" then
-			return "true_override"
-		elseif v == "false_override" then
-			return "false_override"
+	local override_old_default = function(setting_name)
+		-- settings whose old checkbox default was ON
+		if
+			setting_name == "outline_type_enable"
+			or setting_name == "healthbar_type_enable"
+			or setting_name == "debuff_type_enable"
+			or setting_name == "debuff_individual_enable"
+		then
+			return true
+		end
+		return false
+	end
+
+	local normalize_marker_override = function(v, setting_name)
+		local old_default = override_old_default(setting_name)
+		if v == "true_override" or v == "false_override" or v == "dont_override" then
+			return v
+		elseif v == nil or v == old_default then
+			mod:set(setting_name, "dont_override")
+			return "dont_override"
 		elseif v == true then
+			mod:set(setting_name, "true_override")
 			return "true_override"
-		else
+		elseif v == false then
+			mod:set(setting_name, "dont_override")
 			return "dont_override"
 		end
 	end
@@ -473,14 +497,14 @@ mod.update_settings_values = function(setting_id)
 	-- Set the enemy type widgets when a group is selected
 	for setting_name, default_value in next, enemy_type_settings do
 		local type_value = mod:get(setting_name)
-		if is_marker_override(setting_name) then
-			type_value = normalize_marker_override(type_value)
+		if is_override_setting(setting_name) then
+			type_value = normalize_marker_override(type_value, setting_name)
 		end
 
 		local enemy_type = setting_name:gsub("_type_", "_" .. selected_enemy_type .. "_")
 		local enemy_type_value = mod:get(enemy_type)
-		if is_marker_override(setting_name) then
-			enemy_type_value = normalize_marker_override(enemy_type_value)
+		if is_override_setting(setting_name) then
+			enemy_type_value = normalize_marker_override(enemy_type_value, setting_name)
 		end
 
 		if enemy_type_value == nil then
@@ -516,14 +540,14 @@ mod.update_settings_values = function(setting_id)
 	-- Set the enemy individual widgets when a new enemy is selected
 	for setting_name, default_value in next, enemy_override_settings do
 		local individual_value = mod:get(setting_name)
-		if is_marker_override(setting_name) then
-			individual_value = normalize_marker_override(individual_value)
+		if is_override_setting(setting_name) then
+			individual_value = normalize_marker_override(individual_value, setting_name)
 		end
 
 		local enemy_individual = setting_name:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
 		local enemy_individual_value = mod:get(enemy_individual)
-		if is_marker_override(setting_name) then
-			enemy_individual_value = normalize_marker_override(enemy_individual_value)
+		if is_override_setting(setting_name) then
+			enemy_individual_value = normalize_marker_override(enemy_individual_value, setting_name)
 		end
 
 		if enemy_individual_value == nil then
@@ -733,7 +757,8 @@ mod._on_setting_changed_impl = function(setting_id)
 	mod.update_breed_colours()
 
 	-- Only rebuild outlines when outline-related settings changed
-	if setting_id == "outlines_enable"
+	if
+		setting_id == "outlines_enable"
 		or string_find(setting_id, "outline_")
 		or setting_id == "enemy_group"
 		or setting_id == "individual_overrides"
