@@ -288,6 +288,13 @@ mod.on_all_mods_loaded = function()
 	mod.loaded = true
 end
 
+-- DMF's own "Reset to default" only resets the option widgets, and the mod's
+-- on_setting_changed propagation then only touches the enemy currently selected
+-- in the dropdowns. Wipe every group and individual override as well.
+mod.on_settings_reset = function()
+	mod.reset_all_overrides()
+end
+
 mod.custom_localize = function(loc_string)
 	if mod and mod.loaded then
 		return mod:localize(loc_string) or ""

@@ -2802,15 +2802,20 @@ table.insert(localisations_to_add, {
 		ru = "Сбросить настройки для типа '_type_' к значениям по умолчанию.",
 		["zh-cn"] = "重置_type_类型的设置为默认值。",
 	},
+	reset_all_to_default_message = {
+		en = "Successfully reset all of Enemies Improved's settings to their defaults, including all overrides.",
+		ru = "Все настройки Enemies Improved успешно сброшены к значениям по умолчанию, включая все переопределения.",
+		["zh-cn"] = "已成功将 Enemies Improved 的所有设置（包括全部覆盖设置）重置为默认值。",
+	},
 	reset_type_to_default = {
 		en = "{#color(" .. colours.subtitle .. ")}Warning: {#reset()}Reset to defaults",
 		ru = "{#color(" .. colours.subtitle .. ")}Внимание:{#reset()} Сбросить настройки",
 		["zh-cn"] = "{#color(" .. colours.subtitle .. ")}警告：{#reset()}恢复默认设置",
 	},
 	reset_type_to_default_tooltip = {
-		en = "Reset all enemy type specific settings to their default values.\n\nNote: This only affects the enemy type selected above.",
-		ru = "Сбросить все настройки для выбранного типа врага к значениям по умолчанию. Влияет только на выбранный тип.",
-		["zh-cn"] = "将当前选中敌人类型的所有设置重置为默认。",
+		en = "Reset all override settings for the enemy type selected above to their default values.\n\nNote: This only affects the enemy type selected above. Use DMF's reset to default to reset everything.",
+		ru = "Сбросить все настройки выбранного выше типа врага к значениям по умолчанию.\n\nПримечание: это влияет только на выбранный тип. Для сброса всех настроек используйте «Сбросить настройки» DMF.",
+		["zh-cn"] = "将上方选中敌人类型的所有覆盖设置重置为默认值。\n\n注意：仅影响上方选中的敌人类型。若要重置全部，请使用 DMF 的恢复默认设置。",
 	},
 
 	-- outlines

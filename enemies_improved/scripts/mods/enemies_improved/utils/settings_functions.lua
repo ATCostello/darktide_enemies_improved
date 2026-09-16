@@ -131,24 +131,26 @@ mod.migrate_override_settings = function()
 	end
 end
 
+-- Wipes every saved per-enemy setting to nil so the defaults load in again.
+-- The reset control flags are skipped so the toggle handling keeps working.
+local clear_group_overrides = function(enemy_type)
+	for setting_name in next, enemy_type_settings do
+		if setting_name ~= "reset_type_to_default" then
+			mod:set((setting_name:gsub("_type_", "_" .. enemy_type .. "_")), nil)
+		end
+	end
+end
+
+local clear_individual_overrides = function(enemy_type)
+	for setting_name in next, enemy_override_settings do
+		if setting_name ~= "reset_individual_to_default" then
+			mod:set((setting_name:gsub("_individual_", "_" .. enemy_type .. "_")), nil)
+		end
+	end
+end
+
 mod.reset_type_to_default = function(enemy_type)
-	-- reset all options to nil so that the defaults will be loaded...
-	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
-	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
-	mod:set("healthbar_" .. enemy_type .. "_always_show", nil)
-
-	mod:set("healthbar_icon_" .. enemy_type .. "_enable", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_scale", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_glow_intensity", nil)
-	mod:set("healthbar_icon_" .. enemy_type .. "_colour_R", nil)
-
-	mod:set("outline_" .. enemy_type .. "_enable", nil)
-	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
-
-	mod:set("debuff_" .. enemy_type .. "_enable", nil)
-	mod:set("debuff_" .. enemy_type .. "_show_on_body_override", nil)
-
-	mod:set("healthbar_" .. enemy_type .. "_y_offset_enabled", nil)
+	clear_group_overrides(enemy_type)
 
 	local reset_message = mod.custom_localize("reset_type_to_default_message") or ""
 	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
@@ -157,34 +159,44 @@ mod.reset_type_to_default = function(enemy_type)
 end
 
 mod.reset_individual_to_default = function(enemy_type)
-	-- reset all options to nil so that the defaults will be loaded...
-	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
-	mod:set("healthbar_" .. enemy_type .. "_enable", nil)
-	mod:set("healthbar_" .. enemy_type .. "_force", nil)
-	mod:set("healthbar_" .. enemy_type .. "_always_show", nil)
-
-	mod:set("distance_" .. enemy_type .. "_enable", nil)
-	mod:set("distance_" .. enemy_type .. "_value", nil)
-
-	mod:set("outline_" .. enemy_type .. "_enable", nil)
-	mod:set("outline_" .. enemy_type .. "_colour_R", nil)
-
-	mod:set("outline_distance_" .. enemy_type .. "_enable", nil)
-	mod:set("outline_distance_" .. enemy_type .. "_value", nil)
-
-	mod:set("markers_" .. enemy_type .. "_enable", nil)
-
-	mod:set("debuff_" .. enemy_type .. "_enable", nil)
-
-	mod:set("healthbar_" .. enemy_type .. "_y_offset_enabled", nil)
-	mod:set("healthbar_" .. enemy_type .. "_y_offset", nil)
-
-	mod:set("debuff_" .. enemy_type .. "_show_on_body_override", nil)
+	clear_individual_overrides(enemy_type)
 
 	local reset_message = mod.custom_localize("reset_individual_to_default_message") or ""
 	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
+end
+
+-- Resets every group AND individual override for all enemies (not just the one
+-- currently selected in the dropdowns).
+mod.reset_all_overrides = function()
+	for _, options in next, mod.breed_types do
+		local breed = options.value
+		if breed and breed ~= "select" then
+			clear_group_overrides(breed)
+		end
+	end
+
+	for _, options in next, mod.breed_names do
+		local enemy = options.value
+		if enemy and enemy ~= "select" then
+			clear_individual_overrides(enemy)
+		end
+	end
+
+	local reset_message = mod.custom_localize("reset_all_to_default_message") or ""
+	mod:notify(reset_message)
+
+	mod.init_healthbar_defaults()
+
+	-- colour defaults changed, so refresh the DMF option titles that embed them
+	for setting_name in next, enemy_type_settings do
+		mod.update_dmf_settings_colours(setting_name)
+	end
+
+	for setting_name in next, enemy_override_settings do
+		mod.update_dmf_settings_colours(setting_name)
+	end
 end
 
 local BreedQueries = require("scripts/utilities/breed_queries")
@@ -737,7 +749,7 @@ mod._on_setting_changed_impl = function(setting_id)
 
 	-- HANDLE GROUP RESET TO DEFAULT LOGIC...
 	if mod:get(reset_setting_id) == true then
-		mod.reset_type_to_default(mod:get("enemy_group"))
+		mod.reset_type_to_default(selected_enemy_type)
 		mod.update_settings_values(reset_setting_id)
 	end
 
