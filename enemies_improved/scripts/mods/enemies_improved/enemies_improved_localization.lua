@@ -3064,14 +3064,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "设置���敌人专属血条颜色，数值0~255。",
 	},
 	outline_individual_enable = {
-		en = "Enable outline override?",
-		ru = "Включить переопределение контура?",
-		["zh-cn"] = "覆盖轮廓设置",
+		en = "Force outline on/off?",
+		ru = "Принудительно включить/выключить контур?",
+		["zh-cn"] = "强制开/关轮廓？",
 	},
 	outline_individual_enable_tooltip = {
-		en = "Force the outline override on/off for your selected enemy, or follow the type/global outline settings. Note: this only enables or changes colours; 'force off' hides the outline entirely.",
-		ru = "Принудительно включить/выключить переопределение контура для выбранного врага или следовать настройкам типа/глобальным. Примечание: только включение или смена цвета; «выключено» полностью скрывает контур.",
-		["zh-cn"] = "为选中敌人强制开启/关闭轮廓覆盖，或跟随分类/全局轮廓设置。注意：仅支持开启或改色；“强制关闭”会完全隐藏轮廓。",
+		en = "Force this enemy's outline on/off, or follow the category/global outline setting. 'Force on' shows the outline even if the category is disabled, using the enemy's individual colour; 'Force off' always hides it. The global 'Enable enemy outlines' master switch still applies.",
+		ru = "Принудительно включить/выключить контур для этого врага или следовать настройкам категории/глобальным. «Включено» показывает контур, даже если категория отключена, используя индивидуальный цвет врага; «выключено» всегда скрывает его. Глобальный переключатель «Включить контуры врагов» всё равно действует.",
+		["zh-cn"] = "强制开启/关闭该敌人的轮廓，或跟随分类/全局轮廓设置。“强制开启”会使用该敌人的专属颜色显示轮廓，即使分类已禁用；“强制关闭”始终隐藏。全局“启用敌人轮廓”总开关仍然有效。",
 	},
 	outline_individual_colour = {
 		en = "Outline colour (Enemy Specific)",

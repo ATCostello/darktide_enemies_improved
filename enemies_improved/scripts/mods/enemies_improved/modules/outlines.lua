@@ -93,35 +93,36 @@ mod.enable_enemy_outlines = function(unit, entry)
 	local breed_name = breed and breed.name
 	local breed_type = entry.breed_type or "enemy"
 
-	-- INDIVIDUAL OVERRIDE (cached in fs)
+	-- Decide which outline (if any) should be shown for this enemy.
+	-- An individual "force on" bypasses the category toggle entirely (the global
+	-- outlines_enable master switch is still required by update_enemy_outlines).
+	local target_name
 	local individual_state = breed_name and fs.breed_outline_enabled[breed_name]
+
 	if individual_state == "true_override" then
-		local outline_name = entry._outline_name_individual
-		if not outline_name then
-			outline_name = "enemies_" .. breed_name
-			entry._outline_name_individual = outline_name
-		end
-
-		mod.remove_outline(unit, outline_name, outline_system)
-		mod.add_outline(unit, outline_name, outline_system)
-		entry._outline_applied = true
-		return
+		target_name = "enemies_" .. breed_name
 	elseif individual_state == "false_override" then
+		target_name = nil
+	elseif fs.breed_type_outline_enabled[breed_type] == "true_override" then
+		target_name = "enemies_" .. breed_type
+	end
+
+	if entry._outline_applied_name == target_name then
 		return
 	end
 
-	-- CATEGORY (cached in fs) -- only an explicit "force on" applies it
-	if fs.breed_type_outline_enabled[breed_type] == "true_override" then
-		local outline_name = entry._outline_name_type
-		if not outline_name then
-			outline_name = "enemies_" .. breed_type
-			entry._outline_name_type = outline_name
-		end
-
-		mod.remove_outline(unit, outline_name, outline_system)
-		mod.add_outline(unit, outline_name, outline_system)
-		entry._outline_applied = true
+	-- swap the currently applied outline (e.g. category -> individual) so only
+	-- one outline is ever active and its colour is used
+	if entry._outline_applied_name then
+		mod.remove_outline(unit, entry._outline_applied_name, outline_system)
 	end
+
+	if target_name then
+		mod.add_outline(unit, target_name, outline_system)
+	end
+
+	entry._outline_applied_name = target_name
+	entry._outline_applied = target_name ~= nil
 end
 
 mod.disable_enemy_outlines = function(unit, entry)
@@ -138,23 +139,18 @@ mod.disable_enemy_outlines = function(unit, entry)
 	local breed = entry.breed
 	local breed_name = breed and breed.name
 
-	local type_outline = entry._outline_name_type
-	if not type_outline then
-		type_outline = "enemies_" .. breed_type
-		entry._outline_name_type = type_outline
-	end
-	mod.remove_outline(unit, type_outline, outline_system)
-	entry._outline_applied = false
-
-	if breed_name then
-		local individual_outline = entry._outline_name_individual
-		if not individual_outline then
-			individual_outline = "enemies_" .. breed_name
-			entry._outline_name_individual = individual_outline
+	if entry._outline_applied_name then
+		mod.remove_outline(unit, entry._outline_applied_name, outline_system)
+	else
+		-- no tracked name (e.g. state from before a settings change): clear both
+		mod.remove_outline(unit, "enemies_" .. breed_type, outline_system)
+		if breed_name then
+			mod.remove_outline(unit, "enemies_" .. breed_name, outline_system)
 		end
-		mod.remove_outline(unit, individual_outline, outline_system)
-		entry._outline_applied = false
 	end
+
+	entry._outline_applied_name = nil
+	entry._outline_applied = false
 end
 
 mod.pulse_enemy_outline = function(entry)
@@ -454,9 +450,8 @@ mod.update_enemy_outlines = function(entry)
 	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
 
 	if has_los then
-		if not entry._outline_applied then
-			mod.enable_enemy_outlines(unit, entry)
-		end
+		-- enable_enemy_outlines only does work when the desired outline changed
+		mod.enable_enemy_outlines(unit, entry)
 	elseif entry._outline_applied then
 		mod.disable_enemy_outlines(unit, entry)
 	end
