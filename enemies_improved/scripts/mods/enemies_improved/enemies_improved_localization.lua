@@ -893,6 +893,24 @@ table.insert(localisations_to_add, {
 	},
 })
 
+table.insert(localisations_to_add, {
+	dont_override = {
+		en = "Follow global toggle",
+		ru = "Следовать глобальному переключателю",
+		["zh-cn"] = "跟随全局开关",
+	},
+	true_override = {
+		en = "Force on",
+		ru = "Принудительно включить",
+		["zh-cn"] = "强制开启",
+	},
+	false_override = {
+		en = "Force off",
+		ru = "Принудительно выключить",
+		["zh-cn"] = "强制关闭",
+	},
+})
+
 -- enemy type options localisations
 table.insert(localisations_to_add, {
 	enemy_type = {
@@ -990,22 +1008,22 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "全局开关敌人轮廓，可在下方单独配置各类型敌人。",
 	},
 	remove_tag_skull = {
-		en = "Remove tagged skull"
+		en = "Remove tagged skull",
 	},
 	remove_tag_skull_tooltip = {
-		en = "Toggles the 'skull' icon which appears above enemies heads when they are tagged."
+		en = "Toggles the 'skull' icon which appears above enemies heads when they are tagged.",
 	},
 	adjust_ads_opacity = {
-		en = "Adjust opacity with ADS"
+		en = "Adjust opacity with ADS",
 	},
 	adjust_ads_opacity_tooltip = {
-		en = "Allows you to apply an opacity multiplier when you are aiming down sight. Useful if you would like differing widget opacities depending on if you are aiming or not."
+		en = "Allows you to apply an opacity multiplier when you are aiming down sight. Useful if you would like differing widget opacities depending on if you are aiming or not.",
 	},
 	ads_opacity_mult = {
-		en = "ADS Opacity Multiplier"
+		en = "ADS Opacity Multiplier",
 	},
 	ads_opacity_mult_tooltip = {
-		en = "Set the opacity multiplier for when you are aiming down sight. Reduces or increases your set opacity by this multiplier. "
+		en = "Set the opacity multiplier for when you are aiming down sight. Reduces or increases your set opacity by this multiplier. ",
 	},
 	outline_tagged_enable = {
 		en = "Enable tagged enemy outline override",
@@ -2956,23 +2974,8 @@ table.insert(localisations_to_add, {
 	},
 	marker_type_enable_tooltip = {
 		en = "Override overhead markers for your selected enemy type. 'Force on' always shows them, 'Force off' always hides them, 'Follow global toggle' uses the global horde/non-horde marker toggles.",
-		ru = "Переопределите маркеры над головой для выбранного типа врага. \"Принудительно включить\" всегда показывает их, \"Принудительно выключить\" всегда скрывает, \"Следовать глобальному переключателю\" использует глобальные переключатели маркеров.",
-		["zh-cn"] = "为选中的敌人类型覆盖头顶标记。\"强制开启\"始终显示，\"强制关闭\"始终隐藏，\"跟随全局开关\"使用全局标记开关。",
-	},
-	marker_override_follow_global = {
-		en = "Follow global toggle",
-		ru = "Следовать глобальному переключателю",
-		["zh-cn"] = "跟随全局开关",
-	},
-	marker_override_force_on = {
-		en = "Force on",
-		ru = "Принудительно включить",
-		["zh-cn"] = "强制开启",
-	},
-	marker_override_force_off = {
-		en = "Force off",
-		ru = "Принудительно выключить",
-		["zh-cn"] = "强制关闭",
+		ru = 'Переопределите маркеры над головой для выбранного типа врага. "Принудительно включить" всегда показывает их, "Принудительно выключить" всегда скрывает, "Следовать глобальному переключателю" использует глобальные переключатели маркеров.',
+		["zh-cn"] = '为选中的敌人类型覆盖头顶标记。"强制开启"始终显示，"强制关闭"始终隐藏，"跟随全局开关"使用全局标记开关。',
 	},
 })
 
@@ -3015,7 +3018,7 @@ table.insert(localisations_to_add, {
 	},
 	healthbar_individual_enable_tooltip = {
 		en = "Toggle healthbar colour overriding for your selected enemy",
-		ru = "Включите переопределение цвета полоски здоровья для выбранного врага.",
+		ru = "Включите переопределен��е цвета полоски здоровья для выбранного врага.",
 		["zh-cn"] = "为选中敌人覆盖血条颜色。",
 	},
 	healthbar_individual_force = {
@@ -3105,8 +3108,8 @@ table.insert(localisations_to_add, {
 	},
 	markers_individual_toggle_tooltip = {
 		en = "Override the overhead markers for your selected enemy. 'Force on' always shows them, 'Force off' always hides them, 'Follow global toggle' uses the global horde/non-horde marker toggles. This individual override takes priority over the group override above.",
-		ru = "Переопределите маркеры над головой для выбранного врага. \"Принудительно включить\" всегда показывает их, \"Принудительно выключить\" всегда скрывает, \"Следовать глобальному переключателю\" использует глобальные переключатели. Индивидуальная настройка имеет приоритет над групповой.",
-		["zh-cn"] = "为选中敌人覆盖头顶标记。\"强制开启\"始终显示，\"强制关闭\"始终隐藏，\"跟随全局开关\"使用全局标记开关。此单独设置优先于上面的分组设置。",
+		ru = 'Переопределите маркеры над головой для выбранного врага. "Принудительно включить" всегда показывает их, "Принудительно выключить" всегда скрывает, "Следовать глобальному переключателю" использует глобальные переключатели. Индивидуальная настройка имеет приоритет над групповой.',
+		["zh-cn"] = '为选中敌人覆盖头顶标记。"强制开启"始终显示，"强制关闭"始终隐藏，"跟随全局开关"使用全局标记开关。此单独设置优先于上面的分组设置。',
 	},
 	debuff_individual_enable = {
 		en = "Toggle debuffs override?",
@@ -3385,31 +3388,16 @@ local apply_colours = function()
 			end
 		end
 
-		-- apply border colours
-		if key == "Gold" or key == "Silver" or key == "Steel" or key == "Tarnished" then
-			for language, text in next, values do
-				local argb = mod.lookup_border_color(key)
-
-				if argb ~= nil then
-					local temp = apply_color_to_text(key, argb[2], argb[3], argb[4])
-
-					if mod.localisation[temp] == nil then
-						mod.localisation[temp] = {}
-						mod.localisation[temp][language] = temp
-					else
-						mod.localisation[temp][language] = temp
-					end
-				end
-			end
-		end
-
 		-- adjust tooltip text opacity
 		if string.find(key, "_tooltip") then
 			for language, text in next, values do
 				local rgb = { 144, 155, 136 }
 
 				if rgb ~= nil then
-					local text = apply_color_to_text(text, rgb[1], rgb[2], rgb[3])
+					-- Strip any colour tags applied by a previous pass, otherwise every
+					-- call wraps the already-wrapped string again and grows it forever.
+					local clean = string.gsub(text, "{#.-}", "")
+					local text = apply_color_to_text(clean, rgb[1], rgb[2], rgb[3])
 
 					if mod.localisation[key] == nil then
 						mod.localisation[key] = {}
