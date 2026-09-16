@@ -32,29 +32,22 @@ mod.update_enemy_markers = function(entry, t)
 	--local breed = unit_data_extension and unit_data_extension:breed()
 	--local enemy_individual = breed and breed.name
 
-	-- Horde filter: block unless horde enabled, clusters enabled, an individual or group override is on, or debuffed
+	-- Horde filter: only create the marker when the relevant global toggle allows it,
+	-- an override forces it on, or the enemy is debuffed.
 	local breed_name = entry.breed_name
-	local individual_enabled = breed_name and fs.breed_marker_toggle and fs.breed_marker_toggle[breed_name]
-	local group_enabled = fs.breed_marker_type_enabled and fs.breed_marker_type_enabled["horde"]
 	local unit = entry.unit
+	local marker_force_on =
+		(breed_name and fs.breed_marker_toggle and fs.breed_marker_toggle[breed_name] == "true_override")
+		or (fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[entry.breed_type] == "true_override")
 	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
 
 	if
-		entry.is_horde
-		and (not fs.markers_horde_enable)
-		and not individual_enabled
-		and not group_enabled
+		not marker_force_on
 		and not debuffed_override
-	then
-		return
-	end
-
-	if
-		not entry.is_horde
-		and (not fs.markers_non_horde_enable)
-		and not individual_enabled
-		and not group_enabled
-		and not debuffed_override
+		and (
+			(entry.is_horde and not fs.markers_horde_enable)
+			or (not entry.is_horde and not fs.markers_non_horde_enable)
+		)
 	then
 		return
 	end

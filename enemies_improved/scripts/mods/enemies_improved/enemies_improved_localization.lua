@@ -2950,14 +2950,29 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "分组标记覆盖",
 	},
 	marker_type_enable = {
-		en = "Enable markers?",
-		ru = "Включить маркеры?",
-		["zh-cn"] = "启用标记",
+		en = "Overhead markers override?",
+		ru = "Переопределение маркеров над головой?",
+		["zh-cn"] = "覆盖头顶标记？",
 	},
 	marker_type_enable_tooltip = {
-		en = "Toggle markers for your selected enemy type",
-		ru = "Включить/выключить маркеры для выбранного типа врага.",
-		["zh-cn"] = "开关当前选中敌人类型的头顶标记。",
+		en = "Override overhead markers for your selected enemy type. 'Force on' always shows them, 'Force off' always hides them, 'Follow global toggle' uses the global horde/non-horde marker toggles.",
+		ru = "Переопределите маркеры над головой для выбранного типа врага. \"Принудительно включить\" всегда показывает их, \"Принудительно выключить\" всегда скрывает, \"Следовать глобальному переключателю\" использует глобальные переключатели маркеров.",
+		["zh-cn"] = "为选中的敌人类型覆盖头顶标记。\"强制开启\"始终显示，\"强制关闭\"始终隐藏，\"跟随全局开关\"使用全局标记开关。",
+	},
+	marker_override_follow_global = {
+		en = "Follow global toggle",
+		ru = "Следовать глобальному переключателю",
+		["zh-cn"] = "跟随全局开关",
+	},
+	marker_override_force_on = {
+		en = "Force on",
+		ru = "Принудительно включить",
+		["zh-cn"] = "强制开启",
+	},
+	marker_override_force_off = {
+		en = "Force off",
+		ru = "Принудительно выключить",
+		["zh-cn"] = "强制关闭",
 	},
 })
 
@@ -3089,9 +3104,9 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "覆盖头顶标记",
 	},
 	markers_individual_toggle_tooltip = {
-		en = "Toggle the overhead markers overriding for your selected enemy. This will take effect whether the global overhead markers are enabled or not. To allow only specific enemies to have the overhead markers.",
-		ru = "Включает/выключает маркеры над головой для выбранного врага, независимо от глобальной настройки. Позволяет показывать маркеры только для определённых врагов.",
-		["zh-cn"] = "为选定敌人单独强制开关头顶标记，不受全局标记总控影响，可单独指定特定敌人显示标记",
+		en = "Override the overhead markers for your selected enemy. 'Force on' always shows them, 'Force off' always hides them, 'Follow global toggle' uses the global horde/non-horde marker toggles. This individual override takes priority over the group override above.",
+		ru = "Переопределите маркеры над головой для выбранного врага. \"Принудительно включить\" всегда показывает их, \"Принудительно выключить\" всегда скрывает, \"Следовать глобальному переключателю\" использует глобальные переключатели. Индивидуальная настройка имеет приоритет над групповой.",
+		["zh-cn"] = "为选中敌人覆盖头顶标记。\"强制开启\"始终显示，\"强制关闭\"始终隐藏，\"跟随全局开关\"使用全局标记开关。此单独设置优先于上面的分组设置。",
 	},
 	debuff_individual_enable = {
 		en = "Toggle debuffs override?",

@@ -356,10 +356,10 @@ template.on_enter = function(widget, marker, template)
 	local enemy_individual = content.breed and content.breed.name
 
 	if enemy_individual then
-		local enabled = fs.breed_marker_toggle and fs.breed_marker_toggle[enemy_individual] or nil
+		local v = fs.breed_marker_toggle and fs.breed_marker_toggle[enemy_individual]
 
-		if enabled ~= nil then
-			content.m_allowed = enabled
+		if v == "false_override" then
+			content.m_allowed = false
 		end
 	end
 
@@ -417,38 +417,50 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local breed_name = entry and entry.breed_name
 	local breed_type = entry and entry.breed_type
 
-	local override_enabled = nil
+	local marker_override = nil
 
 	-- group override
 	if breed_type then
-		local enabled = fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[breed_type] or nil
+		local v = fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[breed_type]
 
-		if enabled ~= nil then
-			override_enabled = enabled
+		if v == "true_override" then
+			marker_override = true
+		elseif v == "false_override" then
+			marker_override = false
 		end
 	end
 
-	-- individual override
+	-- individual override (takes priority over the group override)
 	if breed_name then
-		local enabled = fs.breed_marker_toggle and fs.breed_marker_toggle[breed_name] or nil
+		local v = fs.breed_marker_toggle and fs.breed_marker_toggle[breed_name]
 
-		if enabled and enabled == true then
-			override_enabled = enabled
+		if v == "true_override" then
+			marker_override = true
+		elseif v == "false_override" then
+			marker_override = false
 		end
 	end
 
-	-- Horde filter
-	if entry and entry.is_horde and not fs.markers_horde_enable and not override_enabled then
+	-- Force off takes priority: never show this enemy's overhead marker.
+	if marker_override == false then
 		content.draw_mkr = false
 		content.m_built = false
 		return
 	end
 
-	-- Non-horde filter (elites, specials, monsters, etc.)
-	if entry and not entry.is_horde and not fs.markers_non_horde_enable and not override_enabled then
-		content.draw_mkr = false
-		content.m_built = false
-		return
+	-- Follow the global toggles unless an override forces the marker on.
+	if not marker_override and entry then
+		if entry.is_horde and not fs.markers_horde_enable then
+			content.draw_mkr = false
+			content.m_built = false
+			return
+		end
+
+		if not entry.is_horde and not fs.markers_non_horde_enable then
+			content.draw_mkr = false
+			content.m_built = false
+			return
+		end
 	end
 
 	local health_extension = content.health_extension

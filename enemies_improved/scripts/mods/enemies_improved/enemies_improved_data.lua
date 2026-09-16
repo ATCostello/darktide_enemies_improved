@@ -508,15 +508,15 @@ local enemy_type_options = {
 
 local override_options = {
 	{
-		text = "dont_override",
+		text = "marker_override_follow_global",
 		value = "dont_override",
 	},
 	{
-		text = "true_override",
+		text = "marker_override_force_on",
 		value = "true_override",
 	},
 	{
-		text = "false_override",
+		text = "marker_override_force_off",
 		value = "false_override",
 	},
 }
@@ -2444,20 +2444,11 @@ mod.group_settings_widgets = {
 
 			{
 				setting_id = "marker_type_enable",
-				type = "checkbox",
-				default_value = false,
-				tooltip = "marker_type_enable_tooltip",
-			},
-
-			--[[
-			{
-				setting_id = "marker_type_enable",
 				type = "dropdown",
 				options = override_options,
 				default_value = "dont_override",
 				tooltip = "marker_type_enable_tooltip",
 			},
-			]]
 		},
 	},
 }
@@ -2607,8 +2598,9 @@ mod.individual_override_settings = {
 		sub_widgets = {
 			{
 				setting_id = "markers_individual_toggle",
-				type = "checkbox",
-				default_value = false,
+				type = "dropdown",
+				options = override_options,
+				default_value = "dont_override",
 				tooltip = "markers_individual_toggle_tooltip",
 			},
 		},

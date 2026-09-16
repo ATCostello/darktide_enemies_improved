@@ -25,6 +25,18 @@ local function ensure_array_indexed(t, i2, i3, i4)
 	return t
 end
 
+local function marker_override_value(v)
+	if v == "true_override" then
+		return "true_override"
+	elseif v == "false_override" then
+		return "false_override"
+	elseif v == true then
+		return "true_override"
+	else
+		return "dont_override"
+	end
+end
+
 mod.font_type = mod:get("font_type")
 mod.frame_settings = {}
 
@@ -115,7 +127,7 @@ mod.build_frame_settings = function(dt)
 				end
 			end
 
-			fs.breed_marker_toggle[enemy] = mod:get("markers_" .. enemy .. "_toggle")
+			fs.breed_marker_toggle[enemy] = marker_override_value(mod:get("markers_" .. enemy .. "_toggle"))
 			fs.breed_debuff_toggle[enemy] = mod:get("debuff_" .. enemy .. "_enable")
 			fs.breed_outline_enabled[enemy] = mod:get("outline_" .. enemy .. "_enable")
 			fs.breed_healthbar_enabled[enemy] = mod:get("healthbar_" .. enemy .. "_enable")
@@ -143,7 +155,7 @@ mod.build_frame_settings = function(dt)
 			fs.breed_type_healthbar_y_offset[breed] = mod:get("healthbar_" .. breed .. "_y_offset")
 					and -mod:get("healthbar_" .. breed .. "_y_offset")
 				or nil
-			fs.breed_marker_type_enabled[breed] = mod:get("marker_" .. breed .. "_enable")
+			fs.breed_marker_type_enabled[breed] = marker_override_value(mod:get("marker_" .. breed .. "_enable"))
 			fs.breed_type_debuff_show_on_body_override[breed] = mod:get("debuff_" .. breed .. "_show_on_body_override")
 		end
 	end
