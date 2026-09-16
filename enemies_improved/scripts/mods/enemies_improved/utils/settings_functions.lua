@@ -76,6 +76,61 @@ local enemy_override_settings = {
 	["reset_individual_to_default"] = false,
 }
 
+-- Settings that used to be plain checkboxes and are now three-state dropdowns.
+-- Legacy boolean values must be mapped onto the dropdown option strings.
+local is_override_setting = function(setting_name)
+	return setting_name == "marker_type_enable"
+		or setting_name == "markers_individual_toggle"
+		or setting_name == "outline_type_enable"
+		or setting_name == "healthbar_type_enable"
+		or setting_name == "debuff_type_enable"
+		or setting_name == "outline_individual_enable"
+		or setting_name == "healthbar_individual_force"
+		or setting_name == "debuff_individual_enable"
+end
+
+local migrate_override_value = function(setting_name)
+	local v = mod:get(setting_name)
+	if v == true then
+		mod:set(setting_name, "true_override")
+	elseif v == false then
+		mod:set(setting_name, "dont_override")
+	end
+end
+
+-- Runs once at load: converts legacy boolean override values into the dropdown
+-- strings (true -> "true_override", false -> "dont_override", nil -> untouched)
+-- for every override setting, including the per-group and per-individual copies. 
+-- Should help those with already configured overrides to have the nice new stuff 
+-- without any worry at all. Nice.
+mod.migrate_override_settings = function()
+	for setting_name in next, enemy_type_settings do
+		if is_override_setting(setting_name) then
+			migrate_override_value(setting_name)
+
+			for _, options in next, mod.breed_types do
+				local breed = options.value
+				if breed and breed ~= "select" then
+					migrate_override_value((setting_name:gsub("_type_", "_" .. breed .. "_")))
+				end
+			end
+		end
+	end
+
+	for setting_name in next, enemy_override_settings do
+		if is_override_setting(setting_name) then
+			migrate_override_value(setting_name)
+
+			for _, options in next, mod.breed_names do
+				local enemy = options.value
+				if enemy and enemy ~= "select" then
+					migrate_override_value((setting_name:gsub("_individual_", "_" .. enemy .. "_")))
+				end
+			end
+		end
+	end
+end
+
 mod.reset_type_to_default = function(enemy_type)
 	-- reset all options to nil so that the defaults will be loaded...
 	mod:set("healthbar_" .. enemy_type .. "_colour_R", nil)
@@ -443,48 +498,6 @@ mod.set_debuff_colours = function(group_name)
 end
 
 mod.update_settings_values = function(setting_id)
-	-- Mirrors the override normalisation in frame_settings.lua so legacy
-	-- boolean values saved by the old checkboxes map onto the dropdown options.
-	local is_override_setting = function(setting_name)
-		return setting_name == "marker_type_enable"
-			or setting_name == "markers_individual_toggle"
-			or setting_name == "outline_type_enable"
-			or setting_name == "healthbar_type_enable"
-			or setting_name == "debuff_type_enable"
-			or setting_name == "outline_individual_enable"
-			or setting_name == "healthbar_individual_force"
-			or setting_name == "debuff_individual_enable"
-	end
-
-	local override_old_default = function(setting_name)
-		-- settings whose old checkbox default was ON
-		if
-			setting_name == "outline_type_enable"
-			or setting_name == "healthbar_type_enable"
-			or setting_name == "debuff_type_enable"
-			or setting_name == "debuff_individual_enable"
-		then
-			return true
-		end
-		return false
-	end
-
-	local normalize_marker_override = function(v, setting_name)
-		local old_default = override_old_default(setting_name)
-		if v == "true_override" or v == "false_override" or v == "dont_override" then
-			return v
-		elseif v == nil or v == old_default then
-			mod:set(setting_name, "dont_override")
-			return "dont_override"
-		elseif v == true then
-			mod:set(setting_name, "true_override")
-			return "true_override"
-		elseif v == false then
-			mod:set(setting_name, "dont_override")
-			return "dont_override"
-		end
-	end
-
 	-- GROUP OVERRIDES
 	local selected_enemy_type = mod:get("enemy_group")
 	if not selected_enemy_type then
@@ -497,15 +510,9 @@ mod.update_settings_values = function(setting_id)
 	-- Set the enemy type widgets when a group is selected
 	for setting_name, default_value in next, enemy_type_settings do
 		local type_value = mod:get(setting_name)
-		if is_override_setting(setting_name) then
-			type_value = normalize_marker_override(type_value, setting_name)
-		end
 
 		local enemy_type = setting_name:gsub("_type_", "_" .. selected_enemy_type .. "_")
 		local enemy_type_value = mod:get(enemy_type)
-		if is_override_setting(setting_name) then
-			enemy_type_value = normalize_marker_override(enemy_type_value, setting_name)
-		end
 
 		if enemy_type_value == nil then
 			enemy_type_value = default_value
@@ -540,15 +547,9 @@ mod.update_settings_values = function(setting_id)
 	-- Set the enemy individual widgets when a new enemy is selected
 	for setting_name, default_value in next, enemy_override_settings do
 		local individual_value = mod:get(setting_name)
-		if is_override_setting(setting_name) then
-			individual_value = normalize_marker_override(individual_value, setting_name)
-		end
 
 		local enemy_individual = setting_name:gsub("_individual_", "_" .. selected_enemy_individual .. "_")
 		local enemy_individual_value = mod:get(enemy_individual)
-		if is_override_setting(setting_name) then
-			enemy_individual_value = normalize_marker_override(enemy_individual_value, setting_name)
-		end
 
 		if enemy_individual_value == nil then
 			enemy_individual_value = default_value

@@ -262,6 +262,8 @@ mod.on_unload = function()
 end
 
 mod.on_all_mods_loaded = function()
+	mod.migrate_override_settings()
+
 	check_selected_font()
 
 	mod.clear_caches()
