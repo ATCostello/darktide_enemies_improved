@@ -2107,9 +2107,44 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "延迟血条使用彩色？",
 	},
 	hb_toggle_ghostbar_colour_tooltip = {
-		en = "Should the ghostbar use the colour of the healthbar of the enemy?\n\nIf disabled, the ghostbar will be white.",
-		ru = "Должна ли призрачная полоса использовать цвет полоски здоровья врага? Если отключено, призрачная полоса будет белой.",
-		["zh-cn"] = "延迟血条使用敌人血条颜色，关闭则为白色。",
+		en = "Should the ghostbar use the colour of the healthbar of the enemy?\n\nIf disabled, the ghostbar will use the custom colour below.",
+		ru = "Должна ли призрачная полоса использовать цвет полоски здоровья врага? Если отключено, используется настроенный цвет ниже.",
+		["zh-cn"] = "延迟血条使用敌人血条颜色，关闭则使用下方自定义颜色。",
+	},
+	hb_ghostbar_colour = {
+		en = "Ghostbar colour",
+		ru = "Цвет призрачной полосы",
+		["zh-cn"] = "延迟血条颜色",
+	},
+	hb_ghostbar_colour_R = {
+		en = "Ghostbar Colour: Red",
+		ru = "Цвет призрачной полосы: Красный",
+		["zh-cn"] = "延迟血条颜色：红",
+	},
+	hb_ghostbar_colour_G = {
+		en = "Ghostbar Colour: Green",
+		ru = "Цвет призрачной полосы: Зелёный",
+		["zh-cn"] = "延迟血条颜色：绿",
+	},
+	hb_ghostbar_colour_B = {
+		en = "Ghostbar Colour: Blue",
+		ru = "Цвет призрачной полосы: Синий",
+		["zh-cn"] = "延迟血条颜色：蓝",
+	},
+	hb_ghostbar_colour_tooltip = {
+		en = "The colour of the ghostbar when it is not using the enemy healthbar colour.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		ru = "Цвет призрачной полосы, когда она не использует цвет полоски здоровья врага.\n\nЗначения от 0 до 255, где 255 — максимальная интенсивность, 0 — отсутствие цвета.",
+		["zh-cn"] = "延迟血条不使用敌人血条颜色时的自定义颜色，数值0~255。",
+	},
+	hb_ghostbar_speed = {
+		en = "Ghostbar speed",
+		ru = "Скорость призрачной полосы",
+		["zh-cn"] = "延迟血条速度",
+	},
+	hb_ghostbar_speed_tooltip = {
+		en = "How fast the ghostbar moves/shrinks after taking damage.\n\nHigher = faster, 1 = default.",
+		ru = "Как быстро призрачная полоса движется/сжимается после получения урона.\n\nБольше = быстрее, 1 = по умолчанию.",
+		["zh-cn"] = "延迟血条收缩的速度。数值越高越快，1为默认。",
 	},
 	damage_number_crit_colour = {
 		en = "Crit damage colour",

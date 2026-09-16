@@ -285,6 +285,18 @@ mod.build_frame_settings = function(dt)
 	fs.damage_number_duration = mod:get("damage_number_duration")
 	fs.hb_ghostbar_opacity = mod:get("hb_ghostbar_opacity")
 	fs.hb_toggle_ghostbar_colour = mod:get("hb_toggle_ghostbar_colour")
+	fs.hb_ghostbar_speed = mod:get("hb_ghostbar_speed") or 1
+
+	local r_ghost = mod:get("hb_ghostbar_colour_R")
+	local g_ghost = mod:get("hb_ghostbar_colour_G")
+	local b_ghost = mod:get("hb_ghostbar_colour_B")
+	fs.hb_ghostbar_colour = ensure_array(
+		fs.hb_ghostbar_colour,
+		255,
+		r_ghost or 255,
+		g_ghost or 255,
+		b_ghost or 255
+	)
 	fs.readable_max_damage_numbers = mod:get("readable_max_damage_numbers")
 	fs.readable_damage_number_gap = mod:get("readable_damage_number_gap") or 1
 	fs.hb_show_dps = mod:get("hb_show_dps")

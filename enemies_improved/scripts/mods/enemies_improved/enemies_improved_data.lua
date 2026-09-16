@@ -1478,6 +1478,54 @@ table.insert(mod.settings_widgets, {
 			default_value = false,
 			tooltip = "hb_toggle_ghostbar_colour_tooltip",
 		},
+		{
+			setting_id = "hb_ghostbar_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "hb_ghostbar_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "hb_ghostbar_colour_tooltip",
+				},
+				{
+					setting_id = "hb_ghostbar_colour_G",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "hb_ghostbar_colour_tooltip",
+				},
+				{
+					setting_id = "hb_ghostbar_colour_B",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "hb_ghostbar_colour_tooltip",
+				},
+			},
+		},
+		{
+			setting_id = "hb_ghostbar_speed",
+			type = "numeric",
+			default_value = 1,
+			range = {
+				0.25,
+				3,
+			},
+			decimals_number = 2,
+			step_size_value = 0.05,
+			tooltip = "hb_ghostbar_speed_tooltip",
+		},
 	},
 })
 

@@ -26,6 +26,8 @@ template.check_line_of_sight = fs.check_line_of_sight
 template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
 template.screen_clamp = false
 
+local GHOSTBAR_BASE_DURATION = 1.5
+
 template.bar_settings = {
 	alpha_fade_delay = 1,
 	alpha_fade_duration = 0.6,
@@ -33,7 +35,7 @@ template.bar_settings = {
 	animate_on_health_increase = true,
 	bar_spacing = 0,
 	duration_health = 0.1,
-	duration_health_ghost = 1.5,
+	duration_health_ghost = GHOSTBAR_BASE_DURATION,
 	health_animation_threshold = 0.1,
 }
 
@@ -545,10 +547,11 @@ template.on_enter = function(widget, marker, template)
 			ghost_color[3] = bar_color[3] * fs.hb_ghostbar_opacity
 			ghost_color[4] = bar_color[4] * fs.hb_ghostbar_opacity
 		else
-			-- white
-			ghost_color[2] = 255 * fs.hb_ghostbar_opacity
-			ghost_color[3] = 255 * fs.hb_ghostbar_opacity
-			ghost_color[4] = 255 * fs.hb_ghostbar_opacity
+			-- custom colour (defaults to white)
+			local ghost_rgb = fs.hb_ghostbar_colour or { 255, 255, 255, 255 }
+			ghost_color[2] = ghost_rgb[2] * fs.hb_ghostbar_opacity
+			ghost_color[3] = ghost_rgb[3] * fs.hb_ghostbar_opacity
+			ghost_color[4] = ghost_rgb[4] * fs.hb_ghostbar_opacity
 		end
 	end
 
@@ -1195,6 +1198,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local size = template.size
 	size[1] = fs.hb_size_width
 	size[2] = fs.hb_size_height
+
+	-- higher ghostbar speed = shorter shrink duration
+	template.bar_settings.duration_health_ghost = GHOSTBAR_BASE_DURATION / (fs.hb_ghostbar_speed or 1)
 
 	-- only do healthbar calculations if theyre enabled... Still lets the damage numbers do their thing :)
 	if health_fraction and health_ghost_fraction then
