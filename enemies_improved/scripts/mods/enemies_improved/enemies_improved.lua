@@ -64,7 +64,7 @@ mod._on_ei_marker_created = function(marker_id, entry, unit)
 	mod.enemy_markers[unit] = marker_id
 	mod.enemy_healthbars[unit] = marker_id
 	mod.enemy_debuffs[unit] = marker_id
-	
+
 	entry._ei_marker_created = true
 	entry._ei_marker_pending = nil
 
@@ -94,6 +94,8 @@ local AnimationHandler =
 
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
+local Recoil = require("scripts/utilities/recoil")
+local Sway = require("scripts/utilities/sway")
 local HudElementWorldMarkers = require("scripts/ui/hud/elements/world_markers/hud_element_world_markers")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIScenegraph = require("scripts/managers/ui/ui_scenegraph")
@@ -351,11 +353,14 @@ end)
 
 mod.aimed_unit = {}
 mod.tagged_units = {}
+mod.crosshair_target = nil
+mod.crosshair_aimed = {}
 mod._periodic_cache_clear_timer = 0
 
 if mod.DEBUG then
 	mod.mem_profile.track("mod.aimed_unit", mod.aimed_unit)
 	mod.mem_profile.track("mod.tagged_units", mod.tagged_units)
+	mod.mem_profile.track("mod.crosshair_aimed", mod.crosshair_aimed)
 end
 
 -----------------------------------------------------------------------
@@ -380,8 +385,17 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	if mod.enabled then
 		-- Aim detection (clear enemy cache of non-aimed at enemies)
 		if fs.markers_show_only_aimed then
+			-- Crosshair hitscan: the enemy directly under the crosshair always passes
+			-- the view-cone / LOS hard rejects (covers close-range head aiming).
+			mod.do_crosshair_hitscan()
+
 			table_clear(mod.aimed_unit)
 			mod.do_aim_raycast()
+
+			-- Anything the crosshair ray is actually over always counts as aimed.
+			for unit in next, mod.crosshair_aimed do
+				mod.aimed_unit[unit] = true
+			end
 		end
 
 		-- Tagged detection (clear enemy cache of non-tagged enemies)
@@ -539,7 +553,6 @@ mod.force_remove_unit_markers = function(unit)
 		if entry.marker then
 			remove(entry.marker.id)
 		end
-
 
 		mod.enemy_markers[unit] = nil
 		mod.enemy_healthbars[unit] = nil
@@ -757,8 +770,14 @@ mod.scan_enemies = function()
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
 
+			-- The view cone is flattened to the XY plane, so at close range an
+			-- enemy's origin (feet) can sit behind the camera while its head is under
+			-- the crosshair. The hitscan in do_crosshair_hitscan() records every enemy
+			-- the crosshair ray touches, so those always pass the hard rejects.
+			local is_crosshair_target = mod.crosshair_aimed[unit] == true
+
 			-- VIEW CONE FILTER (HARD REJECT)
-			if forward_bonus <= 0 then
+			if forward_bonus <= 0 and not is_crosshair_target then
 				mod.force_remove_unit_markers(unit)
 
 				if mod._cleanup_unit_health_data then
@@ -771,7 +790,7 @@ mod.scan_enemies = function()
 			end
 
 			-- LOS FILTER (HARD REJECT)
-			if physics_world_cache then
+			if physics_world_cache and not is_crosshair_target then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache) then
 					mod.force_remove_unit_markers(unit)
 
@@ -921,7 +940,9 @@ mod.scan_enemies = function()
 				local data = list[i]
 				local unit = data.unit
 
-				local keep = false
+				-- An enemy the crosshair is over is never culled, even if its priority
+				-- score is low (e.g. aiming at an enemy's head at point-blank range).
+				local keep = mod.crosshair_aimed[unit] == true
 
 				for l = 1, #DEPTH_LAYERS do
 					local layer = DEPTH_LAYERS[l]
@@ -1509,6 +1530,8 @@ mod.clear_caches = function()
 	--table_clear(mod.latest_damaged_enemies_set)
 	table_clear(mod.aimed_unit)
 	table_clear(mod.tagged_units)
+	table_clear(mod.crosshair_aimed)
+	mod.crosshair_target = nil
 
 	if mod._clear_unit_health_data then
 		mod._clear_unit_health_data()
@@ -1538,6 +1561,142 @@ mod.update_horde_clusters = function(temp, to_process)
 	else
 		table_clear(_horde_clusters)
 		table_clear(_horde_cluster_by_unit)
+	end
+end
+
+-- Exact crosshair ray (origin + direction) using the first-person unit transform with
+-- weapon recoil and sway applied, mirroring the DynamicCrosshair mod. This is the same
+-- vector the game uses to place the crosshair, so the raycast lands under the reticle.
+-- Falls back to the player camera if the first-person/weapon extensions are missing.
+mod.get_crosshair_shooting_vector = function(hud)
+	local player_extensions = hud and hud:player_extensions()
+
+	if player_extensions then
+		local unit_data_extension = player_extensions.unit_data
+		local first_person_extension = player_extensions.first_person
+		local weapon_extension = player_extensions.weapon
+
+		if unit_data_extension and first_person_extension and weapon_extension then
+			local first_person_unit = first_person_extension:first_person_unit()
+
+			if first_person_unit and Unit_alive(first_person_unit) then
+				local shoot_position = Unit.world_position(first_person_unit, 1)
+				local shoot_rotation = Unit.world_rotation(first_person_unit, 1)
+
+				shoot_rotation = Recoil.apply_weapon_recoil_rotation(
+					weapon_extension:recoil_template(),
+					unit_data_extension:read_component("recoil"),
+					unit_data_extension:read_component("movement_state"),
+					unit_data_extension:read_component("locomotion"),
+					unit_data_extension:read_component("inair_state"),
+					shoot_rotation
+				)
+
+				shoot_rotation = Sway.apply_sway_rotation(
+					weapon_extension:sway_template(),
+					unit_data_extension:read_component("sway"),
+					shoot_rotation
+				)
+
+				return shoot_position, Quaternion_forward(shoot_rotation)
+			end
+		end
+	end
+
+	local camera = hud and hud:player_camera()
+
+	if camera then
+		return Camera.local_position(camera), Quaternion_forward(Camera.local_rotation(camera))
+	end
+
+	return nil, nil
+end
+
+-- Crosshair hitscan: raycast along the exact crosshair vector and remember every living
+-- enemy the crosshair is actually over. The closest hit must be that enemy (walls/props
+-- block it), so an enemy we are literally aiming at always passes the view cone and LOS
+-- hard filters, regardless of where its origin (feet) sits relative to the camera.
+mod.do_crosshair_hitscan = function()
+	mod.crosshair_target = nil
+	table_clear(mod.crosshair_aimed)
+
+	local ui_manager = Managers.ui
+	local hud = ui_manager and ui_manager:get_hud()
+	if not hud then
+		return
+	end
+
+	local world = Managers.world:world("level_world")
+	local physics_world = world and World.get_data(world, "physics_world")
+	if not physics_world then
+		return
+	end
+
+	local player = Managers.player:local_player(1)
+	local player_unit = player and player.player_unit
+	if not player_unit or not mod.detect_alive(player_unit) then
+		return
+	end
+
+	local shoot_position, shoot_direction = mod.get_crosshair_shooting_vector(hud)
+	if not shoot_position or not shoot_direction then
+		return
+	end
+
+	local max_dist = fs.draw_distance_broadphase or fs.draw_distance
+
+	local hits = PhysicsWorld.raycast(
+		physics_world,
+		shoot_position,
+		shoot_direction,
+		max_dist,
+		"all",
+		"max_hits",
+		64,
+		"collision_filter",
+		"filter_player_character_shooting_raycast"
+	)
+
+	if not hits then
+		return
+	end
+
+	-- Find the closest thing the crosshair ray actually hits (including walls/props).
+	-- The player's own actor is ignored so its weapon/body cannot block the shot.
+	local closest_dist = math.huge
+	local num_hits = #hits
+
+	for i = 1, num_hits do
+		local hit = hits[i]
+		local hit_dist = hit[2]
+		local hit_actor = hit[4]
+		local hit_unit = hit_actor and Actor_unit(hit_actor)
+
+		if hit_dist and hit_dist > 0.1 and hit_unit ~= player_unit and hit_dist < closest_dist then
+			closest_dist = hit_dist
+		end
+	end
+
+	if closest_dist == math.huge then
+		return
+	end
+
+	-- Everything at the closest hit point counts; a wall/prop first means no enemy passes.
+	for i = 1, num_hits do
+		local hit = hits[i]
+		local hit_dist = hit[2]
+		local hit_actor = hit[4]
+		local hit_unit = hit_actor and Actor_unit(hit_actor)
+
+		if hit_unit and hit_unit ~= player_unit and hit_dist and hit_dist <= closest_dist + 0.05 then
+			if HEALTH_ALIVE[hit_unit] and Unit_alive(hit_unit) then
+				mod.crosshair_aimed[hit_unit] = true
+
+				if not mod.crosshair_target then
+					mod.crosshair_target = hit_unit
+				end
+			end
+		end
 	end
 end
 
