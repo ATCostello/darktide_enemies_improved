@@ -480,9 +480,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		content.draw_mkr = false
-		content.m_built = false
-		return
+		if not (fs.hb_show_dps or fs.widget_removal_delay > 0) then
+			content.draw_mkr = false
+			content.m_built = false
+			return
+		end
 	end
 
 	if is_alive then

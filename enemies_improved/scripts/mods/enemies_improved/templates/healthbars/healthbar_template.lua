@@ -637,12 +637,20 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		if not fs.hb_show_dps then
-			content.draw_hb = false
-			return
-		else
+		if fs.widget_removal_delay > 0 then
+
+			content.dead = fs.hb_show_dps or false
+			content.hb_built = true
+		
+			if not content.last_damage_taken_time then
+				content.last_damage_taken_time = t
+			end
+		elseif fs.hb_show_dps then
 			content.dead = true
 			content.hb_built = false
+		else
+			content.draw_hb = false
+			return
 		end
 	end
 
@@ -725,6 +733,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if ok then
 			is_dead = not v
 		end
+	elseif health_extension then
+		health_max = content.health_max or 0
 	end
 
 	local toughness_extension = content.toughness_extension
@@ -1391,9 +1401,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
-	-- remove after dps check!
+	-- remove after dps check / widget removal delay!
 	if not is_alive and (not marker.health_fraction or marker.health_fraction == 0) then
-		if time_since_last_damage > fs.damage_number_duration then
+		local dead_window = math.max(fs.damage_number_duration or 0, fs.widget_removal_delay or 0)
+		if time_since_last_damage > dead_window then
 			content.draw_hb = false
 			mod.enemy_healthbars[unit] = nil
 			marker.remove = true
@@ -1486,7 +1497,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if content.draw_hb and line_of_sight_progress > 0 then
-		if fs.healthbar_enable and not content.dead then
+		if fs.healthbar_enable and (not content.dead or fs.widget_removal_delay > 0) then
 			content.hb_built = true
 		end
 		if fs.show_damage_numbers or fs.hb_show_dps then

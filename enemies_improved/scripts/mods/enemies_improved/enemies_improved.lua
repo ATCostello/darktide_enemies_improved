@@ -1387,7 +1387,7 @@ mod.remove_dead = function()
 
 		-- Dead check
 		if not mod.detect_alive(unit) then
-			if fs.hb_show_dps then
+			if fs.hb_show_dps or fs.widget_removal_delay > 0 then
 				if not entry._dead_at then
 					entry._dead_at = t
 				end
@@ -1400,7 +1400,7 @@ mod.remove_dead = function()
 			if health_extension then
 				local ok, pct = pcall(health_extension.current_health_percent, health_extension)
 				if ok and pct <= 0 then
-					if fs.hb_show_dps then
+					if fs.hb_show_dps or fs.widget_removal_delay > 0 then
 						if not entry._dead_at then
 							entry._dead_at = t
 						end
@@ -1415,9 +1415,11 @@ mod.remove_dead = function()
 			end
 		end
 
-		-- Deferred DPS removal: clean up after damage_number_duration
+		-- Deferred removal: clean up after the widget removal delay (or the DPS window,
+		-- whichever is longer) so the widget can linger a moment on freshly dead enemies.
 		if not remove and entry._dead_at then
-			if t - entry._dead_at > fs.damage_number_duration then
+			local dead_window = math.max(fs.damage_number_duration or 0, fs.widget_removal_delay or 0)
+			if dead_window > 0 and t - entry._dead_at > dead_window then
 				remove = true
 				mark_dead = true
 			end

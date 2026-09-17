@@ -1517,10 +1517,10 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_ghostbar_speed",
 			type = "numeric",
-			default_value = 1,
+			default_value = 1.4,
 			range = {
 				0.25,
-				3,
+				5,
 			},
 			decimals_number = 2,
 			step_size_value = 0.05,
@@ -1685,6 +1685,18 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "hb_show_dps_tooltip",
+		},
+		{
+			setting_id = "widget_removal_delay",
+			type = "numeric",
+			default_value = 0,
+			decimals_number = 2,
+			step_size_value = 0.05,
+			range = {
+				0,
+				5,
+			},
+			tooltip = "widget_removal_delay_tooltip",
 		},
 		{
 			setting_id = "hb_damage_numbers_add_total",

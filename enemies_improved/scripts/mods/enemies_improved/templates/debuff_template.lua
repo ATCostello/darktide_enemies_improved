@@ -499,9 +499,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		content.dead = true
-		content.dbf_built = false
-		return
+		if not (fs.hb_show_dps or fs.widget_removal_delay > 0) then
+			content.dead = true
+			content.dbf_built = false
+			return
+		end
 	end
 
 	-- don't process hordes if disabled

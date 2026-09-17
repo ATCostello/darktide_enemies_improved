@@ -205,7 +205,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
-		if not fs.hb_show_dps then
+		if not (fs.hb_show_dps or fs.widget_removal_delay > 0) then
 			marker.draw = false
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
@@ -303,12 +303,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_markers = content.m_built or false
 	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false
 	local dps_visible = fs.hb_show_dps
+	-- dead enemies keep their widget for the removal delay (or DPS window)
+	local dead_visible = dps_visible or fs.widget_removal_delay > 0
 
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then
 		has_healthbar = false
 		has_markers = false
 		has_debuffs = false
 		dps_visible = false
+		dead_visible = false
 	end
 
 	if fs.only_tagged_enemies and unit and not mod.tagged_units[unit] then
@@ -316,10 +319,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		has_markers = false
 		has_debuffs = false
 		dps_visible = false
+		dead_visible = false
 	end
 
-	local visible = (mod.detect_alive(unit) or dps_visible)
-			and (saved_draw or has_healthbar or has_markers or has_debuffs or dps_visible)
+	local visible = (mod.detect_alive(unit) or dead_visible)
+			and (saved_draw or has_healthbar or has_markers or has_debuffs or dead_visible)
 		or false
 
 	marker.draw = visible
@@ -365,7 +369,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if visible then
 			widget.alpha_multiplier = los
 			marker.alpha_multiplier = los
-		elseif not fs.hb_show_dps then
+		elseif not dead_visible then
 			widget.alpha_multiplier = 0
 			marker.alpha_multiplier = 0
 		end
@@ -374,7 +378,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local health_extension = ScriptUnit.has_extension(unit, "health_system")
 		local is_dead = not health_extension or not health_extension:is_alive()
 
-		if is_dead and not fs.hb_show_dps then
+		if is_dead and not dead_visible then
 			marker.alpha_multiplier = 0
 			widget.alpha_multiplier = 0
 			marker.remove = true

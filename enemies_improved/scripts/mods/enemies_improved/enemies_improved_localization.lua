@@ -2281,6 +2281,16 @@ table.insert(localisations_to_add, {
 		ru = "Отображает краткий текстовый элемент урона в секунду (УВС) после убийства врага. Использует длительность отображения цифр урона как таймер.",
 		["zh-cn"] = "击杀敌人后短暂显示DPS，显示时长同伤害数字。",
 	},
+	widget_removal_delay = {
+		en = "Widget removal delay",
+		ru = "Задержка удаления виджета",
+		["zh-cn"] = "界面移除延迟",
+	},
+	widget_removal_delay_tooltip = {
+		en = "Keeps the full enemies improved widget (healthbar, markers and debuffs) on screen for a short time after an enemy dies, instead of removing it instantly.\n\nSet to 0 to disable. When Show DPS is enabled the widget already lingers for the damage number duration; this adds a minimum linger time on top of that.",
+		ru = "Оставляет полный виджет Enemies Improved (полоса здоровья, маркеры и ослабления) на экране на короткое время после смерти врага, вместо мгновенного удаления.\n\nУстановите 0, чтобы отключить. При включённом Показывать УВС виджет и так задерживается на время отображения цифр урона; это добавляет минимальное время задержки сверх него.",
+		["zh-cn"] = "敌人死亡后，让完整界面（血条、标记和减益）短暂保留，而不是立即消失。设为0即禁用。开启每秒伤害时界面本就会延长显示，此项在此基础上再叠加最短保留时间。",
+	},
 	damage_number_scale = {
 		en = "Damage number scale",
 		ru = "Масштаб цифр урона",

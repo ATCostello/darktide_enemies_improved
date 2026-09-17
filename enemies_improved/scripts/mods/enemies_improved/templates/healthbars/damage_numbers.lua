@@ -528,7 +528,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 		end
 
 		mod.num_damage_numbers = num_damage_numbers
-		if fs.show_damage_numbers and num_damage_numbers > 0 then
+		if fs.show_damage_numbers and num_damage_numbers > 0 and not (fs.hb_show_dps and ui_content.dead) then
 			if fs.hb_damage_number_type == damage_number_types.floating then
 				_floating_damage_number_function(
 					ui_content,
@@ -659,7 +659,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 
 		mod.num_damage_numbers = num_damage_numbers
 
-		if fs.show_damage_numbers and num_damage_numbers > 0 then
+		if fs.show_damage_numbers and num_damage_numbers > 0 and not (fs.hb_show_dps and ui_content.dead) then
 			if fs.hb_damage_number_type == damage_number_types.readable then
 				_readable_damage_number_function(
 					ui_content,

@@ -300,6 +300,7 @@ mod.build_frame_settings = function(dt)
 	fs.readable_max_damage_numbers = mod:get("readable_max_damage_numbers")
 	fs.readable_damage_number_gap = mod:get("readable_damage_number_gap") or 1
 	fs.hb_show_dps = mod:get("hb_show_dps")
+	fs.widget_removal_delay = mod:get("widget_removal_delay") or 0
 	fs.damage_number_scale = mod:get("damage_number_scale")
 	fs.damage_number_y_offset = mod:get("damage_number_y_offset")
 	fs.show_dn_in_range_only = mod:get("show_dn_in_range_only")
