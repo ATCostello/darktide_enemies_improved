@@ -776,6 +776,7 @@ mod._on_setting_changed_impl = function(setting_id)
 	then
 		local outline_settings = require("scripts/settings/outline/outline_settings")
 		mod.apply_enemy_outlines(outline_settings)
+		mod.remove_all_enemy_outlines()
 	end
 
 	-- update breed settings
@@ -818,6 +819,7 @@ mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
 	if view_name == "dmf_options_view" or view_name == "options_view" then
 		mod.clear_caches()
 		mod.build_frame_settings()
+		mod.remove_all_enemy_outlines()
 	end
 end)
 

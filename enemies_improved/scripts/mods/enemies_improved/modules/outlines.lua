@@ -153,6 +153,24 @@ mod.disable_enemy_outlines = function(unit, entry)
 	entry._outline_applied = false
 end
 
+-- Remove every currently-applied enemies_improved outline so a settings change (or
+-- options menu close) instantly drops them from living enemies; update_enemy_outlines
+-- re-applies them with the new settings to any enemy that is still in line of sight.
+mod.remove_all_enemy_outlines = function()
+	local outline_system = get_outline_system()
+	if not outline_system then
+		return
+	end
+
+	for _, entry in next, mod.enemy_cache do
+		if entry and entry.unit then
+			mod.disable_enemy_outlines(entry.unit, entry)
+			mod.remove_alert_outline(entry)
+			mod.remove_stagger_outline(entry)
+		end
+	end
+end
+
 mod.pulse_enemy_outline = function(entry)
 	local outline_system = get_outline_system()
 	if not outline_system then
