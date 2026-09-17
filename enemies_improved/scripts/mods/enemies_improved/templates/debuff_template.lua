@@ -506,7 +506,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	-- don't process hordes if disabled
 	if
-		fs.debuff_horde_enable == false
+		fs.debuff_horde_global_enable == false
 		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
 	then
 		content.dbf_built  = false

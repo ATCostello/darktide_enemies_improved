@@ -56,6 +56,7 @@ local function _init_damage_colors()
 	CACHED_DAMAGE_COLORS.default = fs.main_colour
 	CACHED_DAMAGE_COLORS.crit = fs.damage_number_crit_colour
 	CACHED_DAMAGE_COLORS.weakspot = fs.damage_number_weakspot_colour
+	CACHED_DAMAGE_COLORS.dot = fs.dn_dot_colour
 	-- toughness colours
 	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
 
@@ -73,6 +74,7 @@ local function _flashy_damage_number_function(
 	text_color,
 	crit_color,
 	weakspot_color,
+	dot_color,
 	default_font_size,
 	hundreds_font_size,
 	font_type
@@ -129,6 +131,14 @@ local function _flashy_damage_number_function(
 			text_color[2] = weakspot_color[2]
 			text_color[3] = weakspot_color[3]
 			text_color[4] = weakspot_color[4]
+		elseif damage_number.is_dot then
+			text_color[2] = dot_color[2]
+			text_color[3] = dot_color[3]
+			text_color[4] = dot_color[4]
+		elseif damage_number.is_unclassified then
+			text_color[2] = 90
+			text_color[3] = 220
+			text_color[4] = 120
 		else
 			text_color[2] = default_color[2]
 			text_color[3] = default_color[3]
@@ -215,6 +225,7 @@ local function _floating_damage_number_function(
 	text_color,
 	crit_color,
 	weakspot_color,
+	dot_color,
 	default_font_size,
 	hundreds_font_size,
 	font_type
@@ -248,6 +259,14 @@ local function _floating_damage_number_function(
 			text_color[2] = weakspot_color[2]
 			text_color[3] = weakspot_color[3]
 			text_color[4] = weakspot_color[4]
+		elseif damage_number.is_dot then
+			text_color[2] = dot_color[2]
+			text_color[3] = dot_color[3]
+			text_color[4] = dot_color[4]
+		elseif damage_number.is_unclassified then
+			text_color[2] = 90
+			text_color[3] = 220
+			text_color[4] = 120
 		else
 			text_color[2] = default_color[2]
 			text_color[3] = default_color[3]
@@ -329,6 +348,7 @@ local function _readable_damage_number_function(
 	text_color,
 	crit_color,
 	weakspot_color,
+	dot_color,
 	default_font_size,
 	hundreds_font_size,
 	font_type
@@ -362,6 +382,14 @@ local function _readable_damage_number_function(
 			text_color[2] = weakspot_color[2]
 			text_color[3] = weakspot_color[3]
 			text_color[4] = weakspot_color[4]
+		elseif damage_number.is_dot then
+			text_color[2] = dot_color[2]
+			text_color[3] = dot_color[3]
+			text_color[4] = dot_color[4]
+		elseif damage_number.is_unclassified then
+			text_color[2] = 90
+			text_color[3] = 220
+			text_color[4] = 120
 		else
 			text_color[2] = default_color[2]
 			text_color[3] = default_color[3]
@@ -514,6 +542,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 					text_color,
 					crit_color,
 					weakspot_color,
+					CACHED_DAMAGE_COLORS.dot,
 					default_font_size,
 					hundreds_font_size,
 					font_type
@@ -531,6 +560,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 					text_color,
 					crit_color,
 					weakspot_color,
+					CACHED_DAMAGE_COLORS.dot,
 					default_font_size,
 					hundreds_font_size,
 					font_type
@@ -643,6 +673,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 					text_color,
 					crit_color,
 					weakspot_color,
+					CACHED_DAMAGE_COLORS.dot,
 					default_font_size,
 					hundreds_font_size,
 					font_type

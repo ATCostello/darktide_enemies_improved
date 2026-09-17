@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "2.1.8"
+mod.version = "2.2"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -2490,12 +2490,12 @@ table.insert(localisations_to_add, {
 		ru = "Включает позиционирование метки ослаблений. При включении ослабления отображаются в центре модели врага, что облегчает отслеживание, но может мешать. При отключении ослабления отображаются рядом с полоской здоровья над головой врага. Переопределения на вкладке групповых/индивидуальных настроек принудительно включают эту опцию для конкретных врагов, поэтому отключите глобальную опцию, чтобы они работали.",
 		["zh-cn"] = "开启：减益显示在敌人身体中央；关闭：显示在头顶血条旁。",
 	},
-	debuff_horde_enable = {
+	debuff_horde_global_enable = {
 		en = "Enable debuffs for horde enemies?",
 		ru = "Включить ослабления для орды врагов?",
 		["zh-cn"] = "尸潮怪显示减益",
 	},
-	debuff_horde_enable_tooltip = {
+	debuff_horde_global_enable_tooltip = {
 		en = "Toggle to show debuffs for horde enemies.\nWarning: This can have a hit to performance if staring directly at a large group of horde enemies.",
 		ru = "Включает отображение ослаблений для орды врагов. Внимание: может снизить производительность при взгляде на большую группу орды врагов.",
 		["zh-cn"] = "为尸潮小怪显示减益效果。",

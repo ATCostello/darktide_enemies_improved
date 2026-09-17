@@ -4,15 +4,12 @@ local next = next
 local string_find = string.find
 local string_gsub = string.gsub
 
--- Re-entrancy guard: prevents recursive on_setting_changed calls
--- (e.g. init_healthbar_defaults calling mod:set which triggers on_setting_changed again)
 local _in_settings_update = false
 
 -----------------------------------------------------------------------
 -- Settings changed
 -----------------------------------------------------------------------
 
--- list of settings to monitor PER enemy type, needs to be updated if more types are added...
 -- REQUIRES "_type_" AS THAT IS WHERE THE SPECIFIC ENEMY GROUP NAME IS PLACED...
 local enemy_type_settings = {
 	["outline_type_enable"] = "dont_override",
@@ -76,8 +73,6 @@ local enemy_override_settings = {
 	["reset_individual_to_default"] = false,
 }
 
--- Settings that used to be plain checkboxes and are now three-state dropdowns.
--- Legacy boolean values must be mapped onto the dropdown option strings.
 local is_override_setting = function(setting_name)
 	return setting_name == "marker_type_enable"
 		or setting_name == "markers_individual_toggle"
@@ -98,11 +93,6 @@ local migrate_override_value = function(setting_name)
 	end
 end
 
--- Runs once at load: converts legacy boolean override values into the dropdown
--- strings (true -> "true_override", false -> "dont_override", nil -> untouched)
--- for every override setting, including the per-group and per-individual copies. 
--- Should help those with already configured overrides to have the nice new stuff 
--- without any worry at all. Nice.
 mod.migrate_override_settings = function()
 	for setting_name in next, enemy_type_settings do
 		if is_override_setting(setting_name) then
@@ -129,10 +119,18 @@ mod.migrate_override_settings = function()
 			end
 		end
 	end
+
+	if type(mod:get("debuff_horde_global_enable")) ~= "boolean" then
+		local legacy = mod:get("debuff_horde_enable")
+		if type(legacy) == "boolean" then
+			mod:set("debuff_horde_global_enable", legacy)
+			mod:set("debuff_horde_enable", nil)
+		else
+			mod:set("debuff_horde_global_enable", false)
+		end
+	end
 end
 
--- Wipes every saved per-enemy setting to nil so the defaults load in again.
--- The reset control flags are skipped so the toggle handling keeps working.
 local clear_group_overrides = function(enemy_type)
 	for setting_name in next, enemy_type_settings do
 		if setting_name ~= "reset_type_to_default" then

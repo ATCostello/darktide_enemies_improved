@@ -22,7 +22,7 @@ mod.update_enemy_debuffs = function(entry, t)
 		return
 	end
 
-	if entry.is_horde and not fs.debuff_horde_enable then
+	if entry.is_horde and not fs.debuff_horde_global_enable then
 		return
 	end
 

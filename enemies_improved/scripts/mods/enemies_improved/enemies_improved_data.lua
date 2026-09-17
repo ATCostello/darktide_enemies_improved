@@ -1876,14 +1876,16 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "debuff_keyword_enable_tooltip",
 		},
+
 		{
-			setting_id = "debuff_horde_enable",
+			setting_id = "debuff_horde_global_enable",
 			type = "checkbox",
 			default_value = false,
-			tooltip = "debuff_horde_enable_tooltip",
+			tooltip = "debuff_horde_global_enable_tooltip",
 		},
 	},
 })
+
 table.insert(mod.settings_widgets, {
 	setting_id = "debuff_customisation_settings",
 	type = "group",
