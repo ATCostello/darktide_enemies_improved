@@ -1450,6 +1450,56 @@ table.insert(mod.settings_widgets, {
 })
 
 table.insert(mod.settings_widgets, {
+	setting_id = "healthbar_weakened_settings",
+	type = "group",
+	tab = "Healthbar",
+	sub_widgets = {
+		{
+			setting_id = "healthbar_weakened_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "healthbar_weakened_enable_tooltip",
+		},
+		{
+			setting_id = "healthbar_weakened_colour",
+			type = "group",
+			sub_widgets = {
+				{
+					setting_id = "healthbar_weakened_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "healthbar_weakened_colour_tooltip",
+				},
+				{
+					setting_id = "healthbar_weakened_colour_G",
+					type = "numeric",
+					default_value = 122,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "healthbar_weakened_colour_tooltip",
+				},
+				{
+					setting_id = "healthbar_weakened_colour_B",
+					type = "numeric",
+					default_value = 0,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "healthbar_weakened_colour_tooltip",
+				},
+			},
+		},
+	},
+})
+
+table.insert(mod.settings_widgets, {
 	setting_id = "healthbar_ghostbar_customisation_settings",
 	type = "group",
 	tab = "Healthbar",

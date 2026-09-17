@@ -237,6 +237,11 @@ local function get_text_option(content, option)
 	elseif option == "enemy_name" then
 		local name = mod.custom_localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
 
+		local is_weakened = mod.is_weakened and content.unit and mod.is_weakened(content.unit, breed)
+		if is_weakened then
+			name = name .. " " .. (mod.custom_localize("weakened_name_suffix") or "(Weakened)")
+		end
+
 		if content.in_horde_cluster then
 			local cluster_string = name .. " " .. mod.custom_localize("horde")
 
@@ -370,6 +375,7 @@ template.on_enter = function(widget, marker, template)
 
 	content.breed = breed
 	content.unit_data_extension = unit_data_extension
+	content.unit = unit
 
 	local bar_settings = template.bar_settings
 	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
@@ -532,6 +538,13 @@ template.on_enter = function(widget, marker, template)
 				end
 			end
 		end
+	end
+
+	-- WEAKENED BOSS COLOUR OVERRIDE
+	local is_weakened = mod.is_weakened and mod.is_weakened(unit, breed)
+
+	if fs.healthbar_weakened_enable and is_weakened then
+		bar_color = fs.healthbar_weakened_colour
 	end
 
 	style.current_health.color[2] = bar_color[2]

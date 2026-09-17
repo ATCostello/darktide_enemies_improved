@@ -335,6 +335,15 @@ mod.build_frame_settings = function(dt)
 	fs.hb_endcaps_enabled = mod:get("hb_endcaps_enabled")
 	fs.healthbar_colour_preset = mod:get("healthbar_colour_preset")
 
+	-- WEAKENED BOSS HEALTHBAR COLOUR
+	fs.healthbar_weakened_enable = mod:get("healthbar_weakened_enable")
+
+	local r_weak = mod:get("healthbar_weakened_colour_R")
+	local g_weak = mod:get("healthbar_weakened_colour_G")
+	local b_weak = mod:get("healthbar_weakened_colour_B")
+	fs.healthbar_weakened_colour =
+		ensure_array(fs.healthbar_weakened_colour, 255, r_weak or 255, g_weak or 122, b_weak or 0)
+
 	-- TOUGHNESS
 	fs.toughness_enabled = mod:get("toughness_enabled")
 	fs.toughness_text_enabled = mod:get("toughness_text_enabled")

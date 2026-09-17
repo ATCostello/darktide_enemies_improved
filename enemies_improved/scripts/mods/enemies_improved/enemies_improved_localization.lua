@@ -3367,6 +3367,51 @@ table.insert(localisations_to_add, {
 		ru = "Настройки полосок для орды",
 		["zh-cn"] = "尸潮怪血条自定义设置",
 	},
+	healthbar_weakened_settings = {
+		en = "Weakened Boss Healthbar Settings",
+		ru = "Настройки полоски ослабленного босса",
+		["zh-cn"] = "被削弱首领血条设置",
+	},
+	healthbar_weakened_enable = {
+		en = "Colour weakened bosses?",
+		ru = "Окрашивать ослабленных боссов?",
+		["zh-cn"] = "标记被削弱的首领？",
+	},
+	healthbar_weakened_enable_tooltip = {
+		en = "Overrides the healthbar colour of weakened bosses with the colour set below.\n\nA weakened boss spawns with reduced max health (shown with the game's \"weakened\" name prefix).",
+		ru = "Переопределяет цвет полоски здоровья ослабленных боссов на указанный ниже цвет.\n\nОслабленный босс появляется с уменьшенным запасом здоровья (также отображается игровая приставка «ослабленный» к имени).",
+		["zh-cn"] = "用下方设置的颜色覆盖被削弱首领的血条颜色。\n\n被削弱的首领以较低最大生命值生成（游戏会为其名字加上「已削弱」前缀）。",
+	},
+	healthbar_weakened_colour = {
+		en = "Weakened colour",
+		ru = "Цвет для ослабленных",
+		["zh-cn"] = "被削弱颜色",
+	},
+	healthbar_weakened_colour_R = {
+		en = "Weakened Colour: Red",
+		ru = "Цвет для ослабленных: Красный",
+		["zh-cn"] = "被削弱颜色：红",
+	},
+	healthbar_weakened_colour_G = {
+		en = "Weakened Colour: Green",
+		ru = "Цвет для ослабленных: Зелёный",
+		["zh-cn"] = "被削弱颜色：绿",
+	},
+	healthbar_weakened_colour_B = {
+		en = "Weakened Colour: Blue",
+		ru = "Цвет для ослабленных: Синий",
+		["zh-cn"] = "被削弱颜色：蓝",
+	},
+	healthbar_weakened_colour_tooltip = {
+		en = "The colour of the healthbar for weakened bosses.\n\nValues go between 0 and 255, with 255 being the most intense and 0 being none at all.",
+		ru = "Цвет полоски здоровья ослабленных боссов.\n\nЗначения от 0 до 255, где 255 — максимальная интенсивность, 0 — отсутствие цвета.",
+		["zh-cn"] = "被削弱首领的血条颜色，数值0~255。",
+	},
+	weakened_name_suffix = {
+		en = "(Weakened)",
+		ru = "(ослаблен)",
+		["zh-cn"] = "（已削弱）",
+	},
 	debuff_customisation_settings = {
 		en = "Debuff Customisation Settings",
 		ru = "Настройки внешнего вида ослаблений",

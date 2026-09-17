@@ -1915,7 +1915,7 @@ mod.update_enemies = function(dt, t)
 	mod.remove_dead()
 end
 
-mod.get_breed_tags = function(unit)
+mod.get_unit_breed = function(unit)
 	if not mod.detect_alive(unit) then
 		return nil
 	end
@@ -1926,9 +1926,13 @@ mod.get_breed_tags = function(unit)
 		return nil
 	end
 
-	local breed = unit_data_extension:breed()
+	return unit_data_extension:breed()
+end
 
-	if breed then
+mod.get_breed_tags = function(unit)
+	local breed = mod.get_unit_breed(unit)
+
+	if breed and breed.tags then
 		return breed.tags
 	end
 
@@ -1967,6 +1971,71 @@ mod.find_breed_category = function(unit)
 			return "enemy"
 		end
 	end
+end
+
+-- Returns true if the unit is a weakened boss (spawned with reduced max health).
+mod.is_weakened = function(unit, breed)
+	local breed = breed or mod.get_unit_breed(unit)
+
+	if not breed or not breed.is_boss or breed.ignore_weakened_boss_name then
+		return false
+	end
+
+	local health_extension = ScriptUnit_has_extension(unit, "health_system")
+
+	if not health_extension then
+		return false
+	end
+
+	local ok, max_health = pcall(health_extension.max_health, health_extension)
+
+	if not ok or not max_health then
+		return false
+	end
+
+	local difficulty = Managers.state.difficulty
+
+	if not (breed.name and difficulty) then
+		return false
+	end
+
+	local initial_max_health = math.floor(difficulty:get_minion_max_health(breed.name))
+
+	if max_health < initial_max_health then
+		return true
+	end
+
+	local ok_havoc, parsed_havoc = pcall(function()
+		return difficulty:get_parsed_havoc_data()
+	end)
+
+	if ok_havoc and parsed_havoc then
+		local ok_game_mode, game_mode = pcall(function()
+			return Managers.state.game_mode:game_mode()
+		end)
+
+		if ok_game_mode and game_mode and game_mode.extension then
+			local ok_havoc_ext, havoc_extension = pcall(function()
+				return game_mode:extension("havoc")
+			end)
+
+			if ok_havoc_ext and havoc_extension then
+				local ok_value, havoc_health_override_value = pcall(function()
+					return havoc_extension:get_modifier_value("modify_monster_health")
+				end)
+
+				if ok_value and havoc_health_override_value then
+					local multiplied_max_health = initial_max_health + initial_max_health * havoc_health_override_value
+
+					if max_health < multiplied_max_health then
+						return true
+					end
+				end
+			end
+		end
+	end
+
+	return false
 end
 
 -- Returns true if the unit currently has any active debuff tracked by the mod
