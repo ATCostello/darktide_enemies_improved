@@ -126,6 +126,7 @@ template.on_enter = function(widget, marker, template)
 	local content = widget.content
 
 	content._ei_scale_snapped = false
+	content._ei_dead_at = nil
 
 	local unit = marker.unit
 	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
@@ -203,6 +204,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local is_alive = mod.detect_alive(unit)
+
+	-- note when this unit died, the overhead marker and the debuffs use it so they
+	-- drop out after the widget removal delay instead of riding out the dps window
+	if is_alive then
+		content._ei_dead_at = nil
+	else
+		content._ei_dead_at = content._ei_dead_at or t
+	end
 
 	if not is_alive then
 		if not (fs.hb_show_dps or fs.widget_removal_delay > 0) then

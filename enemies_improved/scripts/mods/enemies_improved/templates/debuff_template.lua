@@ -500,12 +500,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
     local is_alive = mod.detect_alive(unit)
 
-    if not is_alive then
-        if not (fs.hb_show_dps or fs.widget_removal_delay > 0) then
-            content.dead = true
-            content.dbf_built = false
-            return
-        end
+    -- dead enemies only keep their debuffs for the widget removal delay,
+    -- show dps should not hold them on screen until the dps number is gone
+    if not is_alive and t - (content._ei_dead_at or t) >= (fs.widget_removal_delay or 0) then
+        content.dbf_built = false
+        return
     end
 
     -- don't process hordes if disabled
