@@ -105,6 +105,22 @@ local MechanismManager = require("scripts/managers/mechanism/mechanism_manager")
 
 mod._broadphase_results = {}
 
+local BROADPHASE_CELL_RADIUS = 50
+local BROADPHASE_LATTICE_SPACING = 50 * 1.4142135623731
+local BROADPHASE_LATTICE_OFFSETS = {
+	{ -1, -1 },
+	{ -1, 0 },
+	{ -1, 1 },
+	{ 0, -1 },
+	{ 0, 1 },
+	{ 1, -1 },
+	{ 1, 0 },
+	{ 1, 1 },
+}
+
+mod._broadphase_scratch = {}
+mod._broadphase_seen = {}
+
 mod.enemy_cache = {}
 mod.enemy_markers = {}
 mod.enemy_healthbars = {}
@@ -144,6 +160,8 @@ if mod.DEBUG then
 	mem.track("cluster._z_samples", _z_samples)
 	mem.track("cluster._bfs_queue", _bfs_queue)
 	mem.track("mod._broadphase_results", mod._broadphase_results)
+	mem.track("mod._broadphase_scratch", mod._broadphase_scratch)
+	mem.track("mod._broadphase_seen", mod._broadphase_seen)
 	mem.track("mod.enemy_cache", mod.enemy_cache)
 	mem.track("mod.enemy_markers", mod.enemy_markers)
 	mem.track("mod.enemy_healthbars", mod.enemy_healthbars)
@@ -675,6 +693,90 @@ end
 -----------------------------------------------------------------------
 -- Enemy scanning
 -----------------------------------------------------------------------
+local function _is_finite_number(v)
+	return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
+end
+
+local function _is_finite_vector3(v)
+	return v ~= nil and _is_finite_number(v.x) and _is_finite_number(v.y) and _is_finite_number(v.z)
+end
+
+-- broadphase now has a hard limit of 50m, so if you have more than 50m distance, I now need to do a ring of offset queries
+mod.query_broadphase_covered = function(broadphase, from_pos, radius, results, side_names)
+	if not broadphase or not broadphase.query then
+		return 0
+	end
+
+	if not _is_finite_vector3(from_pos) then
+		return 0
+	end
+
+	if not _is_finite_number(radius) or radius <= 0 then
+		return 0
+	end
+
+	if type(results) ~= "table" or not side_names then
+		return 0
+	end
+
+	if radius <= BROADPHASE_CELL_RADIUS then
+		local hits = broadphase.query(broadphase, from_pos, radius, results, side_names)
+		return _is_finite_number(hits) and hits or 0
+	end
+
+	local scratch = mod._broadphase_scratch
+	local seen = mod._broadphase_seen
+
+	if not scratch or not seen then
+		return 0
+	end
+
+	table_clear(seen)
+
+	local total = 0
+
+	local function collect(centre, query_radius)
+		if not _is_finite_vector3(centre) or not _is_finite_number(query_radius) or query_radius <= 0 then
+			return
+		end
+
+		table_clear(scratch)
+
+		local hits = broadphase.query(broadphase, centre, query_radius, scratch, side_names)
+
+		if not _is_finite_number(hits) then
+			return
+		end
+
+		for i = 1, hits do
+			local unit = scratch[i]
+
+			if unit and not seen[unit] then
+				seen[unit] = true
+				total = total + 1
+				results[total] = unit
+			end
+		end
+	end
+
+	collect(from_pos, BROADPHASE_CELL_RADIUS)
+
+	local outer_radius = math_min(radius, BROADPHASE_CELL_RADIUS)
+	local spacing = BROADPHASE_LATTICE_SPACING
+
+	for i = 1, #BROADPHASE_LATTICE_OFFSETS do
+		local offset = BROADPHASE_LATTICE_OFFSETS[i]
+
+		if offset and _is_finite_number(offset[1]) and _is_finite_number(offset[2]) then
+			collect(
+				Vector3(from_pos.x + offset[1] * spacing, from_pos.y + offset[2] * spacing, from_pos.z),
+				outer_radius
+			)
+		end
+	end
+
+	return total
+end
 
 mod.scan_enemies = function()
 	table_clear(_horde_units_all)
@@ -732,11 +834,12 @@ mod.scan_enemies = function()
 	local from_pos = current_pos
 	local enemy_side_names = side:relation_side_names("enemy")
 	local range = mod.frame_settings.draw_distance_broadphase or mod.frame_settings.draw_distance
+	local range_sq = range * range
 
 	local results = mod._broadphase_results
 	table_clear(results)
 
-	local num_hits = broadphase.query(broadphase, from_pos, range, results, enemy_side_names)
+	local num_hits = mod.query_broadphase_covered(broadphase, from_pos, range, results, enemy_side_names)
 
 	if num_hits == 0 then
 		return
@@ -777,12 +880,18 @@ mod.scan_enemies = function()
 		local unit = results[i]
 
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
-			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
+			local early_pos = Unit.world_position(unit, 1, _pos_vec)
+			if early_pos then
+				local edx = current_pos.x - early_pos.x
+				local edy = current_pos.y - early_pos.y
+				local edz = current_pos.z - early_pos.z
 
-			-- The view cone is flattened to the XY plane, so at close range an
-			-- enemy's origin (feet) can sit behind the camera while its head is under
-			-- the crosshair. The hitscan in do_crosshair_hitscan() records every enemy
-			-- the crosshair ray touches, so those always pass the hard rejects.
+				if edx * edx + edy * edy + edz * edz > range_sq then
+					goto skip_breed
+				end
+			end
+
+			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 
 			-- VIEW CONE FILTER (HARD REJECT)

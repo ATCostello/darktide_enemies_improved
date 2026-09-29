@@ -3,6 +3,8 @@ mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_l
 
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 
+local INDIVIDUAL_DISTANCE_DEFAULT = 30
+
 local function table_clear(t)
 	for k in pairs(t) do
 		t[k] = nil
@@ -119,9 +121,9 @@ mod.build_frame_settings = function(dt)
 			local dist_enabled = mod:get("distance_" .. enemy .. "_enable")
 			fs.breed_dist_enabled[enemy] = dist_enabled
 			if dist_enabled then
-				local ind_dist = mod:get("distance_" .. enemy .. "_value")
+				local ind_dist = mod:get("distance_" .. enemy .. "_value") or INDIVIDUAL_DISTANCE_DEFAULT
 				fs.breed_dist_value[enemy] = ind_dist
-				if ind_dist and ind_dist > fs.draw_distance_broadphase then
+				if ind_dist > fs.draw_distance_broadphase then
 					fs.draw_distance_broadphase = ind_dist
 				end
 			end
@@ -129,9 +131,9 @@ mod.build_frame_settings = function(dt)
 			local outline_enabled = mod:get("outline_distance_" .. enemy .. "_enable")
 			fs.breed_outline_dist_enabled[enemy] = outline_enabled
 			if outline_enabled then
-				local outline_dist = mod:get("outline_distance_" .. enemy .. "_value")
+				local outline_dist = mod:get("outline_distance_" .. enemy .. "_value") or INDIVIDUAL_DISTANCE_DEFAULT
 				fs.breed_outline_dist_value[enemy] = outline_dist
-				if outline_dist and outline_dist > fs.draw_distance_broadphase then
+				if outline_dist > fs.draw_distance_broadphase then
 					fs.draw_distance_broadphase = outline_dist
 				end
 			end
