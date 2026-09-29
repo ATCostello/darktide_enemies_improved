@@ -259,8 +259,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
-
+	if fs.healthbar_enable then
+		EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
+	end
+	
 	widget._next_update = 0
 
 	local markers_enabled = fs.markers_enable
