@@ -165,8 +165,6 @@ mod.reset_individual_to_default = function(enemy_type)
 	mod.init_healthbar_defaults()
 end
 
--- Resets every group AND individual override for all enemies (not just the one
--- currently selected in the dropdowns).
 mod.reset_all_overrides = function()
 	for _, options in next, mod.breed_types do
 		local breed = options.value
@@ -187,7 +185,6 @@ mod.reset_all_overrides = function()
 
 	mod.init_healthbar_defaults()
 
-	-- colour defaults changed, so refresh the DMF option titles that embed them
 	for setting_name in next, enemy_type_settings do
 		mod.update_dmf_settings_colours(setting_name)
 	end
@@ -203,7 +200,6 @@ local minion_breeds = BreedQueries.minion_breeds_by_name()
 mod.set_breed_colours = function()
 	local bc = mod.BREED_COLOURS
 	if not bc then
-		-- First call: create the table and initialize all sub-tables
 		bc = {
 			horde = { 255, 150, 60, 60 },
 			elite = { 255, 0, 120, 255 },
@@ -260,13 +256,11 @@ mod.set_breed_colours = function()
 end
 
 mod.healthbar_colour_preset_changed = function()
-	-- Apply the selected preset to BREED_COLOURS, then reset the saved group colours to it
 	mod.set_breed_colours()
 	if not mod.BREED_COLOURS_DEFAULT then
 		mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 	end
 
-	-- Update the default colours to match the new preset so future individual overrides seed from it
 	mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 
 	for breed, color in next, mod.BREED_COLOURS do
@@ -274,7 +268,6 @@ mod.healthbar_colour_preset_changed = function()
 		local g = color[3]
 		local b = color[4]
 
-		-- reset the saved group colours to the new preset
 		mod:set("healthbar_" .. breed .. "_colour_R", r)
 		mod:set("healthbar_" .. breed .. "_colour_G", g)
 		mod:set("healthbar_" .. breed .. "_colour_B", b)
@@ -287,7 +280,6 @@ mod.init_healthbar_defaults = function()
 		mod.BREED_COLOURS_DEFAULT = table.clone(mod.BREED_COLOURS)
 	end
 
-	-- vanguard (shield) healthbars are hidden by default unless explicitly enabled via group or individual overrides
 	if mod:get("healthbar_shield_enable") == nil then
 		mod:set("healthbar_shield_enable", false)
 	end
@@ -680,8 +672,6 @@ mod.load_toggled_debuffs_state = function()
 end
 
 mod.on_setting_changed = function(setting_id)
-	-- Re-entrancy guard: skip if we are already inside an update cycle
-	-- (prevents recursive calls from mod:set() inside init_healthbar_defaults, etc.)
 	if _in_settings_update then
 		return
 	end
@@ -814,7 +804,6 @@ mod._on_setting_changed_impl = function(setting_id)
 	mod.update_dmf_settings_colours(setting_id)
 end
 
--- Rebuilds all enemies improved UI stuff if the settings menu is closed, as by default the UI elements go invisible
 mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
 	if view_name == "dmf_options_view" or view_name == "options_view" then
 		mod.clear_caches()

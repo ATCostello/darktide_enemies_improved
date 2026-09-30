@@ -20,7 +20,6 @@ local pinned_suspects = {}
 local EST_SUBTREE_NODE_BUDGET = 500000
 local est_budget_count = { n = 0 }
 
--- Rough byte estimate of a value's memory footprint. The root table's own entries are always counted fully
 local function est_bytes(value, visited, depth)
 	depth = depth or 0
 
@@ -46,12 +45,10 @@ local function est_bytes(value, visited, depth)
 		local bytes = 48
 
 		if depth == 0 then
-			-- Count every top-level entry (cheap, scales with table size only).
 			for k in pairs(value) do
 				bytes = bytes + 8
 			end
 
-			-- Then recurse into a budgeted sample of the subtree.
 			for k, v in pairs(value) do
 				if est_budget_count.n >= EST_SUBTREE_NODE_BUDGET then
 					break
@@ -351,7 +348,6 @@ local function collect_stats()
 		stats.total_first = stats.total_first + f
 		stats.total_last = stats.total_last + l
 
-		-- Pin as a possible leak only once there is a lot of history AND the table is still growing (sustained). Once pinned it stays pinned.
 		if is_leak_suspect(history, name) then
 			pinned_suspects[name] = true
 		end
@@ -362,7 +358,9 @@ local function collect_stats()
 				now = l,
 				delta = delta,
 				recent = recent_delta,
-				rate = slope_bytes_per_sec(history, function(entry) return entry.values[name] end),
+				rate = slope_bytes_per_sec(history, function(entry)
+					return entry.values[name]
+				end),
 			}
 		elseif recent_delta > 0 and delta > 0 then
 			stats.growing[#stats.growing + 1] = {
@@ -370,7 +368,9 @@ local function collect_stats()
 				now = l,
 				delta = delta,
 				recent = recent_delta,
-				rate = slope_bytes_per_sec(history, function(entry) return entry.values[name] end),
+				rate = slope_bytes_per_sec(history, function(entry)
+					return entry.values[name]
+				end),
 			}
 		elseif recent_delta < 0 then
 			stats.shrunk[#stats.shrunk + 1] = { name = name, now = l, delta = l - f, recent = recent_delta }
@@ -584,13 +584,15 @@ mem_profile.render_gui = function()
 		local stats = collect_stats()
 
 		if stats.n >= 3 then
-			Imgui.text(string.format(
-				"%d sample(s) over %.1f min - total %s (%s)",
-				stats.n,
-				stats.dur / 60,
-				fmt_bytes(stats.total_last),
-				fmt_delta(stats.total_last - stats.total_first)
-			))
+			Imgui.text(
+				string.format(
+					"%d sample(s) over %.1f min - total %s (%s)",
+					stats.n,
+					stats.dur / 60,
+					fmt_bytes(stats.total_last),
+					fmt_delta(stats.total_last - stats.total_first)
+				)
+			)
 		elseif stats.n > 0 then
 			Imgui.text(string.format("collecting samples... %d/3", stats.n))
 		else
@@ -614,8 +616,6 @@ mem_profile.render_gui = function()
 		end
 
 		if stats.n >= 3 then
-			-- Leak suspects first, then plain growth, then the rest (flat rows
-			-- are appended from the live sizes view).
 			push_list(stats.suspects, "!")
 			push_list(stats.growing, ">>")
 			push_list(stats.grew, "+")

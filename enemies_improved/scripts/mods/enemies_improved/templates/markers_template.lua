@@ -15,7 +15,7 @@ local MARKER_TYPE_ICONS = {
 	captain = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
 	witch = "content/ui/materials/hud/icons/speaker",
 	shield = "content/ui/materials/hud/interactions/icons/void_shield",
-	horde = "content/ui/materials/icons/system/page_indicator_02_idle"
+	horde = "content/ui/materials/icons/system/page_indicator_02_idle",
 }
 
 -----------------------------------------------------------------------
@@ -111,7 +111,6 @@ template.fade_settings = {
 -- Widget creation
 -----------------------------------------------------------------------
 
--- Fatshark typo: world markers expect `create_widget_defintion`
 template.create_widget_defintion = function(template, scenegraph_id)
 	local fs = mod.frame_settings
 	local mkr_y_offset = fs.marker_y_offset * 100 or 0
@@ -146,7 +145,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 			end,
 		},
 
-		-- ONE WIDGET ONLY...
 		{
 			pass_type = "rotated_texture",
 			style_id = "marker_health",
@@ -441,14 +439,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- Force off takes priority: never show this enemy's overhead marker.
 	if marker_override == false then
 		content.draw_mkr = false
 		content.m_built = false
 		return
 	end
 
-	-- Follow the global toggles unless an override forces the marker on.
 	if not marker_override and entry then
 		if entry.is_horde and not fs.markers_horde_enable then
 			content.draw_mkr = false
@@ -479,8 +475,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local is_alive = mod.detect_alive(unit)
 
-	-- dead enemies only keep the overhead marker for the widget removal delay,
-	-- show dps should not hold it on screen until the dps number is gone
 	if not is_alive and t - (content._ei_dead_at or t) >= (fs.widget_removal_delay or 0) then
 		content.draw_mkr = false
 		content.m_built = false
@@ -594,9 +588,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		style.background.color[4] = spec_col[4]
 	else
 		--content.is_clamped = false
-	content.special_attack_imminent = false
-	content.marker_type_icon_show = false
-	content.type_icon_path = nil
+		content.special_attack_imminent = false
+		content.marker_type_icon_show = false
+		content.type_icon_path = nil
 
 		style.arrow.color[2] = 255
 		style.arrow.color[3] = 255

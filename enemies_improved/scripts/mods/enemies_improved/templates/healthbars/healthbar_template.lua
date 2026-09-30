@@ -155,11 +155,12 @@ end
 local function healthbar_enabled_for(unit, breed, breed_type)
 	local enemy_individual = breed and breed.name
 
-	local individual_state = enemy_individual and fs.breed_healthbar_force and fs.breed_healthbar_force[enemy_individual]
+	local individual_state = enemy_individual
+		and fs.breed_healthbar_force
+		and fs.breed_healthbar_force[enemy_individual]
 	local group_state = breed_type and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[breed_type]
 	local debuffed = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
 
-	-- individual override wins over the group override; both fall back to "follow global"
 	local effective = individual_state
 	if effective ~= "true_override" and effective ~= "false_override" then
 		effective = group_state
@@ -578,7 +579,11 @@ template.on_enter = function(widget, marker, template)
 	--template.damage_number_settings
 	template.damage_number_settings.duration = fs.damage_number_duration
 	template.damage_number_settings.x_offset = fs.hb_size_width * 0.35
-	template.damage_number_settings.x_offset_between_numbers = 16 * fs.text_scale * fs.damage_number_scale * 3 * (fs.readable_damage_number_gap or 1)
+	template.damage_number_settings.x_offset_between_numbers = 16
+		* fs.text_scale
+		* fs.damage_number_scale
+		* 3
+		* (fs.readable_damage_number_gap or 1)
 	template.damage_number_settings.default_font_size = 16 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.hundreds_font_size = 16 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.dps_font_size = 18 * fs.text_scale * fs.damage_number_scale
@@ -637,7 +642,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.healthbar_only_in_meatgrinder then
 		local current_level = Managers_state.mission and Managers_state.mission:mission()
-		if not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range") then
+		if
+			not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range")
+		then
 			content.draw_hb = false
 			return
 		end
@@ -651,10 +658,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		if fs.widget_removal_delay > 0 then
-
 			content.dead = fs.hb_show_dps or false
 			content.hb_built = true
-		
+
 			if not content.last_damage_taken_time then
 				content.last_damage_taken_time = t
 			end
@@ -699,8 +705,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local breed_type = content._breed_type or "enemy"
 
-	-- apply individual/group override ("force off"/"force on"); individual wins
-	-- using cached fs values
 	local group_state = fs.breed_type_healthbar_enabled[breed_type]
 	local enemy_individual = breed and breed.name
 	local individual_state = enemy_individual and fs.breed_healthbar_force[enemy_individual]
@@ -787,9 +791,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if cluster and fs.horde_clusters_enable and fs.healthbar_enable then
 		in_horde_cluster = true
 
-		-- Only the cluster representative should ever have a bar marker, because
-		-- enemy_markers.lua only spawns a bar for cluster.rep_unit.
-		-- Still, guard and bail out if somehow non-rep gets here.
 		if cluster.rep_unit ~= unit then
 			content.draw_hb = false
 			content.in_horde_cluster = false
@@ -797,8 +798,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		content.in_horde_cluster = in_horde_cluster
 
-		-- Recompute pooled health so it stays up-to-date as members take damage/die
-		-- Throttle cluster updates (VERY important for FPS)
 		local next_cluster_update = content._next_cluster_update or 0
 
 		if t >= next_cluster_update then
@@ -835,7 +834,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local total_current = content._cluster_cached_current or 0
 		local total_max_instant = content._cluster_cached_max or 0
 
-		-- Stable max per representative unit: never decrease while this rep is alive
 		local peak = peak_cluster_max_by_rep[unit] or 0
 		if total_max_instant > peak then
 			peak = total_max_instant
@@ -851,8 +849,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			health_max = 0
 			health_percent = 0
 		end
-
-		-- Move bar to horde center, before template.position_offset is applied
 		if cluster.center then
 			local c = cluster.center
 			local cx, cy, cz = c.x, c.y, c.z
@@ -1421,7 +1417,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content.draw_hb = false
 			mod.enemy_healthbars[unit] = nil
 			marker.remove = true
-			-- Release marker entry references so the (now removed) marker + widget can be GC'd
 			local cache_entry = mod.enemy_cache[unit]
 			if cache_entry then
 				cache_entry.marker = nil
@@ -1432,12 +1427,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- only hide non-clustered horde units when horde disabled
-	-- (unless the individual horde breed has its own healthbar toggle/force enabled,
-	-- the horde group override is on, or the unit is debuffed)
 	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
 		local horde_individual = breed and breed.name
-		local individual_state = horde_individual and fs.breed_healthbar_force and fs.breed_healthbar_force[horde_individual]
+		local individual_state = horde_individual
+			and fs.breed_healthbar_force
+			and fs.breed_healthbar_force[horde_individual]
 		local group_state = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
 
 		local effective = individual_state

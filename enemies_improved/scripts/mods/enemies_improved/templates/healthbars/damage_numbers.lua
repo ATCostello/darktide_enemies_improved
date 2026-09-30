@@ -32,7 +32,7 @@ local next = next
 
 -- grab passed template values
 local function _init(passed_template)
-    template = passed_template
+	template = passed_template
 end
 
 local function _pool_damage_number(dn)
@@ -59,7 +59,6 @@ local function _init_damage_colors()
 	CACHED_DAMAGE_COLORS.dot = fs.dn_dot_colour
 	-- toughness colours
 	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
-
 end
 
 local function _flashy_damage_number_function(
@@ -97,7 +96,10 @@ local function _flashy_damage_number_function(
 
 		local start_x = x_position
 		local start_y = y_position
-		local hb_off_y = (ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
+		local hb_off_y = (
+			ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset
+			or 100 * fs.damage_number_y_offset
+		) * (ui_content.scale or 1)
 		if damage_number.hit_world_position and ui_content.player_camera and ui_content._marker_world_pos then
 			local inv_scale = ui_renderer.inverse_scale
 			local camera = ui_content.player_camera
@@ -312,7 +314,10 @@ local function _floating_damage_number_function(
 
 		local start_x = x_position
 		local start_y = y_position
-		local hb_off_y = (ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
+		local hb_off_y = (
+			ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset
+			or 100 * fs.damage_number_y_offset
+		) * (ui_content.scale or 1)
 		if damage_number.hit_world_position and ui_content.player_camera and ui_content._marker_world_pos then
 			local inv_scale = ui_renderer.inverse_scale
 			local camera = ui_content.player_camera
@@ -450,7 +455,6 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 	--	return
 	--end
 	if fs.hb_damage_number_type ~= damage_number_types.readable then
-
 		local damage_numbers = ui_content.damage_numbers
 
 		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
@@ -482,7 +486,12 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 		local num_damage_numbers = #damage_numbers
 
 		position[1] = position[1] + (fs.hb_size_width * 0.4)
-		position[2] = position[2] + ((ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset or 100 * fs.damage_number_y_offset)) * ui_content.scale
+		position[2] = position[2]
+			+ (
+					ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset
+					or 100 * fs.damage_number_y_offset
+				)
+				* ui_content.scale
 
 		local z_position = position[3]
 		local y_position = position[2]
@@ -577,7 +586,6 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 	--	return
 	--end
 	if fs.hb_damage_number_type == damage_number_types.readable then
-
 		local damage_numbers = ui_content.damage_numbers
 
 		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
@@ -686,7 +694,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 end
 
 return {
-    init = _init,
-    damage_number_function = _damage_number_function,
-    readable_damage_number_function = _readable_damage_number_function
+	init = _init,
+	damage_number_function = _damage_number_function,
+	readable_damage_number_function = _readable_damage_number_function,
 }

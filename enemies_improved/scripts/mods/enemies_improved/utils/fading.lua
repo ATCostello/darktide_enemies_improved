@@ -136,7 +136,6 @@ mod.apply_marker_fade = function(self)
 				entry.dist_sq = dist_sq
 				entry.depth = depth
 
-				-- per-marker fade distance based on individual distance override
 				local draw_distance = draw_distance_base
 				local cache_entry = mod.enemy_cache[marker.unit]
 				if cache_entry and cache_entry.breed_name then

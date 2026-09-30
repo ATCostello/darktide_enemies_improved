@@ -42,9 +42,6 @@ local function calc_stack_buff_percentage(val, stacks, stat_name)
 	return math_floor(perc * 10 + 0.5) * 0.1
 end
 
--- Pick a single representative percentage from a stat_buffs table.
--- Only stats typed as additive/multiplicative multipliers produce a non-zero percentage
--- (value/max_value stats are ignored), so plain stack debuffs fall back to stack counts.
 local function best_stat_buff_percentage(stat_buffs, stacks)
 	local best = nil
 	for stat_name, val in next, stat_buffs do
@@ -60,8 +57,6 @@ local function best_stat_buff_percentage(stat_buffs, stacks)
 	return best
 end
 
--- Collect the raw stat contributions of one source entry.
--- additive_multiplier accumulates (val * stacks), multiplicative_multiplier multiplies (val ^ stacks).
 local function collect_source_contributions(entry)
 	local contributions = {}
 	if entry.stat_buffs then
@@ -93,9 +88,6 @@ local function collect_source_contributions(entry)
 	return contributions
 end
 
--- Merge one source's stat contribution into an aggregate table.
--- Parallel stats within a single source count once (representative with the largest magnitude,
--- e.g. phosphor_burn's vs_melee/vs_ranged hit mass); the same stat across sources accumulates.
 local function merge_source_contributions(aggregate, entry)
 	local contributions = collect_source_contributions(entry)
 	local rep_stat, rep_value
@@ -274,23 +266,23 @@ local function scan_boss_debuffs(unit, widget)
 					else
 						entry = {}
 					end
-				entry.name = keyword
-				entry.stacks = 1
-				entry.max_stacks = 1
-				entry.type = "dot"
-				active[active_count] = entry
-			elseif debuff_type == "utility" and fs.debuff_utility_enable ~= false then
-				active_count = active_count + 1
-				local entry = pool[#pool]
-				if entry then
-					pool[#pool] = nil
-				else
-					entry = {}
-				end
-				entry.name = keyword
-				entry.stacks = 1
-				entry.max_stacks = 1
-				entry.type = "utility"
+					entry.name = keyword
+					entry.stacks = 1
+					entry.max_stacks = 1
+					entry.type = "dot"
+					active[active_count] = entry
+				elseif debuff_type == "utility" and fs.debuff_utility_enable ~= false then
+					active_count = active_count + 1
+					local entry = pool[#pool]
+					if entry then
+						pool[#pool] = nil
+					else
+						entry = {}
+					end
+					entry.name = keyword
+					entry.stacks = 1
+					entry.max_stacks = 1
+					entry.type = "utility"
 					active[active_count] = entry
 				end
 			end
@@ -324,7 +316,7 @@ local function scan_boss_debuffs(unit, widget)
 					entry.stat_buffs = template.stat_buffs
 					entry.conditional_stat_buffs = template.conditional_stat_buffs
 					entry.type = "dot"
-			elseif debuff_type == "utility" and fs.debuff_keyword_enable then
+				elseif debuff_type == "utility" and fs.debuff_keyword_enable then
 					local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
 					active_count = active_count + 1
 					local entry = active[active_count]
@@ -400,36 +392,37 @@ local function scan_boss_debuffs(unit, widget)
 					duration = (existing.duration or 0) + (entry.duration or 0)
 				end
 				existing.duration = duration
-			if entry.stat_buffs then
-				existing.stat_buffs = existing.stat_buffs or {}
-				for stat_name, val in pairs(entry.stat_buffs) do
-					existing.stat_buffs[stat_name] = val
+				if entry.stat_buffs then
+					existing.stat_buffs = existing.stat_buffs or {}
+					for stat_name, val in pairs(entry.stat_buffs) do
+						existing.stat_buffs[stat_name] = val
+					end
 				end
-			end
-			if entry.conditional_stat_buffs then
-				existing.conditional_stat_buffs = existing.conditional_stat_buffs or {}
-				for stat_name, val in pairs(entry.conditional_stat_buffs) do
-					existing.conditional_stat_buffs[stat_name] = val
+				if entry.conditional_stat_buffs then
+					existing.conditional_stat_buffs = existing.conditional_stat_buffs or {}
+					for stat_name, val in pairs(entry.conditional_stat_buffs) do
+						existing.conditional_stat_buffs[stat_name] = val
+					end
 				end
-			end
 
-			existing._stat_contributions = existing._stat_contributions or {}
-			merge_source_contributions(existing._stat_contributions, entry)
-		else
-			combined_count = combined_count + 1
-			local new_entry = {
-				name = name,
-				stacks = entry.stacks,
-				max_stacks = entry.max_stacks,
-				duration = entry.duration,
-				stat_buffs = entry.stat_buffs and table.clone(entry.stat_buffs) or nil,
-				conditional_stat_buffs = entry.conditional_stat_buffs and table.clone(entry.conditional_stat_buffs) or nil,
-				combined = true,
-				type = debuff_type,
-			}
-			new_entry._stat_contributions = {}
-			merge_source_contributions(new_entry._stat_contributions, entry)
-			combined[combined_count] = new_entry
+				existing._stat_contributions = existing._stat_contributions or {}
+				merge_source_contributions(existing._stat_contributions, entry)
+			else
+				combined_count = combined_count + 1
+				local new_entry = {
+					name = name,
+					stacks = entry.stacks,
+					max_stacks = entry.max_stacks,
+					duration = entry.duration,
+					stat_buffs = entry.stat_buffs and table.clone(entry.stat_buffs) or nil,
+					conditional_stat_buffs = entry.conditional_stat_buffs and table.clone(entry.conditional_stat_buffs)
+						or nil,
+					combined = true,
+					type = debuff_type,
+				}
+				new_entry._stat_contributions = {}
+				merge_source_contributions(new_entry._stat_contributions, entry)
+				combined[combined_count] = new_entry
 				if debuff_type == "dot" then
 					grouped_dot_map[icon] = new_entry
 				elseif debuff_type == "utility" then

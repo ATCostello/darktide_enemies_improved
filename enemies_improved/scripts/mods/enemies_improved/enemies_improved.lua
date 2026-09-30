@@ -44,7 +44,6 @@ mod.detect_alive = function(unit)
 end
 
 mod._on_ei_marker_created = function(marker_id, entry, unit)
-	-- Safety: stale callback (force_remove_unit_markers or remove_dead already cleared pending)
 	if not entry or not entry._ei_marker_pending then
 		if marker_id then
 			Managers.event:trigger("remove_world_marker", marker_id)
@@ -52,7 +51,6 @@ mod._on_ei_marker_created = function(marker_id, entry, unit)
 		return
 	end
 
-	-- Safety: unit already has a tracked marker (duplicate prevention)
 	if mod.enemy_markers[unit] then
 		entry._ei_marker_pending = nil
 		Managers.event:trigger("remove_world_marker", marker_id)
@@ -143,13 +141,11 @@ local _pos_vec = Vector3.zero()
 local _horde_clusters = {}
 local _horde_cluster_by_unit = {}
 
--- Reusable tables for _build_horde_clusters (avoid per-frame allocations)
 local _spatial_hash = {}
 local _visited = {}
 local _z_samples = {}
 local _bfs_queue = {}
 
--- track variables with the memory profiler for growth/leak monitoring
 if mod.DEBUG then
 	local mem = mod.mem_profile
 	mem.track("cluster._horde_clusters", _horde_clusters)
@@ -180,7 +176,6 @@ local COLOUR_LOOKUP = {
 	Default = { 255, 161, 166, 169 },
 }
 
--- Soft culling grid
 local CULL_CELL_SIZE = 5
 local INV_CULL_CELL = 1 / CULL_CELL_SIZE
 local _cull_cells = {}
@@ -193,7 +188,6 @@ local DEPTH_LAYERS = {
 	{ max = 100, min_score = 750 }, -- far away...
 }
 
--- priority weights
 local PRIORITY = {
 	monster = 500,
 	captain = 500,
@@ -210,8 +204,6 @@ local PRIORITY = {
 
 local function _get_priority(entry, dist_sq, forward_bonus)
 	local base = PRIORITY[entry.breed_type] or 0
-
-	-- distance bias (closer = higher priority)
 	local dist_bias = 1 / (1 + dist_sq * 0.05)
 
 	return base + (dist_bias * 200) + (forward_bonus * 20)
@@ -223,7 +215,6 @@ local fs = mod.frame_settings
 -- preload resources + reset caches on game state change
 -----------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
-	-- ensure packages are loaded
 	local pkg = Managers.package
 
 	pkg:load("packages/ui/views/inventory_view/inventory_view", "enemies_improved", nil, true)
@@ -290,8 +281,6 @@ mod.on_all_mods_loaded = function()
 	mod.update_breed_colours()
 	mod.update_breed_icons()
 
-	-- frame settings were built at script-load time, before the defaults above were
-	-- applied; rebuild so newly-applied defaults (e.g. vanguard healthbars off) take effect
 	mod.build_frame_settings()
 
 	local outline_settings = require("scripts/settings/outline/outline_settings")
@@ -306,9 +295,6 @@ mod.on_all_mods_loaded = function()
 	mod.loaded = true
 end
 
--- DMF's own "Reset to default" only resets the option widgets, and the mod's
--- on_setting_changed propagation then only touches the enemy currently selected
--- in the dropdowns. Wipe every group and individual override as well.
 mod.on_settings_reset = function()
 	mod.reset_all_overrides()
 end
@@ -336,8 +322,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	add_custom_templates(self)
 end)
 
--- Vanilla _unregister_marker never frees the marker widget: it stays referenced in HudElementBase._widgets_by_name (and the element's _widgets render list) forever, leaking memory every time a marker is removed.
--- This hook captures the marker before vanilla drops all references to it, then release the widget afterwards.
 mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, marker)
 	local widget = marker and marker.widget
 
@@ -390,11 +374,7 @@ if mod.DEBUG then
 	mod.mem_profile.track("mod.crosshair_aimed", mod.crosshair_aimed)
 end
 
------------------------------------------------------------------------
--- Hook into the markers update to recalculate enemies.
------------------------------------------------------------------------
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
-	-- Re-register custom marker templates in case the HUD marker table was rebuilt
 	add_custom_templates(self)
 
 	if fs.only_in_meatgrinder then
@@ -410,27 +390,21 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
-		-- Aim detection (clear enemy cache of non-aimed at enemies)
 		if fs.markers_show_only_aimed then
-			-- Crosshair hitscan: the enemy directly under the crosshair always passes
-			-- the view-cone / LOS hard rejects (covers close-range head aiming).
 			mod.do_crosshair_hitscan()
 
 			table_clear(mod.aimed_unit)
 			mod.do_aim_raycast()
 
-			-- Anything the crosshair ray is actually over always counts as aimed.
 			for unit in next, mod.crosshair_aimed do
 				mod.aimed_unit[unit] = true
 			end
 		end
 
-		-- Tagged detection (clear enemy cache of non-tagged enemies)
 		if fs.only_tagged_enemies then
 			mod.do_tagged_scan()
 		end
 
-		-- throttle updates according to enemy amounts to help keep performance in check...
 		local enemy_count = 0
 		for _ in next, mod.enemy_cache do
 			enemy_count = enemy_count + 1
@@ -448,7 +422,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			mod.update_enemies(dt, t)
 		end
 
-		-- pulse special attacks + stagger outlines (combined into single cache iteration)
 		local has_specials = fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable
 		local has_stagger = fs.outline_stagger_horde_enable or fs.outline_stagger_enable
 		if has_specials or has_stagger then
@@ -491,14 +464,12 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			end
 		end
 
-		-- OUTLINE SAFETY CLEANUP - runs every ~2 seconds to clean stuck outlines
 		self._outline_safety_timer = (self._outline_safety_timer or 0) + dt
 		if self._outline_safety_timer >= 2 then
 			self._outline_safety_timer = 0
 			mod.outline_safety_cleanup()
 		end
 
-		-- MARKER CLEANUP - runs every ~1 second to remove orphaned markers for dead/invalid units
 		self._marker_cleanup_timer = (self._marker_cleanup_timer or 0) + dt
 		if self._marker_cleanup_timer >= 1 then
 			self._marker_cleanup_timer = 0
@@ -537,7 +508,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			end
 		end
 
-		-- PERIODIC FULL CACHE CLEAR — runs every ~2 minutes to flush any accumulated stale data
 		mod._periodic_cache_clear_timer = mod._periodic_cache_clear_timer + dt
 		if mod._periodic_cache_clear_timer >= 60 then
 			mod._periodic_cache_clear_timer = 0
@@ -585,7 +555,6 @@ mod.force_remove_unit_markers = function(unit)
 		mod.enemy_healthbars[unit] = nil
 		mod.enemy_debuffs[unit] = nil
 
-		-- reset cluster state if this unit was a rep
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 		if cluster and cluster.rep_unit == unit then
 			cluster._healthbar_created = false
@@ -594,7 +563,6 @@ mod.force_remove_unit_markers = function(unit)
 
 		entry._ei_marker_created = false
 		entry._ei_marker_pending = nil
-		-- Release marker entry references so the (now removed) marker + widget can be GC'd
 		entry.marker = nil
 
 		mod.disable_enemy_outlines(unit, entry)
@@ -603,7 +571,6 @@ mod.force_remove_unit_markers = function(unit)
 	end
 end
 
--- Remove ALL enemies_improved markers from the world markers system (used during mod reload/unload)
 mod.remove_all_ei_markers = function()
 	local ui_manager = Managers.ui
 	local hud = ui_manager and ui_manager:get_hud()
@@ -614,11 +581,9 @@ mod.remove_all_ei_markers = function()
 
 	local event = Managers.event
 
-	-- Collect marker IDs to remove by iterating _markers_by_type directly
 	local by_type = world_markers._markers_by_type
 	local ei_list = by_type and by_type["enemies_improved"]
 	if ei_list then
-		-- Copy IDs first so removal during iteration doesn't cause issues
 		local ids = {}
 		local n = 0
 		for i = 1, #ei_list do
@@ -634,13 +599,10 @@ mod.remove_all_ei_markers = function()
 		end
 	end
 
-	-- Also clear our tracking tables so we don't hold stale references
 	table_clear(mod.enemy_markers)
 	table_clear(mod.enemy_healthbars)
 	table_clear(mod.enemy_debuffs)
 
-	-- Free orphaned marker widgets are still referenced by name in _widgets_by_name.
-	-- Vanilla never removes marker widgets on unregister, so this reclaims any widget whose marker id is no longer registered (including previously leaked ones).
 	local widgets_by_name = world_markers._widgets_by_name
 	local markers_by_id = world_markers._markers_by_id
 
@@ -658,8 +620,6 @@ mod.remove_all_ei_markers = function()
 	end
 end
 
--- Clean up markers whose unit has no cache entry at all (mod reload, stale callbacks, etc.)
--- Units with cache entries (dead or alive) are handled by remove_dead to avoid racing with DPS windows.
 mod.cleanup_orphaned_markers = function()
 	local to_remove = {}
 	local count = 0
@@ -847,14 +807,12 @@ mod.scan_enemies = function()
 
 	local cache = mod.enemy_cache
 
-	-- mark unseen (preserve DPS-window dead units so they continue rendering)
 	for _, data in next, cache do
 		if not data._dead_at then
 			data.seen = false
 		end
 	end
 
-	-- Return cull cell entries to pool before clearing
 	for key, list in pairs(_cull_cells) do
 		for i = 1, #list do
 			local e = list[i]
@@ -865,7 +823,6 @@ mod.scan_enemies = function()
 	end
 	table_clear(_cull_cells)
 
-	-- Cap pool size to prevent unbounded growth
 	if _cull_pool_count > 512 then
 		for i = 513, _cull_pool_count do
 			_cull_pool[i] = nil
@@ -894,7 +851,7 @@ mod.scan_enemies = function()
 			local forward_bonus = mod.get_forward_dot and mod.get_forward_dot(player_unit, unit) or 1
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 
-			-- VIEW CONE FILTER (HARD REJECT)
+			-- VIEW CONE FILTE
 			if forward_bonus <= 0 and not is_crosshair_target then
 				mod.force_remove_unit_markers(unit)
 
@@ -907,7 +864,7 @@ mod.scan_enemies = function()
 				goto skip_breed
 			end
 
-			-- LOS FILTER (HARD REJECT)
+			-- LOS FILTER
 			if physics_world_cache and not is_crosshair_target then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache) then
 					mod.force_remove_unit_markers(unit)
@@ -1057,9 +1014,6 @@ mod.scan_enemies = function()
 			for i = 1, #list do
 				local data = list[i]
 				local unit = data.unit
-
-				-- An enemy the crosshair is over is never culled, even if its priority
-				-- score is low (e.g. aiming at an enemy's head at point-blank range).
 				local keep = mod.crosshair_aimed[unit] == true
 
 				for l = 1, #DEPTH_LAYERS do
@@ -1117,7 +1071,6 @@ end
 -- Horde clustering helpers
 -----------------------------------------------------------------------
 
--- Distance-based clustering radius (in meters)
 local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
@@ -1130,7 +1083,6 @@ local function _build_horde_clusters(units, num_units)
 
 	HORDE_MIN_UNITS_FOR_CLUSTER = fs.hb_horde_clusters_size
 
-	-- Return early if player is dead
 	local player = Managers.player:local_player(1)
 	if not player then
 		return
@@ -1148,14 +1100,12 @@ local function _build_horde_clusters(units, num_units)
 	local spatial = _spatial_hash
 	local visited = _visited
 
-	-- Clear reusable tables for this frame
 	for _, cell in pairs(spatial) do
 		table_clear(cell)
 	end
 	table_clear(spatial)
 	table_clear(visited)
 
-	-- Step 1: build spatial hash
 	for i = 1, num_units do
 		local unit = units[i]
 
@@ -1204,7 +1154,6 @@ local function _build_horde_clusters(units, num_units)
 		end
 	end
 
-	-- Step 2: cluster via BFS
 	for i = 1, num_units do
 		local unit = units[i]
 		local z_samples = _z_samples
@@ -1230,7 +1179,6 @@ local function _build_horde_clusters(units, num_units)
 
 			local max_z = 0
 
-			-- Bounds for midpoint center
 			local min_x = math.huge
 			local max_x = -math.huge
 			local min_y = math.huge
@@ -1254,14 +1202,12 @@ local function _build_horde_clusters(units, num_units)
 				if pos then
 					cluster_units[#cluster_units + 1] = current
 
-					-- Proper centroid accumulation (X, Y, Z)
 					sum_x = sum_x + pos.x
 					sum_y = sum_y + pos.y
 					sum_z = sum_z + pos.z
 					count = count + 1
 					z_samples[#z_samples + 1] = pos.z
 
-					-- Bounds tracking (X/Y center)
 					if pos.x < min_x then
 						min_x = pos.x
 					end
@@ -1278,7 +1224,6 @@ local function _build_horde_clusters(units, num_units)
 					local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
 					local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
 
-					-- check neighboring cells
 					for dx = -1, 1 do
 						for dy = -1, 1 do
 							local key = (gx + dx) * 73856093 + (gy + dy) * 19349663
@@ -1323,9 +1268,7 @@ local function _build_horde_clusters(units, num_units)
 				local width = max_x - min_x
 				local height = max_y - min_y
 
-				-- If cluster is too thin, fall back slightly toward centroid feel
 				if width < 1.5 or height < 1.5 then
-					-- small bias toward first unit
 					local rep = cluster_units[1]
 					if rep then
 						local entry = mod.enemy_cache[rep]
@@ -1373,7 +1316,6 @@ local function _build_horde_clusters(units, num_units)
 
 				local idx = #clusters + 1
 
-				-- smooth
 				local prev = clusters[idx] and clusters[idx].center
 
 				local smooth_z = target_z
@@ -1401,7 +1343,6 @@ local function _build_horde_clusters(units, num_units)
 					_horde_cluster_by_unit[cluster_units[j]] = idx
 				end
 
-				-- aggregate health (cached extensions)
 				local total_current = 0
 				local total_max = 0
 
@@ -1524,8 +1465,6 @@ mod.remove_dead = function()
 			end
 		end
 
-		-- Deferred removal: clean up after the widget removal delay (or the DPS window,
-		-- whichever is longer) so the widget can linger a moment on freshly dead enemies.
 		if not remove and entry._dead_at then
 			local dead_window = math.max(fs.damage_number_duration or 0, fs.widget_removal_delay or 0)
 			if dead_window > 0 and t - entry._dead_at > dead_window then
@@ -1571,7 +1510,6 @@ mod.remove_dead = function()
 			end
 		end
 
-		-- If this unit was a cluster rep, clear cluster healthbar state
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 		if cluster and cluster.rep_unit == unit then
 			cluster._healthbar_created = false
@@ -1609,7 +1547,6 @@ mod.remove_dead = function()
 		mod.enemy_debuffs[unit] = nil
 		mod.enemy_markers[unit] = nil
 
-		-- Clean up per-unit data that accumulates if healthbars module is loaded
 		if mod._cleanup_unit_health_data then
 			mod._cleanup_unit_health_data(unit)
 		end
@@ -1684,10 +1621,6 @@ mod.update_horde_clusters = function(temp, to_process)
 	end
 end
 
--- Exact crosshair ray (origin + direction) using the first-person unit transform with
--- weapon recoil and sway applied, mirroring the DynamicCrosshair mod. This is the same
--- vector the game uses to place the crosshair, so the raycast lands under the reticle.
--- Falls back to the player camera if the first-person/weapon extensions are missing.
 mod.get_crosshair_shooting_vector = function(hud)
 	local player_extensions = hud and hud:player_extensions()
 
@@ -1732,10 +1665,6 @@ mod.get_crosshair_shooting_vector = function(hud)
 	return nil, nil
 end
 
--- Crosshair hitscan: raycast along the exact crosshair vector and remember every living
--- enemy the crosshair is actually over. The closest hit must be that enemy (walls/props
--- block it), so an enemy we are literally aiming at always passes the view cone and LOS
--- hard filters, regardless of where its origin (feet) sits relative to the camera.
 mod.do_crosshair_hitscan = function()
 	mod.crosshair_target = nil
 	table_clear(mod.crosshair_aimed)
@@ -1780,9 +1709,6 @@ mod.do_crosshair_hitscan = function()
 	if not hits then
 		return
 	end
-
-	-- Find the closest thing the crosshair ray actually hits (including walls/props).
-	-- The player's own actor is ignored so its weapon/body cannot block the shot.
 	local closest_dist = math.huge
 	local num_hits = #hits
 
@@ -1801,7 +1727,6 @@ mod.do_crosshair_hitscan = function()
 		return
 	end
 
-	-- Everything at the closest hit point counts; a wall/prop first means no enemy passes.
 	for i = 1, num_hits do
 		local hit = hits[i]
 		local hit_dist = hit[2]
@@ -1820,7 +1745,6 @@ mod.do_crosshair_hitscan = function()
 	end
 end
 
--- Crosshair cone check: find the closest enemy within ~12° of camera centre using the camera's own position/rotation and the engine's position lookup cache.
 mod.do_aim_raycast = function()
 	local ui_manager = Managers.ui
 	local hud = ui_manager and ui_manager:get_hud()
@@ -1848,9 +1772,6 @@ mod.do_aim_raycast = function()
 				local dy = enemy_pos.y - py
 				local dz = (enemy_pos.z - pz) * 0.3
 				local dist_sq = dx * dx + dy * dy + dz * dz
-
-				-- Use the same per-enemy effective distance as the draw-distance filter,
-				-- so individual overrides larger than the global draw distance still count as aimed.
 				local entry = mod.enemy_cache[unit]
 				local effective_max_dist_sq = draw_dist_sq
 				local breed_name = entry and entry.breed_name
@@ -1972,7 +1893,6 @@ mod.update_enemies = function(dt, t)
 			local dz = pos.z - player_pos.z
 			local dist_sq = dx * dx + dy * dy + dz * dz
 
-			-- effective max distance (individual overrides replace global)
 			local breed_name = entry.breed_name
 			local effective_max_dist_sq = fs.draw_distance * fs.draw_distance
 			if breed_name then
@@ -1984,7 +1904,6 @@ mod.update_enemies = function(dt, t)
 				end
 			end
 
-			-- LOD cutoff
 			if dist_sq > effective_max_dist_sq then
 				goto continue_enemy_loop
 			end
@@ -2048,9 +1967,6 @@ mod.get_breed_tags = function(unit)
 	return nil
 end
 
--- Tags are ordered from priority (Top to bottom)
--- so first match is what will be returned.
--- breed points to the breed tags list, get from mod.get_breed_tags(unit)
 mod.find_breed_category = function(unit)
 	if unit then
 		if mod.is_vanguard(unit) then

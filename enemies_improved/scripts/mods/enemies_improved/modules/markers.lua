@@ -21,7 +21,7 @@ mod.update_enemy_markers = function(entry, t)
 		return
 	end
 
-	-- Safety: clear stuck pending state after short time
+	-- clear stuck pending state after short time
 	if entry._ei_marker_pending and entry._ei_marker_pending_t then
 		if t - entry._ei_marker_pending_t > 2 then
 			entry._ei_marker_pending = nil
@@ -32,13 +32,13 @@ mod.update_enemy_markers = function(entry, t)
 	--local breed = unit_data_extension and unit_data_extension:breed()
 	--local enemy_individual = breed and breed.name
 
-	-- Horde filter: only create the marker when the relevant global toggle allows it,
-	-- an override forces it on, or the enemy is debuffed.
 	local breed_name = entry.breed_name
 	local unit = entry.unit
-	local marker_force_on =
-		(breed_name and fs.breed_marker_toggle and fs.breed_marker_toggle[breed_name] == "true_override")
-		or (fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[entry.breed_type] == "true_override")
+	local marker_force_on = (
+		breed_name
+		and fs.breed_marker_toggle
+		and fs.breed_marker_toggle[breed_name] == "true_override"
+	) or (fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[entry.breed_type] == "true_override")
 	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
 
 	if

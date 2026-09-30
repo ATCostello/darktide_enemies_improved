@@ -3,8 +3,6 @@ local mod = get_mod("enemies_improved")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local template = {}
 local fs = mod.frame_settings
-
--- Load sub-templates
 local EnemyHealthbarTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/healthbars/healthbar_template")
 local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/markers_template")
@@ -193,7 +191,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget.alpha_multiplier = 0
 	end
 
-	-- Global aimed-only filter: hides ALL enemies_improved content
 	local unit = marker.unit
 	if not unit then
 		marker.draw = false
@@ -205,8 +202,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local is_alive = mod.detect_alive(unit)
 
-	-- note when this unit died, the overhead marker and the debuffs use it so they
-	-- drop out after the widget removal delay instead of riding out the dps window
 	if is_alive then
 		content._ei_dead_at = nil
 	else
@@ -228,7 +223,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget.alpha_multiplier = 0
 	end
 
-	-- Global tagged-only filter: hides ALL enemies_improved content for non-tagged enemies
 	if fs.only_tagged_enemies and unit and not mod.tagged_units[unit] then
 		marker.draw = false
 		marker.alpha_multiplier = 0
@@ -262,7 +256,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if fs.healthbar_enable then
 		EnemyHealthbarTemplate.update_function(parent, ui_renderer, widget, marker, EnemyHealthbarTemplate, dt, t)
 	end
-	
+
 	widget._next_update = 0
 
 	local markers_enabled = fs.markers_enable
@@ -314,7 +308,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local has_markers = content.m_built or false
 	local has_debuffs = content.dbf_built and fs.debuff_enable and widget._active and #widget._active > 0 or false
 	local dps_visible = fs.hb_show_dps
-	-- dead enemies keep their widget for the removal delay (or DPS window)
 	local dead_visible = dps_visible or fs.widget_removal_delay > 0
 
 	if fs.markers_show_only_aimed and unit and not mod.aimed_unit[unit] then

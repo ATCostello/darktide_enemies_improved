@@ -51,7 +51,7 @@ local _create_definition = function(template, scenegraph_id)
 				--style.size[1] = scaled_bar_width + 10 + 1 * fs.hb_padding_scale
 				--style.size[2] = scaled_bar_height + 6 + 1 * fs.hb_padding_scale
 			end,
-		visibility_function = function(content)
+			visibility_function = function(content)
 				if content.hb_built and fs.hb_enable_bar and fs.frame_type ~= "" then
 					return true
 				else
@@ -351,11 +351,14 @@ local _create_definition = function(template, scenegraph_id)
 				if
 					fs.hb_enable_bar
 					and (
-						(fs.hb_endcaps_enabled
+						(
+							fs.hb_endcaps_enabled
 							and content.hb_built
 							and (content.health_fraction and content.health_fraction < 1)
-							and (fs.toughness_enabled and (content.current_toughness and content.current_toughness <= 0)))
-						or not fs.toughness_enabled
+							and (
+								fs.toughness_enabled and (content.current_toughness and content.current_toughness <= 0)
+							)
+						) or not fs.toughness_enabled
 					)
 				then
 					return true

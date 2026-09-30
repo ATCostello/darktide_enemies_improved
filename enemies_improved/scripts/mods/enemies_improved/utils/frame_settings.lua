@@ -27,13 +27,6 @@ local function ensure_array_indexed(t, i2, i3, i4)
 	return t
 end
 
--- Maps a saved value onto the 3-state dropdown.
---   v == old checkbox default -> dont_override (behaviour unchanged: following the
---     global toggle reproduces what the old default did)
---   the other boolean         -> the matching force on/off override
---   nil                       -> dont_override
--- So old "on" for a default-off setting becomes "force on" (as requested), while old
--- "off" for a default-on setting becomes "force off".
 local function override_value(v, old_default)
 	if v == "true_override" or v == "false_override" or v == "dont_override" then
 		return v
@@ -58,15 +51,9 @@ mod.build_frame_settings = function(dt)
 
 	fs.mod_enabled = mod:get("mod_enabled")
 	fs.global_scale = mod:get("global_scale") or 1
-
-	-- Draw distance
 	fs.draw_distance = mod:get("draw_distance")
-
-	-- broadphase range: must encompass all individual distance overrides
-	-- Also build per-breed cache tables to avoid mod:get() + string concat in hot paths
 	fs.draw_distance_broadphase = fs.draw_distance
 
-	-- Initialize sub-tables on first call, clear on subsequent calls
 	if not fs._initialized then
 		fs._initialized = true
 		fs.breed_dist_enabled = {}
@@ -205,10 +192,10 @@ mod.build_frame_settings = function(dt)
 	end
 
 	fs.secondary_colour = ensure_array(fs.secondary_colour, 255, rs, gs, bs)
-
 	fs.global_opacity = mod:get("global_opacity") or 1
 	fs.only_in_meatgrinder = mod:get("only_in_meatgrinder")
 	fs.always_show_in_meatgrinder = mod:get("always_show_in_meatgrinder")
+
 	-- MARKERS
 	fs.markers_enable = mod:get("markers_enable")
 	fs.markers_horde_enable = mod:get("markers_horde_enable")
@@ -227,6 +214,7 @@ mod.build_frame_settings = function(dt)
 			marker_visual_style = "diamond"
 		end
 	end
+
 	fs.marker_visual_style = marker_visual_style
 	local a = mod:get("marker_bg_colour_A")
 	local r = mod:get("marker_bg_colour_R")
@@ -252,10 +240,12 @@ mod.build_frame_settings = function(dt)
 	if fs.hb_enable_bar == nil then
 		fs.hb_enable_bar = true
 	end
+
 	fs.hb_enable_text = mod:get("hb_enable_text")
 	if fs.hb_enable_text == nil then
 		fs.hb_enable_text = true
 	end
+
 	fs.healthbar_type_icon_enable = mod:get("healthbar_type_icon_enable")
 	fs.show_damage_numbers = mod:get("hb_show_damage_numbers")
 	fs.show_armor_types = mod:get("hb_show_armour_types")

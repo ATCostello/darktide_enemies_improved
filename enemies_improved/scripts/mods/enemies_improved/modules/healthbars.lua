@@ -21,7 +21,7 @@ local Managers_event = Managers.event
 mod.update_enemy_healthbars = function(entry, t)
 	local fs = mod.frame_settings
 
-	-- Safety: clear stuck pending state after short time
+	-- clear stuck pending state after short time
 	if entry._ei_marker_pending and entry._ei_marker_pending_t then
 		if t - entry._ei_marker_pending_t > 2 then
 			entry._ei_marker_pending = nil
@@ -34,13 +34,13 @@ mod.update_enemy_healthbars = function(entry, t)
 
 	if fs.healthbar_only_in_meatgrinder then
 		local current_level = Managers.state.mission and Managers.state.mission:mission()
-		if not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range") then
+		if
+			not (current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range")
+		then
 			return
 		end
 	end
 
-	-- Override filter: "force off" hides the bar, "force on" (or debuff) keeps it
-	-- alive even when the group / global toggle is disabled. Individual wins.
 	local breed_name = entry.breed_name
 	local is_horde = entry.is_horde
 	local individual_state = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
@@ -63,8 +63,6 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	-- Handle cluster invalidation: non-rep horde units should not have a healthbar,
-	-- but the world marker must stay alive so overhead markers and debuffs still work.
 	if mod.frame_settings.horde_clusters_enable and entry.is_horde then
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 

@@ -92,10 +92,6 @@ mod.enable_enemy_outlines = function(unit, entry)
 	local breed = entry.breed
 	local breed_name = breed and breed.name
 	local breed_type = entry.breed_type or "enemy"
-
-	-- Decide which outline (if any) should be shown for this enemy.
-	-- An individual "force on" bypasses the category toggle entirely (the global
-	-- outlines_enable master switch is still required by update_enemy_outlines).
 	local target_name
 	local individual_state = breed_name and fs.breed_outline_enabled[breed_name]
 
@@ -111,8 +107,6 @@ mod.enable_enemy_outlines = function(unit, entry)
 		return
 	end
 
-	-- swap the currently applied outline (e.g. category -> individual) so only
-	-- one outline is ever active and its colour is used
 	if entry._outline_applied_name then
 		mod.remove_outline(unit, entry._outline_applied_name, outline_system)
 	end
@@ -142,7 +136,6 @@ mod.disable_enemy_outlines = function(unit, entry)
 	if entry._outline_applied_name then
 		mod.remove_outline(unit, entry._outline_applied_name, outline_system)
 	else
-		-- no tracked name (e.g. state from before a settings change): clear both
 		mod.remove_outline(unit, "enemies_" .. breed_type, outline_system)
 		if breed_name then
 			mod.remove_outline(unit, "enemies_" .. breed_name, outline_system)
@@ -153,9 +146,6 @@ mod.disable_enemy_outlines = function(unit, entry)
 	entry._outline_applied = false
 end
 
--- Remove every currently-applied enemies_improved outline so a settings change (or
--- options menu close) instantly drops them from living enemies; update_enemy_outlines
--- re-applies them with the new settings to any enemy that is still in line of sight.
 mod.remove_all_enemy_outlines = function()
 	local outline_system = get_outline_system()
 	if not outline_system then
@@ -284,8 +274,6 @@ mod.outline_safety_cleanup = function()
 	end
 end
 
--- Raycast from player_pos towards target_pos; returns true when the path is clear
--- or the only thing hit is the enemy unit itself.
 local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, enemy_unit)
 	if not target_pos then
 		return false
@@ -327,7 +315,6 @@ local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, en
 	return false
 end
 
--- Line of sight is considered clear when either the enemy's head OR spine is visible.
 mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 	if not player_unit or not enemy_unit then
 		return false
@@ -392,7 +379,6 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 		return 0
 	end
 
-	-- Flattened direction (scalar math, no Vector3 allocations)
 	local dx = enemy_pos.x - player_pos.x
 	local dy = enemy_pos.y - player_pos.y
 	local len_sq = dx * dx + dy * dy
@@ -423,7 +409,6 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	-- outline distance individual override (cached in fs)
 	local breed = entry.breed
 	local breed_name = breed and breed.name
 	if breed_name then
@@ -495,8 +480,7 @@ mod.apply_enemy_outlines = function(settings)
 		local breed = entry.value
 		if breed ~= "select" then
 			local key = "outline_" .. breed .. "_enable"
-			-- "follow global" (dont_override) keeps this type's historical default (off);
-			-- only an explicit "force on" registers the per-type outline.
+
 			local enabled = mod.override_value(mod:get(key), true) == "true_override"
 
 			local r = mod:get("outline_" .. breed .. "_colour_R")
@@ -529,13 +513,48 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
+					color = nil,
+					material_layers = nil,
+					override_global_visibility = true,
+					visibility_check = nil,
+
 					priority = 6,
 					material_layers = {
 						"minion_outline",
 					},
 					color = { r, g, b },
-					visibility_check = function()
-						return true
+
+					visibility_check = function(unit)
+						if not Unit.alive(unit) then
+							return false
+						end
+
+						-- Fix missing beard and ritualist outlines from base-game models
+						local unit_data = ScriptUnit.has_extension(unit, "unit_data_system")
+						if not unit_data then
+							return false
+						end
+
+						local breed = unit_data:breed()
+						if not breed then
+							return false
+						end
+
+						local visual_loadout_extension = ScriptUnit.extension(unit, "visual_loadout_system")
+						local visual_loadout_slots = visual_loadout_extension:inventory_slots()
+
+						local broken_enemies = {
+							"cultist_ritualist",
+							"cultist_assault",
+						}
+
+						if table.contains(broken_enemies, breed.name) then
+							for slot, items in pairs(visual_loadout_slots) do
+								items.use_outline = { true } -- the issue is literally just the specific part of the enemy is missing this tag lol
+							end
+						end
+
+						return enabled
 					end,
 				}
 			else
@@ -627,6 +646,7 @@ mod.apply_enemy_outlines = function(settings)
 		priority = 1,
 		material_layers = {
 			"minion_outline",
+			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
 		visibility_check = function()
@@ -644,6 +664,7 @@ mod.apply_enemy_outlines = function(settings)
 		priority = 2,
 		material_layers = {
 			"minion_outline",
+			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
 		visibility_check = function()
