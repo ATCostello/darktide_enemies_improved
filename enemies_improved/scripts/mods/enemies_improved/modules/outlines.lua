@@ -23,6 +23,8 @@ local _outline_system = nil
 local _outline_system_checked = false
 local _cached_physics_world = nil
 local _physics_world_checked = false
+local _smart_tag_system = nil
+local _smart_tag_checked = false
 
 -- the players head node never changes for a given player unit
 local _los_origin_unit = nil
@@ -64,11 +66,27 @@ local function get_physics_world()
 	return _cached_physics_world
 end
 
+local function get_smart_tag_system()
+	if _smart_tag_checked then
+		return _smart_tag_system
+	end
+
+	local extension_manager = Managers.state.extension
+	if extension_manager then
+		_smart_tag_system = extension_manager:has_system("smart_tag_system") and extension_manager:system("smart_tag_system") or nil
+	end
+
+	_smart_tag_checked = true
+	return _smart_tag_system
+end
+
 mod._clear_outline_caches = function()
 	_outline_system = nil
 	_outline_system_checked = false
 	_cached_physics_world = nil
 	_physics_world_checked = false
+	_smart_tag_system = nil
+	_smart_tag_checked = false
 	_los_origin_unit = nil
 	_los_origin_node = nil
 end
@@ -306,6 +324,9 @@ local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, en
 
 	local distance = math.sqrt(distance_sq)
 	local inv_dist = 1 / distance
+
+	-- has to be a fresh vector each time. vectors built by the Vector3 constructor are light
+	-- userdata and reject field writes, so a reusable scratch vector is not an option here
 	local dir = Vector3(dx * inv_dist, dy * inv_dist, dz * inv_dist)
 
 	local hit = PhysicsWorld.raycast(
@@ -505,11 +526,11 @@ mod.update_enemy_outlines = function(entry, player_unit)
 		entry._outline_applied = false
 	end
 
-	local smart_tag_system = Managers.state.extension:system("smart_tag_system")
-	local tag_id = smart_tag_system:unit_tag_id(unit)
-	local is_tagged = tag_id ~= nil
+	-- disable our outlines if an enemy is tagged. tagged_units is only populated when
+	-- only_tagged_enemies is on, so fall back to asking the tag system directly
+	local smart_tag_system = get_smart_tag_system()
+	local is_tagged = mod.tagged_units[unit] or (smart_tag_system and smart_tag_system:unit_tag_id(unit) ~= nil)
 
-	-- disable our outlines if an enemy is tagged
 	if is_tagged then
 		if entry._outline_applied then
 			mod.disable_enemy_outlines(unit, entry)
@@ -517,9 +538,13 @@ mod.update_enemy_outlines = function(entry, player_unit)
 		return
 	end
 
-	local physics_world = get_physics_world()
+	-- the scan already raycasted this exact pair and only kept units with LOS, so the
+	-- result is still valid and redoing it here is pure overhead
+	local has_los = entry._los_ok
 
-	local has_los = mod.has_line_of_sight(player_unit, unit, physics_world)
+	if not has_los then
+		has_los = mod.has_line_of_sight(player_unit, unit, get_physics_world())
+	end
 
 	if has_los then
 		-- enable_enemy_outlines only does work when the desired outline changed

@@ -504,7 +504,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local entry = mod.enemy_cache[unit]
 
-	if not unit or not Unit_alive(unit) then
+	-- one aliveness check, reused further down instead of asking the engine twice
+	local is_alive = unit and mod.detect_alive(unit)
+
+	if not is_alive then
 		content.draw_mkr = false
 		content.m_built = false
 		return
@@ -569,8 +572,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		return
 	end
 
-	local is_alive = mod.detect_alive(unit)
-
 	if not is_alive and t - (content._ei_dead_at or t) >= (fs.widget_removal_delay or 0) then
 		content.draw_mkr = false
 		content.m_built = false
@@ -605,40 +606,46 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+	if template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
 
+	local check_los = template.check_line_of_sight
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
 	-- line-of-sight fade
-	if template.check_line_of_sight then
+	if check_los then
 		if marker.raycast_initialized then
 			local raycast_result = marker.raycast_result
 			local line_of_sight_speed = 8
 
 			if raycast_result then
-				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+				line_of_sight_progress = math_max(line_of_sight_progress - dt * line_of_sight_speed, 0)
 			else
-				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+				line_of_sight_progress = math_min(line_of_sight_progress + dt * line_of_sight_speed, 1)
 			end
 		end
-	elseif not template.check_line_of_sight then
+	else
 		line_of_sight_progress = 1
 	end
 
+	-- colours still get read fresh every update so setting changes apply straight away
 	local bar_color = mod.BREED_COLOURS[content.breed_type] or mod.BREED_COLOURS.horde
 
 	-- INDIVIDUAL COLOUR OVERRIDES
-	local enemy_individual = content.breed.name
+	local enemy_individual = content.breed and content.breed.name
 
 	if enemy_individual then
 		local breed_settings = content.breed_settings
 		if breed_settings then
-			local tags = breed_settings.tags
-			local individual_breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
+			-- the tags never change, so only work out the category once per marker
+			local individual_breed_type = content._ei_ind_breed_type
 
-			--if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
-			--	individual_breed_type = "elite"
-			--end
+			if individual_breed_type == nil then
+				individual_breed_type = mod.find_breed_category_by_tags(breed_settings.tags, enemy_individual)
+				content._ei_ind_breed_type = individual_breed_type
+			end
 
 			if individual_breed_type == content.breed_type then
 				if content.healthbar_enabled then

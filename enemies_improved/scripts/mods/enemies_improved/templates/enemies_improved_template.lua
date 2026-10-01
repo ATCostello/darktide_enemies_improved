@@ -152,8 +152,14 @@ template.on_enter = function(widget, marker, template)
 	end
 
 	template.position_offset = { 0, 0, y_offset }
-	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
-	template.check_line_of_sight = fs.check_line_of_sight
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+	if template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
+
+	if template.check_line_of_sight ~= fs.check_line_of_sight then
+		template.check_line_of_sight = fs.check_line_of_sight
+	end
 
 	if breed then
 		local root_position = Unit.world_position(unit, 1)
@@ -234,7 +240,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	widget._next_update = 0
 	marker.draw = true
 
-	if content.breed and mod.detect_alive(unit) then
+	if content.breed and is_alive then
 		local root_position = Unit.world_position(unit, 1)
 		root_position.z = root_position.z + content.breed.base_height + 0.5
 
@@ -299,8 +305,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget._next_update = t + fs.general_throttle_rate * 2
 	end
 
-	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
-	template.check_line_of_sight = fs.check_line_of_sight
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+	if template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
+
+	if template.check_line_of_sight ~= fs.check_line_of_sight then
+		template.check_line_of_sight = fs.check_line_of_sight
+	end
 
 	local los = content.line_of_sight_progress or 1
 

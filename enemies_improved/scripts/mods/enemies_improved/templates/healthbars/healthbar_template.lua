@@ -152,14 +152,14 @@ if mod.DEBUG then
 	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
 end
 
-local function healthbar_enabled_for(unit, breed, breed_type)
+local function healthbar_enabled_for(unit, breed, breed_type, t)
 	local enemy_individual = breed and breed.name
 
 	local individual_state = enemy_individual
 		and fs.breed_healthbar_force
 		and fs.breed_healthbar_force[enemy_individual]
 	local group_state = breed_type and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[breed_type]
-	local debuffed = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
+	local debuffed = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t)
 
 	local effective = individual_state
 	if effective ~= "true_override" and effective ~= "false_override" then
@@ -991,8 +991,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget._next_update = t + fs.general_throttle_rate * 3
 	end
 
-	fs = mod.frame_settings
-
 	if not unit then
 		content.draw_hb = false
 	end
@@ -1035,22 +1033,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+	if template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
 
+	local check_los = template.check_line_of_sight
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
-	if template.check_line_of_sight then
+	if check_los then
 		if marker.raycast_initialized then
 			local raycast_result = marker.raycast_result
 			local line_of_sight_speed = 8
 
 			if raycast_result then
-				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+				line_of_sight_progress = math_max(line_of_sight_progress - dt * line_of_sight_speed, 0)
 			else
-				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+				line_of_sight_progress = math_min(line_of_sight_progress + dt * line_of_sight_speed, 1)
 			end
 		end
-	elseif not template.check_line_of_sight then
+	else
 		line_of_sight_progress = 1
 	end
 
@@ -1432,7 +1434,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 		if show_damage_number then
 			if fs.hb_damage_show_only_latest then
-				if healthbar_enabled_for(unit, breed, breed_type) then
+				if healthbar_enabled_for(unit, breed, breed_type, t) then
 					-- add new unit to the end
 					if not table_contains(mod.latest_damaged_enemies, unit) then
 						table_insert(mod.latest_damaged_enemies, unit)
@@ -1536,7 +1538,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		local forced_on = effective == "true_override"
-			or (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit))
+			or (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t))
 
 		if not forced_on then
 			content.draw_hb = false
@@ -1553,7 +1555,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- enemies with an active debuff keep their healthbar visible to track DOTs
-	if not skip_hide_after_no_damage and fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit) then
+	if not skip_hide_after_no_damage and fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t) then
 		skip_hide_after_no_damage = true
 	end
 
@@ -1584,7 +1586,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.hb_damage_show_only_latest then
 		if table_contains(mod.latest_damaged_enemies, unit) then
-			if healthbar_enabled_for(unit, breed, breed_type) then
+			if healthbar_enabled_for(unit, breed, breed_type, t) then
 				content.draw_hb = true
 			else
 				content.draw_hb = false

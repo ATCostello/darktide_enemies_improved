@@ -48,7 +48,7 @@ mod.update_enemy_markers = function(entry, t)
 		)
 	then
 		-- the buff scan is not cheap, so only run it once we know we still want the marker
-		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)) then
+		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t)) then
 			return
 		end
 	end

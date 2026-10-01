@@ -183,13 +183,11 @@ local INV_CULL_CELL = 1 / CULL_CELL_SIZE
 local _cull_cells = {}
 local MAX_PER_CELL = 3
 
-local DEPTH_LAYERS = {
-	{ max = 4, min_score = -math.huge }, -- front row ALWAYS visible
-	{ max = 6, min_score = 200 }, -- mid row
-	{ max = 8, min_score = 400 }, -- back row
-	{ max = 100, min_score = 750 }, -- far away...
-}
-local NUM_DEPTH_LAYERS = #DEPTH_LAYERS
+-- depth layers, unrolled into _depth_keep below:
+--   slots 1-4    always kept
+--   slots 5-6    score >= 200
+--   slots 7-8    score >= 400
+--   slots 9-100  score >= 750
 
 local PRIORITY = {
 	monster = 500,
@@ -218,6 +216,29 @@ local function _cull_sort(a, b)
 		return a.dist_sq < b.dist_sq
 	end
 	return a.score > b.score
+end
+
+-- unrolled version of the DEPTH_LAYERS walk. this runs once per culled enemy, so it
+-- avoids the inner loop and the per-layer table lookups
+local function _depth_keep(i, score)
+	if i <= 4 then
+		return true
+	end
+
+	-- nothing past the last layer qualifies on score alone, it can only survive as an aimed unit
+	if i > 100 then
+		return false
+	end
+
+	if i <= 6 then
+		return score >= 200
+	end
+
+	if i <= 8 then
+		return score >= 400
+	end
+
+	return score >= 750
 end
 
 local fs = mod.frame_settings
@@ -897,6 +918,10 @@ mod.scan_enemies = function()
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local pos = Unit.world_position(unit, 1, _pos_vec)
 
+			-- only set once the LOS filter below has actually run and passed, so the outline
+			-- update can reuse the result instead of raycasting the same pair twice
+			local los_ok = false
+
 			if pos then
 				local edx = current_pos.x - pos.x
 				local edy = current_pos.y - pos.y
@@ -940,6 +965,8 @@ mod.scan_enemies = function()
 					mod.marked_dead[unit] = nil
 					goto skip_breed
 				end
+
+				los_ok = true
 			end
 
 			local entry = cache[unit]
@@ -1016,6 +1043,7 @@ mod.scan_enemies = function()
 				e.breed = breed
 				e.breed_type = breed_type
 				e.pos = Vector3(px, py, pz)
+				e.los_ok = los_ok
 				list[#list + 1] = e
 
 				goto skip_breed
@@ -1050,12 +1078,14 @@ mod.scan_enemies = function()
 						alert_healthbar = false,
 
 						_ei_marker_created = false,
+						_los_ok = los_ok,
 					}
 
 					mod.marked_dead[unit] = nil
 				else
 					entry.seen = true
 					entry.pos = Vector3(px, py, pz)
+					entry._los_ok = los_ok
 					mod.marked_dead[unit] = nil
 					entry._dead_at = nil
 				end
@@ -1066,24 +1096,24 @@ mod.scan_enemies = function()
 
 	if fs.spatial_culling then
 		for _, list in pairs(_cull_cells) do
-			table.sort(list, _cull_sort)
-
 			local num_in_list = #list
+
+			-- most cells hold a single enemy, and table.sort carries enough setup
+			-- overhead that it is not worth calling for those
+			if num_in_list > 1 then
+				table.sort(list, _cull_sort)
+			end
 
 			for i = 1, num_in_list do
 				local data = list[i]
 				local unit = data.unit
-				local keep = mod.crosshair_aimed[unit] == true
 
-				for l = 1, NUM_DEPTH_LAYERS do
-					local layer = DEPTH_LAYERS[l]
+				-- aimed units are always kept, but that lookup is only worth doing
+				-- for the ones the depth test already rejected
+				local keep = _depth_keep(i, data.score)
 
-					if i <= layer.max then
-						if data.score >= layer.min_score then
-							keep = true
-						end
-						break
-					end
+				if not keep then
+					keep = mod.crosshair_aimed[unit] == true
 				end
 
 				if keep then
@@ -1105,13 +1135,15 @@ mod.scan_enemies = function()
 							breed_name = data.breed and data.breed.name,
 							breed_type = data.breed_type,
 
-							_priority_score = data.score,
-							pos = data.pos,
-							_ei_marker_created = false,
-						}
-					else
-						entry.seen = true
-						entry._priority_score = data.score
+_priority_score = data.score,
+						pos = data.pos,
+						_ei_marker_created = false,
+						_los_ok = data.los_ok,
+					}
+				else
+					entry.seen = true
+					entry._priority_score = data.score
+					entry._los_ok = data.los_ok
 
 						-- the pooled record owns its position, so hand the vector over
 						if entry.pos ~= data.pos then
@@ -1132,6 +1164,7 @@ mod.scan_enemies = function()
 				data.unit_data_ext = nil
 				data.breed = nil
 				data.pos = nil
+				data.los_ok = nil
 				_cull_pool[_cull_pool_count + 1] = data
 				_cull_pool_count = _cull_pool_count + 1
 			end
@@ -2158,41 +2191,63 @@ mod.is_weakened = function(unit, breed)
 	return false
 end
 
+-- a handful of places ask this per frame for the same unit, so cache it briefly
+local DEBUFF_CACHE_TTL = 0.2
+
 -- Returns true if the unit currently has any active debuff tracked by the mod
-mod.unit_has_active_debuff = function(unit)
+mod.unit_has_active_debuff = function(unit, t)
 	local debuffs = mod.debuffs
 
 	if not unit or not debuffs then
 		return false
 	end
 
+	local entry = mod.enemy_cache and mod.enemy_cache[unit]
+	local cached = entry and entry._debuff_cached
+
+	if cached ~= nil then
+		local now = t or mod.get_time()
+		if (now - (entry._debuff_cached_t or 0)) < DEBUFF_CACHE_TTL then
+			return cached
+		end
+	end
+
+	local result = false
 	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
-	if not buff_extension then
-		return false
-	end
 
-	-- pass the extension straight into pcall so we dont build a throwaway closure
-	local ok, keywords = pcall(buff_extension.keywords, buff_extension)
-	if ok and keywords then
-		for name, _ in pairs(keywords) do
-			if debuffs[name] then
-				return true
+	if buff_extension then
+		-- pass the extension straight into pcall so we dont build a throwaway closure
+		local ok, keywords = pcall(buff_extension.keywords, buff_extension)
+		if ok and keywords then
+			for name, _ in pairs(keywords) do
+				if debuffs[name] then
+					result = true
+					break
+				end
+			end
+		end
+
+		if not result then
+			local ok2, buffs = pcall(buff_extension.buffs, buff_extension)
+			if ok2 and buffs then
+				local num_buffs = #buffs
+
+				for i = 1, num_buffs do
+					local buff = buffs[i]
+					local ok3, name = pcall(buff.template_name, buff)
+					if ok3 and name and debuffs[name] then
+						result = true
+						break
+					end
+				end
 			end
 		end
 	end
 
-	local ok2, buffs = pcall(buff_extension.buffs, buff_extension)
-	if ok2 and buffs then
-		local num_buffs = #buffs
-
-		for i = 1, num_buffs do
-			local buff = buffs[i]
-			local ok3, name = pcall(buff.template_name, buff)
-			if ok3 and name and debuffs[name] then
-				return true
-			end
-		end
+	if entry then
+		entry._debuff_cached = result
+		entry._debuff_cached_t = t or mod.get_time()
 	end
 
-	return false
+	return result
 end
