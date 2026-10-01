@@ -301,6 +301,33 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	}
 end
 
+-- Re-reads the size settings into the module tables the widget definition and layout_rows read.
+-- The module load above seeds them; the editor calls this before building a preview widget so a
+-- settings change shows up without a mod reload. `size` is mutated in place: template.size and the
+-- widget definition both hold a reference to that table.
+local function refresh_layout()
+	hb_size_width = fs.hb_size_width
+	hb_size_height = fs.hb_size_height
+	draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
+	size[1] = 200
+	size[2] = hb_size_height
+	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
+	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
+	col_step = (calculate_icon_size() + (20 * fs.debuff_gap_padding_scale)) * fs.text_scale
+	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
+	base_gap = -40 * fs.text_scale
+	name_x = (size[1] - 25) * fs.text_scale + base_gap
+	icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * fs.text_scale + base_gap
+	stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * fs.text_scale + base_gap
+
+	if fs.debuff_stack_on_icon then
+		stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale
+			+ base_gap
+	end
+end
+
+template.refresh_layout = refresh_layout
+
 template.on_enter = function(widget, marker, template)
 	local fs = mod.frame_settings
 
@@ -450,284 +477,29 @@ end
 -- Update function
 -----------------------------------------------------------------------
 
-template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
-	if not marker or not widget then
-		return
-	end
+-----------------------------------------------------------------------
+-- Pure layout (shared with the editor preview)
+-- Everything after collection: combining same-icon rows, sorting, per-row state, styling and
+-- scaling. The HUD does the collection and the world reads; the editor feeds it fake buffs
+-- through mod.collect_debuffs and a ctx it fills in itself, so nothing here may touch unit /
+-- marker / parent directly -- those arrive (possibly nil) as ctx.parent / ctx.marker / ctx.unit.
+-- ctx = { breed, breed_name, breed_type, show_on_body, draw, parent, marker, unit }
+-----------------------------------------------------------------------
 
-	widget._next_update = widget._next_update or 0
-	if t < widget._next_update then
-		return
-	end
+local layout_ctx = {}
 
-	-- if not on screen or draw == false, throttle heavily....
-	if not marker.is_inside_frustum then
-		widget._next_update = t + fs.off_screen_throttle_rate
-		return
-		-- distance based updates
-	elseif marker.distance < 50 then
-		widget._next_update = t + fs.general_throttle_rate
-	elseif marker.distance < 70 then
-		widget._next_update = t + fs.general_throttle_rate * 1.5
-	else
-		widget._next_update = t + fs.general_throttle_rate * 2
-	end
-
-	local unit = marker.unit
+local function layout_rows(widget, scale, dt, ctx)
 	local content = widget.content
-
-	local need_sort = false
-	local fs = mod.frame_settings
-
-	content.draw_dbf = true
-	content.dbf_built = false
-
-	if not unit then
-		content.dbf_built = false
-		return
-	end
-
-	local is_alive = mod.detect_alive(unit)
-
-	-- dead enemies only keep their debuffs for the widget removal delay,
-	-- show dps should not hold them on screen until the dps number is gone
-	if not is_alive and t - (content._ei_dead_at or t) >= (fs.widget_removal_delay or 0) then
-		content.dbf_built = false
-		return
-	end
-
-	-- don't process hordes if disabled
-	if
-		fs.debuff_horde_global_enable == false
-		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
-	then
-		content.dbf_built = false
-		return
-	end
-
-	local line_of_sight_progress = content.line_of_sight_progress or 0
-
-	if template.check_line_of_sight then
-		if marker.raycast_initialized then
-			local raycast_result = marker.raycast_result
-			local line_of_sight_speed = 8
-
-			if raycast_result then
-				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
-			else
-				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
-			end
-		end
-	elseif not template.check_line_of_sight then
-		line_of_sight_progress = 1
-	end
-
+	local active = widget._active or {}
+	local active_count = widget._active_count or #active
 	local split_debuff_types = fs.split_debuff_types
+	local breed = ctx.breed or content.breed
+	local parent = ctx.parent
+	local marker = ctx.marker
+	local unit = ctx.unit
 
-	-------------------------------------------------------------------
-	-- Breed / type
-	-------------------------------------------------------------------
-	local unit_data_extension = content.unit_data_extension
-	local breed = content.breed
-	local debuffs = content.debuffs or {}
-	local keywords = content.keywords or {}
-	--dbg_b =content
-
-	local entry = mod.enemy_cache[unit]
-	local breed_name = entry and entry.breed_name
-	local breed_type = entry and entry.breed_type
-
-	local individual_state = breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name]
-	local type_state = breed_type and fs.breed_type_debuff_enabled and fs.breed_type_debuff_enabled[breed_type]
-
-	if individual_state == "false_override" or type_state == "false_override" then
-		content.dbf_built = false
-		return
-	end
-
-	-- Gather active debuffs that we care about
-	widget._active = widget._active or {}
-	local active = widget._active
-	local active_count = 0
-
-	-- clear without reallocating
-	for i = 1, #active do
-		active[i] = nil
-	end
-
-	-- get from keywords
-	if keywords then
-		for keyword, _ in pairs(keywords) do
-			local name = keyword
-
-			-- DOT STUFF
-			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_keyword_enable then
-				local stacks = 1
-
-				active_count = active_count + 1
-				local entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-
-				entry.name = name
-				entry.stacks = stacks
-				entry.max_stacks = 1
-				entry.type = "dot"
-
-				active[active_count] = entry
-			end
-
-			-- UTILITY STUFF
-			if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_keyword_enable then
-				local stacks = 1
-
-				active_count = active_count + 1
-				local entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-
-				entry.name = name
-				entry.stacks = stacks
-				entry.max_stacks = 1
-				entry.type = "utility"
-
-				active[active_count] = entry
-			end
-		end
-	end
-
-	-- Get from debuffs
-	for i = 1, #debuffs do
-		local buff = debuffs[i]
-		local name = buff:template_name()
-		local template = buff:template()
-		local stat_buffs = template.stat_buffs
-		local conditional_stat_buffs = template.conditional_stat_buffs
-
-		-- DOT STUFF
-		if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
-			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
-
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
-			local real_max = buff.max_stacks and buff:max_stacks() or template.max_stacks
-
-			entry.name = name
-			entry.stacks = stacks
-			entry.max_stacks = real_max
-			entry.stat_buffs = stat_buffs
-			entry.conditional_stat_buffs = conditional_stat_buffs
-			entry.type = "dot"
-		end
-
-		-- UTILITY STUFF
-		if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
-			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
-
-			active_count = active_count + 1
-			local entry = active[active_count]
-			if not entry then
-				entry = active_pool[#active_pool]
-				if entry then
-					active_pool[#active_pool] = nil
-				else
-					entry = {}
-				end
-				active[active_count] = entry
-			end
-
-			local real_max = buff.max_stacks and buff:max_stacks() or template.max_stacks
-
-			entry.name = name
-			entry.stacks = stacks
-			entry.max_stacks = real_max
-			entry.stat_buffs = stat_buffs
-			entry.conditional_stat_buffs = conditional_stat_buffs
-			entry.type = "utility"
-		end
-	end
-
-	-- CUSTOM STAGGER DEBUFF
-	local enemyentry = mod.enemy_cache[unit]
-
-	if enemyentry and fs.debuff_stagger_enable then
-		if enemyentry.staggered then
-			local now = mod.get_time()
-
-			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
-				enemyentry.staggered = false
-				enemyentry.stagger_type = nil
-				enemyentry.stagger_duration = 0
-				enemyentry.stagger_timer = 0
-
-				if widget._active_lookup then
-					if widget._active_lookup["staggered"] then
-						widget._active_lookup["staggered"] = false
-					end
-				end
-
-				if widget._state then
-					if widget._state["staggered"] then
-						--widget._state["staggered"] = nil
-					end
-				end
-			else
-				active_count = active_count + 1
-				local entry = active[active_count]
-				if not entry then
-					entry = active_pool[#active_pool]
-					if entry then
-						active_pool[#active_pool] = nil
-					else
-						entry = {}
-					end
-					active[active_count] = entry
-				end
-
-				local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 10) / 10
-				if stagger_time_rounded <= 0 then
-					stagger_time_rounded = 0.00
-				end
-
-				-- set the stack timer to the amount of time the enemy is staggered if available...
-				entry.name = "staggered"
-				entry.stacks = 1
-				entry.duration = stagger_time_rounded
-				entry.max_stacks = 1
-				entry.stat_buffs = {}
-				entry.conditional_stat_buffs = {}
-				entry.type = "utility"
-			end
-		end
-	end
-
-	-- dont draw or do calculations if there are no debuffs applied..
-	if #active < 1 then
-		content.dbf_built = false
-		return
-	end
-
-	for i = active_count + 1, #active do
-		active_pool[#active_pool + 1] = active[i]
-		active[i] = nil
-	end
-
+	-- read back by the sort below, written by the per-row state pass
+	local need_sort = false
 	-------------------------------------------------------------------
 	-- COMBINE SAME ICONS AND CALCULATE COMBINED STACKS/PERCENTAGE
 	-------------------------------------------------------------------
@@ -864,26 +636,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		active_lookup[k] = nil
 	end
 
-	local show_on_body = fs.debuff_show_on_body
-		or (breed_name and fs.breed_debuff_show_on_body_override and fs.breed_debuff_show_on_body_override[breed_name])
-		or (breed_type and fs.breed_type_debuff_show_on_body_override and fs.breed_type_debuff_show_on_body_override[breed_type])
+	local show_on_body = ctx.show_on_body
+		or (ctx.breed_name and fs.breed_debuff_show_on_body_override and fs.breed_debuff_show_on_body_override[ctx.breed_name])
+		or (ctx.breed_type and fs.breed_type_debuff_show_on_body_override and fs.breed_type_debuff_show_on_body_override[ctx.breed_type])
 		or false
 
 	local debuff_y_offset = fs.debuff_y_offset
 
 	local _body_screen_offset_y = nil
 	if show_on_body then
-		local camera = parent._parent and parent._parent:player_camera()
-		local breed = content.breed
-		local head_pos = marker.world_position and marker.world_position:unbox()
+		local camera = parent and parent._parent and parent._parent:player_camera()
+		local head_pos = marker and marker.world_position and marker.world_position:unbox()
 		if camera and breed and breed.base_height and head_pos and unit then
 			local root_pos = Unit.world_position(unit, 1)
 			if root_pos then
 				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + (breed.base_height * 0.8))
 				local head_screen = Camera.world_to_screen(camera, head_pos)
 				local body_screen = Camera.world_to_screen(camera, body_center)
-				if head_screen and body_screen and marker.scale and marker.scale > 0.001 then
-					_body_screen_offset_y = (body_screen.y - head_screen.y) / marker.scale
+				if head_screen and body_screen and scale and scale > 0.001 then
+					_body_screen_offset_y = (body_screen.y - head_screen.y) / scale
 				end
 			end
 		end
@@ -1408,13 +1179,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 					content.draw_dbf = false
 				end
 
-				if not marker.is_inside_frustum then
+				if not ctx.draw then
 					content.draw_dbf = false
 				end
 
 				-- apply scaling
 				if content.draw_dbf then
-					local scale = marker.scale
 					content.dbf_built = true
 
 					icon_style.size[1] = icon_style.default_size[1] * scale
@@ -1463,6 +1233,297 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content[name_text_id] = nil
 		end
 	end
+end
+
+template.layout_rows = layout_rows
+
+template.update_function = function(parent, ui_renderer, widget, marker, template, dt, t)
+	if not marker or not widget then
+		return
+	end
+
+	widget._next_update = widget._next_update or 0
+	if t < widget._next_update then
+		return
+	end
+
+	-- if not on screen or draw == false, throttle heavily....
+	if not marker.is_inside_frustum then
+		widget._next_update = t + fs.off_screen_throttle_rate
+		return
+		-- distance based updates
+	elseif marker.distance < 50 then
+		widget._next_update = t + fs.general_throttle_rate
+	elseif marker.distance < 70 then
+		widget._next_update = t + fs.general_throttle_rate * 1.5
+	else
+		widget._next_update = t + fs.general_throttle_rate * 2
+	end
+
+	local unit = marker.unit
+	local content = widget.content
+
+	local need_sort = false
+	local fs = mod.frame_settings
+
+	content.draw_dbf = true
+	content.dbf_built = false
+
+	if not unit then
+		content.dbf_built = false
+		return
+	end
+
+	local is_alive = mod.detect_alive(unit)
+
+	-- dead enemies only keep their debuffs for the widget removal delay,
+	-- show dps should not hold them on screen until the dps number is gone
+	if not is_alive and t - (content._ei_dead_at or t) >= (fs.widget_removal_delay or 0) then
+		content.dbf_built = false
+		return
+	end
+
+	-- don't process hordes if disabled
+	if
+		fs.debuff_horde_global_enable == false
+		and (content.breed_tags and (content.breed_tags.horde or content.breed_tags.roamer))
+	then
+		content.dbf_built = false
+		return
+	end
+
+	local line_of_sight_progress = content.line_of_sight_progress or 0
+
+	if template.check_line_of_sight then
+		if marker.raycast_initialized then
+			local raycast_result = marker.raycast_result
+			local line_of_sight_speed = 8
+
+			if raycast_result then
+				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+			else
+				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+			end
+		end
+	elseif not template.check_line_of_sight then
+		line_of_sight_progress = 1
+	end
+
+	local split_debuff_types = fs.split_debuff_types
+
+	-------------------------------------------------------------------
+	-- Breed / type
+	-------------------------------------------------------------------
+	local unit_data_extension = content.unit_data_extension
+	local breed = content.breed
+	local debuffs = content.debuffs or {}
+	local keywords = content.keywords or {}
+	--dbg_b =content
+
+	local entry = mod.enemy_cache[unit]
+	local breed_name = entry and entry.breed_name
+	local breed_type = entry and entry.breed_type
+
+	local individual_state = breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name]
+	local type_state = breed_type and fs.breed_type_debuff_enabled and fs.breed_type_debuff_enabled[breed_type]
+
+	if individual_state == "false_override" or type_state == "false_override" then
+		content.dbf_built = false
+		return
+	end
+
+	-- Gather active debuffs that we care about
+	widget._active = widget._active or {}
+	local active = widget._active
+	local active_count = 0
+
+	-- clear without reallocating
+	for i = 1, #active do
+		active[i] = nil
+	end
+
+	-- get from keywords
+	if keywords then
+		for keyword, _ in pairs(keywords) do
+			local name = keyword
+
+			-- DOT STUFF
+			if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_keyword_enable then
+				local stacks = 1
+
+				active_count = active_count + 1
+				local entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+
+				entry.name = name
+				entry.stacks = stacks
+				entry.max_stacks = 1
+				entry.type = "dot"
+
+				active[active_count] = entry
+			end
+
+			-- UTILITY STUFF
+			if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_keyword_enable then
+				local stacks = 1
+
+				active_count = active_count + 1
+				local entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+
+				entry.name = name
+				entry.stacks = stacks
+				entry.max_stacks = 1
+				entry.type = "utility"
+
+				active[active_count] = entry
+			end
+		end
+	end
+
+	-- Get from debuffs
+	for i = 1, #debuffs do
+		local buff = debuffs[i]
+		local name = buff:template_name()
+		local template = buff:template()
+		local stat_buffs = template.stat_buffs
+		local conditional_stat_buffs = template.conditional_stat_buffs
+
+		-- DOT STUFF
+		if mod.debuffs[name] and mod.debuffs[name].type == "dot" and fs.debuff_dot_enable then
+			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
+
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			local real_max = buff.max_stacks and buff:max_stacks() or template.max_stacks
+
+			entry.name = name
+			entry.stacks = stacks
+			entry.max_stacks = real_max
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "dot"
+		end
+
+		-- UTILITY STUFF
+		if mod.debuffs[name] and mod.debuffs[name].type == "utility" and fs.debuff_utility_enable then
+			local stacks = buff.stack_count and buff:stack_count() or buff.stacks and buff:stacks() or 1
+
+			active_count = active_count + 1
+			local entry = active[active_count]
+			if not entry then
+				entry = active_pool[#active_pool]
+				if entry then
+					active_pool[#active_pool] = nil
+				else
+					entry = {}
+				end
+				active[active_count] = entry
+			end
+
+			local real_max = buff.max_stacks and buff:max_stacks() or template.max_stacks
+
+			entry.name = name
+			entry.stacks = stacks
+			entry.max_stacks = real_max
+			entry.stat_buffs = stat_buffs
+			entry.conditional_stat_buffs = conditional_stat_buffs
+			entry.type = "utility"
+		end
+	end
+
+	-- CUSTOM STAGGER DEBUFF
+	local enemyentry = mod.enemy_cache[unit]
+
+	if enemyentry and fs.debuff_stagger_enable then
+		if enemyentry.staggered then
+			local now = mod.get_time()
+
+			if enemyentry.stagger_timer and now >= enemyentry.stagger_timer then
+				enemyentry.staggered = false
+				enemyentry.stagger_type = nil
+				enemyentry.stagger_duration = 0
+				enemyentry.stagger_timer = 0
+
+				if widget._active_lookup then
+					if widget._active_lookup["staggered"] then
+						widget._active_lookup["staggered"] = false
+					end
+				end
+
+				if widget._state then
+					if widget._state["staggered"] then
+						--widget._state["staggered"] = nil
+					end
+				end
+			else
+				active_count = active_count + 1
+				local entry = active[active_count]
+				if not entry then
+					entry = active_pool[#active_pool]
+					if entry then
+						active_pool[#active_pool] = nil
+					else
+						entry = {}
+					end
+					active[active_count] = entry
+				end
+
+				local stagger_time_rounded = math.floor((enemyentry.stagger_timer - now) * 10) / 10
+				if stagger_time_rounded <= 0 then
+					stagger_time_rounded = 0.00
+				end
+
+				-- set the stack timer to the amount of time the enemy is staggered if available...
+				entry.name = "staggered"
+				entry.stacks = 1
+				entry.duration = stagger_time_rounded
+				entry.max_stacks = 1
+				entry.stat_buffs = {}
+				entry.conditional_stat_buffs = {}
+				entry.type = "utility"
+			end
+		end
+	end
+
+	-- dont draw or do calculations if there are no debuffs applied..
+	if #active < 1 then
+		content.dbf_built = false
+		return
+	end
+
+	for i = active_count + 1, #active do
+		active_pool[#active_pool + 1] = active[i]
+		active[i] = nil
+	end
+
+	layout_ctx.breed = content.breed
+	layout_ctx.breed_name = breed_name
+	layout_ctx.breed_type = breed_type
+	layout_ctx.show_on_body = fs.debuff_show_on_body
+	layout_ctx.draw = marker.is_inside_frustum
+	layout_ctx.parent = parent
+	layout_ctx.marker = marker
+	layout_ctx.unit = unit
+	layout_rows(widget, marker.scale, dt, layout_ctx)
 end
 
 return template

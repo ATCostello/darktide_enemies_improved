@@ -197,6 +197,41 @@ end
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
+-- Fresh preset palette, without touching the live mod.BREED_COLOURS (the settings API asks for
+-- defaults while the HUD is reading that table).
+mod.breed_colour_preset_table = function(preset)
+	if preset == "red" then
+		return {
+			horde = { 255, 255, 40, 40 },
+			elite = { 255, 255, 40, 40 },
+			captain = { 255, 255, 40, 40 },
+			disabler = { 255, 255, 40, 40 },
+			witch = { 255, 255, 40, 40 },
+			monster = { 255, 255, 40, 40 },
+			sniper = { 255, 255, 40, 40 },
+			far = { 255, 255, 40, 40 },
+			special = { 255, 255, 40, 40 },
+			enemy = { 255, 255, 40, 40 },
+			shield = { 255, 255, 40, 40 },
+		}
+	end
+
+	-- "colourful" and any unknown / nil preset
+	return {
+		horde = { 255, 150, 60, 60 },
+		elite = { 255, 0, 120, 255 },
+		captain = { 255, 255, 140, 0 },
+		disabler = { 255, 255, 255, 0 },
+		witch = { 255, 255, 0, 180 },
+		monster = { 255, 180, 0, 255 },
+		sniper = { 255, 255, 0, 0 },
+		far = { 255, 0, 255, 120 },
+		special = { 255, 255, 0, 255 },
+		enemy = { 255, 200, 200, 200 },
+		shield = { 255, 200, 200, 200 },
+	}
+end
+
 mod.set_breed_colours = function()
 	local bc = mod.BREED_COLOURS
 	if not bc then
@@ -804,11 +839,24 @@ mod._on_setting_changed_impl = function(setting_id)
 	mod.update_dmf_settings_colours(setting_id)
 end
 
+-- Any view that edits the settings needs the same rebuild on close: DMF writes straight into the frame
+-- settings, the native editor applies through settings_api. Kept as one function so a view cannot be
+-- forgotten here. The editor view name mirrors ei_editor.VIEW_NAME (this file loads before the editor).
+local CLOSING_SETTINGS_VIEWS = {
+	dmf_options_view = true,
+	options_view = true,
+	enemies_improved_editor = true,
+}
+
+mod.refresh_settings_close = function()
+	mod.clear_caches()
+	mod.build_frame_settings()
+	mod.remove_all_enemy_outlines()
+end
+
 mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
-	if view_name == "dmf_options_view" or view_name == "options_view" then
-		mod.clear_caches()
-		mod.build_frame_settings()
-		mod.remove_all_enemy_outlines()
+	if CLOSING_SETTINGS_VIEWS[view_name] then
+		mod.refresh_settings_close()
 	end
 end)
 
@@ -869,3 +917,12 @@ mod:hook_safe(CLASS.BaseView, "update", function(self)
 
 	last_category = current_category
 end)
+
+-----------------------------------------------------------------------
+-- Native settings API (editor)
+-----------------------------------------------------------------------
+-- Reads mod.setting_schema / mod.setting_defaults, which enemies_improved_data.lua builds from the
+-- same widget tree DMF owns, so this must be loaded after the data file.
+mod.settings_api = mod.setting_schema
+		and mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_api")
+	or nil

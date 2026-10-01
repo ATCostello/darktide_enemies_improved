@@ -266,8 +266,35 @@ mod.dmf = get_mod("DMF")
 mod.loaded = false
 
 mod.on_unload = function()
+	if mod.editor then
+		mod.editor.close_all()
+	end
+
 	mod.clear_caches()
 	mod.loaded = false
+end
+
+-- EI is togglable: an open editor must not outlive the mod.
+mod.on_disabled = function()
+	if mod.editor then
+		mod.editor.close_all()
+	end
+end
+
+-- DMF button + keybind entry point (see enemies_improved_data.lua). The keybind also fires while
+-- typing in an editor text field, so a typed key must not close the editor.
+mod.open_editor = function()
+	local editor = mod.editor
+
+	if not editor then
+		return
+	end
+
+	if editor.is_open() and editor.is_writing() then
+		return
+	end
+
+	editor.toggle()
 end
 
 mod.on_all_mods_loaded = function()
@@ -292,6 +319,11 @@ mod.on_all_mods_loaded = function()
 	mod.load_anim_db()
 
 	mod.dmf = get_mod("DMF")
+
+	if mod.editor then
+		mod.editor.register()
+	end
+
 	mod.loaded = true
 end
 
@@ -309,6 +341,12 @@ end
 
 local EnemyImprovedTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/enemies_improved_template")
+
+-- Native settings editor: the richer, previewing view of the very same DMF settings. Loaded after
+-- the template so mod.ei_template is there before a preview is built. io_dofile is pcall-safe and
+-- returns a falsy value on a load error, so every use of mod.editor below is guarded: EI keeps
+-- working without the editor.
+mod.editor = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/editor/ei_editor")
 
 local function add_custom_templates(self)
 	if EnemyImprovedTemplate then

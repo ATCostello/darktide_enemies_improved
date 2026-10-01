@@ -111,6 +111,22 @@ template.fade_settings = {
 -- Widget creation
 -----------------------------------------------------------------------
 
+-- health-percentage tier icon used by the simple_health marker; nil for an empty bar, which keeps
+-- whatever glyph the widget already has. The editor preview calls it directly.
+local function health_glyph(health_percent)
+	if health_percent > 0.75 then
+		return "content/ui/materials/icons/perks/perk_level_04"
+	elseif health_percent > 0.50 then
+		return "content/ui/materials/icons/perks/perk_level_03"
+	elseif health_percent > 0.25 then
+		return "content/ui/materials/icons/perks/perk_level_02"
+	elseif health_percent > 0 then
+		return "content/ui/materials/icons/perks/perk_level_01"
+	end
+end
+
+template.health_glyph = health_glyph
+
 template.create_widget_defintion = function(template, scenegraph_id)
 	local fs = mod.frame_settings
 	local mkr_y_offset = fs.marker_y_offset * 100 or 0
@@ -183,15 +199,7 @@ template.create_widget_defintion = function(template, scenegraph_id)
 
 				-- set styling depending on health percentage...
 				if health_percent then
-					if health_percent > 0.75 then
-						content.marker_health = "content/ui/materials/icons/perks/perk_level_04"
-					elseif health_percent > 0.50 then
-						content.marker_health = "content/ui/materials/icons/perks/perk_level_03"
-					elseif health_percent > 0.25 then
-						content.marker_health = "content/ui/materials/icons/perks/perk_level_02"
-					elseif health_percent > 0 then
-						content.marker_health = "content/ui/materials/icons/perks/perk_level_01"
-					end
+					content.marker_health = health_glyph(health_percent) or content.marker_health
 				end
 			end,
 
@@ -322,6 +330,101 @@ end
 
 local Unit_alive = Unit.alive
 
+-- Re-reads the size settings into the module tables the widget definition captures. on_enter runs
+-- it per marker; the editor runs it before building a preview widget.
+local function refresh_sizes()
+	max_size_value = 32 * fs.marker_size
+	size[1], size[2] = max_size_value, max_size_value
+	ping_size[1], ping_size[2] = max_size_value, max_size_value
+	arrow_size[1], arrow_size[2] = max_size_value * 8, max_size_value * 8
+	icon_size[1], icon_size[2] = max_size_value / 2, max_size_value / 2
+	background_size[1], background_size[2] = max_size_value, max_size_value
+end
+
+template.refresh_sizes = refresh_sizes
+
+-- Pure styling block of update_function (colours + sizes + type icon), free of unit / marker
+-- access so the editor can drive it. bar_color: healthbar colour of the enemy; alert_colour: nil,
+-- or the special-attack colour while an attack is imminent; scale: marker scale.
+local function apply_state(widget, bar_color, alert_colour, scale)
+	local content = widget.content
+	local style = widget.style
+	local icon_breed_type = content._breed_type or content.breed_type
+
+	style.background.color[1] = fs.marker_bg_colour[1]
+	style.background.color[2] = fs.marker_bg_colour[2]
+	style.background.color[3] = fs.marker_bg_colour[3]
+	style.background.color[4] = fs.marker_bg_colour[4]
+
+	-- adjust colour of overhead marker to healthbar colour
+	if fs.overhead_marker_uses_healthbar_colour then
+		if fs.marker_visual_style == "simple_health" then
+			style.marker_health.color[2] = bar_color[2]
+			style.marker_health.color[3] = bar_color[3]
+			style.marker_health.color[4] = bar_color[4]
+		else
+			style.background.color[2] = bar_color[2]
+			style.background.color[3] = bar_color[3]
+			style.background.color[4] = bar_color[4]
+		end
+	end
+
+	-----------------------------------------------------------------------
+	-- Special attack warning pulse
+	-----------------------	------------------------------------------------
+	if alert_colour then
+		content.special_attack_imminent = true
+
+		local spec_col = alert_colour
+		style.arrow.color[2] = spec_col[2]
+		style.arrow.color[3] = spec_col[3]
+		style.arrow.color[4] = spec_col[4]
+
+		style.background.color[2] = spec_col[2]
+		style.background.color[3] = spec_col[3]
+		style.background.color[4] = spec_col[4]
+	else
+		--content.is_clamped = false
+		content.special_attack_imminent = false
+		content.marker_type_icon_show = false
+		content.type_icon_path = nil
+
+		style.arrow.color[2] = 255
+		style.arrow.color[3] = 255
+		style.arrow.color[4] = 255
+
+		style.marker_health.size[1] = (background_size[1] / 2) * scale
+		style.marker_health.size[2] = (background_size[2] / 2) * scale
+	end
+
+	-----------------------------------------------------------------------
+	-- Enemy type icon on overhead marker (non-boss enemies)
+	-----------------------------------------------------------------------
+	content.marker_type_icon_show = true
+
+	if fs.marker_visual_style == "type_icon" then
+		if icon_breed_type and icon_breed_type ~= "monster" and icon_breed_type ~= "horde" then
+			local icon_settings = mod.ICON_SETTINGS[icon_breed_type]
+			local icon_path = MARKER_TYPE_ICONS[icon_breed_type]
+
+			if icon_settings and icon_settings.enabled and icon_path then
+				--content.marker_type_icon_show = true
+				content.type_icon_path = icon_path
+				content.type_icon = icon_path
+
+				local icon_color = mod.ICON_COLOURS[icon_breed_type]
+				if icon_color then
+					style.type_icon.color[2] = icon_color[2]
+					style.type_icon.color[3] = icon_color[3]
+					style.type_icon.color[4] = icon_color[4]
+				end
+			end
+		end
+	end
+end
+
+template.apply_state = apply_state
+
 template.on_enter = function(widget, marker, template)
 	local content = widget.content
 	local fs = mod.frame_settings
@@ -343,6 +446,7 @@ template.on_enter = function(widget, marker, template)
 	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
 	content.breed = breed
 	content.breed_type = mod.find_breed_category(unit)
+	content._breed_type = content.breed_type
 	content.breed_settings = content.breed and minion_breeds[content.breed.name]
 
 	if content.breed and content.breed.name then
@@ -363,12 +467,7 @@ template.on_enter = function(widget, marker, template)
 
 	content.special_attack_imminent = false
 
-	max_size_value = 32 * fs.marker_size
-	size[1], size[2] = max_size_value, max_size_value
-	ping_size[1], ping_size[2] = max_size_value, max_size_value
-	arrow_size[1], arrow_size[2] = max_size_value * 8, max_size_value * 8
-	icon_size[1], icon_size[2] = max_size_value / 2, max_size_value / 2
-	background_size[1], background_size[2] = max_size_value, max_size_value
+	refresh_sizes()
 end
 
 -----------------------------------------------------------------------
@@ -389,7 +488,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local content = widget.content
 	local distance = content.distance or 0
 	local unit = marker.unit
-	local style = widget.style
 	local marker_scale = marker.scale
 
 	-- if not on screen or draw == false, throttle heavily....
@@ -464,8 +562,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		health_extension = ScriptUnit_has_extension(unit, "health_system")
 		content.health_extension = health_extension
 	end
-
-	local style = widget.style
 
 	if content.m_allowed == false then
 		content.draw_mkr = false
@@ -552,80 +648,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	style.background.color[1] = fs.marker_bg_colour[1]
-	style.background.color[2] = fs.marker_bg_colour[2]
-	style.background.color[3] = fs.marker_bg_colour[3]
-	style.background.color[4] = fs.marker_bg_colour[4]
+	local alert_colour = fs.marker_specials_enable and entry and entry.alert_outline and fs.outline_specials_colour
+		or nil
 
-	-- adjust colour of overhead marker to healthbar colour
-	if fs.overhead_marker_uses_healthbar_colour then
-		if fs.marker_visual_style == "simple_health" then
-			style.marker_health.color[2] = bar_color[2]
-			style.marker_health.color[3] = bar_color[3]
-			style.marker_health.color[4] = bar_color[4]
-		else
-			style.background.color[2] = bar_color[2]
-			style.background.color[3] = bar_color[3]
-			style.background.color[4] = bar_color[4]
-		end
-	end
-
-	-----------------------------------------------------------------------
-	-- Special attack warning pulse
-	-----------------------	------------------------------------------------
-	local entry = mod.enemy_cache[unit]
-
-	if entry and fs.marker_specials_enable and entry.alert_outline then
-		content.special_attack_imminent = true
-
-		local spec_col = fs.outline_specials_colour
-		style.arrow.color[2] = spec_col[2]
-		style.arrow.color[3] = spec_col[3]
-		style.arrow.color[4] = spec_col[4]
-
-		style.background.color[2] = spec_col[2]
-		style.background.color[3] = spec_col[3]
-		style.background.color[4] = spec_col[4]
-	else
-		--content.is_clamped = false
-		content.special_attack_imminent = false
-		content.marker_type_icon_show = false
-		content.type_icon_path = nil
-
-		style.arrow.color[2] = 255
-		style.arrow.color[3] = 255
-		style.arrow.color[4] = 255
-
-		style.marker_health.size[1] = (background_size[1] / 2) * marker_scale
-		style.marker_health.size[2] = (background_size[2] / 2) * marker_scale
-	end
-
-	-----------------------------------------------------------------------
-	-- Enemy type icon on overhead marker (non-boss enemies)
-	-----------------------------------------------------------------------
-	content.marker_type_icon_show = true
-
-	if fs.marker_visual_style == "type_icon" then
-		local icon_breed_type = breed_type or content.breed_type
-
-		if icon_breed_type and icon_breed_type ~= "monster" and icon_breed_type ~= "horde" then
-			local icon_settings = mod.ICON_SETTINGS[icon_breed_type]
-			local icon_path = MARKER_TYPE_ICONS[icon_breed_type]
-
-			if icon_settings and icon_settings.enabled and icon_path then
-				--content.marker_type_icon_show = true
-				content.type_icon_path = icon_path
-				content.type_icon = icon_path
-
-				local icon_color = mod.ICON_COLOURS[icon_breed_type]
-				if icon_color then
-					style.type_icon.color[2] = icon_color[2]
-					style.type_icon.color[3] = icon_color[3]
-					style.type_icon.color[4] = icon_color[4]
-				end
-			end
-		end
-	end
+	apply_state(widget, bar_color, alert_colour, marker_scale)
 
 	if not marker.is_inside_frustum then
 		content.draw_mkr = false
