@@ -475,6 +475,30 @@ mod.default_outline_enabled = {
 	shield = false,
 }
 
+-- some base game breeds are missing the use_outline tag on their gear slots, so the outline colour never reaches it
+local breeds_missing_outline_tag = {
+	cultist_ritualist = true,
+	cultist_assault = true,
+}
+
+local function fix_missing_outline_tag(unit, breed)
+	if not breeds_missing_outline_tag[breed.name] then
+		return
+	end
+
+	local visual_loadout_extension = ScriptUnit.extension(unit, "visual_loadout_system")
+	if not visual_loadout_extension then
+		return
+	end
+
+	for slot_name, slot in pairs(visual_loadout_extension:inventory_slots()) do
+		-- only slots that spawned a unit, material override slots have none and the outline system errors on them
+		if slot.use_outline == nil and visual_loadout_extension:slot_unit(slot_name) then
+			slot.use_outline = true
+		end
+	end
+end
+
 mod.apply_enemy_outlines = function(settings)
 	for _, entry in next, mod.breed_types do
 		local breed = entry.value
@@ -540,19 +564,7 @@ mod.apply_enemy_outlines = function(settings)
 							return false
 						end
 
-						local visual_loadout_extension = ScriptUnit.extension(unit, "visual_loadout_system")
-						local visual_loadout_slots = visual_loadout_extension:inventory_slots()
-
-						local broken_enemies = {
-							"cultist_ritualist",
-							"cultist_assault",
-						}
-
-						if table.contains(broken_enemies, breed.name) then
-							for slot, items in pairs(visual_loadout_slots) do
-								items.use_outline = { true } -- the issue is literally just the specific part of the enemy is missing this tag lol
-							end
-						end
+						fix_missing_outline_tag(unit, breed)
 
 						return enabled
 					end,
@@ -615,6 +627,8 @@ mod.apply_enemy_outlines = function(settings)
 						if breed.name ~= enemy_individual then
 							return false
 						end
+
+						fix_missing_outline_tag(unit, breed)
 
 						return enabled
 					end,
