@@ -23,6 +23,14 @@ local _outline_system = nil
 local _outline_system_checked = false
 local _cached_physics_world = nil
 local _physics_world_checked = false
+
+-- the players head node never changes for a given player unit
+local _los_origin_unit = nil
+local _los_origin_node = nil
+local _los_origin_pos = Vector3.zero()
+local _los_head_pos = Vector3.zero()
+local _los_spine_pos = Vector3.zero()
+
 local fs = mod.frame_settings
 
 local function get_outline_system()
@@ -61,6 +69,8 @@ mod._clear_outline_caches = function()
 	_outline_system_checked = false
 	_cached_physics_world = nil
 	_physics_world_checked = false
+	_los_origin_unit = nil
+	_los_origin_node = nil
 end
 
 mod.remove_outline = function(unit, outline, outline_system)
@@ -216,6 +226,11 @@ mod.pulse_enemy_outline = function(entry)
 end
 
 mod.remove_stagger_outline = function(entry)
+	-- nothing applied yet, so dont wake the outline system up for nothing
+	if not entry.stagger_outline then
+		return
+	end
+
 	local outline_system = get_outline_system()
 	if not outline_system then
 		return
@@ -226,13 +241,16 @@ mod.remove_stagger_outline = function(entry)
 		return
 	end
 
-	if entry.stagger_outline then
-		mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
-		entry.stagger_outline = false
-	end
+	mod.remove_outline(unit, "enemies_improved_staggered", outline_system)
+	entry.stagger_outline = false
 end
 
 mod.remove_alert_outline = function(entry)
+	-- nothing applied yet, so dont wake the outline system up for nothing
+	if not entry.alert_outline then
+		return
+	end
+
 	local outline_system = get_outline_system()
 	if not outline_system then
 		return
@@ -243,10 +261,8 @@ mod.remove_alert_outline = function(entry)
 		return
 	end
 
-	if entry.alert_outline then
-		mod.remove_outline(unit, "enemies_improved_alert", outline_system)
-		entry.alert_outline = false
-	end
+	mod.remove_outline(unit, "enemies_improved_alert", outline_system)
+	entry.alert_outline = false
 end
 
 mod.outline_safety_cleanup = function()
@@ -315,7 +331,40 @@ local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, en
 	return false
 end
 
-mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
+-- the player head node and world position are the same for every enemy in a scan, so cache them
+mod.get_los_origin = function(player_unit)
+	if not player_unit then
+		return nil
+	end
+
+	if player_unit ~= _los_origin_unit then
+		_los_origin_unit = player_unit
+		_los_origin_node = Unit_has_node(player_unit, "j_head") and Unit_node(player_unit, "j_head") or 0
+	end
+
+	return Unit_world_position(player_unit, _los_origin_node, _los_origin_pos)
+end
+
+-- head and spine node indices never change for a unit, so hang them off the cache entry
+local function _get_los_nodes(unit, entry)
+	local nodes = entry and entry._los_nodes
+	if nodes then
+		return nodes[1], nodes[2]
+	end
+
+	local head_node = Unit_has_node(unit, "j_head") and Unit_node(unit, "j_head") or 0
+	local spine_node = Unit_has_node(unit, "j_spine1") and Unit_node(unit, "j_spine1")
+		or Unit_has_node(unit, "j_spine") and Unit_node(unit, "j_spine")
+		or 0
+
+	if entry then
+		entry._los_nodes = { head_node, spine_node }
+	end
+
+	return head_node, spine_node
+end
+
+mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world, player_pos)
 	if not player_unit or not enemy_unit then
 		return false
 	end
@@ -324,28 +373,53 @@ mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world)
 		return false
 	end
 
-	local player_node = Unit_has_node(player_unit, "j_head") and Unit_node(player_unit, "j_head") or 0
-	local player_pos = Unit_world_position(player_unit, player_node)
+	if not player_pos then
+		player_pos = mod.get_los_origin(player_unit)
+	end
+
 	if not player_pos then
 		return false
 	end
 
-	local head_node = Unit_has_node(enemy_unit, "j_head") and Unit_node(enemy_unit, "j_head") or 0
-	local head_pos = Unit_world_position(enemy_unit, head_node)
+	local entry = mod.enemy_cache and mod.enemy_cache[enemy_unit]
+	local head_node, spine_node = _get_los_nodes(enemy_unit, entry)
+
+	local head_pos = Unit_world_position(enemy_unit, head_node, _los_head_pos)
 
 	if _los_raycast_hits_enemy(physics_world, player_pos, head_pos, enemy_unit) then
 		return true
 	end
 
-	local spine_node = Unit_has_node(enemy_unit, "j_spine1") and Unit_node(enemy_unit, "j_spine1")
-		or Unit_has_node(enemy_unit, "j_spine") and Unit_node(enemy_unit, "j_spine")
-		or 0
-	local spine_pos = spine_node ~= head_node and Unit_world_position(enemy_unit, spine_node) or nil
+	if spine_node == head_node then
+		return false
+	end
 
-	return _los_raycast_hits_enemy(physics_world, player_pos, spine_pos, enemy_unit)
+	return _los_raycast_hits_enemy(
+		physics_world,
+		player_pos,
+		Unit_world_position(enemy_unit, spine_node, _los_spine_pos),
+		enemy_unit
+	)
 end
 
-mod.get_forward_dot = function(player_unit, enemy_unit)
+-- resolves the camera forward vector once so it can be shared across a whole scan
+mod.get_camera_forward = function()
+	local ui_manager = Managers_ui
+	local hud = ui_manager and ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	if not world_markers then
+		return nil
+	end
+
+	local camera = world_markers:_get_camera()
+	if not camera then
+		return nil
+	end
+
+	return Quaternion.forward(Camera.local_rotation(camera))
+end
+
+mod.get_forward_dot = function(player_unit, enemy_unit, forward)
 	if not player_unit or not enemy_unit then
 		return 0
 	end
@@ -354,20 +428,12 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 		return 0
 	end
 
-	local ui_manager = Managers_ui
-	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
-	if not world_markers then
-		return 1
+	if not forward then
+		forward = mod.get_camera_forward()
+		if not forward then
+			return 1
+		end
 	end
-
-	local camera = world_markers:_get_camera()
-	if not camera then
-		return 1
-	end
-
-	local camera_rotation = Camera.local_rotation(camera)
-	local forward = Quaternion.forward(camera_rotation)
 
 	--local forward = Quaternion.forward(Unit.local_rotation(player_unit, 1))
 
@@ -393,7 +459,7 @@ mod.get_forward_dot = function(player_unit, enemy_unit)
 	return dot
 end
 
-mod.update_enemy_outlines = function(entry)
+mod.update_enemy_outlines = function(entry, player_unit)
 	if not fs.outlines_enable then
 		return
 	end
@@ -403,8 +469,11 @@ mod.update_enemy_outlines = function(entry)
 		return
 	end
 
-	local player = Managers.player:local_player(1)
-	local player_unit = player and player.player_unit
+	if not player_unit then
+		local player = Managers.player:local_player(1)
+		player_unit = player and player.player_unit
+	end
+
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end

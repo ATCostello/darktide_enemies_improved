@@ -159,26 +159,11 @@ mod:hook_safe(
 	end
 )
 
-local cached_hud = nil
-local cached_world_markers = nil
--------------------------------------------------------------------
+-----------------------------------------------------------------------
 -- Special attack detection
--------------------------------------------------------------------
+-----------------------------------------------------------------------
 mod.update_special_attack_detection = function(entry)
 	local unit = entry.unit
-
-	if not cached_hud then
-		local ui_manager = Managers_ui
-		cached_hud = ui_manager and ui_manager:get_hud()
-	end
-
-	if not cached_world_markers and cached_hud then
-		cached_world_markers = cached_hud:element("HudElementWorldMarkers")
-	end
-
-	local world_markers = cached_world_markers
-
-	local markers_by_id = world_markers and world_markers._markers_by_id
 
 	-- remove special_attack_imminent if over the timer...
 	if entry.special_attack_imminent then

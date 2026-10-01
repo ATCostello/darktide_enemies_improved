@@ -6,15 +6,16 @@ local Managers = Managers
 mod.enemy_markers = mod.enemy_markers or {}
 mod.marked_dead = mod.marked_dead or {}
 
+local fs = mod.frame_settings
+
 local function _on_ei_marker_created(marker_id, entry, unit)
 	mod._on_ei_marker_created(marker_id, entry, unit)
 end
 
--------------------------------------------------------------------
+-----------------------------------------------------------------------
 -- Enemy Markers
--------------------------------------------------------------------
+-----------------------------------------------------------------------
 mod.update_enemy_markers = function(entry, t)
-	local fs = mod.frame_settings
 	local unit = entry.unit
 
 	if not unit then
@@ -33,23 +34,23 @@ mod.update_enemy_markers = function(entry, t)
 	--local enemy_individual = breed and breed.name
 
 	local breed_name = entry.breed_name
-	local unit = entry.unit
 	local marker_force_on = (
 		breed_name
 		and fs.breed_marker_toggle
 		and fs.breed_marker_toggle[breed_name] == "true_override"
 	) or (fs.breed_marker_type_enabled and fs.breed_marker_type_enabled[entry.breed_type] == "true_override")
-	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
 
 	if
 		not marker_force_on
-		and not debuffed_override
 		and (
 			(entry.is_horde and not fs.markers_horde_enable)
 			or (not entry.is_horde and not fs.markers_non_horde_enable)
 		)
 	then
-		return
+		-- the buff scan is not cheap, so only run it once we know we still want the marker
+		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)) then
+			return
+		end
 	end
 
 	if entry._ei_marker_created or entry._ei_marker_pending then
@@ -64,7 +65,7 @@ mod.update_enemy_markers = function(entry, t)
 	end
 
 	-- Only block if ACTUALLY dead
-	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
+	if marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 

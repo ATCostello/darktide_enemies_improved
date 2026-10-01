@@ -9,6 +9,8 @@ local Managers = Managers
 mod.enemy_healthbars = mod.enemy_healthbars or {}
 mod.marked_dead = mod.marked_dead or {}
 
+local fs = mod.frame_settings
+
 local function _on_ei_marker_created(marker_id, entry, unit)
 	mod._on_ei_marker_created(marker_id, entry, unit)
 end
@@ -19,8 +21,6 @@ end
 local Managers_event = Managers.event
 
 mod.update_enemy_healthbars = function(entry, t)
-	local fs = mod.frame_settings
-
 	-- clear stuck pending state after short time
 	if entry._ei_marker_pending and entry._ei_marker_pending_t then
 		if t - entry._ei_marker_pending_t > 2 then
@@ -46,7 +46,7 @@ mod.update_enemy_healthbars = function(entry, t)
 	local individual_state = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
 	local group_state = is_horde and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
 	local unit = entry.unit
-	local debuffed_override = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
+	local clusters_enable = fs.horde_clusters_enable
 
 	local effective = individual_state
 	if effective ~= "true_override" and effective ~= "false_override" then
@@ -57,13 +57,14 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	local forced_on = effective == "true_override" or debuffed_override
-
-	if is_horde and (not fs.horde_enable and not fs.horde_clusters_enable) and not forced_on then
-		return
+	if is_horde and (not fs.horde_enable and not clusters_enable) and effective ~= "true_override" then
+		-- the buff scan is not cheap, so only run it once we know it can still force the bar on
+		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)) then
+			return
+		end
 	end
 
-	if mod.frame_settings.horde_clusters_enable and entry.is_horde then
+	if clusters_enable and is_horde then
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 
 		if entry._ei_marker_created then
@@ -78,7 +79,7 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	if fs.horde_clusters_enable and entry.is_horde then
+	if clusters_enable and is_horde then
 		local cluster = mod.get_horde_cluster_for_unit(unit)
 
 		-- If clustering is enabled but no cluster yet, DO NOT create bars
@@ -105,7 +106,7 @@ mod.update_enemy_healthbars = function(entry, t)
 	end
 
 	-- Only block if ACTUALLY dead
-	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
+	if marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 
@@ -116,7 +117,7 @@ mod.update_enemy_healthbars = function(entry, t)
 		_on_ei_marker_created(marker_id, entry, unit)
 
 		-- Mark cluster as having a healthbar
-		if mod.frame_settings.horde_clusters_enable and entry.is_horde then
+		if clusters_enable and is_horde then
 			local cluster = mod.get_horde_cluster_for_unit(unit)
 			if cluster then
 				cluster._healthbar_created = true
