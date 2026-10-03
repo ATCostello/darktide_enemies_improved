@@ -33,17 +33,43 @@ local size = {
 	200,
 	hb_size_height,
 }
-local base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-local row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
-local col_step = (calculate_icon_size() + (20 * fs.debuff_gap_padding_scale)) * fs.text_scale
-local base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
-local base_gap = -40 * fs.text_scale
-local name_x = (size[1] - 25) * fs.text_scale + base_gap
-local icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * fs.text_scale + base_gap
-local stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * fs.text_scale + base_gap
-if fs.debuff_stack_on_icon then
-	stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale + base_gap
+local base_y, row_step, col_step, base_offset, base_gap, name_x, icon_x, stack_x
+
+-- The one place the row layout numbers are computed: the HUD runs it per marker (on_enter), the editor preview
+-- runs it before building its widget (refresh_layout), so the two cannot drift apart - the horizontal step and
+-- the wider offsets in particular. `size` is mutated in place: template.size, the widget definition and
+-- layout_rows all hold a reference to that table.
+local function compute_layout()
+	local icon_size = calculate_icon_size()
+
+	hb_size_width = fs.hb_size_width
+	hb_size_height = fs.hb_size_height
+	draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
+	size[1] = 200
+	size[2] = hb_size_height
+	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 80) * fs.debuff_y_offset
+		or (-hb_size_height - 16) * fs.debuff_y_offset
+	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + icon_size * fs.text_scale
+	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
+
+	if fs.debuff_horizontal then
+		base_offset = (-hb_size_width * 3 * fs.debuff_x_offset) * fs.text_scale
+	end
+
+	base_gap = -40 * fs.text_scale
+	name_x = (size[1] - 15) * fs.text_scale + base_gap
+	icon_x = ((size[1] + (1 * (fs.debuff_gap_name_icon_offset * 15))) + icon_size) * fs.text_scale + base_gap
+	stack_x = ((size[1] + (fs.debuff_gap_icon_stack_offset * 20)) + icon_size) * fs.text_scale - base_gap
+
+	if fs.debuff_stack_on_icon then
+		stack_x = ((size[1] + (fs.debuff_gap_name_icon_offset * 10)) + (icon_size * 2)) * fs.text_scale - base_gap
+		col_step = (icon_size + (30 * fs.debuff_gap_padding_scale)) * fs.text_scale
+	else
+		col_step = (icon_size + (60 * fs.debuff_gap_padding_scale)) * fs.text_scale
+	end
 end
+
+compute_layout()
 
 local active_pool = {}
 
@@ -104,6 +130,20 @@ local math_floor = math.floor
 local next = next
 local Localize = Localize
 local ScriptUnit_extension = ScriptUnit.extension
+
+-- Group of a debuff: mod.debuffs only holds the enabled ones, default_debuffs every debuff the mod knows (the
+-- stagger row and the editor's preview list add rows either way, so keep the group when a toggle is off).
+local function debuff_group(name)
+	local def = (mod.debuffs and mod.debuffs[name]) or (mod.default_debuffs and mod.default_debuffs[name])
+
+	return def and def.group or nil
+end
+
+local function debuff_style(name)
+	local group = debuff_group(name)
+
+	return group and mod.debuff_styles[group] or nil
+end
 
 -----------------------------------------------------------------------
 -- Widget definition
@@ -303,27 +343,9 @@ end
 
 -- Re-reads the size settings into the module tables the widget definition and layout_rows read.
 -- The module load above seeds them; the editor calls this before building a preview widget so a
--- settings change shows up without a mod reload. `size` is mutated in place: template.size and the
--- widget definition both hold a reference to that table.
+-- settings change shows up without a mod reload.
 local function refresh_layout()
-	hb_size_width = fs.hb_size_width
-	hb_size_height = fs.hb_size_height
-	draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
-	size[1] = 200
-	size[2] = hb_size_height
-	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 40) or (-hb_size_height - 16)
-	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
-	col_step = (calculate_icon_size() + (20 * fs.debuff_gap_padding_scale)) * fs.text_scale
-	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
-	base_gap = -40 * fs.text_scale
-	name_x = (size[1] - 25) * fs.text_scale + base_gap
-	icon_x = (size[1] + (1 * (fs.debuff_gap_name_icon_offset * 10))) * fs.text_scale + base_gap
-	stack_x = (size[1] + (120 * fs.debuff_gap_icon_stack_offset)) * fs.text_scale + base_gap
-
-	if fs.debuff_stack_on_icon then
-		stack_x = ((size[1] + (100 * fs.debuff_gap_icon_stack_offset)) + (calculate_icon_size())) * fs.text_scale
-			+ base_gap
-	end
+	compute_layout()
 end
 
 template.refresh_layout = refresh_layout
@@ -342,39 +364,7 @@ template.on_enter = function(widget, marker, template)
 	content.dbf_built = false
 	content.draw_dbf = false
 
-	hb_size_width = fs.hb_size_width
-	hb_size_height = fs.hb_size_height
-	draw_distance_setting = fs.draw_distance_broadphase or fs.draw_distance
-	size = {
-		200,
-		hb_size_height,
-	}
-	base_y = (fs.hb_text_top_left_01 and -hb_size_height - 80) * fs.debuff_y_offset
-		or (-hb_size_height - 16) * fs.debuff_y_offset
-	row_step = (hb_size_height + 8 * fs.debuff_gap_padding_scale) + (calculate_icon_size()) * fs.text_scale
-
-	base_offset = (-size[1] * fs.debuff_x_offset) * fs.text_scale
-
-	if fs.debuff_horizontal then
-		base_offset = (-hb_size_width * 3 * fs.debuff_x_offset) * fs.text_scale
-	end
-
-	base_gap = -40 * fs.text_scale
-	name_x = (size[1] - 15) * fs.text_scale + base_gap
-	icon_x = ((size[1] + (1 * (fs.debuff_gap_name_icon_offset * 15))) + (calculate_icon_size())) * fs.text_scale
-		+ base_gap
-	stack_x = ((size[1] + (fs.debuff_gap_icon_stack_offset * 20)) + (calculate_icon_size())) * fs.text_scale - base_gap
-
-	if fs.debuff_stack_on_icon then
-		stack_x = ((size[1] + (fs.debuff_gap_name_icon_offset * 10)) + (calculate_icon_size() * 2)) * fs.text_scale
-			- base_gap
-	end
-
-	if fs.debuff_stack_on_icon then
-		col_step = (calculate_icon_size() + (30 * fs.debuff_gap_padding_scale)) * fs.text_scale
-	else
-		col_step = (calculate_icon_size() + (60 * fs.debuff_gap_padding_scale)) * fs.text_scale
-	end
+	compute_layout()
 
 	content.breed_tags = mod.get_breed_tags(unit)
 	content.unit_data_extension = unit_data_extension
@@ -525,15 +515,10 @@ local function layout_rows(widget, scale, dt, ctx)
 			local entry = active[i]
 			local name = entry.name
 			local max_stacks = entry.max_stacks
-			local icon = mod.debuffs
-					and mod.debuffs[name]
-					and mod.debuffs[name].group
-					and mod.debuff_styles[mod.debuffs[name].group]
-					and mod.debuff_styles[mod.debuffs[name].group].icon
-				or nil
+			local def_style = debuff_style(name)
+			local icon = (def_style and def_style.icon) or name
 			local debuff_type = entry.type
 
-			icon = icon or name
 			local existing
 
 			if debuff_type == "dot" then
@@ -1053,12 +1038,9 @@ local function layout_rows(widget, scale, dt, ctx)
 			end
 
 			if state then
-				content[icon_id] = mod.debuffs
-						and mod.debuffs[name]
-						and mod.debuffs[name].group
-						and mod.debuff_styles[mod.debuffs[name].group]
-						and mod.debuff_styles[mod.debuffs[name].group].icon
-					or "content/ui/materials/icons/generic/danger"
+				local def_style = debuff_style(name)
+
+				content[icon_id] = (def_style and def_style.icon) or "content/ui/materials/icons/generic/danger"
 
 				-- Add percentage text
 				local stack_buff_percentage = ""
@@ -1139,21 +1121,15 @@ local function layout_rows(widget, scale, dt, ctx)
 					content[name_text_id] = ""
 				end
 
-				-- colour mutation
-				local colour = (
-					mod.debuffs
-					and mod.debuffs[name]
-					and mod.debuffs[name].group
-					and mod.debuff_styles[mod.debuffs[name].group]
-					and mod.debuff_styles[mod.debuffs[name].group].colour
-				) or { 255, 255, 255, 255 }
+-- colour mutation
+			local colour = (def_style and def_style.colour) or { 255, 255, 255, 255 }
 
-				icon_style.color[2] = colour[2] or 255
-				icon_style.color[3] = colour[3] or 255
-				icon_style.color[4] = colour[4] or 255
+			icon_style.color[2] = colour[2] or 255
+			icon_style.color[3] = colour[3] or 255
+			icon_style.color[4] = colour[4] or 255
 
-				-- Staggered colour should follow the stagger colour specifically
-				if fs.debuff_stagger_enable and mod.debuffs[name] and mod.debuffs[name].group == "stagger" then
+			-- Staggered colour should follow the stagger colour specifically
+			if fs.debuff_stagger_enable and debuff_group(name) == "stagger" then
 					icon_style.color[2] = fs.outline_stagger_colour[2] or 100
 					icon_style.color[3] = fs.outline_stagger_colour[3] or 200
 					icon_style.color[4] = fs.outline_stagger_colour[4] or 255

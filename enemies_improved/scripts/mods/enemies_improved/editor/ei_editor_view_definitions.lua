@@ -343,7 +343,7 @@ do
 end
 
 widget_definitions.pv_enemy = button_widget("pv_enemy", cx(-860, 420), 330, 420, 40, 16)
-widget_definitions.pv_3d = button_widget("pv_3d", cx(-430, 130), 330, 130, 40, 16)
+widget_definitions.pv_debuffs = button_widget("pv_debuffs", cx(-430, 130), 330, 130, 40, 16)
 for i, id in ipairs({ "pv_combat", "pv_alert", "pv_stagger", "pv_tagged" }) do
 	widget_definitions[id] = button_widget(id, cx(-860 + (i - 1) * 142, 134), 376, 134, 40, 15)
 end
@@ -487,6 +487,8 @@ end
 for i = 1, L.PK_ROWS do
 	pk_button("pk_row_" .. i, L.PK_ROW_H)
 end
+-- optional pinned row above the list (the debuff popup keeps the 3D toggle on it)
+pk_button("pk_head", L.PK_ROW_H)
 pk_button("pk_up", L.PK_ARROW_H)
 pk_button("pk_down", L.PK_ARROW_H)
 

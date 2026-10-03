@@ -207,6 +207,24 @@ View.on_enter = function(self)
 		self._breed_label[b.name] = b.label
 		self._breed_opts[i] = { value = b.name, label = b.label }
 	end
+	-- every debuff the mod knows (the settings toggles are ignored: the preview list must offer them all),
+	-- flat and sorted by label
+	self._debuff_opts = {}
+	local groups = S.debuff_groups()
+	for i = 1, #groups do
+		local names = groups[i].names
+		for k = 1, #names do
+			self._debuff_opts[#self._debuff_opts + 1] = { value = names[k], label = S.debuff_label(names[k]) }
+		end
+	end
+	table.sort(self._debuff_opts, function(a, b)
+		if a.label ~= b.label then
+			return a.label < b.label
+		end
+		return a.value < b.value
+	end)
+	-- the debuffs worn by the preview enemy; dropped when the editor closes
+	self._pv_debuffs = {}
 
 	-- Pools.
 	self._slots = {}
@@ -254,7 +272,7 @@ View.on_enter = function(self)
 	for i = 1, L.PRESETS do
 		self._cp_ids[#self._cp_ids + 1] = "cp_pre_" .. i
 	end
-	self._pk_ids = { "pk_veil", "pk_panel", "pk_up", "pk_down" }
+	self._pk_ids = { "pk_veil", "pk_panel", "pk_head", "pk_up", "pk_down" }
 	for i = 1, L.PK_ROWS do
 		self._pk_ids[#self._pk_ids + 1] = "pk_row_" .. i
 	end
@@ -281,7 +299,7 @@ View.on_enter = function(self)
 	end
 	set_label(w.cp_default, LOC("ei_default"))
 	set_label(w.cp_done, LOC("ei_done"))
-	set_label(w.pv_3d, LOC("ei_preview_3d"))
+	set_label(w.pv_debuffs, LOC("ei_preview_debuffs"))
 	set_label(w.pv_combat, LOC("ei_preview_combat"))
 	set_label(w.pv_alert, LOC("ei_preview_alert"))
 	set_label(w.pv_stagger, LOC("ei_preview_stagger"))
@@ -359,16 +377,18 @@ View._wire = function(self)
 		select_style(self._cell_w[i])
 	end
 	bind("pv_enemy", "cb_pv_enemy")
-	bind("pv_3d", "cb_pv_3d")
+	bind("pv_debuffs", "cb_pv_debuffs")
 	for _, flag in ipairs({ "combat", "alert", "stagger", "tagged" }) do
 		bind("pv_" .. flag, "cb_pv_flag", flag)
 		select_style(w["pv_" .. flag])
 	end
-	select_style(w.pv_3d)
+	select_style(w.pv_debuffs)
 	for i = 1, L.PK_ROWS do
 		bind("pk_row_" .. i, "_pk_pick", i)
 		select_style(w["pk_row_" .. i])
 	end
+	bind("pk_head", "cb_pk_head")
+	select_style(w.pk_head)
 	bind("pk_up", "_pk_scroll", -L.PK_ROWS)
 	bind("pk_down", "_pk_scroll", L.PK_ROWS)
 	for i = 1, L.PRESETS do
@@ -446,13 +466,47 @@ View.cb_pv_flag = function(self, flag)
 	self:_refresh_preview_controls()
 end
 
-View.cb_pv_3d = function(self)
+View.cb_pv_debuffs = function(self)
+	self:_touch()
+	-- multi picker: a click toggles the debuff on the preview and the list stays open (the pinned head row
+	-- keeps the 3D toggle, which used to be its own button)
+	self:picker_open("pv_debuffs", self._debuff_opts, self._pv_debuffs, nil, 560, {
+		multi = true,
+		head = true,
+		on_toggle = function(name)
+			if self._pv_debuffs[name] then
+				self._pv_debuffs[name] = nil
+			else
+				self._pv_debuffs[name] = true
+			end
+			self:_pv_push_debuffs()
+			self:_refresh_preview_controls()
+		end,
+	})
+end
+
+-- pinned first row of the debuff popup: the 3D toggle (it used to sit on its own button)
+View.cb_pk_head = function(self)
 	self:_touch()
 	local st = self._st
 	st.threed = not (st.threed ~= false)
 	mod:set("ei_preview_3d_enabled", st.threed)
 	self:_pv_push_flags()
 	self:_refresh_preview_controls()
+
+	if self._pk then
+		self:_pk_refresh()
+	end
+end
+
+-- debuffs worn by the preview enemy: a sorted name list, the preview turns them into rows
+View._pv_push_debuffs = function(self)
+	local names = {}
+	for name in next, self._pv_debuffs do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	self:_pv_call("set_debuffs", names)
 end
 
 View.cb_pv_enemy = function(self)
@@ -489,7 +543,13 @@ View._refresh_preview_controls = function(self)
 	local w = self._widgets_by_name
 	local st = self._st
 	set_label(w.pv_enemy, LOC("ei_preview_enemy") .. ": " .. fit(self._breed_label[st.breed] or st.breed, 34))
-	w.pv_3d.content.hotspot.is_selected = st.threed ~= false
+	local worn = 0
+	for _ in next, self._pv_debuffs do
+		worn = worn + 1
+	end
+	local label = LOC("ei_preview_debuffs")
+	set_label(w.pv_debuffs, worn > 0 and (label .. " (" .. worn .. ")") or label)
+	w.pv_debuffs.content.hotspot.is_selected = worn > 0
 	for _, flag in ipairs({ "combat", "alert", "stagger", "tagged" }) do
 		w["pv_" .. flag].content.hotspot.is_selected = st[flag] == true
 	end
@@ -1421,10 +1481,16 @@ end
 -- ---------------------------------------------------------------------------
 
 -- options = { { value = <any>, label = "text" }, ... }; on_select(value) runs after the picker closed.
-View.picker_open = function(self, anchor_id, options, current, on_select, width)
+-- opts (optional) = { multi = true, head = true, on_toggle = function(value) end }
+--   multi   the rows are checkboxes: a pick calls on_toggle and the picker stays open; `current` is a set
+--           (name -> true) instead of a single value
+--   head    one pinned row above the list (cb_pk_head)
+View.picker_open = function(self, anchor_id, options, current, on_select, width, opts)
 	if self._pk or self._cp or #options == 0 then
 		return
 	end
+	opts = opts or {}
+	local head = opts.head and true or false
 	local ax, ay = self:_scenegraph_position(anchor_id)
 	local aw, ah = self:_scenegraph_size(anchor_id)
 	local rw, rh = self:_scenegraph_size("root")
@@ -1432,7 +1498,8 @@ View.picker_open = function(self, anchor_id, options, current, on_select, width)
 	local n = math_min(total, L.PK_ROWS)
 	local scroll = total > n
 	local w = math_min(math_max(width or aw, PK_W_MIN), 700)
-	local h = PK_PAD * 2 + n * PK_STEP - (PK_STEP - PK_ROW_H) + (scroll and 2 * (PK_ARROW_H + 2) or 0)
+	local head_h = head and (PK_ROW_H + 4) or 0
+	local h = PK_PAD * 2 + head_h + n * PK_STEP - (PK_STEP - PK_ROW_H) + (scroll and 2 * (PK_ARROW_H + 2) or 0)
 
 	-- Below the field if it fits, else above; clamped inside the panel and right of the preview stage.
 	local x = math_clamp(ax, PK_LEFT_MIN + w / 2, rw / 2 - w / 2 - 10)
@@ -1445,6 +1512,11 @@ View.picker_open = function(self, anchor_id, options, current, on_select, width)
 	self:_set_scenegraph_size("pk_panel", w, h)
 	self:_set_scenegraph_position("pk_panel", x, top + h / 2)
 	local y = top + PK_PAD
+	if head then
+		self:_set_scenegraph_size("pk_head", w - 2 * PK_PAD, PK_ROW_H)
+		self:_set_scenegraph_position("pk_head", x, y + PK_ROW_H / 2)
+		y = y + head_h
+	end
 	if scroll then
 		self:_set_scenegraph_size("pk_up", w - 2 * PK_PAD, PK_ARROW_H)
 		self:_set_scenegraph_position("pk_up", x, y + PK_ARROW_H / 2)
@@ -1473,6 +1545,9 @@ View.picker_open = function(self, anchor_id, options, current, on_select, width)
 		options = options,
 		current = current,
 		on_select = on_select,
+		multi = opts.multi and true or false,
+		on_toggle = opts.on_toggle,
+		head = head,
 		n = n,
 		scroll = scroll,
 		offset = math_clamp(index - math.ceil(n / 2), 0, total - n),
@@ -1514,12 +1589,20 @@ View._pk_refresh = function(self)
 	pk.offset = math_clamp(pk.offset, 0, total - pk.n)
 	w.pk_veil.content.visible = true
 	w.pk_panel.content.visible = true
+	if pk.head then
+		local threed = self._st.threed ~= false
+		w.pk_head.content.visible = true
+		w.pk_head.content.original_text = LOC("ei_preview_3d") .. ": " .. (threed and self._t.on or self._t.off)
+		w.pk_head.content.hotspot.is_selected = threed
+		w.pk_head.style.text.default_color = COL.gold
+		w.pk_head.style.text.hover_color = COL.hover
+	end
 	for i = 1, L.PK_ROWS do
 		local b = w["pk_row_" .. i]
 		local o = i <= pk.n and pk.options[pk.offset + i] or nil
 		b.content.visible = o ~= nil
 		if o then
-			local is_cur = o.value == pk.current
+			local is_cur = pk.multi and pk.current[o.value] == true or o.value == pk.current
 			b.content.original_text = o.label
 			b.content.hotspot.is_selected = is_cur
 			b.style.text.default_color = is_cur and COL.gold or COL.default
@@ -1538,11 +1621,19 @@ end
 View._pk_pick = function(self, i)
 	local pk = self._pk
 	local o = pk and pk.armed and pk.options[pk.offset + i]
-	if o then
-		local on_select = pk.on_select
-		self:picker_close()
-		on_select(o.value)
+	if not o then
+		return
 	end
+	if pk.multi then
+		-- a checkbox: toggled in place, the list stays open so more can be added
+		pk.on_toggle(o.value)
+		self:_pk_refresh()
+
+		return
+	end
+	local on_select = pk.on_select
+	self:picker_close()
+	on_select(o.value)
 end
 
 View._pk_scroll = function(self, delta)

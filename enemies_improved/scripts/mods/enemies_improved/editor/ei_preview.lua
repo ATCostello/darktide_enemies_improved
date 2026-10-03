@@ -565,6 +565,58 @@ function Preview:set_focus_debuff(name)
 	end
 end
 
+-- one row of a preview debuff: the game's own template for the stacks / stat buffs, the mod's own for the type
+local function preview_debuff_row(name)
+	local template = buff_template_of(name)
+	local max = template and template.max_stacks
+	local stacks = type(max) == "number" and max >= 1 and math_min(max, 31) or 1
+	local def = mod.default_debuffs and mod.default_debuffs[name]
+
+	return {
+		name = name,
+		stacks = stacks,
+		max_stacks = stacks,
+		type = (def and def.type) or "utility",
+		stat_buffs = template and template.stat_buffs,
+		conditional_stat_buffs = template and template.conditional_stat_buffs,
+	}
+end
+
+-- Editor debuff list: the debuffs the user put on the preview enemy (they live until the editor closes). Their rows
+-- are appended to the collected ones, so a debuff that is switched off in the settings still shows up here.
+function Preview:set_debuffs(names)
+	if self._destroyed then
+		return
+	end
+
+	local old = self._debuff_names
+
+	if old and #old == #names then
+		local same = true
+
+		for i = 1, #names do
+			if old[i] ~= names[i] then
+				same = false
+
+				break
+			end
+		end
+
+		if same then
+			return
+		end
+	end
+
+	self._debuff_names = names
+	self._debuff_rows = {}
+
+	for i = 1, #names do
+		self._debuff_rows[#self._debuff_rows + 1] = preview_debuff_row(names[i])
+	end
+
+	self._next_tick = 0
+end
+
 function Preview:on_resolution_modified()
 	self._layout_dirty = true
 end
@@ -931,6 +983,44 @@ local function apply_depth_fade(widget, fs)
 	end
 end
 
+local function fill_worn_rows(rows, count, worn, skip_stagger)
+	for i = 1, #worn do
+		local f = worn[i]
+		local shown = skip_stagger and f.name == "staggered" or false
+
+		for k = 1, count do
+			if rows[k].name == f.name then
+				shown = true
+
+				break
+			end
+		end
+
+		if not shown then
+			count = count + 1
+
+			local entry = rows[count]
+
+			if not entry then
+				entry = {}
+				rows[count] = entry
+			end
+
+			entry.name = f.name
+			entry.stacks = f.stacks
+			entry.max_stacks = f.max_stacks
+			entry.type = f.type
+			entry.duration = nil
+			entry.stat_buffs = f.stat_buffs
+			entry.conditional_stat_buffs = f.conditional_stat_buffs
+			entry.combined = nil
+			entry.from_keyword = nil
+		end
+	end
+
+	return count
+end
+
 -- one HUD-style update of the widget: runs at the general throttle rate like the HUD's update functions
 function Preview:_apply_widget_state(fs, dt, t)
 	local widget, HB, MK, DB = self._widget, self._HB, self._MK, self._DB
@@ -1029,17 +1119,9 @@ function Preview:_apply_widget_state(fs, dt, t)
 
 			widget._active_count = count
 		end
-
-		local ctx = self._ctx
-
-		ctx.breed = self._breed
-		ctx.show_on_body = res.debuffs.on_body and true or false
-		ctx.draw = true
-
-		DB.layout_rows(widget, 1, dt, ctx)
 	elseif DB and DB.layout_rows then
-		-- off: empty the rows once
-		if self._nact > 0 or (widget._active_count or 0) > 0 then
+		-- off: empty the collected rows once (self._nact is the "there were any" marker)
+		if self._nact > 0 then
 			local act = self._buff_list
 
 			for i = self._nact, 1, -1 do
@@ -1054,15 +1136,42 @@ function Preview:_apply_widget_state(fs, dt, t)
 			end
 
 			widget._active_count = 0
-
-			local ctx = self._ctx
-
-			ctx.breed = self._breed
-			ctx.show_on_body = false
-			ctx.draw = true
-
-			DB.layout_rows(widget, 1, dt, ctx)
 		end
+	end
+
+	-- The debuffs of the editor's debuff list, added on top of the collected ones: a debuff that is switched off in
+	-- the settings still shows, and because picking one in the editor is an explicit request it shows even when the
+	-- whole debuff feature is off. A name the collector already put on the enemy is left to it, as is the stagger.
+	local worn = self._debuff_rows
+
+	if worn and #worn > 0 then
+		if debuffs_on then
+			-- the collector rewrote the rows and the count this tick, so the tail can just be appended
+			local rows = widget._active or {}
+
+			widget._active_count = fill_worn_rows(rows, widget._active_count or 0, worn, flags.stagger)
+			widget._active = rows
+		else
+			-- nothing runs the collector while the debuffs are off, so build the rows from scratch: a deselected
+			-- debuff then really goes. (Fresh table as well, because layout_rows' combine pass can leave
+			-- widget._active_count ahead of the array it truncated.)
+			local rows = {}
+
+			widget._active_count = fill_worn_rows(rows, 0, worn, false)
+			widget._active = rows
+		end
+	end
+
+	if DB and DB.layout_rows and (debuffs_on or (worn and #worn > 0)) then
+		local ctx = self._ctx
+
+		ctx.breed = self._breed
+		-- on-body placement is its own setting (content.breed gives layout_rows the height it measures against,
+		-- the preview has no marker / unit so it takes the same fallback the HUD takes)
+		ctx.show_on_body = res.debuffs.on_body and true or false
+		ctx.draw = true
+
+		DB.layout_rows(widget, 1, dt, ctx)
 	end
 
 	-- healthbar / text / glow

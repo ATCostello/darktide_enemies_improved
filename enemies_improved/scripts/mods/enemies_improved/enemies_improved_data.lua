@@ -555,6 +555,30 @@ mod.settings_widgets = {}
 
 local fonts = mod._get_font_options()
 
+table.insert(mod.settings_widgets, {
+	setting_id = "editor_settings",
+	type = "group",
+	tab = "Visual Editor",
+	sub_widgets = {
+		{
+			setting_id = "open_editor",
+			type = "button",
+			button_text = "open_editor_button",
+			button_trigger = "pressed",
+			function_name = "open_editor",
+		},
+		{
+			setting_id = "open_editor_keybind",
+			type = "keybind",
+			default_value = {},
+			keybind_global = false,
+			keybind_trigger = "pressed",
+			keybind_type = "function_call",
+			function_name = "open_editor",
+		},
+	},
+})
+
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
 	setting_id = "general_settings",
@@ -2844,36 +2868,6 @@ table.insert(mod.settings_widgets, {
 			decimals_number = 0,
 			step_size_value = 1,
 			tooltip = "off_screen_throttle_rate_tooltip",
-		},
-	},
-})
-
------------------------------------------------------------------------
--- Native editor: schema index + editor entry point
------------------------------------------------------------------------
--- DMF still owns this options page, so DMF keeps seeding the defaults from mod.settings_widgets and
--- the runtime readers stay untouched. The native editor needs a flat id -> widget / default index
--- (utils/settings_api.lua), built from the very same tree so there is only one source of truth.
-table.insert(mod.settings_widgets, {
-	setting_id = "editor_settings",
-	type = "group",
-	tab = "Visual Editor",
-	sub_widgets = {
-		{
-			setting_id = "open_editor",
-			type = "button",
-			button_text = "open_editor_button",
-			button_trigger = "pressed",
-			function_name = "open_editor",
-		},
-		{
-			setting_id = "open_editor_keybind",
-			type = "keybind",
-			default_value = {},
-			keybind_global = false,
-			keybind_trigger = "pressed",
-			keybind_type = "function_call",
-			function_name = "open_editor",
 		},
 	},
 })

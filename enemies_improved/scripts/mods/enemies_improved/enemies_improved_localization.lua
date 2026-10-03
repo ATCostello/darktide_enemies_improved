@@ -3693,6 +3693,9 @@ local insert_editor_localisation = function(localisation_table)
 		ei_preview_enemy = {
 			en = "Enemy",
 		},
+		ei_preview_debuffs = {
+			en = "Debuffs",
+		},
 		ei_preview_3d = {
 			en = "3D",
 		},
