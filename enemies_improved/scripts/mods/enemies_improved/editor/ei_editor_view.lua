@@ -1,15 +1,3 @@
--- Enemies Improved editor view: 7 settings pages, each split into sub-pages (the chip row), + live enemy preview (left).
--- A sub-page shows ONLY its own rows and always fits the 14-row list (no scrolling; the scrollbar stays hidden).
--- Native BaseView in the BBM / Skitarius family: a fixed pool of pre-built widgets filled from row specs
--- (editor/ei_editor_pages.lua, built on mod.settings_api), a hand-made slider, a shared dropdown picker,
--- a colour popup and the Preview module (editor/ei_preview.lua, optional: the editor works without it).
--- Engine facts relied on (SRC = decompiled game source):
---   BaseView.update/draw/on_exit/trigger_resolution_update: ui/views/base_view.lua:476-520, 542-564, 302-320, 367-373
---     (update must return super's booleans; every scenegraph edit makes the next update call on_resolution_modified)
---   hotspot pass (pressed_callback fires mid-draw, force_disabled, hidden widgets keep a stale is_hover):
---     managers/ui/ui_passes.lua:960-1190; skipped when content.visible == false: managers/ui/ui_widget.lua:428-438
---   style / content are deep-cloned per widget in UIWidget.init (ui_widget.lua:31-50), so per-widget style edits are safe
---   Same dropdown picker / text input / two-click patterns as the BBM editor (better_buff_management/editor).
 require("scripts/ui/views/base_view")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local definition_path = "enemies_improved/scripts/mods/enemies_improved/editor/ei_editor_view_definitions"
@@ -19,7 +7,6 @@ local View = class("EnemiesImprovedEditorView", "BaseView")
 
 local mod = get_mod("enemies_improved")
 
--- Set in View.init from the definitions' layout table (single source of the pool sizes / geometry).
 local L
 local Pages
 
@@ -38,9 +25,7 @@ local COL = {
 local SEL_EDGE = { 255, 255, 214, 96 }
 local SEL_FILL = { 205, 120, 96, 30 }
 
--- Slot widget keys, in the order of VIS below.
 local SLOT_KEYS = { "lbl", "hov", "btn", "dec", "sl", "inc", "val", "tg", "sw", "rs" }
--- Which slot widgets each row kind shows (btn / tg / rs are refined per row).
 local VIS = {
 	header = { true, false, false, false, false, false, false, false, false, false },
 	note = { true, true, true, false, false, false, false, false, false, false },
@@ -53,7 +38,6 @@ local VIS = {
 }
 local FMT = { [0] = "%.0f", "%.1f", "%.2f", "%.3f", "%.4f" }
 
--- Colour popup channel -> index in {A,R,G,B}, letter, slider fill colour.
 local CH_IDX = { 2, 3, 4, 1 }
 local CH_LETTER = { "R", "G", "B", "A" }
 local CH_FILL = { { 255, 230, 70, 70 }, { 255, 70, 200, 90 }, { 255, 80, 130, 255 }, { 255, 200, 200, 200 } }
@@ -62,7 +46,7 @@ local WHEEL_ROWS = 3
 local NO_ROWS = {}
 local EMPTY_SUB = { label = "", rows = NO_ROWS }
 local PK_ROW_H, PK_STEP, PK_ARROW_H, PK_PAD, PK_W_MIN, PK_WHEEL = 40, 42, 30, 8, 260, 2
-local PK_LEFT_MIN = -276 -- popups never reach the preview stage (x < -300)
+local PK_LEFT_MIN = -276
 
 local function fit(text, max_chars)
 	if Utf8 and Utf8.string_length(text) > max_chars then
@@ -75,8 +59,6 @@ local function LOC(key)
 	return mod:localize(key)
 end
 
--- Show / hide a pooled widget. Hidden widgets are skipped by the draw loop, so their hotspot state
--- is frozen: reset it here or a stale hover / press would stick.
 local function show(widget, on)
 	local content = widget.content
 	if content.visible ~= on then
@@ -99,7 +81,6 @@ local function set_text(widget, text)
 	end
 end
 
--- terminal_button: the label lives in content.original_text.
 local function set_label(button, text)
 	local content = button.content
 	if content.original_text ~= text then
@@ -150,7 +131,7 @@ local function ed_state()
 		}
 		mod._ei_ed = st
 	end
-	st.sub = st.sub or {} -- active sub-page per page index (kept across editor opens)
+	st.sub = st.sub or {}
 	return st
 end
 
@@ -164,7 +145,7 @@ View.init = function(self, settings, context)
 	self._first, self._sub = 1, 1
 	self._tree = {}
 	self._grid, self._cell_chars = nil, 20
-	self._confirm = nil -- row id / "page" while waiting for the second click
+	self._confirm = nil
 	self._message = nil
 	self._hover_row = nil
 	self._pending, self._tree_dirty, self._draw_dirty = false, false, true
@@ -191,7 +172,6 @@ View.on_enter = function(self)
 	self._st = st
 	st.threed = mod:get("ei_preview_3d_enabled") ~= false
 
-	-- Enemy data (static for the session): tree, picker, label lookups.
 	self._types = S.types()
 	self._type_label = {}
 	self._breeds_by_type = {}
@@ -207,8 +187,7 @@ View.on_enter = function(self)
 		self._breed_label[b.name] = b.label
 		self._breed_opts[i] = { value = b.name, label = b.label }
 	end
-	-- every debuff the mod knows (the settings toggles are ignored: the preview list must offer them all),
-	-- flat and sorted by label
+
 	self._debuff_opts = {}
 	local groups = S.debuff_groups()
 	for i = 1, #groups do
@@ -223,10 +202,8 @@ View.on_enter = function(self)
 		end
 		return a.value < b.value
 	end)
-	-- the debuffs worn by the preview enemy; dropped when the editor closes
 	self._pv_debuffs = {}
 
-	-- Pools.
 	self._slots = {}
 	for i = 1, L.ROWS do
 		local slot = { i = i, y = L.LIST_TOP + L.PITCH / 2 + (i - 1) * L.PITCH, btn_w = L.X.btn[2] }
@@ -239,7 +216,7 @@ View.on_enter = function(self)
 	for i = 1, L.TREE_ROWS do
 		self._tree_w[i] = w["t_" .. i]
 	end
-	-- grid cells (Debuffs page): the text colour tables are per cell and edited in place
+
 	self._cell_w, self._cell_col = {}, {}
 	for i = 1, L.CELLS do
 		local cell = w["g_" .. i]
@@ -277,7 +254,6 @@ View.on_enter = function(self)
 		self._pk_ids[#self._pk_ids + 1] = "pk_row_" .. i
 	end
 
-	-- Static texts (cached: _fill_slot runs on every refresh).
 	self._t = {
 		on = LOC("ei_on"),
 		off = LOC("ei_off"),
@@ -304,20 +280,17 @@ View.on_enter = function(self)
 	set_label(w.pv_alert, LOC("ei_preview_alert"))
 	set_label(w.pv_stagger, LOC("ei_preview_stagger"))
 	set_label(w.pv_tagged, LOC("ei_preview_tagged"))
-	-- tree buttons: left-aligned text (indent set per row)
 	for i = 1, L.TREE_ROWS do
 		local ts = self._tree_w[i].style.text
 		ts.text_horizontal_alignment = "left"
 		ts.offset[1] = 12
 	end
-	-- everything pooled starts hidden; _set_page / _refresh show what is needed
 	for i = 1, L.ROWS do
 		for k = 1, #SLOT_KEYS do
 			show(self._slots[i][SLOT_KEYS[k]], false)
 		end
 	end
 
-	-- Draw list (rebuilt from content.visible, see _rebuild_draw).
 	self._draw = {}
 
 	self._serial = S.serial
@@ -329,7 +302,6 @@ View.on_enter = function(self)
 	self:_set_page(math_clamp(st.page or 1, 1, L.TABS))
 end
 
--- Buttons whose second click must not be swallowed as a double click (two-click confirm).
 local CONFIRM_BUTTONS = { btn_reset_page = true }
 
 View._wire = function(self)
@@ -339,7 +311,6 @@ View._wire = function(self)
 		if b and b.content.hotspot then
 			local hotspot = b.content.hotspot
 			hotspot.pressed_callback = callback(self, ...)
-			-- Fast repeat clicks arrive as double clicks; without this they would be swallowed.
 			if not CONFIRM_BUTTONS[id] then
 				hotspot.double_click_callback = hotspot.pressed_callback
 			end
@@ -399,10 +370,9 @@ View._wire = function(self)
 end
 
 -- ---------------------------------------------------------------------------
--- Preview (optional module; every call is pcall-wrapped, one error disables it)
+-- Preview
 -- ---------------------------------------------------------------------------
 
--- only flags: View.update tears the preview down (a failure inside draw must not destroy it mid-draw)
 View._pv_fail = function(self, what, err)
 	self._pv_dead = true
 	mod:error("[ei_editor] preview %s failed, preview disabled: %s", what, tostring(err))
@@ -435,7 +405,6 @@ View._preview_create = function(self)
 		return
 	end
 	self._preview = p
-	-- the crash guard in Preview.new may have flipped the setting off: show the real state
 	st.threed = mod:get("ei_preview_3d_enabled") ~= false
 	self:_pv_call("set_subject", { breed_name = st.breed })
 	self:_pv_push_flags()
@@ -468,8 +437,6 @@ end
 
 View.cb_pv_debuffs = function(self)
 	self:_touch()
-	-- multi picker: a click toggles the debuff on the preview and the list stays open (the pinned head row
-	-- keeps the 3D toggle, which used to be its own button)
 	self:picker_open("pv_debuffs", self._debuff_opts, self._pv_debuffs, nil, 560, {
 		multi = true,
 		head = true,
@@ -485,7 +452,6 @@ View.cb_pv_debuffs = function(self)
 	})
 end
 
--- pinned first row of the debuff popup: the 3D toggle (it used to sit on its own button)
 View.cb_pk_head = function(self)
 	self:_touch()
 	local st = self._st
@@ -499,7 +465,6 @@ View.cb_pk_head = function(self)
 	end
 end
 
--- debuffs worn by the preview enemy: a sorted name list, the preview turns them into rows
 View._pv_push_debuffs = function(self)
 	local names = {}
 	for name in next, self._pv_debuffs do
@@ -520,8 +485,6 @@ View.cb_pv_enemy = function(self)
 	end, 360)
 end
 
--- Debuffs page: the preview shows the debuff of the hovered row (else of the last edited one) next to its own
--- bleed / burn / rend rows. Only calls the preview when the name changes; nil on every other row / page.
 View._update_focus = function(self)
 	local hov = self._hover_row
 	local name
@@ -558,9 +521,6 @@ end
 -- ---------------------------------------------------------------------------
 -- State helpers
 -- ---------------------------------------------------------------------------
-
--- Every callback starts here: any other action cancels a pending two-click confirm and the
--- one-shot status message.
 View._touch = function(self)
 	local had = self._confirm ~= nil or self._message ~= nil
 	local row_confirm = self._confirm ~= nil and self._confirm ~= "page"
@@ -570,13 +530,10 @@ View._touch = function(self)
 		self._footer_dirty = true
 	end
 	if row_confirm then
-		-- the armed row still reads "Confirm"
 		self:_refresh_rows()
 	end
 end
 
--- A value was written through the settings API. Immediate = a click (apply now), else the tick
--- (<= every 0.1 s) applies it, so a slider drag does not rebuild the HUD settings every frame.
 View._written = function(self, immediate)
 	self._pending = true
 	self._tree_dirty = true
@@ -626,7 +583,6 @@ View._set_page = function(self, index)
 	local sub = st.sub[index] or 1
 	self._chip_mod, self._tree, self._tree_dirty = nil, {}, false
 	if self._is_enemies then
-		-- one chip per enemy type; the saved selection (a type or one of its breeds) picks the chip
 		self._sub_of_type, self._type_all, self._chip_mod = {}, {}, {}
 		local all = LOC("ei_type_all")
 		for i = 1, #subs do
@@ -644,13 +600,11 @@ View._set_page = function(self, index)
 	self:_set_sub(math_clamp(sub, 1, math_max(#subs, 1)), st.sel_scope, st.sel_key)
 end
 
--- Show sub-page `i` of the current page: ONLY its rows (or grid cells / the selected enemy type), list back at
--- the top. sel_scope / sel_key = the Enemies node to select (falls back to the type node when not in this type).
 View._set_sub = function(self, i, sel_scope, sel_key)
 	self:picker_close()
 	self:_cp_close()
 	if self._tree_dirty then
-		self:_refresh_tree() -- settles the gold flag of the chip we are leaving
+		self:_refresh_tree()
 	end
 	local sub = self._subs[i] or EMPTY_SUB
 	self._sub = i
@@ -674,7 +628,6 @@ View._set_sub = function(self, i, sel_scope, sel_key)
 	self:_refresh_all()
 end
 
--- Page-dependent geometry / visibility (label column, tree, chip row). Runs once per page change.
 View._layout_page = function(self)
 	local enemies = self._is_enemies
 	local lbl = enemies and L.LBL_NARROW or L.LBL_WIDE
@@ -693,12 +646,11 @@ View._layout_page = function(self)
 
 	if not enemies then
 		for i = 1, L.TREE_ROWS do
-			show(self._tree_w[i], false) -- on the Enemies page _refresh_tree shows what is needed
+			show(self._tree_w[i], false)
 		end
 	end
 	show(self._widgets_by_name.btn_reset_page, not enemies)
 
-	-- sub-page chips: all of them on one row across the right area (width <= 160; a little smaller font from 9 up)
 	local n = math_min(#self._subs, L.CHIPS)
 	local many = n >= 9
 	local gap = many and 4 or 6
@@ -716,7 +668,6 @@ View._layout_page = function(self)
 	end
 end
 
--- Per sub-page layout: the grid cells (Debuffs page).
 View._layout_sub = function(self)
 	if self._grid then
 		self:_layout_grid()
@@ -724,8 +675,6 @@ View._layout_sub = function(self)
 	self._draw_dirty = true
 end
 
--- Cells fill column by column: columns = ceil(n / 14) (<= 5; the colour grid has at least 3), every column <= 14
--- cells, cell width fills the right area.
 View._layout_grid = function(self)
 	local n = math_min(#self._rows, L.CELLS)
 	local cols = math_clamp(math.ceil(n / L.ROWS), self._grid == "colours" and 3 or 1, 5)
@@ -761,8 +710,6 @@ View._refresh_tabs = function(self)
 	end
 end
 
--- The active sub-page chip is selected + gold; on the Enemies page a chip is also gold while its type or any of
--- its breeds is modified.
 View._refresh_chips = function(self)
 	local chip_mod = self._chip_mod
 	for i = 1, math_min(#self._subs, L.CHIPS) do
@@ -831,7 +778,6 @@ end
 
 View._fill_slot = function(self, slot, row)
 	if slot.row ~= row then
-		-- a held slider must not keep writing into the row that scrolled in under it
 		slot.sl.content.dragging = nil
 	end
 	slot.row = row
@@ -915,7 +861,6 @@ View._fill_slot = function(self, slot, row)
 		self:_btn_width(slot, L.X.btn[2])
 		set_label(btn, confirming and row.confirm or row.button)
 		btn.content.hotspot.is_selected = confirming
-		-- two-click buttons keep the double-click swallow so a quick double click cannot confirm
 		btn.content.hotspot.double_click_callback = (row.confirm == nil) and slot.btn_cb or nil
 	elseif kind == "num" or kind == "int" then
 		local v = row.get() or row.min
@@ -937,13 +882,10 @@ View._fill_slot = function(self, slot, row)
 	end
 end
 
--- Rows in the list (grid pages have none: their cells are filled by _refresh_cells).
 View._list_total = function(self)
 	return self._grid and 0 or #self._rows
 end
 
--- One grid cell: label, selected state, text colour (the debuff group colour). A toggle cell is OFF = grey /
--- ON = group colour + selected; a colour cell is always group coloured and selected when it is not the default.
 View._fill_cell = function(self, i, row)
 	local cell = self._cell_w[i]
 	local cc = self._cell_col[i]
@@ -992,7 +934,7 @@ View._refresh_rows = function(self)
 	end
 	self:_update_scroll(self._widgets_by_name.scroll, first, total, L.ROWS, L.LIST_H)
 	self:_refresh_cells()
-	self._hover_row = nil -- rows moved under the cursor: re-resolve the description
+	self._hover_row = nil
 	self._draw_dirty = true
 end
 
@@ -1038,7 +980,7 @@ View.cb_btn = function(self, i)
 	self:_update_focus()
 	if kind == "note" then
 		if row.confirm and not armed then
-			self._confirm = row.id -- first click of a two-click button
+			self._confirm = row.id
 			self:_refresh_rows()
 		else
 			row.action()
@@ -1107,10 +1049,8 @@ View.cb_swatch = function(self, i)
 end
 
 -- ---------------------------------------------------------------------------
--- Enemies page: one chip per enemy type; the left column lists the selected type + its breeds
+-- Enemies page
 -- ---------------------------------------------------------------------------
-
--- True when the type or any of its breeds has an override (the chip turns gold).
 View._type_modified = function(self, type_id)
 	local S = self._S
 	if S.ov_is_modified("type", type_id) then
@@ -1125,8 +1065,6 @@ View._type_modified = function(self, type_id)
 	return false
 end
 
--- Tree of the selected type: its own row ("All <type>") followed by its breeds. The longest type has 10
--- breeds and the pool has L.TREE_ROWS (13) rows, so there is no scrolling; ponytail: extra breeds would be cut.
 View._build_tree = function(self, type_id)
 	local out = {}
 	if type_id then
@@ -1179,7 +1117,6 @@ View._refresh_tree = function(self)
 	self._draw_dirty = true
 end
 
--- Make (scope, key) the selected node of the CURRENT chip: its rows + the preview subject. No refresh.
 View._apply_node = function(self, scope, key)
 	self._sel_scope, self._sel_key = scope, key
 	local st = self._st
@@ -1201,7 +1138,6 @@ View._apply_node = function(self, scope, key)
 	self:_set_subject(scope == "type" and (self._S.representative(key) or st.breed) or key)
 end
 
--- Select a type or a breed. A node of another type switches to that type's chip first.
 View._select_node = function(self, scope, key)
 	local type_id = scope == "type" and key or self._S.type_of(key)
 	local index = self._sub_of_type and self._sub_of_type[type_id]
@@ -1223,8 +1159,6 @@ View.cb_tree = function(self, i)
 	end
 end
 
--- Debuffs page grids: a click toggles the debuff / opens the group colour popup. Hover / click also focus the
--- preview on the cell's debuff (_update_focus reads row.debuff_name from the hovered row / _edit_debuff).
 View.cb_cell = function(self, i)
 	local row = self._rows[i]
 	if not row then
@@ -1308,7 +1242,6 @@ View.cb_reset_page = function(self)
 		return
 	end
 	self:_touch()
-	-- only the CURRENT sub-page: list rows or grid cells (debuff toggles -> all on, colours -> all default)
 	local rows = self._rows
 	for i = 1, #rows do
 		local row = rows[i]
@@ -1324,8 +1257,6 @@ end
 -- ---------------------------------------------------------------------------
 -- Colour popup (right area only)
 -- ---------------------------------------------------------------------------
-
--- anchor_id = the swatch / cell node the popup opens next to
 View._cp_open = function(self, row, anchor_id)
 	if self._pk or self._cp or not row or row.kind ~= "color" then
 		return
@@ -1364,8 +1295,6 @@ View._cp_open = function(self, row, anchor_id)
 	put("cp_default", il + 95, py + 30 + 12 + 20)
 	put("cp_done", il + 299, py + 30 + 12 + 20)
 	self._widgets_by_name.cp_title.content.text = string.gsub(row.label or "", "^%s+", "")
-	-- armed = false: nothing is shown until the next update, when the moved scenegraph is live (and the
-	-- click that opened us cannot hit a popup widget drawn later in this same frame).
 	self._cp = { row = row, n = n, armed = false }
 	self:_pk_block(true)
 end
@@ -1429,7 +1358,6 @@ View.cb_cp_done = function(self)
 	end
 end
 
--- Called first thing in _handle_input while the popup is open.
 View._cp_input = function(self, input_service)
 	local cp = self._cp
 	local w = self._widgets_by_name
@@ -1454,7 +1382,6 @@ View._cp_input = function(self, input_service)
 	end
 end
 
--- Per-frame: live-apply a dragged channel slider.
 View._cp_poll = function(self)
 	local cp = self._cp
 	if not (cp and cp.armed) then
@@ -1476,15 +1403,8 @@ View._cp_poll = function(self)
 end
 
 -- ---------------------------------------------------------------------------
--- Dropdown picker: one pooled overlay (veil + panel + rows), copy of the BBM picker. Hotspots have
--- no z-blocking, so while a popup is open every other hotspot is muted with force_disabled.
+-- Dropdown picker
 -- ---------------------------------------------------------------------------
-
--- options = { { value = <any>, label = "text" }, ... }; on_select(value) runs after the picker closed.
--- opts (optional) = { multi = true, head = true, on_toggle = function(value) end }
---   multi   the rows are checkboxes: a pick calls on_toggle and the picker stays open; `current` is a set
---           (name -> true) instead of a single value
---   head    one pinned row above the list (cb_pk_head)
 View.picker_open = function(self, anchor_id, options, current, on_select, width, opts)
 	if self._pk or self._cp or #options == 0 then
 		return
@@ -1501,7 +1421,6 @@ View.picker_open = function(self, anchor_id, options, current, on_select, width,
 	local head_h = head and (PK_ROW_H + 4) or 0
 	local h = PK_PAD * 2 + head_h + n * PK_STEP - (PK_STEP - PK_ROW_H) + (scroll and 2 * (PK_ARROW_H + 2) or 0)
 
-	-- Below the field if it fits, else above; clamped inside the panel and right of the preview stage.
 	local x = math_clamp(ax, PK_LEFT_MIN + w / 2, rw / 2 - w / 2 - 10)
 	local top = ay + ah / 2 + 4
 	if top + h > rh / 2 - 10 then
@@ -1539,8 +1458,7 @@ View.picker_open = function(self, anchor_id, options, current, on_select, width,
 			break
 		end
 	end
-	-- armed = false: nothing is shown or clickable until the next update, when the moved scenegraph is
-	-- live (and the click that opened us cannot hit a row drawn later in this same frame).
+
 	self._pk = {
 		options = options,
 		current = current,
@@ -1561,7 +1479,7 @@ View.picker_close = function(self)
 		return
 	end
 	self._pk = nil
-	self._pk_unblock = true -- re-enable the panel next frame so this frame's click cannot fall through
+	self._pk_unblock = true
 	local w = self._widgets_by_name
 	for i = 1, #self._pk_ids do
 		w[self._pk_ids[i]].content.visible = false
@@ -1625,7 +1543,6 @@ View._pk_pick = function(self, i)
 		return
 	end
 	if pk.multi then
-		-- a checkbox: toggled in place, the list stays open so more can be added
 		pk.on_toggle(o.value)
 		self:_pk_refresh()
 
@@ -1643,7 +1560,6 @@ View._pk_scroll = function(self, delta)
 	end
 end
 
--- Called first thing in _handle_input while the picker is open; the rest of the view gets no input.
 View._pk_input = function(self, input_service)
 	local pk = self._pk
 	if not pk.armed then
@@ -1669,9 +1585,6 @@ end
 -- ---------------------------------------------------------------------------
 -- Frame
 -- ---------------------------------------------------------------------------
-
--- Filtered draw list: only widgets that are currently visible (the pools are large). Rebuilt in
--- update, never inside a draw callback (callbacks run mid-draw).
 View._rebuild_draw = function(self)
 	self._draw_dirty = false
 	local list = self._draw
@@ -1689,7 +1602,6 @@ View._rebuild_draw = function(self)
 	end
 end
 
--- Dragged sliders / scrollbars are polled here (their logic passes run during draw).
 View._poll_inputs = function(self, dt)
 	local w = self._widgets_by_name
 	local slots = self._slots
@@ -1713,7 +1625,6 @@ View._poll_inputs = function(self, dt)
 		self:_cp_poll()
 	end
 
-	-- silent fallback: no sub-page overflows the list, so the scrollbar is never visible
 	local sc = w.scroll.content
 	if sc.visible then
 		local max_first = math_max(1, self:_list_total() - L.ROWS + 1)
@@ -1725,7 +1636,6 @@ View._poll_inputs = function(self, dt)
 		sc.page = nil
 	end
 
-	-- apply tick
 	self._acc = self._acc + dt
 	if self._acc >= 0.1 then
 		self._acc = 0
@@ -1741,7 +1651,6 @@ end
 View.update = function(self, dt, t, input_service, view_data)
 	self._view_data = view_data
 	if self._pv_dead and self._preview then
-		-- a preview that failed: free its 3D world / unit / overlay now (never from inside a draw callback)
 		pcall(self._preview.destroy, self._preview)
 		self._preview = nil
 	end
@@ -1755,7 +1664,6 @@ View.update = function(self, dt, t, input_service, view_data)
 		end
 	end
 	local pass_input, pass_draw = View.super.update(self, dt, t, input_service)
-	-- after Super.update: _handle_input (wheel scroll, popup / picker arming) shows widgets in there
 	if self._ready and self._draw_dirty then
 		self:_rebuild_draw()
 	end
@@ -1803,7 +1711,6 @@ View._handle_input = function(self, input_service, dt, t)
 	end
 
 	if self:using_cursor_navigation() then
-		-- silent fallback (a list taller than 14 rows): nothing on the current sub-pages scrolls
 		if self._widgets_by_name.list_hov.content.hotspot.is_hover and self:_list_total() > L.ROWS then
 			local ok, axis = pcall(input_service.get, input_service, "scroll_axis")
 			local scroll = ok and axis and axis[2] or 0
@@ -1835,8 +1742,6 @@ View.draw = function(self, dt, t, input_service, layer)
 	end
 end
 
--- BaseView calls this after every scenegraph recompute (also when only a node moved, e.g. the picker or
--- the preview's own anchor), so forward to the preview only on a real scale / resolution change.
 View.on_resolution_modified = function(self, scale)
 	local w, h = RESOLUTION_LOOKUP.width, RESOLUTION_LOOKUP.height
 	if scale ~= self._rs_scale or w ~= self._rs_w or h ~= self._rs_h then
@@ -1855,7 +1760,6 @@ View.on_exit = function(self)
 	self._ready = false
 	local S = self._S
 	if S then
-		-- Final apply + save; the close_view hook (settings_functions.lua) then rebuilds the HUD markers.
 		local ok, err = pcall(function()
 			S.apply()
 			S.save()

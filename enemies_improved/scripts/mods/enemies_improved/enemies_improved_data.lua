@@ -2893,10 +2893,6 @@ end
 
 index_widgets(mod.settings_widgets)
 
--- Colours are stored as separate channel settings (<base>_R/_G/_B, plus <base>_A where the colour
--- has one). The editor picks colours as a single <base>_rgb value, so publish a matching schema
--- entry for every triplet; its default mirrors the channel defaults and every read / write still
--- goes through the channel mirrors (settings_api.read_colour / write_colour).
 local colour_bases = {}
 
 for id in next, mod.setting_schema do

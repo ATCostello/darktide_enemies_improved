@@ -1,5 +1,3 @@
--- Enemies Improved editor: view registration and open / close (the view is ei_editor_view.lua).
--- Same shape as the Better Buff Management editor module.
 local mod = get_mod("enemies_improved")
 
 local Editor = {}
@@ -47,9 +45,6 @@ Editor.is_open = function()
 	return ui ~= nil and ui:view_active(VIEW_NAME)
 end
 
--- True while one of the open editor's text fields has focus. DMF fires non-global keybinds even
--- then (keybindings.lua is_dmf_input_service_active() is a stub returning true), so the toggle
--- keybind checks this to not close the view on a typed key.
 Editor.is_writing = function()
 	local view = mod._ei_view
 	return view ~= nil and view._writing_input ~= nil and view:_writing_input() ~= nil

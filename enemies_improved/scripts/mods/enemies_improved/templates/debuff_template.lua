@@ -35,10 +35,6 @@ local size = {
 }
 local base_y, row_step, col_step, base_offset, base_gap, name_x, icon_x, stack_x
 
--- The one place the row layout numbers are computed: the HUD runs it per marker (on_enter), the editor preview
--- runs it before building its widget (refresh_layout), so the two cannot drift apart - the horizontal step and
--- the wider offsets in particular. `size` is mutated in place: template.size, the widget definition and
--- layout_rows all hold a reference to that table.
 local function compute_layout()
 	local icon_size = calculate_icon_size()
 
@@ -131,8 +127,6 @@ local next = next
 local Localize = Localize
 local ScriptUnit_extension = ScriptUnit.extension
 
--- Group of a debuff: mod.debuffs only holds the enabled ones, default_debuffs every debuff the mod knows (the
--- stagger row and the editor's preview list add rows either way, so keep the group when a toggle is off).
 local function debuff_group(name)
 	local def = (mod.debuffs and mod.debuffs[name]) or (mod.default_debuffs and mod.default_debuffs[name])
 
@@ -341,9 +335,6 @@ template.create_widget_defintion = function(template, scenegraph_id)
 	}
 end
 
--- Re-reads the size settings into the module tables the widget definition and layout_rows read.
--- The module load above seeds them; the editor calls this before building a preview widget so a
--- settings change shows up without a mod reload.
 local function refresh_layout()
 	compute_layout()
 end
@@ -466,18 +457,6 @@ end
 -----------------------------------------------------------------------
 -- Update function
 -----------------------------------------------------------------------
-
------------------------------------------------------------------------
--- Pure layout (shared with the editor preview)
--- Everything after collection: combining same-icon rows, sorting, per-row state, styling and
--- scaling. The HUD does the collection and the world reads; the editor feeds it fake buffs
--- through mod.collect_debuffs and a ctx it fills in itself, so nothing here may touch unit /
--- marker / parent directly -- those arrive (possibly nil) as ctx.parent / ctx.marker / ctx.unit.
--- ctx = { breed, breed_name, breed_type, show_on_body, body_offset_y, draw, parent, marker, unit }
--- body_offset_y: pre-projected on-body offset (reference units, + = below the bar) for callers without a
--- player camera (the editor's 3D preview projects it from the 3D frame instead).
------------------------------------------------------------------------
-
 local layout_ctx = {}
 
 local function layout_rows(widget, scale, dt, ctx)
@@ -489,9 +468,8 @@ local function layout_rows(widget, scale, dt, ctx)
 	local parent = ctx.parent
 	local marker = ctx.marker
 	local unit = ctx.unit
-
-	-- read back by the sort below, written by the per-row state pass
 	local need_sort = false
+
 	-------------------------------------------------------------------
 	-- COMBINE SAME ICONS AND CALCULATE COMBINED STACKS/PERCENTAGE
 	-------------------------------------------------------------------
@@ -1123,15 +1101,15 @@ local function layout_rows(widget, scale, dt, ctx)
 					content[name_text_id] = ""
 				end
 
--- colour mutation
-			local colour = (def_style and def_style.colour) or { 255, 255, 255, 255 }
+				-- colour mutation
+				local colour = (def_style and def_style.colour) or { 255, 255, 255, 255 }
 
-			icon_style.color[2] = colour[2] or 255
-			icon_style.color[3] = colour[3] or 255
-			icon_style.color[4] = colour[4] or 255
+				icon_style.color[2] = colour[2] or 255
+				icon_style.color[3] = colour[3] or 255
+				icon_style.color[4] = colour[4] or 255
 
-			-- Staggered colour should follow the stagger colour specifically
-			if fs.debuff_stagger_enable and debuff_group(name) == "stagger" then
+				-- Staggered colour should follow the stagger colour specifically
+				if fs.debuff_stagger_enable and debuff_group(name) == "stagger" then
 					icon_style.color[2] = fs.outline_stagger_colour[2] or 100
 					icon_style.color[3] = fs.outline_stagger_colour[3] or 200
 					icon_style.color[4] = fs.outline_stagger_colour[4] or 255

@@ -80,10 +80,8 @@ local function extract_locals(level_base)
 
 			res[name] = value
 
-			-- check for specifics...
-			-- Check for exact unit (Works for grabbing sniper unit from the weapon sound)
 			if type(value) == "userdata" and name == "unit" and Unit_alive(value) then
-				return value -- early return
+				return value
 			end
 			v = v + 1
 		end

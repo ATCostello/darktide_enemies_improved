@@ -1,6 +1,3 @@
--- Enemies Improved editor: scenegraph + pooled widget definitions (see ei_editor_view.lua).
--- All coordinates are root-centre relative (+y down). The returned `layout` table is the single
--- source of the pool sizes / geometry the view needs.
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIResolution = require("scripts/managers/ui/ui_resolution")
 local ButtonPassTemplates = require("scripts/ui/pass_templates/button_pass_templates")
@@ -18,12 +15,10 @@ local L = {
 	PK_ROWS = 10,
 	PRESETS = 12,
 	CP_CH = 4,
-	-- settings list (right area x -280..858, scrollbar right of it)
 	LIST_TOP = -295,
 	PITCH = 46,
 	RX0 = -280,
 	RX1 = 858,
-	-- control column (left edge, width); the pooled control widgets never move horizontally
 	X = {
 		btn = { 470, 318 },
 		btn_bool = { 470, 110 },
@@ -35,16 +30,13 @@ local L = {
 		sw = { 536, 252 },
 		rs = { 794, 62 },
 	},
-	-- Enemies page: tree sub-column (the selected type + its breeds) / fields sub-column
 	TREE_X0 = -280,
 	TREE_W = 380,
 	FIELDS_X0 = 120,
-	-- label column: normal pages / Enemies page (left edge, width)
 	LBL_WIDE = { -280, 740 },
 	LBL_NARROW = { 120, 340 },
 	HOV_WIDE = { -280, 1138 },
 	HOV_NARROW = { 112, 746 },
-	-- stage (left): preview rect
 	STAGE = { -860, -390, 560, 690 }, -- left, top, w, h
 	SCROLL_X = 868,
 	SCROLL_W = 10,
@@ -92,7 +84,6 @@ local function node(id, x, y, w, h, z)
 	}
 end
 
--- Left edge + width -> centre x.
 local function cx(left, w)
 	return left + w / 2
 end
@@ -112,7 +103,6 @@ widget_definitions.background = UIWidget.create_definition({
 	},
 }, "root", nil, { PANEL_W, PANEL_H })
 
--- dynamic = true: no explicit size, the view may resize the node at runtime.
 local function text_widget(id, x, y, w, h, size, align, color, dynamic, valign)
 	node(id, x, y, w, h, 3)
 	return UIWidget.create_definition({
@@ -134,7 +124,6 @@ local function text_widget(id, x, y, w, h, size, align, color, dynamic, valign)
 	}, id, { text = "" }, (not dynamic) and { w, h } or nil)
 end
 
--- Vanilla terminal_button; the label goes in content.original_text.
 local function button_widget(id, x, y, w, h, font_size, dynamic)
 	node(id, x, y, w, h, 3)
 	return UIWidget.create_definition(
@@ -146,9 +135,6 @@ local function button_widget(id, x, y, w, h, font_size, dynamic)
 	)
 end
 
--- ===== Hand-made slider (rect passes + hotspot + logic pass; no textures) =====
--- content.value01 (0..1) is read for drawing; while content.dragging the logic pass writes it from
--- the cursor. The view reads it back in update. Maths lifted from slider_pass_templates.lua:235-303.
 local THUMB_W = 10
 local function slider_passes(w, h)
 	local travel = w - THUMB_W
@@ -184,7 +170,6 @@ local function slider_passes(w, h)
 			pass_type = "logic",
 			value = function(pass, renderer, style, content, position, size)
 				if not content.dragging then
-					-- a press within the double-click window (0.2 s) arrives as on_double_click only
 					if (content.hotspot.on_pressed or content.hotspot.on_double_click) and not content.disabled then
 						content.dragging = true
 					else
@@ -208,11 +193,6 @@ local function slider_widget(id, x, y, w, h)
 	return UIWidget.create_definition(slider_passes(w, h), id, { hotspot = {}, value01 = 0 }, { w, h })
 end
 
--- ===== Scrollbar: track + thumb + drag / page logic =====
--- (cursor maths as the slider above: renderer.input_service "cursor" / "left_hold", UIResolution.inverse_scale_vector,
--- logic pass signature from managers/ui/ui_passes.lua:72-82)
--- content.track_h / thumb_y / thumb_h are set by the view; the logic pass writes value01 while
--- dragging (content.drag = cursor offset inside the thumb) and content.page = -1 / 1 on a track click.
 local function scroll_widget(id, x, y, w, h)
 	node(id, x, y, w, h, 3)
 	return UIWidget.create_definition({
@@ -264,7 +244,6 @@ local function scroll_widget(id, x, y, w, h)
 	}, id, { hotspot = {}, value01 = 0, visible = false })
 end
 
--- Hotspot-only probe (hover scans / wheel scoping).
 local function probe_widget(id, x, y, w, h, z)
 	node(id, x, y, w, h, z or 1)
 	return UIWidget.create_definition({
@@ -272,7 +251,6 @@ local function probe_widget(id, x, y, w, h, z)
 	}, id, { hotspot = {} })
 end
 
--- Swatch: hotspot + dark backing + coloured rect + frame + hex text (colour set by the view).
 local function swatch_widget(id, x, y, w, h)
 	node(id, x, y, w, h, 3)
 	return UIWidget.create_definition({
@@ -315,11 +293,9 @@ local function swatch_widget(id, x, y, w, h)
 	}, id, { hotspot = {}, text = "" }, { w, h })
 end
 
--- ===== Header =====
 widget_definitions.title = text_widget("title", cx(-860, 700), -420, 700, 40, 28, "left", GOLD)
 widget_definitions.btn_close = button_widget("btn_close", PANEL_W / 2 - 34, -420, 46, 46)
 
--- ===== Preview stage (left): the view draws the border; the 3D / 2D preview draws over it =====
 do
 	local sx, sy, sw, sh = L.STAGE[1], L.STAGE[2], L.STAGE[3], L.STAGE[4]
 	node("pv_stage", cx(sx, sw), sy + sh / 2, sw, sh, 2)
@@ -332,7 +308,6 @@ do
 			style = { color = FRAME, scale_to_material = true, offset = { 0, 0, 1 } },
 		},
 	}, "pv_stage", { hotspot = {} }, { sw, sh })
-	-- Anchor the preview module moves (head position / marker anchor); z high so it sorts last.
 	scenegraph_definition.pv_anchor = {
 		parent = "root",
 		horizontal_alignment = "center",
@@ -349,17 +324,14 @@ for i, id in ipairs({ "pv_combat", "pv_alert", "pv_stagger", "pv_tagged" }) do
 end
 widget_definitions.pv_status = text_widget("pv_status", cx(-860, 560), 410, 560, 22, 15, "left", GREY)
 
--- ===== Tabs + sub-page chips =====
 local TAB_W = 162
 for i = 1, L.TABS do
 	widget_definitions["tab_" .. i] = button_widget("tab_" .. i, cx(-280 + (i - 1) * 163, TAB_W), -370, TAB_W, 40, 16)
 end
 for i = 1, L.CHIPS do
-	-- dynamic: the view sizes / positions the sub-page chips of the current page
 	widget_definitions["chip_" .. i] = button_widget("chip_" .. i, 0, -328, 100, 30, 14, true)
 end
 
--- ===== Settings list: pooled rows =====
 local function row_y(i)
 	return L.LIST_TOP + L.PITCH / 2 + (i - 1) * L.PITCH
 end
@@ -369,7 +341,6 @@ local ROW_HOVER = { 0, 255, 255, 255 }
 for i = 1, L.ROWS do
 	local y = row_y(i)
 	local p = "r" .. i .. "_"
-	-- hover tint + hotspot (the view resizes it for the Enemies page)
 	node(p .. "hov", cx(L.HOV_WIDE[1], L.HOV_WIDE[2]), y, L.HOV_WIDE[2], L.PITCH - 2, 1)
 	widget_definitions[p .. "hov"] = UIWidget.create_definition({
 		{ pass_type = "hotspot", content_id = "hotspot" },
@@ -383,7 +354,6 @@ for i = 1, L.ROWS do
 		},
 	}, p .. "hov", { hotspot = {} })
 
-	-- label (+ header underline); nil size so the node can be narrowed
 	node(p .. "lbl", cx(L.LBL_WIDE[1], L.LBL_WIDE[2]), y, L.LBL_WIDE[2], L.PITCH - 2, 3)
 	widget_definitions[p .. "lbl"] = UIWidget.create_definition({
 		{
@@ -424,24 +394,18 @@ for i = 1, L.ROWS do
 	widget_definitions[p .. "rs"] = button_widget(p .. "rs", cx(X.rs[1], X.rs[2]), y, X.rs[2], 32, 14)
 end
 
--- list-wide probe (wheel scoping) + scrollbar: no sub-page overflows the 14 rows, so the scrollbar stays hidden;
--- both only keep a silent fallback alive
 widget_definitions.list_hov =
 	probe_widget("list_hov", cx(L.RX0, L.RX1 - L.RX0), L.LIST_TOP + L.LIST_H / 2, L.RX1 - L.RX0, L.LIST_H, 1)
 widget_definitions.scroll = scroll_widget("scroll", L.SCROLL_X, L.LIST_TOP + L.LIST_H / 2, L.SCROLL_W, L.LIST_H)
 
--- ===== Enemies page: tree (the selected type + its breeds, left sub-column) =====
 for i = 1, L.TREE_ROWS do
 	widget_definitions["t_" .. i] = button_widget("t_" .. i, cx(L.TREE_X0, L.TREE_W), row_y(i), L.TREE_W, 40, 16)
 end
 
--- ===== Debuffs page grids: one pooled cell per debuff / debuff group =====
--- dynamic size + position: the view lays the needed cells out at runtime (columns x rows)
 for i = 1, L.CELLS do
 	widget_definitions["g_" .. i] = button_widget("g_" .. i, 0, 0, 100, 40, 16, true)
 end
 
--- ===== Description box + footer =====
 node("desc_box", cx(-280, 1140), 384, 1140, 60, 2)
 widget_definitions.desc_box = UIWidget.create_definition({
 	{ pass_type = "rect", style = { color = { 235, 10, 12, 16 } } },
@@ -456,9 +420,8 @@ widget_definitions.desc_text =
 widget_definitions.status = text_widget("status", cx(-860, 1300), 438, 1300, 30, 17, "left", { 255, 180, 180, 180 })
 widget_definitions.btn_reset_page = button_widget("btn_reset_page", cx(640, 220), 438, 220, 34, 15)
 
--- ===== Shared dropdown picker (copy of the BBM picker overlay; right area only) =====
 local PK_Z = L.PK_Z
--- The veil dims only the right area: the preview stage must never be covered (3D draws above 2D).
+
 node("pk_veil", cx(-290, 1170), 0, 1170, PANEL_H, PK_Z)
 node("pk_panel", 0, 0, L.PK_W_MIN, 100, PK_Z + 1)
 widget_definitions.pk_veil = UIWidget.create_definition({
@@ -487,13 +450,10 @@ end
 for i = 1, L.PK_ROWS do
 	pk_button("pk_row_" .. i, L.PK_ROW_H)
 end
--- optional pinned row above the list (the debuff popup keeps the 3D toggle on it)
 pk_button("pk_head", L.PK_ROW_H)
 pk_button("pk_up", L.PK_ARROW_H)
 pk_button("pk_down", L.PK_ARROW_H)
 
--- ===== Colour popup (right area only): swatch, R/G/B(/A) sliders, presets, Default / Done =====
--- Nodes are placed by the view relative to the panel centre; everything starts hidden.
 local CP_Z = PK_Z + 1
 node("cp_panel", 0, 0, L.CP_W, L.CP_H, CP_Z)
 widget_definitions.cp_panel = UIWidget.create_definition({

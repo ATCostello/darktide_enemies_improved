@@ -218,8 +218,6 @@ local function _cull_sort(a, b)
 	return a.score > b.score
 end
 
--- unrolled version of the DEPTH_LAYERS walk. this runs once per culled enemy, so it
--- avoids the inner loop and the per-layer table lookups
 local function _depth_keep(i, score)
 	if i <= 4 then
 		return true
@@ -306,15 +304,12 @@ mod.on_unload = function()
 	mod.loaded = false
 end
 
--- EI is togglable: an open editor must not outlive the mod.
 mod.on_disabled = function()
 	if mod.editor then
 		mod.editor.close_all()
 	end
 end
 
--- DMF button + keybind entry point (see enemies_improved_data.lua). The keybind also fires while
--- typing in an editor text field, so a typed key must not close the editor.
 mod.open_editor = function()
 	local editor = mod.editor
 
@@ -373,11 +368,6 @@ end
 
 local EnemyImprovedTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/enemies_improved_template")
-
--- Native settings editor: the richer, previewing view of the very same DMF settings. Loaded after
--- the template so mod.ei_template is there before a preview is built. io_dofile is pcall-safe and
--- returns a falsy value on a load error, so every use of mod.editor below is guarded: EI keeps
--- working without the editor.
 mod.editor = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/editor/ei_editor")
 
 local function add_custom_templates(self)
@@ -507,10 +497,7 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 
 				-- stagger pulse
 				if has_stagger then
-					if
-						(entry.is_horde and stagger_horde)
-						or (not entry.is_horde and stagger_normal)
-					then
+					if (entry.is_horde and stagger_horde) or (not entry.is_horde and stagger_normal) then
 						if entry.staggered then
 							entry._pulse_timer = (entry._pulse_timer or 0) + dt
 							if entry._pulse_timer >= stagger_interval then
@@ -545,8 +532,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			return
 		end
 
-		-- templates are cloned per marker and kept for its lifetime, so the suppression result
-		-- can be cached on the template. bit 1 = hide base healthbars, bit 2 = hide threat skulls
 		local hb_enabled = fs.healthbar_enable
 		local hide_skulls = fs.remove_tag_skull
 
@@ -592,7 +577,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 end)
 
 mod.get_marker_by_id = function(id)
-	-- the marker table is cached for the whole update tick
 	local markers_by_id = mod._markers_by_id
 
 	if not markers_by_id then
@@ -907,8 +891,6 @@ mod.scan_enemies = function()
 
 	local world = Managers.world:world("level_world")
 	local physics_world_cache = world and World.get_data(world, "physics_world")
-
-	-- the camera and the players head do not move during the scan, so resolve them once
 	local camera_forward = mod.get_camera_forward()
 	local player_los_pos = mod.get_los_origin and mod.get_los_origin(player_unit)
 
@@ -918,8 +900,6 @@ mod.scan_enemies = function()
 		if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
 			local pos = Unit.world_position(unit, 1, _pos_vec)
 
-			-- only set once the LOS filter below has actually run and passed, so the outline
-			-- update can reuse the result instead of raycasting the same pair twice
 			local los_ok = false
 
 			if pos then
@@ -939,7 +919,7 @@ mod.scan_enemies = function()
 
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 
-			-- VIEW CONE FILTE
+			-- VIEW CONE FILTER
 			if forward_bonus <= 0 and not is_crosshair_target then
 				mod.force_remove_unit_markers(unit)
 
@@ -991,7 +971,6 @@ mod.scan_enemies = function()
 
 			local breed = unit_data_ext:breed()
 
-			-- breed never changes for a unit, so lean on the cached category when we have one
 			local breed_type = entry and entry.breed_type or mod.find_breed_category(unit)
 
 			-- build animation map for this enemy
@@ -1098,8 +1077,6 @@ mod.scan_enemies = function()
 		for _, list in pairs(_cull_cells) do
 			local num_in_list = #list
 
-			-- most cells hold a single enemy, and table.sort carries enough setup
-			-- overhead that it is not worth calling for those
 			if num_in_list > 1 then
 				table.sort(list, _cull_sort)
 			end
@@ -1107,9 +1084,6 @@ mod.scan_enemies = function()
 			for i = 1, num_in_list do
 				local data = list[i]
 				local unit = data.unit
-
-				-- aimed units are always kept, but that lookup is only worth doing
-				-- for the ones the depth test already rejected
 				local keep = _depth_keep(i, data.score)
 
 				if not keep then
@@ -1135,17 +1109,16 @@ mod.scan_enemies = function()
 							breed_name = data.breed and data.breed.name,
 							breed_type = data.breed_type,
 
-_priority_score = data.score,
-						pos = data.pos,
-						_ei_marker_created = false,
-						_los_ok = data.los_ok,
-					}
-				else
-					entry.seen = true
-					entry._priority_score = data.score
-					entry._los_ok = data.los_ok
+							_priority_score = data.score,
+							pos = data.pos,
+							_ei_marker_created = false,
+							_los_ok = data.los_ok,
+						}
+					else
+						entry.seen = true
+						entry._priority_score = data.score
+						entry._los_ok = data.los_ok
 
-						-- the pooled record owns its position, so hand the vector over
 						if entry.pos ~= data.pos then
 							entry.pos = data.pos
 							data.pos = nil
@@ -1348,7 +1321,6 @@ local function _build_horde_clusters(units, num_units)
 									local other = cell[j]
 
 									if not visited[other] then
-										-- cheap table checks first, Unit.alive() is not free
 										local oe = mod.enemy_cache[other]
 										if oe and oe.breed == breed and mod.detect_alive(other) then
 											local op = Unit.world_position(other, 1, _bfs_other_pos)
@@ -1606,8 +1578,6 @@ mod.remove_dead = function()
 				local dy = pos.y - player_pos.y
 				local dz = pos.z - player_pos.z
 				local dist_sq = dx * dx + dy * dy + dz * dz
-
-				-- individual distance override (replaces global for this enemy)
 				local breed_name = entry.breed_name
 				local effective_max_dist_sq = max_dist_sq
 				if breed_name and breed_dist_enabled[breed_name] then
@@ -1727,7 +1697,6 @@ mod.clear_caches = function()
 	table_clear(_cull_cells)
 	table_clear(_units_to_remove)
 
-	-- the marker table is rebuilt by the game, so drop our references
 	mod._markers_by_id = nil
 	mod._world_markers = nil
 
@@ -2000,7 +1969,6 @@ mod.update_enemies = function(dt, t)
 	local healthbars_enable = fs.healthbar_enable or fs.show_damage_numbers
 	local debuffs_enable = fs.debuff_enable
 
-	-- the marker lookup table is the same for the whole tick
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
@@ -2191,7 +2159,6 @@ mod.is_weakened = function(unit, breed)
 	return false
 end
 
--- a handful of places ask this per frame for the same unit, so cache it briefly
 local DEBUFF_CACHE_TTL = 0.2
 
 -- Returns true if the unit currently has any active debuff tracked by the mod
@@ -2216,7 +2183,6 @@ mod.unit_has_active_debuff = function(unit, t)
 	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
 
 	if buff_extension then
-		-- pass the extension straight into pcall so we dont build a throwaway closure
 		local ok, keywords = pcall(buff_extension.keywords, buff_extension)
 		if ok and keywords then
 			for name, _ in pairs(keywords) do

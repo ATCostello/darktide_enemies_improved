@@ -192,7 +192,7 @@ local insert_enemy_names = function(localisation_table)
 		if data.value ~= "select" then
 			local new_localised_readable_text = {
 				en = Localize(data.text),
-				ru = Localize(data.text), -- одно и то же имя
+				ru = Localize(data.text),
 			}
 
 			if not localisation_table[data.text] then
@@ -3477,7 +3477,7 @@ for i = 1, #localisations_to_add do
 	end
 end
 
--- Native editor localisation (the editor reads the same mod.localisation table)
+-- 3d editor localisation
 local insert_editor_localisation = function(localisation_table)
 	local editor_localisations = {
 		-- window title and button
@@ -3491,7 +3491,7 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Enemies Improved — редактор",
 			["zh-cn"] = "Enemies Improved - 编辑器",
 		},
-		-- row controls (default / done / reset / tri-state)
+		-- row controls
 		ei_default = {
 			en = "Default",
 			ru = "По умолчанию",
@@ -3537,7 +3537,6 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Запретить",
 			["zh-cn"] = "强制关闭",
 		},
-		-- override scope (type vs single enemy)
 		ei_type_note = {
 			en = "Enemy type",
 			ru = "Тип врага",
@@ -3675,6 +3674,8 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Враги",
 			["zh-cn"] = "敌人",
 		},
+
+
 		-- page hints
 		ei_hint_general = {
 			en = "Global switches, ranges, fonts and performance. Hover a setting for details. Gold = changed from default.",
@@ -3711,6 +3712,8 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Выберите тип врага на вкладках сверху, затем сам тип или одного из его врагов слева, и переопределите контур, полоску здоровья, дебаффы, метку и дистанции.",
 			["zh-cn"] = "用上方标签选择敌人类型，再从左侧选择该类型本身或其中一个敌人，即可覆盖其轮廓、血条、减益、标记和距离。",
 		},
+
+
 		-- page sections
 		ei_sec_features = {
 			en = "Features",
@@ -3862,6 +3865,8 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Производительность",
 			["zh-cn"] = "性能",
 		},
+
+
 		-- preview panel
 		ei_preview_enemy = {
 			en = "Enemy",
@@ -3903,6 +3908,8 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Предпросмотр недоступен",
 			["zh-cn"] = "预览不可用",
 		},
+
+		
 		-- enemy type tabs (short labels)
 		ei_type_short_horde = {
 			en = "Horde",

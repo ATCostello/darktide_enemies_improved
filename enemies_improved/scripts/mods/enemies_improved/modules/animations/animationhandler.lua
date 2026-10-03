@@ -694,7 +694,6 @@ local function handle_animation_event(unit, event_index)
 		return
 	end
 
-	-- the entry already knows its breed, no need to ask the extension every event
 	local breed_name = entry.breed_name
 	if not breed_name then
 		local breed = entry.unit_data_ext:breed()
@@ -788,7 +787,6 @@ end
 mod:hook_safe(CLASS.AnimationSystem, "rpc_minion_anim_event", function(self, channel_id, unit_id, event_index)
 	local unit = Managers.state.unit_spawner:unit(unit_id)
 
-	-- most anim events belong to units we dont track, so check the cache first
 	if not unit or not mod.enemy_cache[unit] or not Unit.alive(unit) then
 		return
 	end

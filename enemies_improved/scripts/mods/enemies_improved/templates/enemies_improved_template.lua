@@ -402,11 +402,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 end
 
--- Editor access: mod.ei_template.* resolves to this template, mod.ei_template.sub holds the three
--- sub-template singletons (pure appliers: apply_breed_style / apply_state / push_damage_number,
--- layout_rows, refresh_*...). It is a proxy on purpose: HudElementWorldMarkers deep-clones the
--- registered template for EVERY marker, so a `sub` field on `template` itself would be cloned
--- (three templates' worth of tables) per marker.
 mod.ei_template = setmetatable({
 	sub = { healthbar = EnemyHealthbarTemplate, markers = EnemyMarkersTemplate, debuffs = EnemyDebuffTemplate },
 }, { __index = template })

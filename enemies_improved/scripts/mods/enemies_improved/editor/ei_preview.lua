@@ -1,19 +1,3 @@
--- Enemies Improved editor: live preview of the selected enemy.
---
--- Draws EI's REAL combined marker widget (healthbar + damage numbers + debuff rows + overhead marker, built from
--- mod.ei_template exactly like the HUD) over a 3D copy of the enemy (ei_preview_3d.lua) or, when 3D is off or
--- unavailable, over a 2D card. A scripted combat loop drives it with fake data (HudHealthBarLogic for the bar,
--- scripted hits for the damage numbers, fake buff objects through mod.collect_debuffs for the debuff rows).
---
--- The overlay is drawn by its own UI world + renderer above the 3D world (view-connected worlds are layered
--- view_layer + offset, ui_view_handler.lua:877-897; same pattern as view_element_inventory_weapon_preview.lua:35-67).
---
--- API (see DESIGN.md sec 6):
---   local p = Preview.new(view, { stage_id = "pv_stage", anchor_id = "pv_anchor" })
---   p:set_subject({ breed_name = ... })   p:set_flags({ combat, alert, stagger, tagged, threed })
---   p:settings_changed()   p:update(dt, t, input_service)   p:draw(dt, t, input_service, render_settings)
---   p:on_resolution_modified()   p:status()   p:destroy()
-
 local mod = get_mod("enemies_improved")
 
 local UIWidget = require("scripts/managers/ui/ui_widget")
@@ -42,14 +26,13 @@ local math_floor = math.floor
 local math_min = math.min
 local math_max = math.max
 
-local OVERLAY_LAYER = 45 -- above the 3D world (35)
+local OVERLAY_LAYER = 45
 local WIDGET_Z = 50
 local DEFAULT_BREED = "renegade_executor"
-local PX_PER_METRE_2D = 60 -- card mode: metres of healthbar y offset -> pixels
+local PX_PER_METRE_2D = 60
 
 local overlay_counter = 0
 
--- scripted combat loop (seconds), `frac` of the enemy's max health per hit
 local LOOP = 7.0
 local DPS_AT = 6.0
 local EVENTS = {
@@ -77,8 +60,6 @@ local MAX_HEALTH_BY_TYPE = {
 }
 local TOUGHNESS_TYPES = { captain = true, monster = true }
 
--- textures handed to the healthbar passes through material_values: an unloaded one crashes the engine
--- uncatchably, so the type icon passes are switched off unless all three are resident
 local ICON_TEXTURES = {
 	"content/ui/textures/frames/horde/hex_frame_horde",
 	"content/ui/textures/frames/horde/hex_frame_horde_mask",
@@ -112,7 +93,6 @@ local function log_once(self, where, err)
 	end
 end
 
--- mod.custom_localize first (EI injects the minion names), the game's Localize second; "<key>" = not found
 local function localized(key)
 	if not key then
 		return nil
@@ -137,7 +117,6 @@ local function localized(key)
 	return nil
 end
 
--- on/off phase of a pulsing outline / glow (entry.alert_outline is toggled every pulse speed with *_flash on)
 local function pulse_on(time, flash, speed)
 	if not flash then
 		return true
@@ -155,7 +134,6 @@ local function make_buff(name, max_stacks, stat_buffs, conditional_stat_buffs)
 		{ max_stacks = max_stacks, stat_buffs = stat_buffs, conditional_stat_buffs = conditional_stat_buffs }
 	local buff = { stacks = 1 }
 
-	-- the four methods mod.collect_debuffs calls on a buff (utils/debuff_collect.lua)
 	buff.template_name = function()
 		return name
 	end
@@ -172,7 +150,6 @@ local function make_buff(name, max_stacks, stat_buffs, conditional_stat_buffs)
 	return buff
 end
 
--- the game's real buff template of a debuff (max stacks / stat buffs for the debuff-focus row), nil when unknown
 local buff_templates
 
 local function buff_template_of(name)
@@ -185,7 +162,6 @@ local function buff_template_of(name)
 	return buff_templates and buff_templates[name] or nil
 end
 
--- content keys of the old widget carried over a settings rebuild (scenario state the HUD keeps on the content)
 local CARRY_KEYS = {
 	"damage_taken",
 	"damage_has_started",
@@ -242,14 +218,12 @@ function Preview.new(view, opts)
 
 	self.flags.threed = mod:get("ei_preview_3d_enabled") ~= false
 
-	-- crash guard: an earlier 3D attempt never reported "survived 30 frames" -> assume it crashed the game
 	if P3D then
 		local ok, pending = pcall(P3D.pending)
 
 		if ok and pending then
 			local name, disabled_all = P3D.trip_guard()
 
-			-- a single blocked enemy explains itself through P3D.supported's reason when it is selected
 			if disabled_all then
 				self.flags.threed = false
 				self._guard_msg = "3D preview disabled: the last attempt ("
@@ -294,7 +268,6 @@ function Preview:_create_overlay()
 		renderer_name = "ei_preview_overlay_renderer_" .. overlay_counter,
 	}
 
-	-- mirrors view_element_inventory_weapon_preview.lua:35-67
 	local ok, err = pcall(function()
 		ov.world = ui:create_world(ov.world_name, OVERLAY_LAYER, "ui", view.view_name)
 		ov.viewport = ui:create_viewport(ov.world, ov.viewport_name, "overlay", 1)
@@ -310,7 +283,6 @@ function Preview:_create_overlay()
 	end
 end
 
--- same order as view_element_inventory_weapon_preview.lua:390-402: renderer, viewport, world
 function Preview:_destroy_overlay(ov)
 	ov = ov or self._ov
 
@@ -344,7 +316,6 @@ function Preview:_destroy_widget()
 	local widget = self._widget
 
 	if widget then
-		-- with the renderer that created its pass materials
 		pcall(UIWidget.destroy, self._wrenderer, widget)
 
 		self._widget = nil
@@ -358,7 +329,6 @@ function Preview:destroy()
 
 	self._destroyed = true
 
-	-- order: widget (needs the overlay renderer), units + 3D world, then the overlay world
 	self:_destroy_widget()
 
 	if self._p3d then
@@ -421,15 +391,13 @@ function Preview:set_flags(flags)
 	if flags.threed ~= nil and (flags.threed and true or false) ~= f.threed then
 		local want = flags.threed and true or false
 
-		-- the view writes ei_preview_3d_enabled BEFORE calling set_flags on a user toggle; a stale `true` from before
-		-- the crash guard tripped (which wrote false) must not re-enable the 3D attempt that just crashed the game
 		if want and mod:get("ei_preview_3d_enabled") == false then
 			want = false
 		end
 
 		if want ~= f.threed then
 			f.threed = want
-			self._guard_msg = nil -- the user toggled 3D: retry / acknowledge
+			self._guard_msg = nil
 			self._need_sync = true
 
 			if want and P3D and P3D.clear_blocked then
@@ -494,8 +462,6 @@ function Preview:_apply_subject()
 	self._type = breed_type or "enemy"
 	self._title = (breed and localized(breed.display_name)) or name
 	self._type_label = localized(self._type) or self._type
-
-	-- a hit zone that counts as weakspot, for the armour-type text of weakspot hits
 	self._weak_zone = "head"
 
 	if breed and breed.hit_zone_weakspot_types then
@@ -524,10 +490,8 @@ function Preview:settings_changed()
 
 	local ok, err = pcall(function()
 		self:_refresh_resolve()
-		-- same enemy: the scenario (loop clock, hits, hp, numbers, debuff animation) survives the rebuild
 		self:_rebuild_widget(true)
 
-		-- a click lands mid-draw: apply the state now or the rebuilt widget is drawn once with hb_built = false
 		if self._widget and not self._widget_err then
 			self:_tick_widget(0, self._t or 0)
 		end
@@ -542,8 +506,6 @@ function Preview:settings_changed()
 	self:_refresh_status()
 end
 
--- Debuffs page: show one more fake debuff (the hovered / edited row's) beside bleed / burn / rend. nil = none.
--- The fake buff is rebuilt only when the name changes; whether it shows is decided per tick (mod.debuffs).
 function Preview:set_focus_debuff(name)
 	if self._destroyed or name == self._focus_name then
 		return
@@ -565,7 +527,6 @@ function Preview:set_focus_debuff(name)
 	end
 end
 
--- one row of a preview debuff: the game's own template for the stacks / stat buffs, the mod's own for the type
 local function preview_debuff_row(name)
 	local template = buff_template_of(name)
 	local max = template and template.max_stacks
@@ -582,8 +543,6 @@ local function preview_debuff_row(name)
 	}
 end
 
--- Editor debuff list: the debuffs the user put on the preview enemy (they live until the editor closes). Their rows
--- are appended to the collected ones, so a debuff that is switched off in the settings still shows up here.
 function Preview:set_debuffs(names)
 	if self._destroyed then
 		return
@@ -624,8 +583,6 @@ end
 -----------------------------------------------------------------------
 -- The EI widget
 -----------------------------------------------------------------------
-
--- Returns nil when everything the preview needs exists, else the name of the first missing piece.
 local function template_api()
 	local tpl = mod.ei_template
 	local sub = tpl and tpl.sub
@@ -643,7 +600,6 @@ local function template_api()
 	return { tpl = tpl, HB = HB, MK = MK, DB = DB }
 end
 
--- keep: carry the running scenario over to the rebuilt widget (settings change) instead of restarting it
 function Preview:_rebuild_widget(keep)
 	local old = keep and self._widget or nil
 
@@ -684,7 +640,6 @@ function Preview:_build_widget(api, old)
 	local tpl, HB, MK, DB = api.tpl, api.HB, api.MK, api.DB
 	local breed = self._breed
 
-	-- module-level size upvalues the templates normally refresh in on_enter, BEFORE the definition is created
 	if MK and MK.refresh_sizes then
 		MK.refresh_sizes()
 	end
@@ -708,10 +663,10 @@ function Preview:_build_widget(api, old)
 	content.spawn_progress_timer = 0
 	content.special_attack_imminent = false
 	content.frame = mod.frame_settings.frame_type
-	content.is_in_shooting_range = true -- show_dn_in_range_only
+	content.is_in_shooting_range = true
 	content.in_horde_cluster = false
 	content.dead = false
-	content.player_camera = nil -- keeps the damage numbers' hit-position anchoring inert
+	content.player_camera = nil
 	widget._active = {}
 	widget._active_count = 0
 	widget._state = {}
@@ -721,7 +676,7 @@ function Preview:_build_widget(api, old)
 	self._widget = widget
 	self._wrenderer = self._renderer
 	self._HB, self._MK, self._DB = HB, MK, DB
-	self._next_tick = 0 -- the first tick after a rebuild applies the state at once
+	self._next_tick = 0
 
 	self._icons_ok = true
 
@@ -743,9 +698,6 @@ end
 -----------------------------------------------------------------------
 -- Scenario
 -----------------------------------------------------------------------
-
--- Settings rebuild: self._loop_t / _ev_i / _hits / _hp / _tough / _bar / debuff stacks live on self and stay as they
--- are; the fresh widget gets the scenario state back (old = the destroyed widget, its content is still readable).
 function Preview:_restore_scenario(widget, old)
 	local c, oc = widget.content, old.content
 	local fs = mod.frame_settings
@@ -761,7 +713,6 @@ function Preview:_restore_scenario(widget, old)
 		c[key] = oc[key]
 	end
 
-	-- numbers still on screen: replay the hits fired within their lifetime, back-dated (push stores start_time = t)
 	for i = 1, self._ev_i - 1 do
 		local ev = EVENTS[i]
 		local age = loop_t - ev.at
@@ -787,7 +738,6 @@ function Preview:_restore_scenario(widget, old)
 		end
 	end
 
-	-- same numbers as before: keep their float direction, or they jump on every rebuild
 	local numbers, onumbers = c.damage_numbers, oc.damage_numbers
 
 	if numbers and onumbers and #numbers == #onumbers then
@@ -797,7 +747,6 @@ function Preview:_restore_scenario(widget, old)
 		end
 	end
 
-	-- push stamps the numbers' clock, the scenario's own stamp is the old one
 	c.last_damage_taken_time = oc.last_damage_taken_time
 	widget._state = old._state or widget._state -- debuff row animation
 end
@@ -857,7 +806,6 @@ function Preview:_reset_scenario()
 		end
 	end
 
-	-- stale fake buffs would show as debuff rows for the first ticks of the new loop
 	local act = self._buff_list
 
 	for i = self._nact, 1, -1 do
@@ -895,7 +843,6 @@ function Preview:_hit(ev, t)
 	self._HB.push_damage_number(widget, damage, t, ev.crit or false, ev.weak or false, ev.dot or false, max)
 end
 
--- outline colour by the runtime priority (lowest number wins): alert 1 > stagger 2 > tagged 3 > breed 5 > type 6
 function Preview:_outline_colour(fs)
 	if not fs.outlines_enable then
 		return nil
@@ -960,8 +907,6 @@ function Preview:_tick_outline(fs)
 end
 
 local function apply_depth_fade(widget, fs)
-	-- fading.lua:226-237: default_alpha * final_alpha on every style except damage_numbers; global_opacity only takes
-	-- effect with depth fading on, and the HUD only writes it once it moved by >= 0.02
 	local opacity = fs.global_opacity or 1
 
 	if not fs.enable_depth_fading or opacity > 0.98 then
@@ -1021,7 +966,6 @@ local function fill_worn_rows(rows, count, worn, skip_stagger)
 	return count
 end
 
--- one HUD-style update of the widget: runs at the general throttle rate like the HUD's update functions
 function Preview:_apply_widget_state(fs, dt, t)
 	local widget, HB, MK, DB = self._widget, self._HB, self._MK, self._DB
 	local c = widget.content
@@ -1032,7 +976,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 
 	local alert_on = flags.alert and pulse_on(time, fs.specials_flash, fs.special_attack_pulse_speed)
 
-	-- debuff rows: fake buffs -> the real collector -> the real layout
 	local debuffs_on = res.debuffs.on and true or false
 	local n = 0
 
@@ -1067,7 +1010,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 			end
 		end
 
-		-- Debuffs page focus: the hovered / edited debuff, unless it is already one of the rows above
 		local focus = self._focus_buff
 		local fname = focus and focus.template_name()
 
@@ -1096,7 +1038,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 
 		mod.collect_debuffs(widget, act, nil, nil, false)
 
-		-- the stagger row is not a buff (collect_debuffs reads it from mod.enemy_cache): append it like it does
 		if flags.stagger and fs.debuff_stagger_enable and fs.debuff_utility_enable then
 			local count = (widget._active_count or 0) + 1
 			local rows = widget._active
@@ -1120,7 +1061,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 			widget._active_count = count
 		end
 	elseif DB and DB.layout_rows then
-		-- off: empty the collected rows once (self._nact is the "there were any" marker)
 		if self._nact > 0 then
 			local act = self._buff_list
 
@@ -1139,22 +1079,15 @@ function Preview:_apply_widget_state(fs, dt, t)
 		end
 	end
 
-	-- The debuffs of the editor's debuff list, added on top of the collected ones: a debuff that is switched off in
-	-- the settings still shows, and because picking one in the editor is an explicit request it shows even when the
-	-- whole debuff feature is off. A name the collector already put on the enemy is left to it, as is the stagger.
 	local worn = self._debuff_rows
 
 	if worn and #worn > 0 then
 		if debuffs_on then
-			-- the collector rewrote the rows and the count this tick, so the tail can just be appended
 			local rows = widget._active or {}
 
 			widget._active_count = fill_worn_rows(rows, widget._active_count or 0, worn, flags.stagger)
 			widget._active = rows
 		else
-			-- nothing runs the collector while the debuffs are off, so build the rows from scratch: a deselected
-			-- debuff then really goes. (Fresh table as well, because layout_rows' combine pass can leave
-			-- widget._active_count ahead of the array it truncated.)
 			local rows = {}
 
 			widget._active_count = fill_worn_rows(rows, 0, worn, false)
@@ -1166,8 +1099,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 		local ctx = self._ctx
 
 		ctx.breed = self._breed
-		-- on-body placement is its own setting (content.breed gives layout_rows the height it measures against).
-		-- The preview has no player camera, so _relayout projects the offset from the 3D frame instead.
 		ctx.show_on_body = res.debuffs.on_body and true or false
 		ctx.body_offset_y = self._body_offset_y
 		ctx.draw = true
@@ -1175,7 +1106,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 		DB.layout_rows(widget, 1, dt, ctx)
 	end
 
-	-- healthbar / text / glow
 	HB.apply_state(widget, 1, dt, t, alert_on and true or false)
 
 	local bar_visible = fs.healthbar_enable and res.bar.visible and true or false
@@ -1187,7 +1117,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 		c.icon_enabled = false
 	end
 
-	-- the real update toggles the glow per call (= per frame here); hold it steady while the pulse phase is on
 	if alert_on and fs.healthbar_specials_enable then
 		local glow = style.icon_background1
 		local spec = fs.outline_specials_colour
@@ -1221,7 +1150,6 @@ function Preview:_apply_widget_state(fs, dt, t)
 		MK.apply_state(widget, style.current_health.color, alert_marker and fs.outline_specials_colour or nil, 1)
 
 		if MK.health_glyph then
-			-- nil for an empty bar: keep the previous glyph
 			c.marker_health = MK.health_glyph(c.health_fraction or 1) or c.marker_health
 		end
 
@@ -1269,7 +1197,6 @@ function Preview:_tick_widget(dt, t)
 			ev = EVENTS[self._ev_i]
 		end
 
-		-- last second of the loop: "dead", so hb_show_dps has something to show
 		if lt >= DPS_AT and not self._dead and fs.hb_show_dps then
 			self._dead = true
 			c.dead = true
@@ -1286,7 +1213,6 @@ function Preview:_tick_widget(dt, t)
 	c.current_toughness = self._tough
 	c.toughness_fraction = self._tough_max > 0 and self._tough / self._tough_max or 0
 
-	-- bar fractions exactly like healthbar_template.lua: HudHealthBarLogic (vanilla), nil fractions = at rest
 	local bar = self._bar
 	local health_fraction, ghost_fraction = percent, percent
 
@@ -1322,7 +1248,7 @@ end
 
 function Preview:_sync_3d()
 	self._need_sync = false
-	self._p3d_err = nil -- every 3D toggle / subject change is a retry
+	self._p3d_err = nil
 	self._3d_reason = nil
 
 	local p3d = self._p3d
@@ -1354,8 +1280,6 @@ function Preview:_sync_3d()
 		end
 	end
 
-	-- set_breed moves P3D to "loading" behind _tick_3d's back: forget the last seen state so the next
-	-- "ready" is detected even when the new enemy spawns on the very next update (packages already resident)
 	self._p3d_state, self._p3d_reason = nil, nil
 
 	if self._3d_reason then
@@ -1439,7 +1363,6 @@ function Preview:_tick_3d(dt, t, input_service)
 		self._layout_dirty = true
 
 		if state == "ready" then
-			-- the (re)spawned unit has no outline yet
 			p3d:set_outline(self._ol_r, self._ol_g, self._ol_b)
 		end
 
@@ -1454,9 +1377,6 @@ end
 -----------------------------------------------------------------------
 -- Placement
 -----------------------------------------------------------------------
-
--- Recomputed on subject / settings / resolution / 3D state changes only: 3D rect + camera frame, the healthbar
--- anchor node (pv_anchor) and the 2D card rect.
 function Preview:_relayout()
 	self._layout_dirty = false
 
@@ -1472,18 +1392,15 @@ function Preview:_relayout()
 	pcall(view._force_update_scenegraph, view)
 
 	local scale = view._render_scale or 1
-	local wp, size = node.world_position, node.size -- reference units (screen = * scale)
+	local wp, size = node.world_position, node.size
 	local sw, sh = size[1], size[2]
 	local p3d = self._p3d
 	local state = p3d and p3d:state()
 	local ready = state == "ready"
 	local stage_px_h
-	-- while the next enemy loads keep the healthbar where it was and show no card (the card is only the
-	-- "no 3D model" fallback; flashing it on every enemy switch looked like a stray box)
 	local loading = state == "loading"
 
 	if p3d then
-		-- UIScenegraph.get_scenegraph_id_screen_scale: store_item_detail_view.lua:1672-1683
 		local xs, ys, ws, hs = UIScenegraph.get_scenegraph_id_screen_scale(sg, self.stage_id, scale)
 
 		p3d:set_rect(xs, ys, ws, hs, sw / sh)
@@ -1504,7 +1421,6 @@ function Preview:_relayout()
 		local centre, span = p3d:frame()
 
 		if centre then
-			-- HUD anchor = root + base_height + 0.5 (+ y offset), projected: fraction from the top of the viewport
 			local az = ((breed and breed.base_height) or 1.8) + 0.5 + by
 
 			frac = 0.5 - (az - centre) / span
@@ -1683,8 +1599,6 @@ function Preview:_draw_all(renderer)
 	local widget = self._widget
 
 	if widget and not self._widget_err then
-		-- a not-yet-loaded plain material raises a catchable Lua error here (textures through material_values are
-		-- gated by _icons_ok, those would crash the engine instead)
 		UIWidget.draw(widget, renderer)
 	end
 end

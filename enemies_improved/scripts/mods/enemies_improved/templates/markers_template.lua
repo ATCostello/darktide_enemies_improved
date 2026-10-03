@@ -110,9 +110,6 @@ template.fade_settings = {
 -----------------------------------------------------------------------
 -- Widget creation
 -----------------------------------------------------------------------
-
--- health-percentage tier icon used by the simple_health marker; nil for an empty bar, which keeps
--- whatever glyph the widget already has. The editor preview calls it directly.
 local function health_glyph(health_percent)
 	if health_percent > 0.75 then
 		return "content/ui/materials/icons/perks/perk_level_04"
@@ -330,8 +327,6 @@ end
 
 local Unit_alive = Unit.alive
 
--- Re-reads the size settings into the module tables the widget definition captures. on_enter runs
--- it per marker; the editor runs it before building a preview widget.
 local function refresh_sizes()
 	max_size_value = 32 * fs.marker_size
 	size[1], size[2] = max_size_value, max_size_value
@@ -343,9 +338,6 @@ end
 
 template.refresh_sizes = refresh_sizes
 
--- Pure styling block of update_function (colours + sizes + type icon), free of unit / marker
--- access so the editor can drive it. bar_color: healthbar colour of the enemy; alert_colour: nil,
--- or the special-attack colour while an attack is imminent; scale: marker scale.
 local function apply_state(widget, bar_color, alert_colour, scale)
 	local content = widget.content
 	local style = widget.style
@@ -503,8 +495,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local entry = mod.enemy_cache[unit]
-
-	-- one aliveness check, reused further down instead of asking the engine twice
 	local is_alive = unit and mod.detect_alive(unit)
 
 	if not is_alive then

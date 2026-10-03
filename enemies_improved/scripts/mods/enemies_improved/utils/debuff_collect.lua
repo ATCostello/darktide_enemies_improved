@@ -1,16 +1,6 @@
 local mod = get_mod("enemies_improved")
 
--- Gathers "what debuffs are on this unit" into `widget._active`, for the editor preview.
---
--- This mirrors the inline gather in templates/debuff_template (the HUD path) row for row, so the
--- preview shows the same rows the healthbar shows. Combining same-icon rows is deliberately NOT
--- done here: that pass lives in debuff_template.layout_rows and runs for both paths.
---
--- `debuffs` / `keywords` are the unit's buff extension lists (nil in the preview, which passes its
--- fake buffs as `debuffs`). Returns the entry count, also stored as widget._active_count.
-
 local math_floor = math.floor
-
 local pool = {}
 
 local function _take_entry(active, index)
@@ -106,7 +96,7 @@ mod.collect_debuffs = function(widget, debuffs, keywords, unit, include_stagger)
 	end
 
 	-------------------------------------------------------------------
-	-- Custom stagger debuff (not a buff: it lives on the enemy cache entry)
+	-- Custom stagger debuff
 	-------------------------------------------------------------------
 	local enemy_entry = include_stagger and fs.debuff_stagger_enable and mod.enemy_cache and mod.enemy_cache[unit]
 
@@ -134,7 +124,6 @@ mod.collect_debuffs = function(widget, debuffs, keywords, unit, include_stagger)
 				stagger_time_rounded = 0.00
 			end
 
-			-- the stack slot carries the remaining stagger time instead of a count
 			entry.name = "staggered"
 			entry.stacks = 1
 			entry.duration = stagger_time_rounded
@@ -146,7 +135,6 @@ mod.collect_debuffs = function(widget, debuffs, keywords, unit, include_stagger)
 		end
 	end
 
-	-- hand the unused tail back to the pool
 	for i = active_count + 1, #active do
 		pool[#pool + 1] = active[i]
 		active[i] = nil

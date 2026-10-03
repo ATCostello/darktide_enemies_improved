@@ -58,7 +58,6 @@ mod.update_enemy_healthbars = function(entry, t)
 	end
 
 	if is_horde and (not fs.horde_enable and not clusters_enable) and effective ~= "true_override" then
-		-- the buff scan is not cheap, so only run it once we know it can still force the bar on
 		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t)) then
 			return
 		end

@@ -1,10 +1,3 @@
--- Settings API for the native editor (mod.settings_api).
--- Plain functions on the returned table, values follow DMF storage exactly: every setting is a flat
--- mod:get/mod:set id, colours are the channel mirrors <base>_R/_G/_B (+_A), per-type / per-breed
--- overrides are one flat id per (field, key). Nothing here notifies DMF; the editor writes through
--- these functions and calls S.apply() (debounced) so the HUD caches follow.
--- Only S.get is meant for per-frame use (and S.ov_is_modified, memoised on S.rev). Everything else
--- does mod:get/mod:localize work and belongs in click handlers / cached lists.
 local mod = get_mod("enemies_improved")
 
 local BreedQueries = require("scripts/utilities/breed_queries")
@@ -27,8 +20,8 @@ local defaults = mod.setting_defaults
 
 local S = {}
 
-S.serial = 0 -- bumped by every effective S.apply (consumers rebuild previews when it changes)
-S.rev = 0 -- bumped by every write (cheap cache key)
+S.serial = 0
+S.rev = 0
 
 local dirty = false
 
@@ -49,7 +42,6 @@ local function clone(value)
 	return value
 end
 
--- {A,R,G,B} equality / number equality with a float tolerance
 local function equal(a, b)
 	if type(a) == "table" and type(b) == "table" then
 		for i = 1, 4 do
@@ -115,8 +107,6 @@ local function clamp(value, min, max)
 	return value
 end
 
--- numeric widget -> min, max, step, decimals. DMF shows 0.01 steps with 1 decimal when the widget says
--- decimals_number = 1; the editor wants every digit the step needs.
 local num_specs = {}
 
 local function num_spec(widget)
@@ -135,7 +125,6 @@ local function num_spec(widget)
 		needed = needed + 1
 	end
 
-	-- the default must survive S.set's rounding (healthbar_type_icon_scale: default 1.05 on a 0.1 step)
 	local default = widget.default_value
 
 	if type(default) == "number" then
@@ -158,7 +147,6 @@ function S.schema(id)
 	return schema[id]
 end
 
--- { min, max, step, decimals } for a numeric widget (nil otherwise). Shared table, do not modify.
 function S.num_spec(id)
 	local widget = schema[id]
 
@@ -181,7 +169,6 @@ end
 
 local options_cache = {}
 
--- { {value=, label=}, ... } shared/cached, do not modify. Fonts keep their {#font(..)} markup.
 function S.options(id)
 	local cached = options_cache[id]
 
@@ -212,8 +199,6 @@ end
 -----------------------------------------------------------------------
 -- Colours
 -----------------------------------------------------------------------
-
--- forward declarations: colour defaults of override / debuff-group bases need the registries below
 local colour_default_of_other_base
 
 local function colour_base(id)
@@ -244,7 +229,6 @@ function S.default_colour(base)
 	return colour_default_of_other_base(base)
 end
 
--- explicit default: the override registry passes its own (preset aware / per type)
 local function read_colour(base, default, alpha)
 	local r = mod:get(base .. "_R")
 	local g = mod:get(base .. "_G")
@@ -295,7 +279,6 @@ function S.default(id)
 	return clone(defaults[id])
 end
 
--- stored value, or the default when nothing is stored. "<base>_rgb" ids return the colour table.
 function S.get(id)
 	local base = colour_base(id)
 
@@ -312,10 +295,8 @@ function S.get(id)
 	return value
 end
 
--- forward declaration: moves un-edited per-breed bar colours to the new preset (needs seed_type, defined below)
 local migrate_breed_colours
 
--- no DMF notify; marks dirty (S.apply pushes it to the HUD caches)
 function S.set(id, value)
 	local base = colour_base(id)
 
@@ -337,7 +318,6 @@ function S.set(id, value)
 	touch()
 
 	if old_preset then
-		-- existing semantics: the preset overwrites every per-type bar colour
 		mod.healthbar_colour_preset_changed()
 		migrate_breed_colours(old_preset)
 	end
@@ -367,9 +347,6 @@ local function step(name, fn, ...)
 	end
 end
 
--- Push the stored values into the HUD caches. Order matters: frame_settings first, the outline
--- registration reads fs.breed_outline_enabled (the old DMF path ran it before the rebuild).
--- Heavy marker rebuild (clear_caches) is NOT done here, the close_view hook does it on editor close.
 function S.apply()
 	if not dirty then
 		return false
@@ -392,7 +369,6 @@ function S.apply()
 	return true
 end
 
--- explicit flush (DMF saves on game state change / unload anyway); verified in dmf/modules/core/settings.lua
 function S.save()
 	local dmf = get_mod("DMF")
 	local save = dmf and dmf.save_unsaved_settings_to_file
@@ -486,7 +462,6 @@ local function build_breeds()
 	end
 end
 
--- { {name=, label=, type=, breed=}, ... } sorted by label. Cached/shared, do not modify.
 function S.breeds(type_id)
 	if not breeds_all then
 		build_breeds()
@@ -536,14 +511,6 @@ end
 -----------------------------------------------------------------------
 -- Per type / per breed overrides
 -----------------------------------------------------------------------
--- id = flat setting id pattern, %s = type id or breed name. kind: bool | num | int | rgb | tri.
--- nil_default: bool whose stored nil means "default on"; reset clears it instead of writing true.
--- toggle: key of the on/off field this value belongs to (the editor draws it as one row).
--- group: editor section hint.
-
--- The DMF override dropdowns store "dont_override" / "true_override" / "false_override" (see
--- mod.override_value), while the editor's tri-state rows speak nil / true / false. The conversion
--- lives here so the editor never sees a raw string and the HUD keeps reading what it expects.
 local TRI_TRUE = "true_override"
 local TRI_FALSE = "false_override"
 local TRI_NONE = "dont_override"
@@ -555,12 +522,9 @@ local function tri_from_storage(value)
 		return false
 	end
 
-	return nil -- TRI_NONE, nil, or an old plain bool default (treated as "inherit")
+	return nil
 end
 
--- "inherit" is stored as the DMF dropdown's own "dont_override" string rather than nil: the
--- migration in settings_functions rewrites any plain boolean it finds, so an editor-written nil or
--- false would silently turn back into "inherit" on the next load.
 local function tri_to_storage(value)
 	if value == true then
 		return TRI_TRUE
@@ -571,8 +535,6 @@ local function tri_to_storage(value)
 	return TRI_NONE
 end
 
--- a few tri-state fields are shared with a plain bool setting (horde debuffs), where "inherit"
--- has nothing to inherit and the stored default is off
 local function tri_read(spec, value)
 	if spec.bool_store then
 		return value == true
@@ -593,15 +555,12 @@ local function type_default_icon(key)
 	return mod.ICON_SETTINGS_DEFAULT[key]
 end
 
--- vanguards seed their per-breed colours from the "elite" palette (init_healthbar_defaults)
 local function seed_type(breed_name)
 	local category = S.type_of(breed_name) or "enemy"
 
 	return category == "shield" and "elite" or category
 end
 
--- preset change: a breed whose stored bar colour still equals its seed (the OLD preset's colour) follows the new
--- preset like the per-type keys do; hand-picked colours stay
 function migrate_breed_colours(old)
 	local new = mod.breed_colour_preset_table(mod:get("healthbar_colour_preset"))
 	local list = S.breeds()
@@ -736,8 +695,6 @@ local TYPE_FIELDS = {
 			return mod.ICON_COLOURS_DEFAULT[key]
 		end,
 	},
-	-- horde aliases the GLOBAL "debuffs on hordes" setting (debuff_horde_global_enable, a plain
-	-- checkbox: there is nothing above it to inherit from, so "off" is the editor default)
 	{
 		key = "debuff_on",
 		kind = "tri",
@@ -812,7 +769,6 @@ local BREED_FIELDS = {
 			return mod.breed_colour_preset_table(mod:get("healthbar_colour_preset"))[seed_type(key)]
 		end,
 	},
-	-- tri-state: nil inherit / true force on / false block. Never write true unless the user asks.
 	{
 		key = "bar_force",
 		kind = "tri",
@@ -844,7 +800,6 @@ local BREED_FIELDS = {
 		toggle = "bar_y_on",
 		group = "healthbar",
 	},
-	-- NOTE the id shape: markers_<breed>_toggle
 	{
 		key = "marker_on",
 		kind = "tri",
@@ -853,7 +808,6 @@ local BREED_FIELDS = {
 		tooltip = "markers_individual_toggle_tooltip",
 		group = "marker",
 	},
-	-- tri-state: nil inherit / true force on / false block. Never write true unless the user asks.
 	{
 		key = "debuff_on",
 		kind = "tri",
@@ -928,7 +882,6 @@ for scope, list in next, FIELDS do
 	end
 end
 
--- horde / enemy have no healthbar type icon (healthbar_template apply_icon_settings)
 local NO_ICON = { horde = true, enemy = true }
 
 local function ov_id(spec, key)
@@ -946,7 +899,6 @@ end
 
 local fields_cache = {}
 
--- ordered field specs for scope/key (shared tables, label_text / tooltip_text filled in)
 function S.ov_fields(scope, key)
 	local cache_key = scope .. "|" .. (scope == "type" and NO_ICON[key] and "noicon" or "all")
 	local cached = fields_cache[cache_key]
@@ -987,7 +939,6 @@ function S.ov_default(scope, key, field)
 	return clone(default)
 end
 
--- stored value or default; colours -> {A,R,G,B}; tri -> raw nil/true/false
 function S.ov_get(scope, key, field)
 	local spec = spec_of(scope, field)
 	local id = ov_id(spec, key)
@@ -1033,7 +984,6 @@ end
 function S.ov_is_default(scope, key, field)
 	local spec = spec_of(scope, field)
 
-	-- a breed colour whose override toggle is OFF is inert: a stale seed from an older preset is not "modified"
 	if scope == "breed" and spec.kind == "rgb" and spec.toggle and S.ov_get(scope, key, spec.toggle) ~= true then
 		return true
 	end
@@ -1067,7 +1017,6 @@ end
 local modified_cache = {}
 local modified_rev = -1
 
--- any visible field away from its default (memoised on S.rev, safe to call per frame)
 function S.ov_is_modified(scope, key)
 	if modified_rev ~= S.rev then
 		modified_cache = {}
@@ -1096,7 +1045,6 @@ function S.ov_is_modified(scope, key)
 	return result
 end
 
--- colour default of a base that has no schema widget: type / breed override colours, debuff group colours
 function colour_default_of_other_base(base)
 	-- debuff_group_<group>_colour
 	local group = string_match(base, "^debuff_group_(.+)_colour$")
@@ -1128,13 +1076,6 @@ function colour_default_of_other_base(base)
 	return { 255, 255, 255, 255 }
 end
 
------------------------------------------------------------------------
--- Preview resolver: mirrors the runtime precedence (see healthbar/markers/debuff templates,
--- modules/outlines.lua, modules/markers.lua, modules/debuffs.lua)
------------------------------------------------------------------------
-
--- raw stored value of an override field, nil when never stored; tri fields are converted to
--- nil / true / false like the editor shows them
 local function raw(scope, key, field)
 	local spec = spec_of(scope, field)
 	local id = ov_id(spec, key)
@@ -1148,11 +1089,9 @@ end
 
 function S.resolve(breed_name)
 	local breed_type = S.type_of(breed_name) or "enemy"
-	local is_horde = breed_type == "horde" -- vanguards are "shield", so this equals mod.is_horde(unit)
+	local is_horde = breed_type == "horde"
 	local result = { breed = breed_name, type = breed_type, label = breed_label(breed_name) }
 
-	-- OUTLINE: the breed state wins outright when it is a real override, otherwise the type one
-	-- does (modules/outlines.lua enable_enemy_outlines); both are gated by outlines_enable
 	local outline = { on = false, source = "off" }
 	local breed_outline = S.ov_get("breed", breed_name, "outline_on")
 	local type_outline = S.ov_get("type", breed_type, "outline_on")
@@ -1171,8 +1110,6 @@ function S.resolve(breed_name)
 
 	result.outline = outline
 
-	-- HEALTHBAR: the breed force state wins over the type state whenever it is an override, and a
-	-- "false" anywhere hides the bar (healthbar_template.healthbar_enabled_for / modules/healthbars)
 	local force_state = S.ov_get("breed", breed_name, "bar_force")
 	local type_state = S.ov_get("type", breed_type, "bar_on")
 	local effective = force_state ~= nil and force_state or type_state
@@ -1181,7 +1118,6 @@ function S.resolve(breed_name)
 		and is_horde
 		and not (S.get("hb_horde_enable") or S.get("hb_horde_clusters_enable"))
 
-	-- world metres, sign applied like fs.*_y_offset (value is negated by build_frame_settings)
 	local y
 	local breed_y = S.ov_get("breed", breed_name, "bar_y_on") and raw("breed", breed_name, "bar_y")
 	local type_y = S.ov_get("type", breed_type, "bar_y_on") and raw("type", breed_type, "bar_y")
@@ -1203,11 +1139,10 @@ function S.resolve(breed_name)
 		rgb = S.ov_get("breed", breed_name, "bar_rgb_on") and S.ov_get("breed", breed_name, "bar_rgb")
 			or S.ov_get("type", breed_type, "bar_rgb"),
 		y = y,
-		forced = forced_on, -- true when a breed force flag is what keeps the bar visible
+		forced = forced_on,
 		horde_blocked = horde_blocked or false,
 	}
 
-	-- ICON: type only; horde / enemy have no icon art
 	local icon_on = not NO_ICON[breed_type]
 		and S.get("healthbar_type_icon_enable")
 		and S.ov_get("type", breed_type, "icon_on")
@@ -1221,8 +1156,6 @@ function S.resolve(breed_name)
 		rgb = S.ov_get("type", breed_type, "icon_rgb"),
 	}
 
-	-- DEBUFFS: a "true" on either the breed or the type forces them on, a "false" on either blocks
-	-- them, and the global + horde gates sit on top (enemies_improved_template.debuff_state)
 	local individual = S.ov_get("breed", breed_name, "debuff_on")
 	local type_debuff = S.ov_get("type", breed_type, "debuff_on")
 	local on
@@ -1246,8 +1179,6 @@ function S.resolve(breed_name)
 		)) and true or false,
 	}
 
-	-- OVERHEAD MARKER: the breed state beats the type state, and only a "true" override bypasses the
-	-- horde split filters (markers_template.update_function / modules/markers)
 	local breed_marker = S.ov_get("breed", breed_name, "marker_on")
 	local marker_override = breed_marker ~= nil and breed_marker or S.ov_get("type", breed_type, "marker_on")
 	local filter = is_horde and S.get("markers_horde_enable") or (not is_horde and S.get("markers_non_horde_enable"))
@@ -1258,7 +1189,6 @@ function S.resolve(breed_name)
 		forced = marker_override == true or false,
 	}
 
-	-- DISTANCE: individual replaces the global draw distance
 	result.draw_distance = S.ov_get("breed", breed_name, "dist_on") and S.ov_get("breed", breed_name, "dist")
 		or S.get("draw_distance")
 	result.outline_distance = S.ov_get("breed", breed_name, "odist_on") and S.ov_get("breed", breed_name, "odist")
@@ -1277,7 +1207,6 @@ function S.debuff_label(name)
 	return strip(loc(name) or prettify(name))
 end
 
--- groups with at least one debuff: { {group=, label=, icon=, names={sorted by label}} } (cached, shared)
 function S.debuff_groups()
 	if debuff_groups_cache then
 		return debuff_groups_cache
@@ -1356,7 +1285,6 @@ function S.debuff_group_colour(group)
 	return read_colour("debuff_group_" .. group .. "_colour", S.default_debuff_group_colour(group), false)
 end
 
--- also mutates mod.debuff_styles[group].colour in place, like load_debuff_colours (the HUD reads it live)
 function S.set_debuff_group_colour(group, colour)
 	write_colour("debuff_group_" .. group .. "_colour", colour, false)
 

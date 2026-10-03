@@ -73,7 +73,9 @@ local function get_smart_tag_system()
 
 	local extension_manager = Managers.state.extension
 	if extension_manager then
-		_smart_tag_system = extension_manager:has_system("smart_tag_system") and extension_manager:system("smart_tag_system") or nil
+		_smart_tag_system = extension_manager:has_system("smart_tag_system")
+				and extension_manager:system("smart_tag_system")
+			or nil
 	end
 
 	_smart_tag_checked = true
@@ -244,7 +246,6 @@ mod.pulse_enemy_outline = function(entry)
 end
 
 mod.remove_stagger_outline = function(entry)
-	-- nothing applied yet, so dont wake the outline system up for nothing
 	if not entry.stagger_outline then
 		return
 	end
@@ -264,7 +265,6 @@ mod.remove_stagger_outline = function(entry)
 end
 
 mod.remove_alert_outline = function(entry)
-	-- nothing applied yet, so dont wake the outline system up for nothing
 	if not entry.alert_outline then
 		return
 	end
@@ -325,8 +325,6 @@ local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, en
 	local distance = math.sqrt(distance_sq)
 	local inv_dist = 1 / distance
 
-	-- has to be a fresh vector each time. vectors built by the Vector3 constructor are light
-	-- userdata and reject field writes, so a reusable scratch vector is not an option here
 	local dir = Vector3(dx * inv_dist, dy * inv_dist, dz * inv_dist)
 
 	local hit = PhysicsWorld.raycast(
@@ -352,7 +350,6 @@ local function _los_raycast_hits_enemy(physics_world, player_pos, target_pos, en
 	return false
 end
 
--- the player head node and world position are the same for every enemy in a scan, so cache them
 mod.get_los_origin = function(player_unit)
 	if not player_unit then
 		return nil
@@ -366,7 +363,6 @@ mod.get_los_origin = function(player_unit)
 	return Unit_world_position(player_unit, _los_origin_node, _los_origin_pos)
 end
 
--- head and spine node indices never change for a unit, so hang them off the cache entry
 local function _get_los_nodes(unit, entry)
 	local nodes = entry and entry._los_nodes
 	if nodes then
@@ -423,7 +419,6 @@ mod.has_line_of_sight = function(player_unit, enemy_unit, physics_world, player_
 	)
 end
 
--- resolves the camera forward vector once so it can be shared across a whole scan
 mod.get_camera_forward = function()
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
@@ -526,8 +521,6 @@ mod.update_enemy_outlines = function(entry, player_unit)
 		entry._outline_applied = false
 	end
 
-	-- disable our outlines if an enemy is tagged. tagged_units is only populated when
-	-- only_tagged_enemies is on, so fall back to asking the tag system directly
 	local smart_tag_system = get_smart_tag_system()
 	local is_tagged = mod.tagged_units[unit] or (smart_tag_system and smart_tag_system:unit_tag_id(unit) ~= nil)
 
@@ -538,8 +531,6 @@ mod.update_enemy_outlines = function(entry, player_unit)
 		return
 	end
 
-	-- the scan already raycasted this exact pair and only kept units with LOS, so the
-	-- result is still valid and redoing it here is pure overhead
 	local has_los = entry._los_ok
 
 	if not has_los then
@@ -547,7 +538,6 @@ mod.update_enemy_outlines = function(entry, player_unit)
 	end
 
 	if has_los then
-		-- enable_enemy_outlines only does work when the desired outline changed
 		mod.enable_enemy_outlines(unit, entry)
 	elseif entry._outline_applied then
 		mod.disable_enemy_outlines(unit, entry)
@@ -575,7 +565,6 @@ local breeds_missing_outline_tag = {
 	cultist_assault = true,
 }
 
--- shared with the editor's 3D preview, which spawns the gear itself and so cannot tag live slots
 function mod.breed_missing_outline_tag(breed_name)
 	return breeds_missing_outline_tag[breed_name] == true
 end

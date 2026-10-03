@@ -197,8 +197,6 @@ end
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
--- Fresh preset palette, without touching the live mod.BREED_COLOURS (the settings API asks for
--- defaults while the HUD is reading that table).
 mod.breed_colour_preset_table = function(preset)
 	if preset == "red" then
 		return {
@@ -839,9 +837,6 @@ mod._on_setting_changed_impl = function(setting_id)
 	mod.update_dmf_settings_colours(setting_id)
 end
 
--- Any view that edits the settings needs the same rebuild on close: DMF writes straight into the frame
--- settings, the native editor applies through settings_api. Kept as one function so a view cannot be
--- forgotten here. The editor view name mirrors ei_editor.VIEW_NAME (this file loads before the editor).
 local CLOSING_SETTINGS_VIEWS = {
 	dmf_options_view = true,
 	options_view = true,
@@ -921,8 +916,6 @@ end)
 -----------------------------------------------------------------------
 -- Native settings API (editor)
 -----------------------------------------------------------------------
--- Reads mod.setting_schema / mod.setting_defaults, which enemies_improved_data.lua builds from the
--- same widget tree DMF owns, so this must be loaded after the data file.
 mod.settings_api = mod.setting_schema
 		and mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_api")
 	or nil

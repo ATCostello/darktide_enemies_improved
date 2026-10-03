@@ -356,18 +356,6 @@ local function get_text_option(content, option)
 	end
 end
 
------------------------------------------------------------------------
--- Pure appliers (shared with the editor preview)
--- Extracted from on_enter / update_function: the HUD keeps every world read and calls these
--- afterwards, the editor calls them with fake data. Code inside is moved verbatim; do not
--- add unit / marker / extension access here.
------------------------------------------------------------------------
-
--- on_enter's pure part: icon flags/sizes/colours, toughness + bar + ghost colours, per-breed
--- colour override, damage number settings. Needs content.breed / content._breed_type set.
--- Compounds style default_size/default_offset (icons): call ONCE per widget.
--- Weakened bosses are resolved from content.unit, which on_enter sets before calling; the editor
--- preview leaves it nil, so a weakened boss previews in its normal colour.
 local function apply_breed_style(widget, breed, breed_type, scale)
 	local content = widget.content
 	local style = widget.style
@@ -558,10 +546,6 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 	template.show_dps = fs.hb_show_dps
 end
 
--- update_function's pure part 1: scaled bar sizes, alert/glow, text lines + colours.
--- Inputs live on content (set by the caller): health_fraction, health_ghost_fraction,
--- toughness_fraction, health_current/health_max/health_percent, current/max_toughness, breed,
--- _breed_type ... alert_active replaces entry.alert_outline.
 local function apply_state_body(widget, scale, alert_active)
 	local content = widget.content
 	local style = widget.style
@@ -750,7 +734,6 @@ local function apply_state_body(widget, scale, alert_active)
 	end
 end
 
--- update_function's pure part 2 (runs when the bar is drawn): built flags + font sizes.
 local function apply_built_scale(widget, marker_scale)
 	local content = widget.content
 	local style = widget.style
@@ -785,10 +768,6 @@ local function apply_built_scale(widget, marker_scale)
 	end
 end
 
--- Pure number construction / merge (update_function's damage-number block). The caller does the
--- world reads and classification: hit_was_critical / hit_was_weakspot / dot_only; `was_critical`
--- is the raw health-extension crit flag (defaults to hit_was_critical when omitted, e.g. editor).
--- Numbers are pooled and reused, and a merged number re-stamps its flags from the incoming hit.
 local function push_damage_number(
 	widget,
 	damage_diff,
@@ -902,9 +881,6 @@ template.get_text_option = get_text_option
 template.apply_breed_style = apply_breed_style
 template.push_damage_number = push_damage_number
 
--- Editor entry point: both halves of update_function's pure part, as the HUD runs them for a
--- drawn bar (draw_hb true, line of sight clear). dt / t are accepted for API symmetry. The alert
--- glow toggles once per call when specials_flash is on (HUD: once per throttled update).
 template.apply_state = function(widget, scale, dt, t, alert_active)
 	widget.content.draw_hb = true
 	apply_state_body(widget, scale, alert_active)
@@ -1147,7 +1123,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.toughness_fraction = toughness_fraction
 
 	-------------------------------------------------------------------
-	-- Horde cluster: pooled HP + center position with stable max
+	-- Horde clusters
 	-------------------------------------------------------------------
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
@@ -1477,7 +1453,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	-- killed in the same frame damage was taken: seed DPS data so it shows on the death frame
 	if damage_taken_since_last > 0 and health_extension and is_dead and fs.hb_show_dps then
 		content.damage_taken = total_damage_taken
 		content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last

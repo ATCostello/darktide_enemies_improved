@@ -57,8 +57,6 @@ local function _init_damage_colors()
 	CACHED_DAMAGE_COLORS.default = fs.main_colour
 	CACHED_DAMAGE_COLORS.crit = fs.damage_number_crit_colour
 	CACHED_DAMAGE_COLORS.weakspot = fs.damage_number_weakspot_colour
-	-- there is no DOT colour setting, so a DOT number (the editor preview scripts them) draws in the
-	-- main colour instead of indexing a nil table
 	CACHED_DAMAGE_COLORS.dot = fs.dn_dot_colour or fs.main_colour
 	-- toughness colours
 	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
@@ -483,7 +481,6 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 			default_color = fs.toughness_colour
 		end
 
-		-- reuse same table reference
 		local text_color = ui_style.text_color
 
 		local num_damage_numbers = #damage_numbers
@@ -696,8 +693,6 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 	end
 end
 
--- the cached colours are read once per mod load; the editor changes colours live and calls this so
--- the next damage number picks up the new frame settings
 local function _reset_damage_colors()
 	table_clear(CACHED_DAMAGE_COLORS)
 end

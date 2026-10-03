@@ -1,27 +1,3 @@
--- Enemies Improved editor: 3D enemy for the preview panel.
---
--- One level-less UIWorldSpawner world + one viewport (rect = the preview stage) + one spawned minion
--- (base unit + state machine + the wielded/body items of its visual loadout) with the same outline
--- material layers the real OutlineSystem toggles. The world carries a small light rig of its own
--- (see LIGHT_RIG), a level-less world has nothing lighting it.
---
--- An unloaded resource crashes the engine and pcall cannot catch that, so:
---  * every unit / package is gated with Application.can_get_resource, a unit is only spawned after the
---    packages report loaded, partially resident items are dropped instead of spawned;
---  * a persisted crash guard (ei_preview_3d_pending) disables 3D after an attempt that never finished;
---  * mod:info breadcrumbs ("[ei_preview] ...") name the last step before a crash;
---  * every engine call that can raise a Lua error is pcall'd; destroy is idempotent.
---
--- Public API (used by ei_preview.lua):
---   P3D.supported(breed) -> ok, reason       P3D.pending() -> breed name | nil
---   P3D.trip_guard() -> name, disabled_all   (previous attempt never finished: block that enemy, or 3D, clear, save)
---   P3D.clear_blocked()                      (user re-enabled 3D: retry blocked enemies)
---   P3D.new(view)       -> obj | nil, reason
---   obj:set_breed(breed_name)   obj:set_rect(x, y, w, h, aspect)  (0..1 screen fractions)
---   obj:set_outline(r, g, b | nil)   obj:set_yaw(rad)   obj:update(dt, t)
---   obj:state() -> "idle" | "loading" | "ready" | "failed", reason
---   obj:frame() -> centre_z, visible_span_z (world metres, valid when ready)   obj:destroy()
-
 local mod = get_mod("enemies_improved")
 
 local P3D = {}
@@ -29,30 +5,23 @@ P3D.__index = P3D
 
 local PENDING_KEY = "ei_preview_3d_pending"
 local PACKAGE_REF = "enemies_improved_preview"
--- the weapon preview puts its item world at view layer + 35 (view_element_inventory_weapon_preview.lua:13);
--- the 2D overlay (ei_preview.lua) sits above at +45
+
 local WORLD_LAYER = 35
-local CAMERA_FOV = 30 -- vertical degrees (UIWorldSpawner._set_fov takes degrees, ui_world_spawner.lua:515)
+local CAMERA_FOV = 30
 local GUARD_FRAMES = 30
 local LOAD_TIMEOUT = 30
 local SPAWN_SEED = 7
-local BASE_YAW = math.pi + 0.45 -- minion units face +y, the camera looks along +y from -y: turn around, 3/4 view
--- a minion state machine runs a looping idle, so the model never stops moving and the preview smears;
--- let the spawn animation play, then hold the pose (same call ui_profile_spawner.lua:1422 uses on a slot)
+local BASE_YAW = math.pi + 0.45
+
 local FREEZE_ANIM_DELAY = 0.8
--- The preview world is level-less, so nothing lights the models; the vanilla item / character previews get their
--- lights by spawning a level. Core light units do the same job here: a fixed key / fill / rim rig around the
--- enemy, which stands at the origin, so a model reads the same whatever it is up to. Omni on purpose, a spot or
--- directional one would depend on the light unit's forward axis.
--- { position, colour, intensity, falloff_end } - intensities and ranges in the same ballpark as the lantern mods.
+
 local LIGHT_UNIT = "core/units/light"
 local LIGHT_FALLOFF_START = 1
 local LIGHT_RIG = {
-	{ Vector3(-1.1, -1.5, 2.3), { 1, 0.95, 0.88 }, 250, 12 }, -- key, warm, high front left
-	{ Vector3(1.5, -1.3, 1.1), { 0.72, 0.8, 1 }, 90, 10 }, -- fill, cool, low front right
-	{ Vector3(0.4, 2.2, 1.9), { 0.85, 0.9, 1 }, 140, 11 }, -- rim, from behind
+	{ Vector3(-1.1, -1.5, 2.3), { 1, 0.95, 0.88 }, 250, 12 }, -- key
+	{ Vector3(1.5, -1.3, 1.1), { 0.72, 0.8, 1 }, 90, 10 }, -- fill
+	{ Vector3(0.4, 2.2, 1.9), { 0.85, 0.9, 1 }, 140, 11 }, -- rim
 }
--- same layers OutlineSystem toggles for minions (scripts/settings/outline/outline_settings.lua:33-34)
 local OUTLINE_LAYERS = { "minion_outline", "minion_outline_reversed_depth" }
 
 local world_counter = 0
@@ -84,8 +53,6 @@ local function set_pending(value)
 	end
 end
 
--- Application.can_get_resource(type, name): true only when the resource is resident (decal_manager.lua:75 uses
--- the "package" type; "unit" is the engine resource type name). A wrong type string just returns false.
 local function can_get(kind, name)
 	if not name or name == "" then
 		return false
@@ -97,7 +64,7 @@ local function can_get(kind, name)
 end
 
 -----------------------------------------------------------------------
--- Game modules (lazy: a missing/changed module must degrade to "3D unavailable", not break mod load)
+-- Game modules
 -----------------------------------------------------------------------
 
 local deps, deps_error
@@ -142,12 +109,6 @@ end
 -----------------------------------------------------------------------
 -- Static helpers
 -----------------------------------------------------------------------
-
--- Units of script-component breeds (beast of nurgle) can fire the script-component flow nodes. In a UI world those
--- run UIFlowCallbacks.enable_script_component & co, which index the world's extension manager
--- (ui_flow_callbacks.lua:58-93); a level-less preview world has none -> nil index error inside the spawn.
--- Wrap them ONCE on the global table (flag on the table survives mod reloads; DMF warns on re-hooking) so they are
--- no-ops for worlds without an extension manager. Worlds that have one (vanilla UI levels) are unchanged.
 local FLOW_COMPONENT_CALLBACKS = {
 	"enable_script_component",
 	"disable_script_component",
@@ -209,8 +170,6 @@ function P3D.pending()
 	return mod:get(PENDING_KEY)
 end
 
--- The previous attempt never finished. A named enemy only blocks that enemy; a world-level failure, or a second
--- blocked enemy (the world itself is the likely culprit), turns 3D off. Returns name, disabled_all.
 function P3D.trip_guard()
 	local name = mod:get(PENDING_KEY)
 	local disable_all = true
@@ -239,7 +198,6 @@ function P3D.trip_guard()
 	return name, disable_all
 end
 
--- the user re-enabled 3D: give every enemy another try
 function P3D.clear_blocked()
 	if mod:get(BLOCK_KEY) ~= nil then
 		mod:set(BLOCK_KEY, nil)
@@ -282,7 +240,6 @@ function P3D.new(view)
 	set_pending("(world)")
 	crumb("create world " .. self.world_name)
 
-	-- level-less world, default flags = proven path (ui_world_spawner.lua:11-24, 291-302)
 	local ok, ws = pcall(d.UIWorldSpawner.new, d.UIWorldSpawner, self.world_name, WORLD_LAYER, "ui", view.view_name)
 
 	if not ok or not ws then
@@ -296,8 +253,6 @@ function P3D.new(view)
 
 	crumb("create viewport")
 
-	-- camera_unit nil: ScriptWorld.create_viewport spawns core/units/camera itself (script_world.lua:60-64);
-	-- the always-resident default UI shading environment (default_game_parameters.lua:45)
 	local vok, vres = pcall(
 		ws.create_viewport,
 		ws,
@@ -318,7 +273,6 @@ function P3D.new(view)
 		return nil, "viewport: " .. tostring(vres)
 	end
 
-	-- _set_fov(deg): a raw Camera.set_vertical_fov would be overwritten by UIWorldSpawner._update_camera every frame
 	pcall(ws._set_fov, ws, CAMERA_FOV)
 	pcall(ws.set_viewport_size, ws, 0.01, 0.01)
 	pcall(ws.set_viewport_position, ws, 0, 0)
@@ -330,8 +284,6 @@ function P3D.new(view)
 	return self
 end
 
--- Core light units in the preview world. They live as long as the world does, so nothing has to move them when
--- the enemy changes; a failure here only means a dark preview, never a broken one.
 function P3D:_spawn_lighting()
 	local ws = self.ws
 
@@ -410,7 +362,6 @@ function P3D:_release_packages()
 	self._wait = {}
 end
 
--- units first (attachments, items, root), flushed through the spawner's deletion queue, then the package refs
 function P3D:_clear_subject()
 	local ws = self.ws
 	local spawner = ws and ws:unit_spawner()
@@ -467,7 +418,6 @@ function P3D:destroy()
 		self.ws = nil
 	end
 
-	-- torn down cleanly: the attempt finished, nothing to flag after a later crash
 	pcall(set_pending, nil)
 end
 
@@ -487,8 +437,6 @@ function P3D:state()
 	return self._state, self.reason
 end
 
--- pure data: loadout items + the minimal package set (BreedResourceDependencies.generate would also pull
--- behaviour-tree fx/sfx, so it is not used)
 function P3D:_plan(breed)
 	local d = deps
 	local defs = d.MasterItems.get_cached()
@@ -510,7 +458,6 @@ function P3D:_plan(breed)
 			local slot_name = names[i]
 			local slot = slots[slot_name]
 			local items = slot.items
-			-- same exclusions as the research: material override / gib slots, fx sources, unused weapon slots
 			local skip = slot.is_material_override_slot
 				or slot.starts_invisible
 				or type(items) ~= "table"
@@ -524,8 +471,6 @@ function P3D:_plan(breed)
 				local item = type(item_name) == "string" and defs[item_name] or nil
 
 				if item then
-					-- untagged slot on a breed the base game forgot to tag: same breeds as the HUD's
-					-- fix_missing_outline_tag (outlines.lua), which cannot tag this world's live slots
 					local outline = slot.use_outline
 
 					if outline == nil and mod.breed_missing_outline_tag(breed.name) then
@@ -572,7 +517,6 @@ function P3D:_request_packages()
 	for i = 1, #names do
 		local name = names[i]
 
-		-- prioritized load, same call the BBM editor uses for its icon package
 		if can_get("package", name) then
 			local ok, id = pcall(pm.load, pm, name, PACKAGE_REF, nil, true)
 
@@ -630,7 +574,6 @@ function P3D:set_breed(breed_name)
 	end
 end
 
--- ItemPackage resolves attachment children recursively; every unit it will spawn must be resident
 local function slot_units_ok(d, slot_data, defs, breed_name, depth)
 	if depth > 8 then
 		return true
@@ -698,7 +641,6 @@ function P3D:_outline_set_layers(unit, on)
 		Unit.set_material_layer(unit, OUTLINE_LAYERS[i], on)
 	end
 
-	-- same pair OutlineSystem._set_material_layers does (outline_system.lua:79-87)
 	Unit.set_unit_culling(unit, not on, true)
 end
 
@@ -717,13 +659,12 @@ function P3D:_apply_outline()
 
 	local want = self._ol_on and true or false
 	local key = want and (self._ol_r * 65536 + self._ol_g * 256 + self._ol_b) or -1
-	local prev = self._ol_applied -- nil = never applied (layers default off), -1 = applied off, >= 0 = applied on
+	local prev = self._ol_applied
 
 	if prev == key then
 		return
 	end
 
-	-- layers only on the root unit like vanilla, only toggled when on/off changes
 	if want ~= (prev ~= nil and prev ~= -1) then
 		crumb(want and "outline layers on" or "outline layers off")
 		self:_outline_set_layers(unit, want)
@@ -732,7 +673,6 @@ function P3D:_apply_outline()
 	if want then
 		local vec = Vector3(self._ol_r / 255, self._ol_g / 255, self._ol_b / 255)
 
-		-- colour on the root and on every slot unit / attachment flagged use_outline (outline_system.lua:89-133)
 		set_outline_colour(unit, vec)
 
 		local parts = self._parts
@@ -786,8 +726,6 @@ function P3D:set_yaw(yaw)
 	end
 end
 
--- Frame the unit: it fills ~60% of the stage height (feet at ~8% from the bottom), vertical fov is constant so the
--- visible vertical span at the unit plane is exactly 2*d*tan(fov/2).
 function P3D:_frame()
 	local ws, unit, breed = self.ws, self.unit, self.breed
 
@@ -807,7 +745,6 @@ function P3D:_frame()
 	local tan_half = math.tan(math.rad(CAMERA_FOV) * 0.5)
 	local height = math.max(head + 0.25, base_h)
 	local span = (height + 0.15) / 0.6
-	-- wide silhouettes (ogryns / monsters) must also fit horizontally
 	local width = height * (base_h > 2.3 and 0.9 or 0.6)
 
 	span = math.max(span, (width * 1.15) / math.max(self.aspect, 0.2))
@@ -834,7 +771,6 @@ function P3D:set_rect(x, y, w, h, aspect)
 		return
 	end
 
-	-- size first: UIWorldSpawner._update_viewport_rect clamps an unset width to 0
 	pcall(ws.set_viewport_size, ws, w, h)
 	pcall(ws.set_viewport_position, ws, x, y)
 
@@ -851,7 +787,6 @@ function P3D:_spawn()
 		return self:_fail("model not resident")
 	end
 
-	-- drop items whose units are not resident rather than spawn them
 	local valid = {}
 
 	for i = 1, #self._picks do
@@ -872,8 +807,6 @@ function P3D:_spawn()
 	crumb("spawn " .. breed.name)
 
 	local rotation = Quaternion.axis_angle(Vector3(0, 0, 1), BASE_YAW + self._yaw)
-	-- World.spawn_unit_ex(world, unit, nil, position, rotation): same call UIProfileSpawner uses
-	-- (ui_profile_spawner.lua:1124) through UIUnitSpawner.spawn_unit (ui_unit_spawner.lua:77)
 	local spawner = ws:unit_spawner()
 	local ok, unit = pcall(spawner.spawn_unit, spawner, breed.base_unit, Vector3(0, 0, 0), rotation)
 
@@ -886,14 +819,12 @@ function P3D:_spawn()
 
 	local sm = breed.state_machine
 
-	-- minion_animation_extension.lua:23-25; only when its package really loaded
 	if sm and pm:has_loaded(sm) then
 		pcall(Unit.set_animation_state_machine, unit, sm)
 	end
 
 	local ev = breed.spawn_anim_state
 
-	-- minion_spawn_manager.lua:192-197; guard form from ui_profile_spawner.lua:301-302
 	if ev then
 		pcall(function()
 			if Unit.has_animation_event(unit, ev) then
@@ -908,7 +839,6 @@ function P3D:_spawn()
 	if lod_group then
 		pcall(LODGroup.set_static_select, lod_group, 0)
 	else
-		-- no LOD group on the body: pin its own LOD object instead (player_customization.lua:162-186)
 		pcall(function()
 			if Unit.has_lod_object(unit, "lod") then
 				LODObject.set_static_select(Unit.lod_object(unit, "lod"), 0)
@@ -926,8 +856,6 @@ function P3D:_spawn()
 		end)
 	end
 
-	-- standalone attach mode: from_script_component spawns with World.spawn_unit_ex and links at the wielded node
-	-- (visual_loadout_customization.lua:278-293); same table MinionCustomization builds (minion_customization.lua:40-52)
 	local attach = {
 		from_script_component = true,
 		from_ui_profile_spawner = false,
@@ -1033,7 +961,6 @@ function P3D:update(dt, t)
 		crumb("world update error: " .. tostring(err))
 	end
 
-	-- crash guard: the attempt survived GUARD_FRAMES rendered frames after the last risky step
 	if self._guard_set and self._state ~= "loading" then
 		self._frames = self._frames + 1
 

@@ -1,17 +1,3 @@
--- Enemies Improved editor: page / sub-page / row specs, built from mod.settings_api (see utils/settings_api.lua).
--- Pages.list                -> the 7 tabs
--- Pages.subpages(page_id)   -> array of sub-pages (the chip row); every one fits the 14-row list, no scrolling:
---     { label, rows }                   a plain list of rows
---     { label, rows = cells, grid }     grid = "toggles" | "colours": one button cell per row (Debuffs page)
---     { label, type = <type id> }       Enemies page: one chip per enemy type (rows come from enemy_rows)
--- Pages.enemy_rows(scope, key, hooks) -> rows         (Enemies page, scope = "type" | "breed")
---
--- Row spec (all closures, no per-frame cost):
---   { kind = "header"|"bool"|"num"|"int"|"enum"|"color"|"tri"|"note", id, label, tooltip,
---     get(), set(v), is_default(), reset(), min, max, step, decimals, options, has_alpha,
---     toggle_get(), toggle_set(v)   -- colour rows with an inline ON/OFF toggle
---     requires = <global setting id that must be true, else the label is dimmed>,
---     button, confirm, action(), id  -- note rows with an action button (two-click when confirm is set) }
 local mod = get_mod("enemies_improved")
 
 local Pages = {}
@@ -26,7 +12,6 @@ Pages.list = {
 	{ id = "enemies", title = "ei_page_enemies", hint = "ei_hint_enemies_tabs" },
 }
 
--- Ids asked for that the schema does not know (filled by build; read by the offline check).
 Pages.missing = {}
 local missing_seen = {}
 
@@ -48,7 +33,6 @@ local function colour_equal(a, b)
 	return a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4]
 end
 
--- Decimals needed to show `step` exactly (0.01 -> 2, 0.05 -> 2, 0.1 -> 1, 5 -> 0).
 local function step_decimals(step)
 	if not step or step >= 1 and step == math.floor(step) then
 		return 0
@@ -58,8 +42,6 @@ local function step_decimals(step)
 	return dot and (#s - dot) or 0
 end
 
--- min, max, step, decimals of a numeric widget: S.num_spec(id) when the API has it (DMF names:
--- step_size_value / decimals_number), else read the widget (both name sets).
 local function num_spec(S, id, w)
 	local spec = S.num_spec and S.num_spec(id)
 	if spec then
@@ -78,13 +60,11 @@ local function new_builder(S)
 	local B = { subs = {} }
 	local rows
 
-	-- start a sub-page (label = its loc key); B.add / B.setting append to it
 	B.sub = function(key)
 		rows = {}
 		B.subs[#B.subs + 1] = { label = LOC(key), rows = rows }
 	end
 
-	-- a grid sub-page whose rows are the cells
 	B.grid = function(key, kind, cells)
 		B.subs[#B.subs + 1] = { label = LOC(key), rows = cells, grid = kind }
 	end
@@ -94,7 +74,6 @@ local function new_builder(S)
 		return row
 	end
 
-	-- One global setting (checkbox / numeric / dropdown / colour), by schema id.
 	B.setting = function(id, requires)
 		local w = S.schema(id)
 		if not w then
@@ -160,7 +139,6 @@ local function new_builder(S)
 	return B
 end
 
--- The override field spec with key `fk` for (scope, key), or nil.
 local function ov_field(S, scope, key, fk)
 	local fields = S.ov_fields(scope, key)
 	for i = 1, #fields do
@@ -171,9 +149,6 @@ local function ov_field(S, scope, key, fk)
 	return nil
 end
 
--- A tri-state row (follow global / force on / force off) backed by a per-type / per-breed override field,
--- drawn like the healthbar tri rows. A tri field is never folded into its colour row: three states cannot
--- live in an ON/OFF toggle (see Pages.enemy_rows).
 local function ov_tri_row(S, scope, key, tri_fk, label, requires)
 	local f = ov_field(S, scope, key, tri_fk)
 
@@ -201,7 +176,6 @@ local function ov_tri_row(S, scope, key, tri_fk, label, requires)
 	}
 end
 
--- A colour row backed by a per-type / per-breed override field (+ optional ON/OFF field).
 local function ov_colour_row(S, scope, key, label, colour_fk, toggle_fk, requires)
 	local cf = ov_field(S, scope, key, colour_fk)
 	if not cf then
@@ -295,7 +269,6 @@ PAGE.healthbars = function(B, S)
 	B.settings({
 		"toughness_enabled", "toughness_electric", "toughness_text_enabled", "toughness_text_colour_enabled",
 	}, HB)
-	-- its schema title is the generic "Colour"
 	local tough = B.setting("toughness_colour_rgb", HB)
 	if tough then
 		tough.label = LOC("ei_lbl_toughness_colour")
@@ -337,10 +310,6 @@ PAGE.damage = function(B, S)
 	B.settings({ "hb_show_dps", "show_dn_in_range_only" }, DN)
 end
 
--- Debuffs page grids. Both kinds of cell are ordinary row specs (get / set / is_default / reset) plus:
---   debuff_name   the debuff the preview focuses on hover / click (a group cell: its first debuff)
---   group_colour  () -> {A,R,G,B}, the colour the cell text is drawn in
--- "toggles": one bool cell per debuff, S.debuff_groups() order then debuff label.
 local function debuff_toggle_cells(S, requires)
 	local cells = {}
 	local tip = LOC("ei_debuff_toggle_tip")
@@ -378,7 +347,6 @@ local function debuff_toggle_cells(S, requires)
 	return cells
 end
 
--- "colours": one colour cell per debuff group (opens the colour popup; its Default button resets).
 local function debuff_colour_cells(S, requires)
 	local cells = {}
 	local tip = LOC("ei_debuff_colour_tip")
@@ -459,20 +427,17 @@ end
 
 PAGE.outlines = function(B, S)
 	local OL = "outlines_enable"
-	-- the master switch + one colour / ON row per enemy type: 12 rows
 	B.sub("ei_sec_outlines")
 	B.setting(OL)
 	local types = S.types()
 	for i = 1, #types do
 		local t = types[i]
 		local id = t.id
-		-- follow global / force on / force off + its colour, the pair the healthbar tri + colour rows use
 		B.add(ov_tri_row(S, "type", id, "outline_on", t.label, OL))
 
 		local colour = B.add(ov_colour_row(S, "type", id, t.label, "outline_rgb", nil, OL))
 
 		if colour then
-			-- a blocked outline ignores its colour, so dim the swatch while that is the state
 			colour.req_get = function()
 				return S.ov_get("type", id, "outline_on") == true
 			end
@@ -495,15 +460,13 @@ PAGE.outlines = function(B, S)
 	}, OL)
 end
 
--- The Enemies page has no static rows: one chip per enemy type (short label); the view fills the rows of the
--- selected node with Pages.enemy_rows.
 PAGE.enemies = function(B, S)
 	local types = S.types()
 	for i = 1, #types do
 		local t = types[i]
 		local label = LOC("ei_type_short_" .. t.id)
 		if label == nil or label == "" or label:find("^<") then
-			label = t.label -- no short label for a type added later
+			label = t.label
 		end
 		B.subs[i] = { label = label, type = t.id, rows = {} }
 	end
@@ -520,12 +483,11 @@ Pages.subpages = function(page_id)
 end
 
 -- ---------------------------------------------------------------------------
--- Enemies page: field rows of one node (a type or a breed)
+-- Enemies page
 -- ---------------------------------------------------------------------------
 
 local KIND_OF = { bool = "bool", num = "num", int = "int", rgb = "color", tri = "tri" }
 
--- Which global master greys a field out (obvious masters only).
 local function master_of(field_key)
 	if field_key:find("^outline") or field_key:find("^odist") then
 		return "outlines_enable"
@@ -539,8 +501,6 @@ local function master_of(field_key)
 	return nil
 end
 
--- Rows of one node: [select-type note (breed only)], reset note, then its fields. At most 14 (the list height).
--- hooks = { select_node = function(scope, key) end, reset_node = function() end }
 Pages.enemy_rows = function(scope, key, hooks)
 	local S = mod.settings_api
 	local rows = {}
@@ -579,8 +539,7 @@ Pages.enemy_rows = function(scope, key, hooks)
 	}
 
 	local fields = S.ov_fields(scope, key)
-	-- A colour field with a `toggle` partner is drawn as ONE row (inline ON/OFF + swatch), but only when that
-	-- partner is a real on/off (bar_rgb_on). A tri partner keeps its own follow / force on / force off row.
+
 	local by_key, merged = {}, {}
 	for i = 1, #fields do
 		by_key[fields[i].key] = fields[i]
@@ -604,7 +563,6 @@ Pages.enemy_rows = function(scope, key, hooks)
 			id = fk,
 			label = f.label_text or fk,
 			tooltip = f.tooltip_text,
-			-- a breed's debuff override "Force on" works with the global debuffs off (S.resolve), so no master
 			requires = not (scope == "breed" and fk == "debuff_on") and master_of(fk) or nil,
 			min = f.min,
 			max = f.max,
@@ -647,13 +605,11 @@ Pages.enemy_rows = function(scope, key, hooks)
 					S.ov_set(scope, key, tk, S.ov_default(scope, key, tk))
 				end
 			elseif tf then
-				-- tri partner: the colour is inert unless the outline is forced on
 				row.req_get = function()
 					return S.ov_get(scope, key, tf.key) == true
 				end
 			end
 		elseif f.toggle and by_key[f.toggle] then
-			-- value row whose ON/OFF partner is its own row above: dim the value while that is OFF
 			local tk = f.toggle
 			row.req_get = function()
 				return S.ov_get(scope, key, tk) == true

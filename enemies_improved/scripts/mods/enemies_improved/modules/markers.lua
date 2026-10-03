@@ -47,7 +47,6 @@ mod.update_enemy_markers = function(entry, t)
 			or (not entry.is_horde and not fs.markers_non_horde_enable)
 		)
 	then
-		-- the buff scan is not cheap, so only run it once we know we still want the marker
 		if not (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t)) then
 			return
 		end

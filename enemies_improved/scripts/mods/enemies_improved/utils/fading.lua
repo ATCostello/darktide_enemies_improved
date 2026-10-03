@@ -30,8 +30,6 @@ end
 
 mod.apply_marker_fade = function(self)
 	local fs = mod.frame_settings
-
-	-- the marker table is already cached for this tick
 	local markers_by_id = mod._markers_by_id
 	local world_markers
 
