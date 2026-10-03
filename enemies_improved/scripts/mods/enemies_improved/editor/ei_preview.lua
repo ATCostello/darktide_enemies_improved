@@ -1166,9 +1166,10 @@ function Preview:_apply_widget_state(fs, dt, t)
 		local ctx = self._ctx
 
 		ctx.breed = self._breed
-		-- on-body placement is its own setting (content.breed gives layout_rows the height it measures against,
-		-- the preview has no marker / unit so it takes the same fallback the HUD takes)
+		-- on-body placement is its own setting (content.breed gives layout_rows the height it measures against).
+		-- The preview has no player camera, so _relayout projects the offset from the 3D frame instead.
 		ctx.show_on_body = res.debuffs.on_body and true or false
+		ctx.body_offset_y = self._body_offset_y
 		ctx.draw = true
 
 		DB.layout_rows(widget, 1, dt, ctx)
@@ -1476,6 +1477,7 @@ function Preview:_relayout()
 	local p3d = self._p3d
 	local state = p3d and p3d:state()
 	local ready = state == "ready"
+	local stage_px_h
 	-- while the next enemy loads keep the healthbar where it was and show no card (the card is only the
 	-- "no 3D model" fallback; flashing it on every enemy switch looked like a stray box)
 	local loading = state == "loading"
@@ -1485,12 +1487,18 @@ function Preview:_relayout()
 		local xs, ys, ws, hs = UIScenegraph.get_scenegraph_id_screen_scale(sg, self.stage_id, scale)
 
 		p3d:set_rect(xs, ys, ws, hs, sw / sh)
+
+		stage_px_h = hs
 	end
 
 	local res = self._res
 	local breed = self._breed
 	local by = res and res.bar and res.bar.y or 0
 	local frac
+
+	-- on-body debuff placement: the same projection as the HUD's camera path, from the 3D frame instead.
+	-- + = below the bar (the HUD's body-minus-bar screen delta, in reference units).
+	self._body_offset_y = nil
 
 	if ready then
 		local centre, span = p3d:frame()
@@ -1500,6 +1508,12 @@ function Preview:_relayout()
 			local az = ((breed and breed.base_height) or 1.8) + 0.5 + by
 
 			frac = 0.5 - (az - centre) / span
+
+			if span and span > 0.001 and stage_px_h and scale > 0.001 then
+				local body_z = (breed and breed.base_height or 1.8) * 0.8
+
+				self._body_offset_y = ((az - body_z) / span) * stage_px_h / scale
+			end
 		end
 	end
 

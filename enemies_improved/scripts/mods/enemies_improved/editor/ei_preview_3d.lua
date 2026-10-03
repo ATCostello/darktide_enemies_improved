@@ -524,7 +524,15 @@ function P3D:_plan(breed)
 				local item = type(item_name) == "string" and defs[item_name] or nil
 
 				if item then
-					picks[#picks + 1] = { slot = slot_name, name = item_name, item = item, outline = slot.use_outline }
+					-- untagged slot on a breed the base game forgot to tag: same breeds as the HUD's
+					-- fix_missing_outline_tag (outlines.lua), which cannot tag this world's live slots
+					local outline = slot.use_outline
+
+					if outline == nil and mod.breed_missing_outline_tag(breed.name) then
+						outline = true
+					end
+
+					picks[#picks + 1] = { slot = slot_name, name = item_name, item = item, outline = outline }
 				end
 			end
 		end
@@ -899,10 +907,23 @@ function P3D:_spawn()
 
 	if lod_group then
 		pcall(LODGroup.set_static_select, lod_group, 0)
+	else
+		-- no LOD group on the body: pin its own LOD object instead (player_customization.lua:162-186)
+		pcall(function()
+			if Unit.has_lod_object(unit, "lod") then
+				LODObject.set_static_select(Unit.lod_object(unit, "lod"), 0)
+			end
+		end)
 	end
 
 	if lod_shadow_group then
 		pcall(LODGroup.set_static_select, lod_shadow_group, 0)
+	else
+		pcall(function()
+			if Unit.has_lod_object(unit, "lod_shadow") then
+				LODObject.set_static_select(Unit.lod_object(unit, "lod_shadow"), 0)
+			end
+		end)
 	end
 
 	-- standalone attach mode: from_script_component spawns with World.spawn_unit_ex and links at the wielded node

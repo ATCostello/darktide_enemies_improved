@@ -171,6 +171,36 @@ local function ov_field(S, scope, key, fk)
 	return nil
 end
 
+-- A tri-state row (follow global / force on / force off) backed by a per-type / per-breed override field,
+-- drawn like the healthbar tri rows. A tri field is never folded into its colour row: three states cannot
+-- live in an ON/OFF toggle (see Pages.enemy_rows).
+local function ov_tri_row(S, scope, key, tri_fk, label, requires)
+	local f = ov_field(S, scope, key, tri_fk)
+
+	if not f then
+		return nil
+	end
+
+	return {
+		kind = "tri",
+		label = label or f.label_text or tri_fk,
+		tooltip = f.tooltip_text,
+		requires = requires,
+		get = function()
+			return S.ov_get(scope, key, tri_fk)
+		end,
+		set = function(v)
+			S.ov_set(scope, key, tri_fk, v)
+		end,
+		is_default = function()
+			return S.ov_is_default(scope, key, tri_fk)
+		end,
+		reset = function()
+			S.ov_set(scope, key, tri_fk, S.ov_default(scope, key, tri_fk))
+		end,
+	}
+end
+
 -- A colour row backed by a per-type / per-breed override field (+ optional ON/OFF field).
 local function ov_colour_row(S, scope, key, label, colour_fk, toggle_fk, requires)
 	local cf = ov_field(S, scope, key, colour_fk)
@@ -435,7 +465,18 @@ PAGE.outlines = function(B, S)
 	local types = S.types()
 	for i = 1, #types do
 		local t = types[i]
-		B.add(ov_colour_row(S, "type", t.id, t.label, "outline_rgb", "outline_on", OL))
+		local id = t.id
+		-- follow global / force on / force off + its colour, the pair the healthbar tri + colour rows use
+		B.add(ov_tri_row(S, "type", id, "outline_on", t.label, OL))
+
+		local colour = B.add(ov_colour_row(S, "type", id, t.label, "outline_rgb", nil, OL))
+
+		if colour then
+			-- a blocked outline ignores its colour, so dim the swatch while that is the state
+			colour.req_get = function()
+				return S.ov_get("type", id, "outline_on") == true
+			end
+		end
 	end
 	B.sub("ei_sec_tag_colours")
 	B.settings({
@@ -538,14 +579,16 @@ Pages.enemy_rows = function(scope, key, hooks)
 	}
 
 	local fields = S.ov_fields(scope, key)
-	-- A colour field with a `toggle` partner is drawn as ONE row (inline ON/OFF + swatch).
+	-- A colour field with a `toggle` partner is drawn as ONE row (inline ON/OFF + swatch), but only when that
+	-- partner is a real on/off (bar_rgb_on). A tri partner keeps its own follow / force on / force off row.
 	local by_key, merged = {}, {}
 	for i = 1, #fields do
 		by_key[fields[i].key] = fields[i]
 	end
 	for i = 1, #fields do
 		local f = fields[i]
-		if f.kind == "rgb" and f.toggle and by_key[f.toggle] then
+		local tf = f.toggle and by_key[f.toggle]
+		if f.kind == "rgb" and tf and tf.kind == "bool" then
 			merged[f.toggle] = true
 		end
 	end
@@ -586,7 +629,7 @@ Pages.enemy_rows = function(scope, key, hooks)
 				return S.ov_default(scope, key, fk)
 			end
 			local tf = f.toggle and by_key[f.toggle]
-			if tf then
+			if tf and tf.kind == "bool" then
 				local tk = tf.key
 				row.label = tf.label_text or row.label
 				row.tooltip = tf.tooltip_text or row.tooltip
@@ -602,6 +645,11 @@ Pages.enemy_rows = function(scope, key, hooks)
 				row.reset = function()
 					S.ov_set(scope, key, fk, S.ov_default(scope, key, fk))
 					S.ov_set(scope, key, tk, S.ov_default(scope, key, tk))
+				end
+			elseif tf then
+				-- tri partner: the colour is inert unless the outline is forced on
+				row.req_get = function()
+					return S.ov_get(scope, key, tf.key) == true
 				end
 			end
 		elseif f.toggle and by_key[f.toggle] then

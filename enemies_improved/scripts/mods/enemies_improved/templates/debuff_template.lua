@@ -473,7 +473,9 @@ end
 -- scaling. The HUD does the collection and the world reads; the editor feeds it fake buffs
 -- through mod.collect_debuffs and a ctx it fills in itself, so nothing here may touch unit /
 -- marker / parent directly -- those arrive (possibly nil) as ctx.parent / ctx.marker / ctx.unit.
--- ctx = { breed, breed_name, breed_type, show_on_body, draw, parent, marker, unit }
+-- ctx = { breed, breed_name, breed_type, show_on_body, body_offset_y, draw, parent, marker, unit }
+-- body_offset_y: pre-projected on-body offset (reference units, + = below the bar) for callers without a
+-- player camera (the editor's 3D preview projects it from the 3D frame instead).
 -----------------------------------------------------------------------
 
 local layout_ctx = {}
@@ -628,7 +630,7 @@ local function layout_rows(widget, scale, dt, ctx)
 
 	local debuff_y_offset = fs.debuff_y_offset
 
-	local _body_screen_offset_y = nil
+	local _body_screen_offset_y = show_on_body and ctx.body_offset_y or nil
 	if show_on_body then
 		local camera = parent and parent._parent and parent._parent:player_camera()
 		local head_pos = marker and marker.world_position and marker.world_position:unbox()

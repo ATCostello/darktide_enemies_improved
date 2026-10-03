@@ -575,8 +575,13 @@ local breeds_missing_outline_tag = {
 	cultist_assault = true,
 }
 
+-- shared with the editor's 3D preview, which spawns the gear itself and so cannot tag live slots
+function mod.breed_missing_outline_tag(breed_name)
+	return breeds_missing_outline_tag[breed_name] == true
+end
+
 local function fix_missing_outline_tag(unit, breed)
-	if not breeds_missing_outline_tag[breed.name] then
+	if not mod.breed_missing_outline_tag(breed.name) then
 		return
 	end
 

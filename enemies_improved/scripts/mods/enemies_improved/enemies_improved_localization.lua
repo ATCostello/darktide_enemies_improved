@@ -1019,21 +1019,33 @@ table.insert(localisations_to_add, {
 	},
 	remove_tag_skull = {
 		en = "Remove tagged skull",
+		ru = "Убрать череп у метки",
+		["zh-cn"] = "移除标记骷髅",
 	},
 	remove_tag_skull_tooltip = {
 		en = "Toggles the 'skull' icon which appears above enemies heads when they are tagged.",
+		ru = "Переключает значок «череп», который появляется над головами врагов с меткой.",
+		["zh-cn"] = "切换标记敌人头顶显示的“骷髅”图标。",
 	},
 	adjust_ads_opacity = {
 		en = "Adjust opacity with ADS",
+		ru = "Изменять прозрачность при прицеливании",
+		["zh-cn"] = "瞄准时调整不透明度",
 	},
 	adjust_ads_opacity_tooltip = {
 		en = "Allows you to apply an opacity multiplier when you are aiming down sight. Useful if you would like differing widget opacities depending on if you are aiming or not.",
+		ru = "Позволяет применять множитель прозрачности, когда вы целитесь. Полезно, если прозрачность элементов должна отличаться при прицеливании и без него.",
+		["zh-cn"] = "允许在瞄准时应用不透明度倍率。如果希望界面元素在瞄准与不瞄准时显示不同的不透明度，请使用此选项。",
 	},
 	ads_opacity_mult = {
 		en = "ADS Opacity Multiplier",
+		ru = "Множитель прозрачности при прицеливании",
+		["zh-cn"] = "瞄准不透明度倍率",
 	},
 	ads_opacity_mult_tooltip = {
 		en = "Set the opacity multiplier for when you are aiming down sight. Reduces or increases your set opacity by this multiplier. ",
+		ru = "Множитель прозрачности, применяемый при прицеливании. Уменьшает или увеличивает заданную прозрачность в это число раз.",
+		["zh-cn"] = "瞄准时应用的不透明度倍率。按此倍率降低或提高设定的不透明度。",
 	},
 	outline_tagged_enable = {
 		en = "Enable tagged enemy outline override",
@@ -3468,284 +3480,484 @@ end
 -- Native editor localisation (the editor reads the same mod.localisation table)
 local insert_editor_localisation = function(localisation_table)
 	local editor_localisations = {
+		-- window title and button
 		open_editor_button = {
 			en = "Open editor",
+			ru = "Открыть редактор",
+			["zh-cn"] = "打开编辑器",
 		},
 		ei_editor_title = {
 			en = "Enemies Improved - Editor",
+			ru = "Enemies Improved — редактор",
+			["zh-cn"] = "Enemies Improved - 编辑器",
 		},
+		-- row controls (default / done / reset / tri-state)
 		ei_default = {
 			en = "Default",
+			ru = "По умолчанию",
+			["zh-cn"] = "默认",
 		},
 		ei_done = {
 			en = "Done",
+			ru = "Готово",
+			["zh-cn"] = "完成",
 		},
 		ei_reset = {
 			en = "Reset",
+			ru = "Сброс",
+			["zh-cn"] = "重置",
 		},
 		ei_reset_short = {
 			en = "Reset",
+			ru = "Сброс",
+			["zh-cn"] = "重置",
 		},
 		ei_on = {
 			en = "ON",
+			ru = "ВКЛ",
+			["zh-cn"] = "开",
 		},
 		ei_off = {
 			en = "OFF",
+			ru = "ВЫКЛ",
+			["zh-cn"] = "关",
 		},
 		ei_tri_inherit = {
 			en = "Inherit",
+			ru = "Наследовать",
+			["zh-cn"] = "跟随全局",
 		},
 		ei_tri_force = {
 			en = "Force on",
+			ru = "Принудительно вкл.",
+			["zh-cn"] = "强制开启",
 		},
 		ei_tri_block = {
 			en = "Block",
+			ru = "Запретить",
+			["zh-cn"] = "强制关闭",
 		},
+		-- override scope (type vs single enemy)
 		ei_type_note = {
 			en = "Enemy type",
+			ru = "Тип врага",
+			["zh-cn"] = "敌人类型",
+		},
+		-- breed labels
+		ei_mutator_suffix = {
+			en = "(mutator)",
+			ru = "(мутант)",
+			["zh-cn"] = "(变异体)",
 		},
 		ei_type_all = {
 			en = "All",
+			ru = "Все",
+			["zh-cn"] = "全部",
 		},
 		ei_select_type = {
 			en = "Select type",
+			ru = "Выбрать тип",
+			["zh-cn"] = "选择类型",
 		},
 		ei_overrides_type = {
 			en = "Overrides for this enemy type",
+			ru = "Переопределения для этого типа врага",
+			["zh-cn"] = "此敌人类型的覆盖项",
 		},
 		ei_overrides_breed = {
 			en = "Overrides for this enemy",
+			ru = "Переопределения для этого врага",
+			["zh-cn"] = "此敌人的覆盖项",
 		},
 		ei_scope_type_note = {
 			en = "Overrides on an enemy type apply to every enemy of that type, unless the enemy has its own override.",
+			ru = "Переопределения типа врага применяются ко всем врагам этого типа, если только у врага нет собственных переопределений.",
+			["zh-cn"] = "敌人类型的覆盖项适用于该类型的所有敌人，除非该敌人有自己的覆盖项。",
 		},
 		ei_scope_breed_note = {
 			en = "Overrides on a single enemy win over the settings of its enemy type.",
+			ru = "Переопределения отдельного врага важнее настроек его типа врага.",
+			["zh-cn"] = "单个敌人的覆盖项优先于其敌人类型的设置。",
 		},
 		ei_reset_type = {
 			en = "Reset this type",
+			ru = "Сбросить этот тип",
+			["zh-cn"] = "重置此类型",
 		},
 		ei_reset_enemy = {
 			en = "Reset this enemy",
+			ru = "Сбросить этого врага",
+			["zh-cn"] = "重置此敌人",
 		},
 		ei_reset_enemy_confirm = {
 			en = "Click again to confirm",
+			ru = "Нажмите ещё раз для подтверждения",
+			["zh-cn"] = "再次点击以确认",
 		},
 		ei_reset_page = {
 			en = "Reset this page",
+			ru = "Сбросить эту страницу",
+			["zh-cn"] = "重置此页面",
 		},
 		ei_reset_page_confirm = {
 			en = "Click again to reset",
+			ru = "Нажмите ещё раз для сброса",
+			["zh-cn"] = "再次点击以重置",
 		},
 		ei_msg_node_reset = {
 			en = "Overrides reset to defaults.",
+			ru = "Переопределения сброшены к значениям по умолчанию.",
+			["zh-cn"] = "覆盖项已重置为默认值。",
 		},
 		ei_msg_page_reset = {
 			en = "This page was reset to defaults.",
+			ru = "Эта страница сброшена к значениям по умолчанию.",
+			["zh-cn"] = "此页面已重置为默认值。",
 		},
 		ei_footer_saved = {
 			en = "Saved automatically. HUD markers refresh when the editor closes.",
+			ru = "Сохраняется автоматически. Метки HUD обновятся после закрытия редактора.",
+			["zh-cn"] = "自动保存。关闭编辑器后 HUD 标记会刷新。",
 		},
 		ei_debuff_toggle_tip = {
 			en = "click to show / hide",
+			ru = "нажмите, чтобы показать / скрыть",
+			["zh-cn"] = "点击以显示 / 隐藏",
 		},
 		ei_debuff_colour_tip = {
 			en = "click to change the colour",
+			ru = "нажмите, чтобы изменить цвет",
+			["zh-cn"] = "点击以更改颜色",
 		},
 		ei_lbl_max_stacks_colour = {
 			en = "Max stacks colour",
+			ru = "Цвет максимальных стаков",
+			["zh-cn"] = "最大层数颜色",
 		},
 		ei_lbl_toughness_colour = {
 			en = "Toughness colour",
+			ru = "Цвет живучести",
+			["zh-cn"] = "坚韧度颜色",
 		},
+		-- page tabs
 		ei_page_general = {
 			en = "General",
+			ru = "Общие",
+			["zh-cn"] = "常规",
 		},
 		ei_page_healthbars = {
 			en = "Healthbars",
+			ru = "Полоски здоровья",
+			["zh-cn"] = "血条",
 		},
 		ei_page_damage = {
 			en = "Damage numbers",
+			ru = "Числа урона",
+			["zh-cn"] = "伤害数字",
 		},
 		ei_page_debuffs = {
 			en = "Debuffs",
+			ru = "Дебаффы",
+			["zh-cn"] = "减益",
 		},
 		ei_page_markers = {
 			en = "Markers",
+			ru = "Метки",
+			["zh-cn"] = "标记",
 		},
 		ei_page_outlines = {
 			en = "Outlines & alerts",
+			ru = "Контуры и предупреждения",
+			["zh-cn"] = "轮廓与警告",
 		},
 		ei_page_enemies = {
 			en = "Enemies",
+			ru = "Враги",
+			["zh-cn"] = "敌人",
 		},
+		-- page hints
 		ei_hint_general = {
 			en = "Global switches, ranges, fonts and performance. Hover a setting for details. Gold = changed from default.",
+			ru = "Общие переключатели, диапазоны, шрифты и производительность. Наведите курсор на настройку для подробностей. Золотой = отличается от значения по умолчанию.",
+			["zh-cn"] = "全局开关、范围、字体和性能。将鼠标悬停在设置上可查看详情。金色 = 与默认值不同。",
 		},
 		ei_hint_healthbars = {
 			en = "Healthbar look, colours, text lines and when bars are shown. Gold = changed from default.",
+			ru = "Вид полосок здоровья, цвета, строки текста и условия отображения. Золотой = отличается от значения по умолчанию.",
+			["zh-cn"] = "血条外观、颜色、文字行以及显示条件。金色 = 与默认值不同。",
 		},
 		ei_hint_damage = {
 			en = "Floating damage numbers: style, placement and colours.",
+			ru = "Всплывающие числа урона: стиль, расположение и цвета.",
+			["zh-cn"] = "浮动伤害数字：样式、位置和颜色。",
 		},
 		ei_hint_debuffs = {
 			en = "Debuff rows next to enemies: layout, icons, names, stacks and which debuffs are shown.",
+			ru = "Строки дебаффов рядом с врагами: расположение, иконки, названия, стаки и список показываемых дебаффов.",
+			["zh-cn"] = "敌人旁的减益行：布局、图标、名称、层数以及显示哪些减益。",
 		},
 		ei_hint_markers = {
 			en = "Overhead markers shown above enemies.",
+			ru = "Метки над головами врагов.",
+			["zh-cn"] = "敌人头顶的标记。",
 		},
 		ei_hint_outlines = {
 			en = "Enemy outlines per type, tag colours and the special attack / stagger alerts.",
+			ru = "Контуры врагов по типам, цвета меток и предупреждения о спецатаках и оглушении.",
+			["zh-cn"] = "按类型划分的敌人轮廓、标签颜色以及特殊攻击 / 硬直提示。",
 		},
 		ei_hint_enemies_tabs = {
 			en = "Pick an enemy type with the tabs above, then the type itself or one of its enemies on the left, and override its outline, healthbar, debuffs, marker and distances.",
+			ru = "Выберите тип врага на вкладках сверху, затем сам тип или одного из его врагов слева, и переопределите контур, полоску здоровья, дебаффы, метку и дистанции.",
+			["zh-cn"] = "用上方标签选择敌人类型，再从左侧选择该类型本身或其中一个敌人，即可覆盖其轮廓、血条、减益、标记和距离。",
 		},
+		-- page sections
 		ei_sec_features = {
 			en = "Features",
+			ru = "Функции",
+			["zh-cn"] = "功能",
 		},
 		ei_sec_visibility = {
 			en = "Visibility & range",
+			ru = "Видимость и дистанция",
+			["zh-cn"] = "可见性与距离",
 		},
 		ei_sec_text = {
 			en = "Text",
+			ru = "Текст",
+			["zh-cn"] = "文本",
 		},
 		ei_sec_text_lines = {
 			en = "Text lines",
+			ru = "Строки текста",
+			["zh-cn"] = "文字行",
 		},
 		ei_sec_bar = {
 			en = "Bar",
+			ru = "Полоска",
+			["zh-cn"] = "血条",
 		},
 		ei_sec_bar_colours = {
 			en = "Colours",
+			ru = "Цвета",
+			["zh-cn"] = "颜色",
 		},
 		ei_sec_numbers = {
 			en = "Numbers",
+			ru = "Числа",
+			["zh-cn"] = "数字",
 		},
 		ei_sec_placement = {
 			en = "Placement",
+			ru = "Расположение",
+			["zh-cn"] = "位置",
 		},
 		ei_sec_dn_colours = {
 			en = "Colours",
+			ru = "Цвета",
+			["zh-cn"] = "颜色",
 		},
 		ei_sec_dn_extras = {
 			en = "Extras",
+			ru = "Дополнительно",
+			["zh-cn"] = "其他",
 		},
 		ei_sec_when = {
 			en = "When to show",
+			ru = "Когда показывать",
+			["zh-cn"] = "显示时机",
 		},
 		ei_sec_boss = {
 			en = "Boss healthbar",
+			ru = "Полоска босса",
+			["zh-cn"] = "Boss 血条",
 		},
 		ei_sec_ghostbar = {
 			en = "Ghost bar",
+			ru = "Призрачная полоска",
+			["zh-cn"] = "残影条",
 		},
 		ei_sec_type_icon = {
 			en = "Type icon",
+			ru = "Иконка типа",
+			["zh-cn"] = "类型图标",
 		},
 		ei_sec_toughness = {
 			en = "Toughness",
+			ru = "Живучесть",
+			["zh-cn"] = "坚韧度",
 		},
 		ei_sec_hordes = {
 			en = "Hordes",
+			ru = "Толпы",
+			["zh-cn"] = "怪群",
 		},
 		ei_sec_debuffs = {
 			en = "Debuffs",
+			ru = "Дебаффы",
+			["zh-cn"] = "减益",
 		},
 		ei_sec_layout = {
 			en = "Layout",
+			ru = "Расположение",
+			["zh-cn"] = "布局",
 		},
 		ei_sec_icons = {
 			en = "Icons",
+			ru = "Иконки",
+			["zh-cn"] = "图标",
 		},
 		ei_sec_names = {
 			en = "Names",
+			ru = "Названия",
+			["zh-cn"] = "名称",
 		},
 		ei_sec_stacks = {
 			en = "Stacks",
+			ru = "Стаки",
+			["zh-cn"] = "层数",
 		},
 		ei_sec_debuff_toggles = {
 			en = "Debuff toggles",
+			ru = "Переключатели дебаффов",
+			["zh-cn"] = "减益开关",
 		},
 		ei_sec_debuff_colours = {
 			en = "Debuff colours",
+			ru = "Цвета дебаффов",
+			["zh-cn"] = "减益颜色",
 		},
 		ei_sec_markers = {
 			en = "Overhead markers",
+			ru = "Метки над головами",
+			["zh-cn"] = "头顶标记",
 		},
 		ei_sec_marker_look = {
 			en = "Appearance",
+			ru = "Внешний вид",
+			["zh-cn"] = "外观",
 		},
 		ei_sec_outlines = {
 			en = "Outlines",
+			ru = "Контуры",
+			["zh-cn"] = "轮廓",
 		},
 		ei_sec_tag_colours = {
 			en = "Tag colours",
+			ru = "Цвета меток",
+			["zh-cn"] = "标签颜色",
 		},
 		ei_sec_specials = {
 			en = "Special attacks",
+			ru = "Спецатаки",
+			["zh-cn"] = "特殊攻击",
 		},
 		ei_sec_stagger = {
 			en = "Stagger",
+			ru = "Оглушение",
+			["zh-cn"] = "硬直",
 		},
 		ei_sec_performance = {
 			en = "Performance",
+			ru = "Производительность",
+			["zh-cn"] = "性能",
 		},
+		-- preview panel
 		ei_preview_enemy = {
 			en = "Enemy",
+			ru = "Враг",
+			["zh-cn"] = "敌人",
 		},
 		ei_preview_debuffs = {
 			en = "Debuffs",
+			ru = "Дебаффы",
+			["zh-cn"] = "减益",
 		},
 		ei_preview_3d = {
 			en = "3D",
+			ru = "3D",
+			["zh-cn"] = "3D",
 		},
 		ei_preview_combat = {
 			en = "Combat",
+			ru = "Бой",
+			["zh-cn"] = "战斗",
 		},
 		ei_preview_alert = {
 			en = "Special attack",
+			ru = "Спецатака",
+			["zh-cn"] = "特殊攻击",
 		},
 		ei_preview_stagger = {
 			en = "Stagger",
+			ru = "Оглушение",
+			["zh-cn"] = "硬直",
 		},
 		ei_preview_tagged = {
 			en = "Tagged",
+			ru = "С меткой",
+			["zh-cn"] = "已标记",
 		},
 		ei_preview_unavailable = {
 			en = "Preview unavailable",
+			ru = "Предпросмотр недоступен",
+			["zh-cn"] = "预览不可用",
 		},
+		-- enemy type tabs (short labels)
 		ei_type_short_horde = {
 			en = "Horde",
+			ru = "Толпа",
+			["zh-cn"] = "怪群",
 		},
 		ei_type_short_monster = {
 			en = "Miniboss",
+			ru = "Минибосс",
+			["zh-cn"] = "小 Boss",
 		},
 		ei_type_short_captain = {
 			en = "Boss",
+			ru = "Босс",
+			["zh-cn"] = "Boss",
 		},
 		ei_type_short_disabler = {
 			en = "Disabler",
+			ru = "Глушитель",
+			["zh-cn"] = "阻断者",
 		},
 		ei_type_short_witch = {
 			en = "Daemonhost",
+			ru = "Хозяин демонов",
+			["zh-cn"] = "恶魔宿主",
 		},
 		ei_type_short_sniper = {
 			en = "Sniper",
+			ru = "Снайпер",
+			["zh-cn"] = "狙击手",
 		},
 		ei_type_short_far = {
 			en = "Ranged elite",
+			ru = "Элита дальнего боя",
+			["zh-cn"] = "远程精英",
 		},
 		ei_type_short_elite = {
 			en = "Melee elite",
+			ru = "Элита ближнего боя",
+			["zh-cn"] = "近战精英",
 		},
 		ei_type_short_special = {
 			en = "Special",
+			ru = "Особый",
+			["zh-cn"] = "特殊",
 		},
 		ei_type_short_shield = {
 			en = "Shield",
+			ru = "Щитоносец",
+			["zh-cn"] = "盾卫",
 		},
 		ei_type_short_enemy = {
 			en = "Ritualist",
+			ru = "Культист",
+			["zh-cn"] = "邪教徒",
 		},
 	}
 
