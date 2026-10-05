@@ -606,7 +606,7 @@ local function layout_rows(widget, scale, dt, ctx)
 		or (ctx.breed_type and fs.breed_type_debuff_show_on_body_override and fs.breed_type_debuff_show_on_body_override[ctx.breed_type])
 		or false
 
-	local debuff_y_offset = fs.debuff_y_offset
+	local debuff_y_offset = fs.debuff_y_offset or 1
 
 	local _body_screen_offset_y = show_on_body and ctx.body_offset_y or nil
 	if show_on_body then
@@ -662,6 +662,8 @@ local function layout_rows(widget, scale, dt, ctx)
 					end
 				end
 			end
+
+			y_base = y_base * debuff_y_offset
 		else
 			if split_debuff_types then
 				if debuff.type == "dot" then
@@ -696,8 +698,6 @@ local function layout_rows(widget, scale, dt, ctx)
 					y_base = (-hb_size_height - 34) * fs.text_scale
 				end
 			end
-
-			y_base = y_base * debuff_y_offset
 		end
 
 		local state = state_table[name]
@@ -825,6 +825,8 @@ local function layout_rows(widget, scale, dt, ctx)
 
 				local base_y_fixed = state.y
 
+				local y_scale = show_on_body and 1 or debuff_y_offset
+
 				if split_debuff_types then
 					if debuff.type == "dot" then
 						base_y_fixed = state.y - (calculate_icon_size() * fs.text_scale)
@@ -847,38 +849,38 @@ local function layout_rows(widget, scale, dt, ctx)
 				-- ICON SHADOW
 				local o = icon_shadow_style.offset
 				o[1] = icon_x + col_offset_x + base_offset + 1
-				o[2] = base_y_fixed * debuff_y_offset + 1
+				o[2] = base_y_fixed * y_scale + 1
 
 				local o = icon_shadow_style.default_offset
 				o[1] = icon_x + col_offset_x + base_offset + 1
-				o[2] = base_y_fixed * debuff_y_offset + 1
+				o[2] = base_y_fixed * y_scale + 1
 
 				-- ICON
 				local o = icon_style.offset
 				o[1] = icon_x + col_offset_x + base_offset
-				o[2] = base_y_fixed * debuff_y_offset
+				o[2] = base_y_fixed * y_scale
 
 				local o = icon_style.default_offset
 				o[1] = icon_x + col_offset_x + base_offset
-				o[2] = base_y_fixed * debuff_y_offset
+				o[2] = base_y_fixed * y_scale
 
 				-- STACK
 				if fs.debuff_stack_on_icon then
 					local o = stack_text_style.offset
 					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size())
-					o[2] = base_y_fixed * debuff_y_offset + (calculate_icon_size() / 1.5)
+					o[2] = base_y_fixed * y_scale + (calculate_icon_size() / 1.5)
 
 					local o = stack_text_style.default_offset
 					o[1] = stack_x + col_offset_x + base_offset - (calculate_icon_size())
-					o[2] = base_y_fixed * debuff_y_offset + (calculate_icon_size() / 1.5)
+					o[2] = base_y_fixed * y_scale + (calculate_icon_size() / 1.5)
 				else
 					local o = stack_text_style.offset
 					o[1] = stack_x + col_offset_x + base_offset
-					o[2] = base_y_fixed * debuff_y_offset
+					o[2] = base_y_fixed * y_scale
 
 					local o = stack_text_style.default_offset
 					o[1] = stack_x + col_offset_x + base_offset
-					o[2] = base_y_fixed * debuff_y_offset
+					o[2] = base_y_fixed * y_scale
 				end
 
 				-- FORCE NO NAME

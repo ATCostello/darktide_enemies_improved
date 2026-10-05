@@ -8,15 +8,30 @@ local PACKAGE_REF = "enemies_improved_preview"
 
 local WORLD_LAYER = 35
 local CAMERA_FOV = 30
+local FRAME_FILL = 1.375
+local FRAME_CENTRE = 0.52
 local GUARD_FRAMES = 30
 local LOAD_TIMEOUT = 30
 local SPAWN_SEED = 7
 local BASE_YAW = math.pi + 0.45
+local RELEASE_PER_FRAME = 16
+local FORCE_STREAM_TIMEOUT = 2
+local FORCE_TEXTURE_TIMEOUT = 12
+local STREAM_ATTEMPTS = 3
+local STREAM_WAIT = 16
+local LOD_SETTLE_FRAMES = 6
+
+local LOD_NAMES = { "lod", "lod_shadow" }
+
+local VIEWPORT_TYPE = "default"
+local PREVIEW_LEVEL = "content/levels/ui/cosmetics_preview/cosmetics_preview"
+local SHADING_ENVIRONMENT = "content/shading_environments/ui/inventory"
 
 local FREEZE_ANIM_DELAY = 0.8
 
 local LIGHT_UNIT = "core/units/light"
 local LIGHT_FALLOFF_START = 1
+local LIGHT_INTENSITY_SCALE = 0.3
 local LIGHT_RIG = {
 	{ Vector3(-1.1, -1.5, 2.3), { 1, 0.95, 0.88 }, 250, 12 }, -- key
 	{ Vector3(1.5, -1.3, 1.1), { 0.72, 0.8, 1 }, 90, 10 }, -- fill
@@ -229,7 +244,10 @@ function P3D.new(view)
 		world_name = "ei_preview_world_" .. world_counter,
 		viewport_name = "ei_preview_viewport_" .. world_counter,
 		_state = "idle",
-		_ids = {},
+		_pkgs = {},
+		_want = {},
+		_retire = {},
+		_retired = {},
 		_wait = {},
 		_parts = {},
 		_frames = 0,
@@ -251,6 +269,14 @@ function P3D.new(view)
 	self.ws = ws
 	self._guard_set = true
 
+	local lok, lerr = pcall(ws.spawn_level, ws, PREVIEW_LEVEL)
+
+	if lok then
+		crumb("level " .. PREVIEW_LEVEL)
+	else
+		crumb("level skipped (" .. tostring(lerr) .. ")")
+	end
+
 	crumb("create viewport")
 
 	local vok, vres = pcall(
@@ -258,9 +284,9 @@ function P3D.new(view)
 		ws,
 		nil,
 		self.viewport_name,
-		"default_with_alpha",
+		VIEWPORT_TYPE,
 		1,
-		GameParameters.default_ui_shading_environment
+		SHADING_ENVIRONMENT
 	)
 
 	if not vok then
@@ -319,7 +345,7 @@ function P3D:_spawn_lighting()
 			Light.set_enabled(light, true)
 			Light.set_type(light, "omni")
 			Light.set_color_filter(light, Vector3(colour[1], colour[2], colour[3]))
-			Light.set_intensity(light, spec[3])
+			Light.set_intensity(light, spec[3] * LIGHT_INTENSITY_SCALE)
 			Light.set_falloff_start(light, LIGHT_FALLOFF_START)
 			Light.set_falloff_end(light, spec[4])
 			Light.set_volumetric_intensity(light, 0)
@@ -349,17 +375,95 @@ function P3D:_destroy_lighting()
 	self._lights = nil
 end
 
+-----------------------------------------------------------------------
+-- Package ownership
+-----------------------------------------------------------------------
+
 function P3D:_release_packages()
 	local pm = Managers.package
-	local ids = self._ids
+	local pkgs = self._pkgs
 
-	for i = #ids, 1, -1 do
-		pcall(pm.release, pm, ids[i])
+	for name, id in pairs(pkgs) do
+		pcall(pm.release, pm, id)
 
-		ids[i] = nil
+		pkgs[name] = nil
 	end
 
+	table.clear(self._retire)
+	table.clear(self._retired)
+	table.clear(self._want)
 	self._wait = {}
+end
+
+function P3D:_retire_stale()
+	local pkgs, want, retire, retired = self._pkgs, self._want, self._retire, self._retired
+	local moved = 0
+
+	for name in pairs(pkgs) do
+		if not want[name] and not retired[name] then
+			retired[name] = true
+			retire[#retire + 1] = name
+			moved = moved + 1
+		end
+	end
+
+	if moved > 0 then
+		crumb(string.format("retired %d packages (%d held)", moved, self:_held_count()))
+	end
+end
+
+function P3D:_held_count()
+	local count = 0
+
+	for _ in pairs(self._pkgs) do
+		count = count + 1
+	end
+
+	return count
+end
+
+function P3D:_un_retire(name)
+	local retire, retired = self._retire, self._retired
+
+	if retired[name] then
+		for i = #retire, 1, -1 do
+			if retire[i] == name then
+				table.remove(retire, i)
+
+				break
+			end
+		end
+
+		retired[name] = nil
+	end
+end
+
+function P3D:_flush_retired(limit)
+	local pm = Managers.package
+	local retire, retired = self._retire, self._retired
+	local released = 0
+	local i = 1
+
+	while i <= #retire and released < limit do
+		local name = retire[i]
+
+		if pm:has_loaded(name) then
+			local id = self._pkgs[name]
+
+			if id then
+				pcall(pm.release, pm, id)
+			end
+
+			self._pkgs[name] = nil
+			retired[name] = nil
+			table.remove(retire, i)
+			released = released + 1
+		else
+			i = i + 1
+		end
+	end
+
+	return released
 end
 
 function P3D:_clear_subject()
@@ -393,12 +497,13 @@ function P3D:_clear_subject()
 	end
 
 	self._parts = {}
+	self._spawned = nil
+	self._settle = nil
 	self.unit = nil
 	self._ol_applied = nil
 	self._yaw_applied = nil
 	self.head_z = nil
-
-	self:_release_packages()
+	self._streaming = nil
 end
 
 function P3D:destroy()
@@ -409,6 +514,7 @@ function P3D:destroy()
 	self._destroyed = true
 
 	pcall(self._clear_subject, self)
+	pcall(self._release_packages, self)
 	pcall(self._destroy_lighting, self)
 
 	if self.ws then
@@ -429,6 +535,9 @@ function P3D:_fail(reason)
 	self._state = "failed"
 	self.reason = reason
 	self._frames = 0
+	self._streaming = nil
+
+	self:_retire_stale()
 
 	crumb("failed: " .. tostring(reason))
 end
@@ -511,25 +620,54 @@ end
 function P3D:_request_packages()
 	local pm = Managers.package
 	local names = self._names
-	local ids, wait = self._ids, self._wait
+	local pkgs, want, wait = self._pkgs, self._want, self._wait
+	local first = self.breed and self.breed.base_unit
+	local state_machine = self.breed and self.breed.state_machine
+	local requested = 0
 	local skipped = 0
+
+	table.clear(want)
+	table.clear(wait)
 
 	for i = 1, #names do
 		local name = names[i]
 
 		if can_get("package", name) then
-			local ok, id = pcall(pm.load, pm, name, PACKAGE_REF, nil, true)
+			want[name] = true
 
-			if ok and id then
-				ids[#ids + 1] = id
-				wait[#wait + 1] = name
+			if pkgs[name] then
+				self:_un_retire(name)
+
+				if not pm:has_loaded(name) then
+					wait[#wait + 1] = name
+				end
+			else
+				local prioritize = name == first or name == state_machine
+				local ok, id = pcall(pm.load, pm, name, PACKAGE_REF, nil, prioritize)
+
+				if ok and id then
+					pkgs[name] = id
+					requested = requested + 1
+
+					if not pm:has_loaded(name) then
+						wait[#wait + 1] = name
+					end
+				end
 			end
 		else
 			skipped = skipped + 1
 		end
 	end
 
-	crumb(string.format("requested %d packages (%d without package) for %s", #wait, skipped, self.breed_name))
+	crumb(string.format(
+		"%s: %d packages requested, %d reused, %d waiting, %d without package, %d held",
+		self.breed_name,
+		requested,
+		#names - requested - skipped,
+		#wait,
+		skipped,
+		self:_held_count()
+	))
 end
 
 function P3D:set_breed(breed_name)
@@ -539,12 +677,15 @@ function P3D:set_breed(breed_name)
 
 	self:_clear_subject()
 
+	table.clear(self._want)
+
 	self.breed_name = breed_name
 	self.breed = nil
 	self.reason = nil
 	self._state = "loading"
 	self._load_time = 0
 	self._frames = 0
+	self._spawned = nil
 
 	local breed = deps.BreedQueries.minion_breeds_by_name()[breed_name]
 	local ok, why = P3D.supported(breed)
@@ -641,7 +782,7 @@ function P3D:_outline_set_layers(unit, on)
 		Unit.set_material_layer(unit, OUTLINE_LAYERS[i], on)
 	end
 
-	Unit.set_unit_culling(unit, not on, true)
+	Unit.set_unit_culling(unit, false, true)
 end
 
 local function set_outline_colour(unit, vec)
@@ -744,12 +885,12 @@ function P3D:_frame()
 
 	local tan_half = math.tan(math.rad(CAMERA_FOV) * 0.5)
 	local height = math.max(head + 0.25, base_h)
-	local span = (height + 0.15) / 0.6
+	local span = height * FRAME_FILL
 	local width = height * (base_h > 2.3 and 0.9 or 0.6)
 
 	span = math.max(span, (width * 1.15) / math.max(self.aspect, 0.2))
 
-	local centre = span * 0.42
+	local centre = height * FRAME_CENTRE
 	local dist = (span * 0.5) / tan_half
 
 	self.centre_z = centre
@@ -774,9 +915,87 @@ function P3D:set_rect(x, y, w, h, aspect)
 	pcall(ws.set_viewport_size, ws, w, h)
 	pcall(ws.set_viewport_position, ws, x, y)
 
+	if not self._rect_logged and RESOLUTION_LOOKUP then
+		self._rect_logged = true
+
+		crumb(string.format("viewport %.3f %.3f %.3f %.3f -> %dx%d of %dx%d (scale %s)",
+			x or 0, y or 0, w or 0, h or 0,
+			math.floor((w or 0) * (RESOLUTION_LOOKUP.width or 0) + 0.5),
+			math.floor((h or 0) * (RESOLUTION_LOOKUP.height or 0) + 0.5),
+			RESOLUTION_LOOKUP.width or 0, RESOLUTION_LOOKUP.height or 0,
+			tostring(RESOLUTION_LOOKUP.scale)))
+	end
+
 	if self._state == "ready" then
 		pcall(self._frame, self)
 	end
+end
+
+function P3D:_subject_units()
+	local units = {}
+
+	if self.unit then
+		units[1] = self.unit
+	end
+
+	for i = 1, #self._parts do
+		local part = self._parts[i]
+
+		if part.unit then
+			units[#units + 1] = part.unit
+		end
+
+		if part.attachments then
+			for j = 1, #part.attachments do
+				units[#units + 1] = part.attachments[j]
+			end
+		end
+	end
+
+	return units
+end
+
+function P3D:_force_highest_lod()
+	pcall(function()
+		local units = self:_subject_units()
+		local groups, objects_pinned, bare = 0, 0, 0
+
+		for i = 1, #units do
+			local unit = units[i]
+
+			if unit and Unit.alive(unit) then
+				for j = 1, #LOD_NAMES do
+					local name = LOD_NAMES[j]
+					local group = Unit.has_lod_group(unit, name) and Unit.lod_group(unit, name)
+
+					if group then
+						groups = groups + 1
+
+						pcall(LODGroup.set_static_select, group, 0)
+
+						local bv = LODGroup.compile_time_bounding_volume(group)
+
+						if bv then
+							pcall(LODGroup.override_bounding_volume, group, bv)
+						end
+					elseif Unit.has_lod_object(unit, name) then
+						objects_pinned = objects_pinned + 1
+
+						pcall(LODObject.set_static_select, Unit.lod_object(unit, name), 0)
+					else
+						bare = bare + 1
+					end
+				end
+			end
+		end
+
+		if self._settle == LOD_SETTLE_FRAMES then
+			crumb(string.format("lod %d units: %d groups, %d objects, %d without lod",
+				#units, groups, objects_pinned, bare))
+			crumb("world blur " .. tostring(World.get_data(self.ws:world(), "fullscreen_blur"))
+				.. ", texture_quality " .. tostring(GameParameters.texture_quality))
+		end
+	end)
 end
 
 function P3D:_spawn()
@@ -868,6 +1087,8 @@ function P3D:_spawn()
 		lod_shadow_group = lod_shadow_group,
 	}
 
+	local units = { unit }
+
 	for i = 1, #valid do
 		local pick = valid[i]
 
@@ -877,11 +1098,20 @@ function P3D:_spawn()
 			pcall(d.VisualLoadoutCustomization.spawn_item, pick.item, attach, unit, false, false, false, nil, nil)
 
 		if iok and item_unit then
-			self._parts[#self._parts + 1] = {
+			local part = {
 				unit = item_unit,
 				attachments = atts and atts[item_unit],
 				outline = pick.outline,
 			}
+
+			self._parts[#self._parts + 1] = part
+			units[#units + 1] = item_unit
+
+			if part.attachments then
+				for j = 1, #part.attachments do
+					units[#units + 1] = part.attachments[j]
+				end
+			end
 		else
 			crumb("attach failed " .. pick.name .. ": " .. tostring(item_unit))
 		end
@@ -889,11 +1119,112 @@ function P3D:_spawn()
 
 	self:_frame()
 
-	self._state = "ready"
-	self._frames = 0
+	self:_retire_stale()
+
 	self._freeze_in = FREEZE_ANIM_DELAY
 
-	crumb("ready " .. breed.name)
+	self._spawned = true
+	self._state = "ready"
+	self._frames = 0
+	self._settle = LOD_SETTLE_FRAMES
+
+	self:_force_highest_lod()
+
+	self:_stream_start(units)
+end
+
+-----------------------------------------------------------------------
+-- Streaming
+-----------------------------------------------------------------------
+
+function P3D:_stream_start(units, attempt)
+	local can_meshes = Unit.force_stream_meshes ~= nil
+	local can_textures = Unit.force_stream_textures ~= nil
+	local mesh_timeout = GameParameters.force_stream_mesh_timeout or FORCE_STREAM_TIMEOUT
+	local pending = 0
+	local building = true
+	local timed_out = false
+
+	attempt = attempt or 1
+
+	self._streaming = can_meshes or can_textures
+	self._stream_time = 0
+
+	if not self._streaming then
+		crumb("streaming not available")
+
+		return self:_stream_done(false)
+	end
+
+	local function finish()
+		if timed_out and attempt < STREAM_ATTEMPTS then
+			crumb(string.format("stream timeout on attempt %d, retrying", attempt))
+
+			return self:_stream_start(units, attempt + 1)
+		end
+
+		return self:_stream_done(timed_out)
+	end
+
+	local function complete(stream_timeout)
+		if stream_timeout then
+			timed_out = true
+		end
+
+		pending = pending - 1
+
+		if not building and pending <= 0 then
+			finish()
+		end
+	end
+
+	for i = 1, #units do
+		local unit = units[i]
+
+		if Unit.alive(unit) then
+			pcall(Unit.set_unit_culling, unit, false, true)
+
+			if can_meshes then
+				pending = pending + 1
+
+				if not pcall(Unit.force_stream_meshes, unit, complete, true, mesh_timeout) then
+					pending = pending - 1
+				end
+			end
+
+			if can_textures then
+				pending = pending + 1
+
+				if not pcall(Unit.force_stream_textures, unit, complete, true, FORCE_TEXTURE_TIMEOUT) then
+					pending = pending - 1
+				end
+			end
+		end
+	end
+
+	building = false
+
+	if pending <= 0 then
+		return finish()
+	end
+
+	crumb(string.format("streaming %d units (%d pending, attempt %d)", #units, pending, attempt))
+end
+
+function P3D:_stream_done(timeout)
+	if not self._streaming then
+		return
+	end
+
+	local elapsed = self._stream_time or 0
+
+	self._streaming = nil
+
+	self._state = "ready"
+	self._frames = 0
+
+	crumb(string.format("%s after %.1fs (%s)", timeout and "stream gave up" or "stream complete",
+		elapsed, tostring(self.breed and self.breed.name)))
 
 	if self._ol_on then
 		self._ol_applied = nil
@@ -909,7 +1240,17 @@ function P3D:update(dt, t)
 
 	local state = self._state
 
-	if state == "loading" then
+	if self._streaming then
+		self._stream_time = self._stream_time + dt
+
+		if self._stream_time > STREAM_WAIT then
+			self:_stream_done(true)
+		end
+	end
+
+	self:_flush_retired(RELEASE_PER_FRAME)
+
+	if state == "loading" and not self._spawned then
 		self._load_time = self._load_time + dt
 
 		local pm = Managers.package
@@ -959,6 +1300,12 @@ function P3D:update(dt, t)
 		self._update_err = true
 
 		crumb("world update error: " .. tostring(err))
+	end
+
+	if self._settle and self._settle > 0 then
+		self._settle = self._settle - 1
+
+		self:_force_highest_lod()
 	end
 
 	if self._guard_set and self._state ~= "loading" then

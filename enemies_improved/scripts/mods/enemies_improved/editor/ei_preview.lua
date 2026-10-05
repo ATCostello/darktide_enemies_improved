@@ -1401,11 +1401,12 @@ function Preview:_relayout()
 	local loading = state == "loading"
 
 	if p3d then
-		local xs, ys, ws, hs = UIScenegraph.get_scenegraph_id_screen_scale(sg, self.stage_id, scale)
+		local xs, ys, w_scale, h_scale = UIScenegraph.get_scenegraph_id_screen_scale(sg, self.stage_id, scale)
+		local _, render_h = UIScenegraph.get_render_size(sg, self.stage_id, scale)
 
-		p3d:set_rect(xs, ys, ws, hs, sw / sh)
+		p3d:set_rect(xs, ys, w_scale, h_scale, sw / sh)
 
-		stage_px_h = hs
+		stage_px_h = render_h
 	end
 
 	local res = self._res
