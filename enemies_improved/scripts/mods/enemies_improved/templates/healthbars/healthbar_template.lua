@@ -556,6 +556,7 @@ local function apply_state_body(widget, scale, alert_active)
 	local size = template.size
 	size[1] = fs.hb_size_width
 	size[2] = fs.hb_size_height
+	local scaled_bar_width = 0
 
 	-- higher ghostbar speed = shorter shrink duration
 	template.bar_settings.duration_health_ghost = GHOSTBAR_BASE_DURATION / (fs.hb_ghostbar_speed or 1)
@@ -697,7 +698,10 @@ local function apply_state_body(widget, scale, alert_active)
 			style.header_text.text_color[3] = fs.main_colour[3]
 			style.header_text.text_color[4] = fs.main_colour[4]
 		end
+
+		style.header_text.text_horizontal_alignment = fs.hb_text_alignment
 	end
+
 	if fs.hb_text_bottom_left_01 then
 		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
 		if
@@ -714,7 +718,9 @@ local function apply_state_body(widget, scale, alert_active)
 			style.health_counter.text_color[3] = fs.main_colour[3]
 			style.health_counter.text_color[4] = fs.main_colour[4]
 		end
+		style.health_counter.text_horizontal_alignment = fs.hb_text_alignment
 	end
+
 	if fs.hb_text_bottom_left_02 then
 		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
 		if
@@ -731,6 +737,7 @@ local function apply_state_body(widget, scale, alert_active)
 			style.armour_type.text_color[3] = fs.main_colour[3]
 			style.armour_type.text_color[4] = fs.main_colour[4]
 		end
+		style.armour_type.text_horizontal_alignment = fs.hb_text_alignment
 	end
 end
 

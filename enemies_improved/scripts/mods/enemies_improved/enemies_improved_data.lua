@@ -422,7 +422,7 @@ mod.ICON_SETTINGS = {
 		default_glow_intensity = 0,
 	},
 	shield = {
-		enabled = true,
+		enabled = false,
 		scale = 1,
 		icon_scale = 1,
 		glow_intensity = 0,
@@ -438,17 +438,17 @@ mod.ICON_SETTINGS = {
 }
 
 mod.OUTLINE_COLOURS = {
-	horde = { 255, 50, 10, 0 },
-	elite = { 255, 50, 10, 0 },
-	captain = { 255, 50, 10, 0 },
-	disabler = { 255, 50, 10, 0 },
-	witch = { 255, 50, 10, 0 },
-	monster = { 255, 50, 10, 0 },
-	sniper = { 255, 50, 10, 0 },
-	far = { 255, 50, 10, 0 },
-	special = { 255, 50, 10, 0 },
-	enemy = { 255, 50, 10, 0 },
-	shield = { 255, 50, 10, 0 },
+	horde = { 255, 150/4, 60/4, 60/4 },
+	elite = { 255, 0, 120/4, 255/4 },
+	captain = { 255, 255/4, 140/4, 0 },
+	disabler = { 255, 255/4, 255/4, 0 },
+	witch = { 255, 255/4, 0, 180/4 },
+	monster = { 255, 180/4, 0, 255/4 },
+	sniper = { 255, 255/4, 0, 0 },
+	far = { 255, 0, 255/4, 120/4 },
+	special = { 255, 255/4, 0, 255/4 },
+	enemy = { 255, 200/4, 200/4, 200/4 },
+	shield = { 255, 50/4, 150/4, 255/4 },
 }
 
 mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
@@ -534,6 +534,21 @@ local override_options = {
 	},
 }
 
+local hb_text_alignment_options = {
+	{
+		text = "left",
+		value = "left",
+	},
+	{
+		text = "middle",
+		value = "middle",
+	},
+	{
+		text = "right",
+		value = "right",
+	},
+}
+
 mod.outline_types = {
 	{ text = "minion_outline", value = "minion_outline" },
 	{ text = "minion_outline_reversed_depth", value = "minion_outline_reversed_depth" },
@@ -562,6 +577,7 @@ table.insert(mod.settings_widgets, {
 	sub_widgets = {
 		{
 			setting_id = "open_editor",
+			tooltip = "open_editor_tooltip",
 			type = "button",
 			button_text = "open_editor_button",
 			button_trigger = "pressed",
@@ -569,6 +585,7 @@ table.insert(mod.settings_widgets, {
 		},
 		{
 			setting_id = "open_editor_keybind",
+			tooltip = "open_editor_keybind_tooltip",
 			type = "keybind",
 			default_value = {},
 			keybind_global = false,
@@ -1358,6 +1375,13 @@ table.insert(mod.settings_widgets, {
 			type = "checkbox",
 			default_value = false,
 			tooltip = "hb_text_show_damage_tooltip",
+		},
+		{
+			setting_id = "hb_text_alignment",
+			type = "dropdown",
+			options = hb_text_alignment_options,
+			default_value = "left",
+			tooltip = "hb_text_alignment_tooltip",
 		},
 		{
 			setting_id = "hb_text_show_max_health",

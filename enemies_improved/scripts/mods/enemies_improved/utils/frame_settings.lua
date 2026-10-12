@@ -278,6 +278,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_ghostbar_opacity = mod:get("hb_ghostbar_opacity")
 	fs.hb_toggle_ghostbar_colour = mod:get("hb_toggle_ghostbar_colour")
 	fs.hb_ghostbar_speed = mod:get("hb_ghostbar_speed") or 1
+	fs.hb_text_alignment = mod:get("hb_text_alignment") or "left"
 
 	local r_ghost = mod:get("hb_ghostbar_colour_R")
 	local g_ghost = mod:get("hb_ghostbar_colour_G")

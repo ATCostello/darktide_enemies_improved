@@ -182,7 +182,7 @@ mod.reset_all_overrides = function()
 
 	local reset_message = mod.custom_localize("reset_all_to_default_message") or ""
 	mod:notify(reset_message)
-
+	
 	mod.init_healthbar_defaults()
 
 	for setting_name in next, enemy_type_settings do
@@ -314,7 +314,7 @@ mod.init_healthbar_defaults = function()
 	end
 
 	if mod:get("healthbar_shield_enable") == nil then
-		mod:set("healthbar_shield_enable", false)
+		mod:set("healthbar_shield_enable", "false_override")
 	end
 
 	-- bar colours

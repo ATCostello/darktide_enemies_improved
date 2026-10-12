@@ -634,8 +634,16 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 - 2 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 - 2 * fs.text_scale, 20 },
+				
+				size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -664,8 +672,15 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 * fs.text_scale, 20 },
+				
+				size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -695,8 +710,15 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 * fs.text_scale, 20 },
+				
+				size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width + 4 + (2 * fs.hb_padding_scale),
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
 
 				drop_shadow = true,
 				default_alpha = 255,

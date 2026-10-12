@@ -2730,7 +2730,7 @@ table.insert(localisations_to_add, {
 	},
 	debuff_stack_on_icon_tooltip = {
 		en = "Toggle to move the stacks on top of the debuff icon.",
-		ru = "Перемещает количество поверх иконки ослабления.",
+		ru = "Пе��емещает количество поверх иконки ослабления.",
 		["zh-cn"] = "将层数数字显示在减益图标上方。",
 	},
 	debuff_gap_padding_scale = {
@@ -3482,7 +3482,7 @@ local insert_editor_localisation = function(localisation_table)
 	local editor_localisations = {
 		-- window title and button
 		open_editor_button = {
-			en = "Open editor",
+			en = "Click Me to Open editor",
 			ru = "Открыть редактор",
 			["zh-cn"] = "打开编辑器",
 		},
@@ -3533,7 +3533,7 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "强制开启",
 		},
 		ei_tri_block = {
-			en = "Block",
+			en = "Force off",
 			ru = "Запретить",
 			["zh-cn"] = "强制关闭",
 		},
@@ -3675,7 +3675,6 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "敌人",
 		},
 
-
 		-- page hints
 		ei_hint_general = {
 			en = "Global switches, ranges, fonts and performance. Hover a setting for details. Gold = changed from default.",
@@ -3712,7 +3711,6 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Выберите тип врага на вкладках сверху, затем сам тип или одного из его врагов слева, и переопределите контур, полоску здоровья, дебаффы, метку и дистанции.",
 			["zh-cn"] = "用上方标签选择敌人类型，再从左侧选择该类型本身或其中一个敌人，即可覆盖其轮廓、血条、减益、标记和距离。",
 		},
-
 
 		-- page sections
 		ei_sec_features = {
@@ -3866,7 +3864,6 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "性能",
 		},
 
-
 		-- preview panel
 		ei_preview_enemy = {
 			en = "Enemy",
@@ -3909,7 +3906,6 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "预览不可用",
 		},
 
-		
 		-- enemy type tabs (short labels)
 		ei_type_short_horde = {
 			en = "Horde",
@@ -3965,6 +3961,48 @@ local insert_editor_localisation = function(localisation_table)
 			en = "Ritualist",
 			ru = "Культист",
 			["zh-cn"] = "邪教徒",
+		},
+
+		editor_settings = {
+			en = "Live 3D Editor",
+		},
+		open_editor = {
+			en = "Open Live Editor",
+		},
+		open_editor_tooltip = {
+			en = "Click this button to open the live 3d editor for Enemies Improved directly from the settings page.",
+		},
+		open_editor_keybind = {
+			en = "Keybind to open Live Editor",
+		},
+		open_editor_keybind_tooltip = {
+			en = "Set a hotkey to open the live 3d editor for enemies improved from wherever you want.",
+		},
+
+		damage_number_crit_colour_rgb = {
+			en = "Critical Damage Colour",
+		},
+		damage_number_weakspot_colour_rgb = {
+			en = "Weakspot Damage Colour",
+		},
+		outline_tagged_colour_rgb = {
+			en = "Tagged Outline Colour",
+		},
+		outline_tagged_passive_colour_rgb = {
+			en = "Passive Tagged Outline Colour",
+		},
+		outline_companion_colour_rgb = {
+			en = "Companion's Tagged Outline Colour",
+		},
+		outline_veteran_tagged_colour_rgb = {
+			en = "Veteran's Target Tagged Outline Colour",
+		},
+
+		outline_specials_colour_rgb = {
+			en = "Special Attack Colour",
+		},
+		outline_stagger_colour_rgb = {
+			en = "Staggered Colour",
 		},
 	}
 

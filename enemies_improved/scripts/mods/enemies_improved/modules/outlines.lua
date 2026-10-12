@@ -637,7 +637,7 @@ mod.apply_enemy_outlines = function(settings)
 					color = { r, g, b },
 
 					visibility_check = function(unit)
-						if not Unit.alive(unit) then
+						if not HEALTH_ALIVE[unit] then
 							return false
 						end
 
@@ -698,7 +698,7 @@ mod.apply_enemy_outlines = function(settings)
 					color = { r, g, b },
 
 					visibility_check = function(unit)
-						if not Unit.alive(unit) then
+						if not HEALTH_ALIVE[unit] then
 							return false
 						end
 
@@ -751,7 +751,11 @@ mod.apply_enemy_outlines = function(settings)
 			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
-		visibility_check = function()
+		visibility_check = function(unit)
+			if not HEALTH_ALIVE[unit] then
+				return false
+			end
+
 			return true
 		end,
 	}
@@ -769,7 +773,11 @@ mod.apply_enemy_outlines = function(settings)
 			"minion_outline_reversed_depth",
 		},
 		color = { sr, sg, sb },
-		visibility_check = function()
+		visibility_check = function(unit)
+			if not HEALTH_ALIVE[unit] then
+				return false
+			end
+
 			return true
 		end,
 	}
