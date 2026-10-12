@@ -285,7 +285,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if individual_state == "true_override" or type_state == "true_override" then
 		debuffs_enabled = true
-	elseif individual_state == "false_override" or type_state == "false_override" then
+	elseif (individual_state == "false_override" or type_state == "false_override") and not fs.force_on_in_training then
 		debuffs_enabled = false
 	end
 

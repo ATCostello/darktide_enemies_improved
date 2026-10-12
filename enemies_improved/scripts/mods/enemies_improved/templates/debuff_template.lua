@@ -1285,7 +1285,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local individual_state = breed_name and fs.breed_debuff_toggle and fs.breed_debuff_toggle[breed_name]
 	local type_state = breed_type and fs.breed_type_debuff_enabled and fs.breed_type_debuff_enabled[breed_type]
 
-	if individual_state == "false_override" or type_state == "false_override" then
+	if (individual_state == "false_override" or type_state == "false_override") and not fs.force_on_in_training then
 		content.dbf_built = false
 		return
 	end

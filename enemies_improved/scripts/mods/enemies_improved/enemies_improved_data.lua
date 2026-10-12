@@ -341,8 +341,33 @@ local healthbar_colour_presets = {
 	},
 }
 
+mod.ICON_BACKGROUND_SHAPES = {
+	hexagon = {
+		value = "content/ui/materials/frames/talents/talent_icon_container",
+		material_values = {
+			frame = "content/ui/textures/frames/horde/hex_frame_horde",
+			icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
+			intensity = 0,
+			saturation = 0.65,
+		},
+	},
+	square = {
+		value = "content/ui/materials/icons/list_buttons/box",
+	},
+	diamond = {
+		value = "content/ui/materials/icons/difficulty/difficulty_indicator_full",
+	},
+	shield = {
+		value = "content/ui/materials/icons/presets/preset_04",
+	},
+	circle = {
+		value = "content/ui/materials/backgrounds/scanner/scanner_drill_circle_filled",
+	},
+}
+
 mod.ICON_COLOURS = {
-	horde = { 255, 150, 60, 60 },
+	melee_horde = { 255, 150, 60, 60 },
+	ranged_horde = { 255, 150, 60, 60 },
 	elite = { 255, 0, 120, 255 },
 	captain = { 255, 255, 140, 0 },
 	disabler = { 255, 255, 255, 0 },
@@ -358,7 +383,14 @@ mod.ICON_COLOURS = {
 }
 
 mod.ICON_SETTINGS = {
-	horde = {
+	melee_horde = {
+		enabled = false,
+		scale = 1,
+		icon_scale = 1,
+		glow_intensity = 0,
+		default_glow_intensity = 0,
+	},
+	ranged_horde = {
 		enabled = false,
 		scale = 1,
 		icon_scale = 1,
@@ -438,7 +470,8 @@ mod.ICON_SETTINGS = {
 }
 
 mod.OUTLINE_COLOURS = {
-	horde = { 255, 150/4, 60/4, 60/4 },
+	melee_horde = { 255, 150/4, 60/4, 60/4 },
+	ranged_horde = { 255, 150/4, 60/4, 60/4 },
 	elite = { 255, 0, 120/4, 255/4 },
 	captain = { 255, 255/4, 140/4, 0 },
 	disabler = { 255, 255/4, 255/4, 0 },
@@ -540,8 +573,8 @@ local hb_text_alignment_options = {
 		value = "left",
 	},
 	{
-		text = "middle",
-		value = "middle",
+		text = "center",
+		value = "center",
 	},
 	{
 		text = "right",
@@ -1664,6 +1697,19 @@ table.insert(mod.settings_widgets, {
 			step_size_value = 0.1,
 			tooltip = "healthbar_type_icon_scale_tooltip",
 		},
+		{
+			setting_id = "healthbar_type_icon_background_shape",
+			type = "dropdown",
+			default_value = "hexagon",
+			options = {
+				{ text = "healthbar_icon_shape_hexagon", value = "hexagon" },
+				{ text = "healthbar_icon_shape_square", value = "square" },
+				{ text = "healthbar_icon_shape_diamond", value = "diamond" },
+				{ text = "healthbar_icon_shape_shield", value = "shield" },
+				{ text = "healthbar_icon_shape_circle", value = "circle" },
+			},
+			tooltip = "healthbar_type_icon_background_shape_tooltip",
+		},
 	},
 })
 
@@ -1882,6 +1928,18 @@ table.insert(mod.settings_widgets, {
 				3,
 			},
 			tooltip = "readable_damage_number_gap_tooltip",
+		},
+		{
+			setting_id = "readable_damage_number_x_offset",
+			type = "numeric",
+			default_value = 0,
+			decimals_number = 2,
+			step_size_value = 0.05,
+			range = {
+				-2,
+				2,
+			},
+			tooltip = "readable_damage_number_x_offset_tooltip",
 		},
 		{
 			setting_id = "damage_number_flashy_speed",
@@ -2361,7 +2419,8 @@ table.insert(mod.settings_widgets, {
 -- PER-ENEMY TYPE SELECTOR LOGIC
 mod.breed_types = {
 	{ text = "SELECT AN ENEMY TYPE", value = "select" },
-	{ text = "horde", value = "horde" },
+	{ text = "melee_horde", value = "melee_horde" },
+	{ text = "ranged_horde", value = "ranged_horde" },
 	{ text = "monster", value = "monster" },
 	{ text = "captain", value = "captain" },
 	{ text = "disabler", value = "disabler" },
@@ -2456,6 +2515,15 @@ mod.group_settings_widgets = {
 				options = table.clone(override_options),
 				default_value = "dont_override",
 				tooltip = "healthbar_type_enable_tooltip",
+			},
+			{
+				setting_id = "healthbar_type_custom_name",
+				type = "text",
+				default_value = "",
+				placeholder_text = "healthbar_custom_name_placeholder",
+				max_length = 48,
+				show_length_limit = true,
+				tooltip = "healthbar_type_custom_name_tooltip",
 			},
 			{
 				setting_id = "healthbar_type_always_show",
@@ -2700,6 +2768,15 @@ mod.individual_override_settings = {
 				options = table.clone(override_options),
 				default_value = "dont_override",
 				tooltip = "healthbar_individual_force_tooltip",
+			},
+			{
+				setting_id = "healthbar_individual_custom_name",
+				type = "text",
+				default_value = "",
+				placeholder_text = "healthbar_custom_name_placeholder",
+				max_length = 48,
+				show_length_limit = true,
+				tooltip = "healthbar_individual_custom_name_tooltip",
 			},
 			{
 				setting_id = "healthbar_individual_always_show",

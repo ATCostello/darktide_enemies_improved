@@ -546,7 +546,8 @@ end
 
 -- OUTLINES
 mod.default_outline_enabled = {
-	horde = false,
+	melee_horde = false,
+	ranged_horde = false,
 	monster = false,
 	captain = false,
 	disabler = false,

@@ -126,7 +126,10 @@ mod.find_breed_category_by_tags = function(tags, breed_name)
 		end
 
 		if tags.horde or tags.roamer then
-			return "horde"
+			if tags.far or tags.close or breed_name == "renegade_assault" then
+				return "ranged_horde"
+			end
+			return "melee_horde"
 		elseif tags.captain or tags.cultist_captain then
 			return "captain"
 		elseif tags.witch then
@@ -147,6 +150,10 @@ mod.find_breed_category_by_tags = function(tags, breed_name)
 			return "enemy"
 		end
 	end
+end
+
+mod.is_horde_group = function(breed_type)
+	return breed_type == "melee_horde" or breed_type == "ranged_horde"
 end
 
 mod.gather_enemy_names_by_breed_types = function()
@@ -843,6 +850,16 @@ table.insert(localisations_to_add, {
 		ru = "орда",
 		["zh-cn"] = "尸潮怪",
 	},
+	melee_horde = {
+		en = "melee horde",
+		ru = "ближняя орда",
+		["zh-cn"] = "近战尸潮",
+	},
+	ranged_horde = {
+		en = "ranged horde",
+		ru = "дальняя орда",
+		["zh-cn"] = "远程尸潮",
+	},
 	enemy = {
 		en = "ritualist",
 		ru = "ритуалист",
@@ -1267,6 +1284,11 @@ table.insert(localisations_to_add, {
 		ru = "Цвет шрифта основного текста (глобально)",
 		["zh-cn"] = "主文本颜色（全局）",
 	},
+	main_font_colour_tooltip = {
+		en = "Pick a colour to apply as the 'main' font colour throughout enemies improved elements.",
+		ru = "Выберите цвет для основного текста в элементах Улучшенных врагов.",
+		["zh-cn"] = "设置主文本的全局颜色。",
+	},
 	main_font_colour_R = {
 		en = "Main Font: Red",
 		ru = "Основной шрифт: Красный",
@@ -1323,14 +1345,14 @@ table.insert(localisations_to_add, {
 		["zh-cn"] = "开启后，仅在灵能室内显示敌人增强模组的UI组件。在正式对局或灵能室以外的区域，将不会生效任何敌人增强相关改动。",
 	},
 	always_show_in_meatgrinder = {
-		en = "Always show in Meat Grinder?",
-		ru = "Всегда показывать в Мясорубке?",
-		["zh-cn"] = "在灵能室内始终显示？",
+		en = "Force On in Meat Grinder?",
+		ru = "Принудительно включать в Мясорубке?",
+		["zh-cn"] = "在灵能室内强制开启？",
 	},
 	always_show_in_meatgrinder_tooltip = {
-		en = "While inside the Meat Grinder, skip the 'hide after no damage' logic so healthbars and damage numbers always stay visible. Useful for testing. Does nothing outside the Meat Grinder.",
-		ru = "В Мясорубке отключает логику скрытия после отсутствия урона, так что полоски здоровья и цифры урона всегда видны. Полезно для тестирования. Не действует за пределами Мясорубки.",
-		["zh-cn"] = "在灵能室内时，跳过“无伤害后隐藏”逻辑，使血条和伤害数字始终可见。便于测试。对灵能室以外的区域无效。",
+		en = "While inside the Meat Grinder (training grounds), force healthbars, markers and debuffs to stay ON for every enemy. This bypasses per-type and per-enemy overrides, but still respects the global healthbar / marker / debuff toggles. Does nothing outside the Meat Grinder.",
+		ru = "В Мясорубке (тренировочной зоне) принудительно включает полоски здоровья, метки и дебаффы для всех врагов. Игнорирует переопределения по типу и отдельным врагам, но уважает глобальные переключатели полосок здоровья / меток / дебаффов. За пределами Мясорубки не действует.",
+		["zh-cn"] = "在灵能室（训练场）内，强制为所有敌人开启血条、标记和减益。会忽略按类型与按个体的覆盖设置，但仍遵循血条/标记/减益的全局开关。对灵能室以外的区域无效。",
 	},
 })
 
@@ -1626,7 +1648,7 @@ table.insert(localisations_to_add, {
 	},
 	outline_stagger_horde_enable = {
 		en = "Enable stagger outlines for horde enemies?",
-		ru = "Включить контуры ошеломления для орды?",
+		ru = "Включить кон��уры ошеломления для орды?",
 		["zh-cn"] = "尸潮怪启用硬直轮廓？",
 	},
 	outline_stagger_horde_enable_tooltip = {
@@ -1794,6 +1816,16 @@ table.insert(localisations_to_add, {
 		en = "A global scale for the decorative frame element around the enemies current health.\n\n1 = Default\n2 = 2x size ",
 		ru = "Глобальный масштаб декоративной рамки вокруг текущего здоровья врага.\n1 = по умолчанию, 2 = двойной размер.",
 		["zh-cn"] = "血条装饰外框的全局大小，1=默认，2=双倍。",
+	},
+	hb_text_alignment = {
+		en = "Healthbar Text Alignment",
+		ru = "Выравнивание текста полоски здоровья",
+		["zh-cn"] = "血条文本对齐",
+	},
+	hb_text_alignment_tooltip = {
+		en = "Choose how the healthbar text lines align: left, center or right. Text snaps to the matching edge of the healthbar.",
+		ru = "Выберите выравнивание текста полоски здоровья: слева, по центру или справа. Текст привязывается к соответствующему краю полоски.",
+		["zh-cn"] = "选择血条文本的对齐方式：左对齐、居中或右对齐。文本会对齐到血条的相应边缘。",
 	},
 	hb_text_top_left_01 = {
 		en = "Above Healthbar Text option",
@@ -2238,6 +2270,16 @@ table.insert(localisations_to_add, {
 		ru = "Настраивает горизонтальный промежуток между каждой читаемой цифрой урона. Более высокие значения увеличивают расстояние между цифрами.",
 		["zh-cn"] = "调整清晰样式伤害数字之间的水平间距。",
 	},
+	readable_damage_number_x_offset = {
+		en = "Readable damage number X offset",
+		ru = "Смещение читаемых цифр урона по горизонтали",
+		["zh-cn"] = "清晰伤害数字水平偏移",
+	},
+	readable_damage_number_x_offset_tooltip = {
+		en = "Shifts the Readable damage numbers horizontally. Positive values move them right, negative values move them left.",
+		ru = "Смещает читаемые цифры урона по горизонтали. Положительные значения сдвигают вправо, отрицательные — влево.",
+		["zh-cn"] = "水平移动清晰样式伤害数字。正值向右，负值向左。",
+	},
 	toughness_colour = {
 		en = "Toughness Bar Settings",
 		ru = "Настройки полоски стойкости",
@@ -2342,6 +2384,41 @@ table.insert(localisations_to_add, {
 		en = "Adjust the scale of the type icon.",
 		ru = "Настройте масштаб иконки типа.",
 		["zh-cn"] = "调整敌人类型图标的缩放。",
+	},
+	healthbar_type_icon_background_shape = {
+		en = "Icon background shape",
+		ru = "Форма фона иконки",
+		["zh-cn"] = "图标背景形状",
+	},
+	healthbar_type_icon_background_shape_tooltip = {
+		en = "Choose the shape drawn behind the enemy type icon.",
+		ru = "Выберите форму, рисуемую позади иконки типа врага.",
+		["zh-cn"] = "选择敌人类型图标背后绘制的形状。",
+	},
+	healthbar_icon_shape_hexagon = {
+		en = "Hexagon (default)",
+		ru = "Шестиугольник (по умолчанию)",
+		["zh-cn"] = "六边形（默认）",
+	},
+	healthbar_icon_shape_square = {
+		en = "Square",
+		ru = "Квадрат",
+		["zh-cn"] = "方形",
+	},
+	healthbar_icon_shape_diamond = {
+		en = "Diamond",
+		ru = "Ромб",
+		["zh-cn"] = "菱形",
+	},
+	healthbar_icon_shape_shield = {
+		en = "Shield",
+		ru = "Щит",
+		["zh-cn"] = "盾形",
+	},
+	healthbar_icon_shape_circle = {
+		en = "Circle",
+		ru = "Круг",
+		["zh-cn"] = "圆形",
 	},
 	show_dn_in_range_only = {
 		en = "Only show damage numbers in Meat Grinder?",
@@ -2670,7 +2747,7 @@ table.insert(localisations_to_add, {
 	},
 	debuff_y_offset_tooltip = {
 		en = "Adjust the up + down position of the debuffs.\n\nAdjust to your liking, or to fit to your widget config. Can have a different effect depending on your other settings, so just play around a bit :)",
-		ru = "Настройте вертикальное положение ослаблений. Может по-разному влиять в зависимости от других настроек, так что просто поэкспериментируйте :)",
+		ru = "Настройте вертикальное положение ослаблений. Может по-разному влиять �� зависимости от других настроек, так что просто поэкспериментируйте :)",
 		["zh-cn"] = "调整减益的上下位置，仅在显示在身体上时生效。",
 	},
 	debuff_gap_name_icon_offset = {
@@ -3049,6 +3126,31 @@ table.insert(localisations_to_add, {
 		ru = 'Переопределите маркеры над головой для выбранного типа врага. "Принудительно включить" всегда показывает их, "Принудительно выключить" всегда скрывает, "Следовать глобальному переключателю" использует глобальные переключатели маркеров.',
 		["zh-cn"] = '为选中的敌人类型覆盖头顶标记。"强制开启"始终显示，"强制关闭"始终隐藏，"跟随全局开关"使用全局标记开关。',
 	},
+	healthbar_type_show_dps = {
+		en = "Show DPS override?",
+		ru = "Переопределение отображения DPS?",
+		["zh-cn"] = "覆盖显示 DPS？",
+	},
+	healthbar_type_show_dps_tooltip = {
+		en = "Override the DPS readout for your selected enemy type. 'Force on' always shows a DPS number after death, 'Force off' always hides it, 'Follow global toggle' uses the global Show DPS setting.",
+		ru = 'Переопределите показ DPS для выбранного типа врага. "Принудительно включить" всегда показывает число DPS после смерти, "Принудительно выключить" всегда скрывает, "Следовать глобальному переключателю" использует глобальную настройку DPS.',
+		["zh-cn"] = '为选中的敌人类型覆盖 DPS 显示。"强制开启"死亡后始终显示 DPS，"强制关闭"始终隐藏，"跟随全局开关"使用全局显示 DPS 设置。',
+	},
+	healthbar_type_custom_name = {
+		en = "Custom name override",
+		ru = "Переопределение имени",
+		["zh-cn"] = "自定义名称覆盖",
+	},
+	healthbar_type_custom_name_tooltip = {
+		en = "Type a custom name to show for every enemy in this group when the healthbar text uses 'Enemy name'. Leave empty to use the game's default name.",
+		ru = "Введите своё имя, которое будет отображаться для всех врагов этой группы, когда текст полоски использует «Имя врага». Оставьте пустым для имени по умолчанию.",
+		["zh-cn"] = "输入自定义名称，当血条文本使用“敌人名称”时对该分组所有敌人生效。留空则使用游戏默认名称。",
+	},
+	healthbar_custom_name_placeholder = {
+		en = "Leave empty for default",
+		ru = "Оставьте пустым для значения по умолчанию",
+		["zh-cn"] = "留空使用默认",
+	},
 })
 
 -- enemy individual overrides localisations
@@ -3112,6 +3214,26 @@ table.insert(localisations_to_add, {
 		en = "When enabled, the global 'Hide healthbar after no damage' setting will be ignored for this specific enemy, so their healthbar never fades out.",
 		ru = "При включении для этого конкретного врага игнорируется глобальная настройка скрытия полоски после отсутствия урона.",
 		["zh-cn"] = "开启后，该敌人将忽略全局“无伤害后隐藏血条”设置，血条不会淡出。",
+	},
+	healthbar_individual_show_dps = {
+		en = "Show DPS override?",
+		ru = "Переопределение отображения DPS?",
+		["zh-cn"] = "覆盖显示 DPS？",
+	},
+	healthbar_individual_show_dps_tooltip = {
+		en = "Force the DPS readout on/off for this specific enemy, or follow the type/global Show DPS toggle. 'Force on' shows a DPS number after death even when disabled elsewhere.",
+		ru = "Принудительно включить/выключить показ DPS для этого врага или следовать настройкам типа/глобальным. «Включено» показывает DPS после смерти, даже если он отключён в другом месте.",
+		["zh-cn"] = "为该敌人强制开启/关闭 DPS 显示，或跟随分类/全局显示 DPS 开关。“强制开启”即使在其他地方禁用也会在死亡后显示 DPS。",
+	},
+	healthbar_individual_custom_name = {
+		en = "Custom name override",
+		ru = "Переопределение имени",
+		["zh-cn"] = "自定义名称覆盖",
+	},
+	healthbar_individual_custom_name_tooltip = {
+		en = "Type a custom name to show for this enemy when the healthbar text uses 'Enemy name'. Leave empty to use the type override or the game's default name.",
+		ru = "Введите своё имя для этого врага, когда текст полоски использует «Имя врага». Оставьте пустым, чтобы использовать имя группы или значение по умолчанию.",
+		["zh-cn"] = "输入该敌人的自定义名称，当血条文本使用“敌人名称”时生效。留空则使用分组覆盖或游戏默认名称。",
 	},
 	healthbar_individual_colour = {
 		en = "Healthbar colour (Enemy Specific)",
@@ -3723,6 +3845,16 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Видимость и дистанция",
 			["zh-cn"] = "可见性与距离",
 		},
+		ei_sec_targeting = {
+			en = "Targeting & tags",
+			ru = "Наведение и метки",
+			["zh-cn"] = "瞄准与标记",
+		},
+		ei_sec_weakened = {
+			en = "Weakened",
+			ru = "Ослабление",
+			["zh-cn"] = "虚弱",
+		},
 		ei_sec_text = {
 			en = "Text",
 			ru = "Текст",
@@ -3827,6 +3959,41 @@ local insert_editor_localisation = function(localisation_table)
 			en = "Debuff colours",
 			ru = "Цвета дебаффов",
 			["zh-cn"] = "减益颜色",
+		},
+		ei_sec_debuff_bulk = {
+			en = "Bulk toggles",
+			ru = "Массовые переключатели",
+			["zh-cn"] = "批量开关",
+		},
+		ei_debuff_toggle_all_on = {
+			en = "All debuffs",
+			ru = "Все дебаффы",
+			["zh-cn"] = "所有减益",
+		},
+		ei_debuff_toggle_all_on_tooltip = {
+			en = "Enable every debuff effect at once.",
+			ru = "Включить сразу все эффекты дебаффов.",
+			["zh-cn"] = "一次开启所有减益效果。",
+		},
+		ei_debuff_toggle_all_off = {
+			en = "All debuffs",
+			ru = "Все дебаффы",
+			["zh-cn"] = "所有减益",
+		},
+		ei_debuff_toggle_all_off_tooltip = {
+			en = "Disable every debuff effect at once.",
+			ru = "Выключить сразу все эффекты дебаффов.",
+			["zh-cn"] = "一次关闭所有减益效果。",
+		},
+		ei_btn_all_on = {
+			en = "Toggle all on",
+			ru = "Включить все",
+			["zh-cn"] = "全部开启",
+		},
+		ei_btn_all_off = {
+			en = "Toggle all off",
+			ru = "Выключить все",
+			["zh-cn"] = "全部关闭",
 		},
 		ei_sec_markers = {
 			en = "Overhead markers",

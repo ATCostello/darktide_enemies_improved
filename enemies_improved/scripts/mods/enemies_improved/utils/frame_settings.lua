@@ -77,6 +77,8 @@ mod.build_frame_settings = function(dt)
 		fs.breed_type_debuff_show_on_body_override = {}
 		fs.breed_debuff_show_on_body_override = {}
 		fs.breed_marker_type_enabled = {}
+		fs.breed_type_show_dps = {}
+		fs.breed_show_dps = {}
 	else
 		table_clear(fs.breed_dist_enabled)
 		table_clear(fs.breed_dist_value)
@@ -99,6 +101,8 @@ mod.build_frame_settings = function(dt)
 		table_clear(fs.breed_type_debuff_show_on_body_override)
 		table_clear(fs.breed_debuff_show_on_body_override)
 		table_clear(fs.breed_marker_type_enabled)
+		table_clear(fs.breed_type_show_dps)
+		table_clear(fs.breed_show_dps)
 	end
 
 	-- INDIVIDUAL OVERRIDES
@@ -138,6 +142,8 @@ mod.build_frame_settings = function(dt)
 				or nil
 
 			fs.breed_debuff_show_on_body_override[enemy] = mod:get("debuff_" .. enemy .. "_show_on_body_override")
+
+			fs.breed_show_dps[enemy] = override_value(mod:get("healthbar_" .. enemy .. "_show_dps"), false)
 		end
 	end
 
@@ -155,6 +161,8 @@ mod.build_frame_settings = function(dt)
 				or nil
 			fs.breed_marker_type_enabled[breed] = override_value(mod:get("marker_" .. breed .. "_enable"), false)
 			fs.breed_type_debuff_show_on_body_override[breed] = mod:get("debuff_" .. breed .. "_show_on_body_override")
+
+			fs.breed_type_show_dps[breed] = override_value(mod:get("healthbar_" .. breed .. "_show_dps"), false)
 		end
 	end
 
@@ -263,6 +271,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
 	fs.hb_gap_padding_scale = mod:get("hb_gap_padding_scale") * fs.global_scale
 	fs.healthbar_type_icon_scale = (mod:get("healthbar_type_icon_scale") or 1) * fs.global_scale
+	fs.healthbar_type_icon_background_shape = mod:get("healthbar_type_icon_background_shape") or "hexagon"
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
@@ -286,6 +295,7 @@ mod.build_frame_settings = function(dt)
 	fs.hb_ghostbar_colour = ensure_array(fs.hb_ghostbar_colour, 255, r_ghost or 255, g_ghost or 255, b_ghost or 255)
 	fs.readable_max_damage_numbers = mod:get("readable_max_damage_numbers")
 	fs.readable_damage_number_gap = mod:get("readable_damage_number_gap") or 1
+	fs.readable_damage_number_x_offset = mod:get("readable_damage_number_x_offset") or 0
 	fs.hb_show_dps = mod:get("hb_show_dps")
 	fs.widget_removal_delay = mod:get("widget_removal_delay") or 0
 	fs.damage_number_scale = mod:get("damage_number_scale")

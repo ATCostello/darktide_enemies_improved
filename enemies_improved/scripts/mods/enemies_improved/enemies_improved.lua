@@ -199,7 +199,8 @@ local PRIORITY = {
 	special = 100,
 	elite = 100,
 	shield = 50,
-	horde = 20,
+	melee_horde = 20,
+	ranged_horde = 20,
 	enemy = 20,
 }
 
@@ -366,6 +367,28 @@ mod.custom_localize = function(loc_string)
 	end
 end
 
+mod.enemy_custom_name = function(breed, breed_type)
+	local breed_name = breed and breed.name
+
+	if breed_name then
+		local custom = mod:get("healthbar_" .. breed_name .. "_custom_name")
+
+		if type(custom) == "string" and custom ~= "" then
+			return custom
+		end
+	end
+
+	if breed_type then
+		local custom = mod:get("healthbar_" .. breed_type .. "_custom_name")
+
+		if type(custom) == "string" and custom ~= "" then
+			return custom
+		end
+	end
+
+	return nil
+end
+
 local EnemyImprovedTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/enemies_improved_template")
 mod.editor = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/editor/ei_editor")
@@ -437,14 +460,13 @@ end
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	add_custom_templates(self)
 
-	if fs.only_in_meatgrinder then
-		local current_level = Managers.state.mission and Managers.state.mission:mission()
+	local current_level = Managers.state.mission and Managers.state.mission:mission()
+	local in_shooting_range = (current_level and current_level.game_mode_name == "shooting_range") or false
 
-		if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
-			mod.enabled = true
-		else
-			mod.enabled = false
-		end
+	fs.force_on_in_training = (fs.always_show_in_meatgrinder and in_shooting_range) or false
+
+	if fs.only_in_meatgrinder then
+		mod.enabled = in_shooting_range
 	else
 		mod.enabled = true
 	end
@@ -2069,9 +2091,13 @@ mod.find_breed_category = function(unit)
 			return "shield"
 		end
 
-		local tags = mod.get_breed_tags(unit) or {}
+		local breed = mod.get_unit_breed(unit) or {}
+		local tags = breed.tags or {}
 		if tags.horde or tags.roamer then
-			return "horde"
+			if tags.far or tags.close or breed.breed_name == "renegade_assault" then
+				return "ranged_horde"
+			end
+			return "melee_horde"
 		elseif tags.captain or tags.cultist_captain then
 			return "captain"
 		elseif tags.witch then
@@ -2082,7 +2108,7 @@ mod.find_breed_category = function(unit)
 			return "disabler"
 		elseif tags.special and tags.sniper then
 			return "sniper"
-		elseif tags.elite and tags.far or tags.special and tags.far or tags.elite and tags.close then
+		elseif tags.elite and tags.far or tags.special and tags.far or tags.special and tags.close or tags.elite and tags.close then
 			return "far"
 		elseif tags.elite then
 			return "elite"

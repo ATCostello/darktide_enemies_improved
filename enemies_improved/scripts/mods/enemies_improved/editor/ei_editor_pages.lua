@@ -234,8 +234,10 @@ PAGE.general = function(B, S)
 	B.sub("ei_sec_visibility")
 	B.settings({
 		"draw_distance", "enable_depth_fading", "global_opacity", "markers_show_only_aimed",
-		"only_tagged_enemies", "only_in_meatgrinder",
+		"only_tagged_enemies", "only_in_meatgrinder", "always_show_in_meatgrinder",
 	})
+	B.sub("ei_sec_targeting")
+	B.settings({ "aim_cone_angle", "remove_tag_skull", "adjust_ads_opacity", "ads_opacity_mult" })
 	B.sub("ei_sec_text")
 	B.settings({
 		"font_type", "text_scale", "main_font_colour_rgb", "secondary_font_colour_rgb", "mod_name_pizazz_toggle",
@@ -264,7 +266,10 @@ PAGE.healthbars = function(B, S)
 	end
 
 	B.sub("ei_sec_ghostbar")
-	B.settings({ "hb_toggle_ghostbar", "hb_ghostbar_opacity", "hb_toggle_ghostbar_colour" }, HB)
+	B.settings({
+		"hb_toggle_ghostbar", "hb_ghostbar_opacity", "hb_toggle_ghostbar_colour", "hb_ghostbar_colour_rgb",
+		"hb_ghostbar_speed",
+	}, HB)
 	B.sub("ei_sec_toughness")
 	B.settings({
 		"toughness_enabled", "toughness_electric", "toughness_text_enabled", "toughness_text_colour_enabled",
@@ -275,13 +280,18 @@ PAGE.healthbars = function(B, S)
 	end
 	B.sub("ei_sec_text_lines")
 	B.settings({
-		"hb_enable_text", "hb_text_top_left_01", "hb_text_bottom_left_01", "hb_text_bottom_left_02",
+		"hb_enable_text", "hb_text_alignment", "hb_text_top_left_01", "hb_text_bottom_left_01", "hb_text_bottom_left_02",
 		"hb_text_show_max_health", "hb_text_show_damage",
 	}, HB)
 	B.sub("ei_sec_type_icon")
-	B.settings({ "healthbar_type_icon_enable", "healthbar_type_icon_scale" }, HB)
+	B.settings({ "healthbar_type_icon_enable", "healthbar_type_icon_scale", "healthbar_type_icon_background_shape" }, HB)
 	B.sub("ei_sec_when")
-	B.settings({ "hb_hide_after_no_damage", "hb_damage_show_only_latest", "hb_damage_show_only_latest_value" }, HB)
+	B.settings({
+		"hb_hide_after_no_damage", "hb_damage_show_only_latest", "hb_damage_show_only_latest_value",
+		"hb_show_when_debuffed", "healthbar_only_in_meatgrinder",
+	}, HB)
+	B.sub("ei_sec_weakened")
+	B.settings({ "healthbar_weakened_enable", "healthbar_weakened_colour_rgb" }, HB)
 	B.sub("ei_sec_hordes")
 	B.settings({
 		"hb_horde_enable", "hb_horde_clusters_enable", "hb_horde_clusters_size", "hb_horde_hide_after_no_damage",
@@ -289,6 +299,7 @@ PAGE.healthbars = function(B, S)
 	B.sub("ei_sec_boss")
 	B.setting("hb_toggle_base_boss_healthbar")
 	B.setting("debuff_boss_healthbar_enable", "debuff_enable")
+	B.setting("boss_debuff_icon_size", "debuff_enable")
 	B.setting("boss_debuff_stack_font_size", "debuff_enable")
 end
 
@@ -301,13 +312,17 @@ PAGE.damage = function(B, S)
 		"damage_number_duration", "damage_number_flashy_speed",
 	}, DN)
 	B.sub("ei_sec_placement")
-	B.settings({ "damage_number_scale", "damage_number_y_offset" }, DN)
+	B.settings({
+		"damage_number_scale", "damage_number_y_offset", "readable_damage_number_gap", "readable_damage_number_x_offset",
+	}, DN)
 	B.sub("ei_sec_dn_colours")
 	B.settings({
 		"damage_number_crit_colour_rgb", "damage_number_weakspot_colour_rgb",
 	}, DN)
 	B.sub("ei_sec_dn_extras")
-	B.settings({ "hb_show_dps", "show_dn_in_range_only" }, DN)
+	B.settings({
+		"hb_show_dps", "show_dn_in_range_only", "hb_damage_numbers_track_friendly", "widget_removal_delay",
+	}, DN)
 end
 
 local function debuff_toggle_cells(S, requires)
@@ -384,11 +399,40 @@ local function debuff_colour_cells(S, requires)
 	return cells
 end
 
+local function debuff_set_all(S, enabled)
+	local groups = S.debuff_groups()
+	for i = 1, #groups do
+		local names = groups[i].names
+		for k = 1, #names do
+			S.set_debuff_enabled(names[k], enabled)
+		end
+	end
+	if mod._ei_view then
+		mod._ei_view:_written(true)
+	end
+end
+
+local function debuff_toggle_all_row(S, label_key, button_key, enabled)
+	return {
+		id = label_key,
+		kind = "note",
+		label = LOC(label_key),
+		tooltip = LOC(label_key .. "_tooltip"),
+		button = LOC(button_key),
+		action = function()
+			debuff_set_all(S, enabled)
+		end,
+	}
+end
+
 PAGE.debuffs = function(B, S)
 	local DB = "debuff_enable"
 	B.sub("ei_sec_debuffs")
 	B.setting(DB)
-	B.settings({ "debuff_dot_enable", "debuff_utility_enable", "debuff_horde_global_enable", "debuff_stagger_enable" }, DB)
+	B.settings({
+		"debuff_dot_enable", "debuff_utility_enable", "debuff_horde_global_enable", "debuff_stagger_enable",
+		"debuff_keyword_enable",
+	}, DB)
 	B.sub("ei_sec_layout")
 	B.settings({
 		"debuff_horizontal", "split_debuff_types", "debuffs_combine", "debuff_show_on_body", "debuff_x_offset",
@@ -409,6 +453,9 @@ PAGE.debuffs = function(B, S)
 	if max_colour then
 		max_colour.label = LOC("ei_lbl_max_stacks_colour")
 	end
+	B.sub("ei_sec_debuff_bulk")
+	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_on", "ei_btn_all_on", true))
+	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_off", "ei_btn_all_off", false))
 	B.grid("ei_sec_debuff_toggles", "toggles", debuff_toggle_cells(S, DB))
 	B.grid("ei_sec_debuff_colours", "colours", debuff_colour_cells(S, DB))
 end
@@ -445,8 +492,9 @@ PAGE.outlines = function(B, S)
 	end
 	B.sub("ei_sec_tag_colours")
 	B.settings({
-		"outline_tagged_colour_rgb", "outline_tagged_passive_colour_rgb", "outline_companion_colour_rgb",
-		"outline_veteran_tagged_colour_rgb",
+		"outlines_style", "outline_tagged_enable", "outline_tagged_colour_rgb", "outline_tagged_passive_enable",
+		"outline_tagged_passive_colour_rgb", "outline_companion_enable", "outline_companion_colour_rgb",
+		"outline_veteran_tagged_enable", "outline_veteran_tagged_colour_rgb",
 	}, OL)
 	B.sub("ei_sec_specials")
 	B.settings({
@@ -497,6 +545,8 @@ local function master_of(field_key)
 		return "debuff_enable"
 	elseif field_key:find("^marker") then
 		return "markers_enable"
+	elseif field_key:find("^dps") then
+		return "hb_show_damage_numbers"
 	end
 	return nil
 end

@@ -1287,7 +1287,7 @@ function P3D:update(dt, t)
 			if frozen_unit then
 				pcall(function()
 					if Unit.has_animation_state_machine(frozen_unit) then
-						Unit.disable_animation_state_machine(frozen_unit)
+						--Unit.disable_animation_state_machine(frozen_unit)
 					end
 				end)
 			end

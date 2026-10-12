@@ -44,7 +44,11 @@ mod.update_enemy_healthbars = function(entry, t)
 	local breed_name = entry.breed_name
 	local is_horde = entry.is_horde
 	local individual_state = breed_name and fs.breed_healthbar_force and fs.breed_healthbar_force[breed_name]
-	local group_state = is_horde and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+	local horde_group = entry.breed_type
+	if not mod.is_horde_group(horde_group) then
+		horde_group = "melee_horde"
+	end
+	local group_state = is_horde and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[horde_group]
 	local unit = entry.unit
 	local clusters_enable = fs.horde_clusters_enable
 
@@ -53,7 +57,7 @@ mod.update_enemy_healthbars = function(entry, t)
 		effective = group_state
 	end
 
-	if effective == "false_override" then
+	if effective == "false_override" and not fs.force_on_in_training then
 		return
 	end
 

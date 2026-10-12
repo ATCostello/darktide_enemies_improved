@@ -46,7 +46,8 @@ local EVENTS = {
 	{ at = 4.50, frac = 0.10 },
 }
 local MAX_HEALTH_BY_TYPE = {
-	horde = 250,
+	melee_horde = 250,
+	ranged_horde = 250,
 	enemy = 500,
 	disabler = 700,
 	special = 600,
@@ -863,7 +864,7 @@ function Preview:_outline_colour(fs)
 
 	local stagger_enabled
 
-	if self._type == "horde" then
+	if mod.is_horde_group(self._type) then
 		stagger_enabled = fs.outline_stagger_horde_enable
 	else
 		stagger_enabled = fs.outline_stagger_enable

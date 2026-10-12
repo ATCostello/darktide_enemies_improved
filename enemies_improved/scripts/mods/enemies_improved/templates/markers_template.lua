@@ -395,7 +395,7 @@ local function apply_state(widget, bar_color, alert_colour, scale)
 	content.marker_type_icon_show = true
 
 	if fs.marker_visual_style == "type_icon" then
-		if icon_breed_type and icon_breed_type ~= "monster" and icon_breed_type ~= "horde" then
+		if icon_breed_type and icon_breed_type ~= "monster" and not mod.is_horde_group(icon_breed_type) then
 			local icon_settings = mod.ICON_SETTINGS[icon_breed_type]
 			local icon_path = MARKER_TYPE_ICONS[icon_breed_type]
 
@@ -530,7 +530,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	if marker_override == false then
+	if marker_override == false and not fs.force_on_in_training then
 		content.draw_mkr = false
 		content.m_built = false
 		return
@@ -556,7 +556,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content.health_extension = health_extension
 	end
 
-	if content.m_allowed == false then
+	if content.m_allowed == false and not fs.force_on_in_training then
 		content.draw_mkr = false
 		content.m_built = false
 		return
@@ -621,7 +621,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- colours still get read fresh every update so setting changes apply straight away
-	local bar_color = mod.BREED_COLOURS[content.breed_type] or mod.BREED_COLOURS.horde
+	local bar_color = mod.BREED_COLOURS and mod.BREED_COLOURS[content.breed_type]
+		or mod.BREED_COLOURS and mod.BREED_COLOURS.melee_horde
+		or { 255, 255, 0, 0 }
 
 	-- INDIVIDUAL COLOUR OVERRIDES
 	local enemy_individual = content.breed and content.breed.name

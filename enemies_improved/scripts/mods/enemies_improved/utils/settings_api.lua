@@ -475,7 +475,8 @@ function S.breeds(type_id)
 end
 
 local REPRESENTATIVE = {
-	horde = "chaos_poxwalker",
+	melee_horde = "chaos_poxwalker",
+	ranged_horde = "renegade_rifleman",
 	elite = "renegade_executor",
 	special = "renegade_grenadier",
 	disabler = "chaos_hound",
@@ -702,10 +703,14 @@ local TYPE_FIELDS = {
 		label = "debuff_type_enable",
 		tooltip = "debuff_type_enable_tooltip",
 		group = "debuff",
-		alias = { horde = "debuff_horde_global_enable" },
+		alias = {
+			horde = "debuff_horde_global_enable",
+			melee_horde = "debuff_horde_global_enable",
+			ranged_horde = "debuff_horde_global_enable",
+		},
 		bool_store = true,
 		default = function(key)
-			return key ~= "horde"
+			return not mod.is_horde_group(key) and key ~= "horde"
 		end,
 	},
 	{
@@ -724,6 +729,14 @@ local TYPE_FIELDS = {
 		label = "marker_type_enable",
 		tooltip = "marker_type_enable_tooltip",
 		group = "marker",
+	},
+	{
+		key = "dps_on",
+		kind = "tri",
+		id = "healthbar_%s_show_dps",
+		label = "healthbar_type_show_dps",
+		tooltip = "healthbar_type_show_dps_tooltip",
+		group = "damage",
 	},
 }
 
@@ -871,6 +884,14 @@ local BREED_FIELDS = {
 		toggle = "odist_on",
 		group = "distance",
 	},
+	{
+		key = "dps_on",
+		kind = "tri",
+		id = "healthbar_%s_show_dps",
+		label = "healthbar_individual_show_dps",
+		tooltip = "healthbar_individual_show_dps_tooltip",
+		group = "damage",
+	},
 }
 
 local FIELDS = { type = TYPE_FIELDS, breed = BREED_FIELDS }
@@ -882,7 +903,7 @@ for scope, list in next, FIELDS do
 	end
 end
 
-local NO_ICON = { horde = true, enemy = true }
+local NO_ICON = { horde = true, melee_horde = true, ranged_horde = true, enemy = true }
 
 local function ov_id(spec, key)
 	return spec.alias and spec.alias[key] or string_format(spec.id, key)
@@ -1089,7 +1110,7 @@ end
 
 function S.resolve(breed_name)
 	local breed_type = S.type_of(breed_name) or "enemy"
-	local is_horde = breed_type == "horde"
+	local is_horde = mod.is_horde_group(breed_type)
 	local result = { breed = breed_name, type = breed_type, label = breed_label(breed_name) }
 
 	local outline = { on = false, source = "off" }
@@ -1193,6 +1214,20 @@ function S.resolve(breed_name)
 		or S.get("draw_distance")
 	result.outline_distance = S.ov_get("breed", breed_name, "odist_on") and S.ov_get("breed", breed_name, "odist")
 		or nil
+
+	local breed_dps = S.ov_get("breed", breed_name, "dps_on")
+	local type_dps = S.ov_get("type", breed_type, "dps_on")
+	local dps_on
+
+	if breed_dps ~= nil then
+		dps_on = breed_dps
+	elseif type_dps ~= nil then
+		dps_on = type_dps
+	else
+		dps_on = S.get("hb_show_dps")
+	end
+
+	result.damage = { show_dps = dps_on and true or false }
 
 	return result
 end
