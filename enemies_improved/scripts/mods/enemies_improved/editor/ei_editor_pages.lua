@@ -495,6 +495,12 @@ PAGE.outlines = function(B, S)
 		"outlines_style", "outline_tagged_enable", "outline_tagged_colour_rgb", "outline_tagged_passive_enable",
 		"outline_tagged_passive_colour_rgb", "outline_companion_enable", "outline_companion_colour_rgb",
 		"outline_veteran_tagged_enable", "outline_veteran_tagged_colour_rgb",
+		"outline_special_target_enable", "outline_special_target_colour_rgb",
+		"outline_psyker_marked_enable", "outline_psyker_marked_colour_rgb",
+		"outline_adamant_mark_enable", "outline_adamant_mark_colour_rgb",
+		"outline_hordes_tagged_enable", "outline_hordes_tagged_colour_rgb",
+		"outline_broker_proximity_enable", "outline_broker_proximity_colour_rgb",
+		"outline_spillway_void_shield_enable", "outline_spillway_void_shield_colour_rgb",
 	}, OL)
 	B.sub("ei_sec_specials")
 	B.settings({

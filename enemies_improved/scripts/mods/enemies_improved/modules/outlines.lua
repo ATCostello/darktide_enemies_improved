@@ -35,6 +35,28 @@ local _los_spine_pos = Vector3.zero()
 
 local fs = mod.frame_settings
 
+-- Central priority table for all outlines (lower number = higher priority)
+local OUTLINE_PRIORITY = {
+	special_target = 3,
+	psyker_marked_target = 2,
+	smart_tagged_enemy = 3,
+	smart_tagged_enemy_passive = 2,
+	veteran_smart_tag = 2,
+	adamant_smart_tag = 2,
+	adamant_mark_target = 2,
+	hordes_tagged_remaining_target = 4,
+	broker_proximity_target = 2,
+	live_story_spillway_void_shield = 2,
+	owned_companion = 2,
+	allied_companion = 2,
+	scanning = 2,
+	scanning_confirm = 2,
+	enemies_breed = 8,
+	enemies_individual = 7,
+	enemies_improved_alert = 1,
+	enemies_improved_staggered = 1,
+}
+
 local function get_outline_system()
 	if _outline_system_checked then
 		return _outline_system
@@ -631,7 +653,7 @@ mod.apply_enemy_outlines = function(settings)
 					override_global_visibility = true,
 					visibility_check = nil,
 
-					priority = 6,
+					priority = OUTLINE_PRIORITY.enemies_breed,
 					material_layers = {
 						"minion_outline",
 					},
@@ -692,7 +714,7 @@ mod.apply_enemy_outlines = function(settings)
 				b = b / 255
 
 				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
-					priority = 5,
+					priority = OUTLINE_PRIORITY.enemies_individual,
 					material_layers = {
 						"minion_outline",
 					},
@@ -746,7 +768,7 @@ mod.apply_enemy_outlines = function(settings)
 	sb = sb / 255
 
 	settings.MinionOutlineExtension.enemies_improved_alert = {
-		priority = 1,
+		priority = OUTLINE_PRIORITY.enemies_improved_alert,
 		material_layers = {
 			"minion_outline",
 			"minion_outline_reversed_depth",
@@ -768,7 +790,7 @@ mod.apply_enemy_outlines = function(settings)
 	sb = fs.outline_stagger_colour[4] / 255
 
 	settings.MinionOutlineExtension.enemies_improved_staggered = {
-		priority = 2,
+		priority = OUTLINE_PRIORITY.enemies_improved_staggered,
 		material_layers = {
 			"minion_outline",
 			"minion_outline_reversed_depth",
@@ -812,7 +834,7 @@ mod.apply_enemy_outlines = function(settings)
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 3,
+			priority = OUTLINE_PRIORITY.smart_tagged_enemy,
 			visibility_check = function(unit)
 				return HEALTH_ALIVE[unit]
 			end,
@@ -832,7 +854,7 @@ mod.apply_enemy_outlines = function(settings)
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 1,
+			priority = OUTLINE_PRIORITY.smart_tagged_enemy_passive,
 			visibility_check = function(unit)
 				if not HEALTH_ALIVE[unit] then
 					return false
@@ -854,7 +876,7 @@ mod.apply_enemy_outlines = function(settings)
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 1,
+			priority = OUTLINE_PRIORITY.veteran_smart_tag,
 			visibility_check = function(unit)
 				return true
 			end,
@@ -873,7 +895,7 @@ mod.apply_enemy_outlines = function(settings)
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 1,
+			priority = OUTLINE_PRIORITY.adamant_smart_tag,
 			visibility_check = function(unit)
 				return true
 			end,
@@ -885,8 +907,145 @@ mod.apply_enemy_outlines = function(settings)
 				"minion_outline",
 				"minion_outline_reversed_depth",
 			},
-			priority = 1,
+			priority = OUTLINE_PRIORITY.adamant_smart_tag,
 			visibility_check = function(unit)
+				return true
+			end,
+		}
+	end
+
+	-- special_target override
+	local tr = mod:get("outline_special_target_colour_R")
+	local tg = mod:get("outline_special_target_colour_G")
+	local tb = mod:get("outline_special_target_colour_B")
+	if tr and tg and tb and mod:get("outline_special_target_enable") then
+		settings.MinionOutlineExtension.special_target = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline_combat_ability",
+				"minion_outline_combat_ability_reversed_depth",
+			},
+			priority = OUTLINE_PRIORITY.special_target,
+			override_global_visibility = nil,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
+				return true
+			end,
+		}
+	end
+
+	-- psyker_marked_target override
+	local tr = mod:get("outline_psyker_marked_colour_R")
+	local tg = mod:get("outline_psyker_marked_colour_G")
+	local tb = mod:get("outline_psyker_marked_colour_B")
+	if tr and tg and tb and mod:get("outline_psyker_marked_enable") then
+		settings.MinionOutlineExtension.psyker_marked_target = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline_psyker",
+			},
+			priority = OUTLINE_PRIORITY.psyker_marked_target,
+			override_global_visibility = nil,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
+				return true
+			end,
+		}
+	end
+
+	-- adamant_mark_target override
+	local tr = mod:get("outline_adamant_mark_colour_R")
+	local tg = mod:get("outline_adamant_mark_colour_G")
+	local tb = mod:get("outline_adamant_mark_colour_B")
+	if tr and tg and tb and mod:get("outline_adamant_mark_enable") then
+		settings.MinionOutlineExtension.adamant_mark_target = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline",
+				"minion_outline_reversed_depth",
+			},
+			priority = OUTLINE_PRIORITY.adamant_mark_target,
+			override_global_visibility = nil,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
+				return true
+			end,
+		}
+	end
+
+	-- hordes_tagged_remaining_target override
+	local tr = mod:get("outline_hordes_tagged_colour_R")
+	local tg = mod:get("outline_hordes_tagged_colour_G")
+	local tb = mod:get("outline_hordes_tagged_colour_B")
+	if tr and tg and tb and mod:get("outline_hordes_tagged_enable") then
+		settings.MinionOutlineExtension.hordes_tagged_remaining_target = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline",
+				"minion_outline_reversed_depth",
+			},
+			priority = OUTLINE_PRIORITY.hordes_tagged_remaining_target,
+			override_global_visibility = nil,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
+				return true
+			end,
+		}
+	end
+
+	-- broker_proximity_target override
+	local tr = mod:get("outline_broker_proximity_colour_R")
+	local tg = mod:get("outline_broker_proximity_colour_G")
+	local tb = mod:get("outline_broker_proximity_colour_B")
+	if tr and tg and tb and mod:get("outline_broker_proximity_enable") then
+		settings.MinionOutlineExtension.broker_proximity_target = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline",
+				"minion_outline_reversed_depth",
+			},
+			priority = OUTLINE_PRIORITY.broker_proximity_target,
+			override_global_visibility = nil,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
+				return true
+			end,
+		}
+	end
+
+	-- live_story_spillway_void_shield override
+	local tr = mod:get("outline_spillway_void_shield_colour_R")
+	local tg = mod:get("outline_spillway_void_shield_colour_G")
+	local tb = mod:get("outline_spillway_void_shield_colour_B")
+	if tr and tg and tb and mod:get("outline_spillway_void_shield_enable") then
+		settings.MinionOutlineExtension.live_story_spillway_void_shield = {
+			color = { tr / 255, tg / 255, tb / 255 },
+			material_layers = {
+				"minion_outline",
+				"minion_outline_reversed_depth",
+			},
+			priority = OUTLINE_PRIORITY.live_story_spillway_void_shield,
+			override_global_visibility = true,
+			visibility_check = function(unit)
+				if not HEALTH_ALIVE[unit] then
+					return false
+				end
+
 				return true
 			end,
 		}

@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "3.0.5"
+mod.version = "3.0.6"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1136,6 +1136,222 @@ table.insert(localisations_to_add, {
 		en = "Colour for Veteran's Focus Target tag.",
 		ru = "Цвет для метки «Важная цель» Ветерана.",
 		["zh-cn"] = "老兵天赋「专注目标」标记对应的高亮轮廓颜色。",
+	},
+
+	outline_special_target_enable = {
+		en = "Enable Special target outline override",
+		ru = "Enable Special target outline override",
+		["zh-cn"] = "Enable Special target outline override",
+	},
+	outline_special_target_enable_tooltip = {
+		en = "Enable custom colour for special targets.",
+		ru = "Enable custom colour for special targets.",
+		["zh-cn"] = "Enable custom colour for special targets.",
+	},
+	outline_special_target_colour = {
+		en = "Special target outline override colour",
+		ru = "Special target outline override colour",
+		["zh-cn"] = "Special target outline override colour",
+	},
+	outline_special_target_colour_R = {
+		en = "Special target outline override: Red",
+		ru = "Special target outline override: Red",
+		["zh-cn"] = "Special target outline override: Red",
+	},
+	outline_special_target_colour_G = {
+		en = "Special target outline override: Green",
+		ru = "Special target outline override: Green",
+		["zh-cn"] = "Special target outline override: Green",
+	},
+	outline_special_target_colour_B = {
+		en = "Special target outline override: Blue",
+		ru = "Special target outline override: Blue",
+		["zh-cn"] = "Special target outline override: Blue",
+	},
+	outline_special_target_colour_tooltip = {
+		en = "Colour for special target outlines.",
+		ru = "Colour for special target outlines.",
+		["zh-cn"] = "Colour for special target outlines.",
+	},
+
+	outline_psyker_marked_enable = {
+		en = "Enable Psyker marked outline override",
+		ru = "Enable Psyker marked outline override",
+		["zh-cn"] = "Enable Psyker marked outline override",
+	},
+	outline_psyker_marked_enable_tooltip = {
+		en = "Enable custom colour for enemies marked by Psyker.",
+		ru = "Enable custom colour for enemies marked by Psyker.",
+		["zh-cn"] = "Enable custom colour for enemies marked by Psyker.",
+	},
+	outline_psyker_marked_colour = {
+		en = "Psyker marked outline override colour",
+		ru = "Psyker marked outline override colour",
+		["zh-cn"] = "Psyker marked outline override colour",
+	},
+	outline_psyker_marked_colour_R = {
+		en = "Psyker marked outline override: Red",
+		ru = "Psyker marked outline override: Red",
+		["zh-cn"] = "Psyker marked outline override: Red",
+	},
+	outline_psyker_marked_colour_G = {
+		en = "Psyker marked outline override: Green",
+		ru = "Psyker marked outline override: Green",
+		["zh-cn"] = "Psyker marked outline override: Green",
+	},
+	outline_psyker_marked_colour_B = {
+		en = "Psyker marked outline override: Blue",
+		ru = "Psyker marked outline override: Blue",
+		["zh-cn"] = "Psyker marked outline override: Blue",
+	},
+	outline_psyker_marked_colour_tooltip = {
+		en = "Colour for psyker marked outlines.",
+		ru = "Colour for psyker marked outlines.",
+		["zh-cn"] = "Colour for psyker marked outlines.",
+	},
+
+	outline_adamant_mark_enable = {
+		en = "Enable Adamant mark target outline override",
+		ru = "Enable Adamant mark target outline override",
+		["zh-cn"] = "Enable Adamant mark target outline override",
+	},
+	outline_adamant_mark_enable_tooltip = {
+		en = "Enable custom colour for Adamant mark targets.",
+		ru = "Enable custom colour for Adamant mark targets.",
+		["zh-cn"] = "Enable custom colour for Adamant mark targets.",
+	},
+	outline_adamant_mark_colour = {
+		en = "Adamant mark target outline override colour",
+		ru = "Adamant mark target outline override colour",
+		["zh-cn"] = "Adamant mark target outline override colour",
+	},
+	outline_adamant_mark_colour_R = {
+		en = "Adamant mark target outline override: Red",
+		ru = "Adamant mark target outline override: Red",
+		["zh-cn"] = "Adamant mark target outline override: Red",
+	},
+	outline_adamant_mark_colour_G = {
+		en = "Adamant mark target outline override: Green",
+		ru = "Adamant mark target outline override: Green",
+		["zh-cn"] = "Adamant mark target outline override: Green",
+	},
+	outline_adamant_mark_colour_B = {
+		en = "Adamant mark target outline override: Blue",
+		ru = "Adamant mark target outline override: Blue",
+		["zh-cn"] = "Adamant mark target outline override: Blue",
+	},
+	outline_adamant_mark_colour_tooltip = {
+		en = "Colour for Adamant mark outlines.",
+		ru = "Colour for Adamant mark outlines.",
+		["zh-cn"] = "Colour for Adamant mark outlines.",
+	},
+
+	outline_hordes_tagged_enable = {
+		en = "Enable Hordes tagged outline override",
+		ru = "Enable Hordes tagged outline override",
+		["zh-cn"] = "Enable Hordes tagged outline override",
+	},
+	outline_hordes_tagged_enable_tooltip = {
+		en = "Enable custom colour for hordes tagged targets.",
+		ru = "Enable custom colour for hordes tagged targets.",
+		["zh-cn"] = "Enable custom colour for hordes tagged targets.",
+	},
+	outline_hordes_tagged_colour = {
+		en = "Hordes tagged outline override colour",
+		ru = "Hordes tagged outline override colour",
+		["zh-cn"] = "Hordes tagged outline override colour",
+	},
+	outline_hordes_tagged_colour_R = {
+		en = "Hordes tagged outline override: Red",
+		ru = "Hordes tagged outline override: Red",
+		["zh-cn"] = "Hordes tagged outline override: Red",
+	},
+	outline_hordes_tagged_colour_G = {
+		en = "Hordes tagged outline override: Green",
+		ru = "Hordes tagged outline override: Green",
+		["zh-cn"] = "Hordes tagged outline override: Green",
+	},
+	outline_hordes_tagged_colour_B = {
+		en = "Hordes tagged outline override: Blue",
+		ru = "Hordes tagged outline override: Blue",
+		["zh-cn"] = "Hordes tagged outline override: Blue",
+	},
+	outline_hordes_tagged_colour_tooltip = {
+		en = "Colour for hordes tagged outlines.",
+		ru = "Colour for hordes tagged outlines.",
+		["zh-cn"] = "Colour for hordes tagged outlines.",
+	},
+
+	outline_broker_proximity_enable = {
+		en = "Enable Broker proximity outline override",
+		ru = "Enable Broker proximity outline override",
+		["zh-cn"] = "Enable Broker proximity outline override",
+	},
+	outline_broker_proximity_enable_tooltip = {
+		en = "Enable custom colour for broker proximity targets.",
+		ru = "Enable custom colour for broker proximity targets.",
+		["zh-cn"] = "Enable custom colour for broker proximity targets.",
+	},
+	outline_broker_proximity_colour = {
+		en = "Broker proximity outline override colour",
+		ru = "Broker proximity outline override colour",
+		["zh-cn"] = "Broker proximity outline override colour",
+	},
+	outline_broker_proximity_colour_R = {
+		en = "Broker proximity outline override: Red",
+		ru = "Broker proximity outline override: Red",
+		["zh-cn"] = "Broker proximity outline override: Red",
+	},
+	outline_broker_proximity_colour_G = {
+		en = "Broker proximity outline override: Green",
+		ru = "Broker proximity outline override: Green",
+		["zh-cn"] = "Broker proximity outline override: Green",
+	},
+	outline_broker_proximity_colour_B = {
+		en = "Broker proximity outline override: Blue",
+		ru = "Broker proximity outline override: Blue",
+		["zh-cn"] = "Broker proximity outline override: Blue",
+	},
+	outline_broker_proximity_colour_tooltip = {
+		en = "Colour for broker proximity outlines.",
+		ru = "Colour for broker proximity outlines.",
+		["zh-cn"] = "Colour for broker proximity outlines.",
+	},
+
+	outline_spillway_void_shield_enable = {
+		en = "Enable Spillway void shield outline override",
+		ru = "Enable Spillway void shield outline override",
+		["zh-cn"] = "Enable Spillway void shield outline override",
+	},
+	outline_spillway_void_shield_enable_tooltip = {
+		en = "Enable custom colour for live story spillway void shield outlines.",
+		ru = "Enable custom colour for live story spillway void shield outlines.",
+		["zh-cn"] = "Enable custom colour for live story spillway void shield outlines.",
+	},
+	outline_spillway_void_shield_colour = {
+		en = "Spillway void shield outline override colour",
+		ru = "Spillway void shield outline override colour",
+		["zh-cn"] = "Spillway void shield outline override colour",
+	},
+	outline_spillway_void_shield_colour_R = {
+		en = "Spillway void shield outline override: Red",
+		ru = "Spillway void shield outline override: Red",
+		["zh-cn"] = "Spillway void shield outline override: Red",
+	},
+	outline_spillway_void_shield_colour_G = {
+		en = "Spillway void shield outline override: Green",
+		ru = "Spillway void shield outline override: Green",
+		["zh-cn"] = "Spillway void shield outline override: Green",
+	},
+	outline_spillway_void_shield_colour_B = {
+		en = "Spillway void shield outline override: Blue",
+		ru = "Spillway void shield outline override: Blue",
+		["zh-cn"] = "Spillway void shield outline override: Blue",
+	},
+	outline_spillway_void_shield_colour_tooltip = {
+		en = "Colour for spillway void shield outlines.",
+		ru = "Colour for spillway void shield outlines.",
+		["zh-cn"] = "Colour for spillway void shield outlines.",
 	},
 
 	outline_tagged_passive_enable = {
@@ -4296,6 +4512,38 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Цвет контура цели Ветерана",
 			["zh-cn"] = "老兵标记轮廓颜色",
 		},
+
+		outline_special_target_colour_rgb = {
+			en = "Special Target Outline Colour",
+			ru = "Special Target Outline Colour",
+			["zh-cn"] = "Special Target Outline Colour",
+		},
+		outline_psyker_marked_colour_rgb = {
+			en = "Psyker Marked Outline Colour",
+			ru = "Psyker Marked Outline Colour",
+			["zh-cn"] = "Psyker Marked Outline Colour",
+		},
+		outline_adamant_mark_colour_rgb = {
+			en = "Adamant Mark Outline Colour",
+			ru = "Adamant Mark Outline Colour",
+			["zh-cn"] = "Adamant Mark Outline Colour",
+		},
+		outline_hordes_tagged_colour_rgb = {
+			en = "Hordes Tagged Outline Colour",
+			ru = "Hordes Tagged Outline Colour",
+			["zh-cn"] = "Hordes Tagged Outline Colour",
+		},
+		outline_broker_proximity_colour_rgb = {
+			en = "Broker Proximity Outline Colour",
+			ru = "Broker Proximity Outline Colour",
+			["zh-cn"] = "Broker Proximity Outline Colour",
+		},
+		outline_spillway_void_shield_colour_rgb = {
+			en = "Spillway Void Shield Outline Colour",
+			ru = "Spillway Void Shield Outline Colour",
+			["zh-cn"] = "Spillway Void Shield Outline Colour",
+		},
+
 
 		outline_specials_colour_rgb = {
 			en = "Special Attack Colour",
