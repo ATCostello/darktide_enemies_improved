@@ -49,7 +49,7 @@ local L = {
 	PK_ARROW_H = 30,
 	PK_W_MIN = 260,
 	CP_W = 430,
-	CP_H = 372,
+	CP_H = 400,
 	PRESET_RGB = {
 		{ 255, 255, 255 },
 		{ 190, 190, 190 },
@@ -552,6 +552,7 @@ end
 
 widget_definitions.cp_title = hidden(text_widget("cp_title", 0, 0, L.CP_W - 36, 30, 20, "left", GOLD))
 widget_definitions.cp_swatch = hidden(swatch_widget("cp_swatch", 0, 0, L.CP_W - 36, 44))
+widget_definitions.cp_hex = hidden(text_input_widget("cp_hex", 0, 0, L.CP_W - 36, 30))
 for c = 1, L.CP_CH do
 	widget_definitions["cp_l" .. c] = hidden(text_widget("cp_l" .. c, 0, 0, 24, 30, 18, "center"))
 	widget_definitions["cp_s" .. c] = hidden(slider_widget("cp_s" .. c, 0, 0, 290, 30))
@@ -586,7 +587,7 @@ for i = 1, L.PRESETS do
 end
 widget_definitions.cp_default = hidden(button_widget("cp_default", 0, 0, 190, 40, 17))
 widget_definitions.cp_done = hidden(button_widget("cp_done", 0, 0, 190, 40, 17))
-for _, id in ipairs({ "cp_title", "cp_swatch", "cp_default", "cp_done" }) do
+for _, id in ipairs({ "cp_title", "cp_swatch", "cp_hex", "cp_default", "cp_done" }) do
 	scenegraph_definition[id].position[3] = CP_Z + 1
 end
 for c = 1, L.CP_CH do

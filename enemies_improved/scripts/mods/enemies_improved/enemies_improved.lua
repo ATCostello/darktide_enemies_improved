@@ -933,8 +933,14 @@ mod.scan_enemies = function()
 
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 
+			local is_cluster_rep = false
+			if mod.frame_settings and mod.frame_settings.horde_clusters_enable then
+				local _cl = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
+				is_cluster_rep = _cl and _cl.rep_unit == unit
+			end
+
 			-- VIEW CONE FILTER
-			if forward_bonus <= 0 and not is_crosshair_target then
+			if forward_bonus <= 0 and not is_crosshair_target and not is_cluster_rep then
 				mod.force_remove_unit_markers(unit)
 
 				if mod._cleanup_unit_health_data then
@@ -947,7 +953,7 @@ mod.scan_enemies = function()
 			end
 
 			-- LOS FILTER
-			if physics_world_cache and not is_crosshair_target then
+			if physics_world_cache and not is_crosshair_target and not is_cluster_rep then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache, player_los_pos) then
 					mod.force_remove_unit_markers(unit)
 
@@ -1104,6 +1110,16 @@ mod.scan_enemies = function()
 					keep = mod.crosshair_aimed[unit] == true
 				end
 
+				-- Keep clustered horde representatives from being culled,
+				-- otherwise their healthbar anchor (and thus the cluster bar)
+				-- flickers in and out.
+				if not keep and mod.frame_settings and mod.frame_settings.horde_clusters_enable then
+					local cluster = mod.get_horde_cluster_for_unit(unit)
+					if cluster and cluster.rep_unit == unit then
+						keep = true
+					end
+				end
+
 				if keep then
 					local entry = mod.enemy_cache[unit]
 
@@ -1172,6 +1188,15 @@ local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
 local HORDE_MIN_UNITS_FOR_CLUSTER = fs.hb_horde_clusters_size or 8
 
 local function _build_horde_clusters(units, num_units)
+	local old_rep_of = {}
+	for _, _c in ipairs(_horde_clusters) do
+		if _c and _c.units and _c.rep_unit then
+			for _, _u in ipairs(_c.units) do
+				old_rep_of[_u] = _c.rep_unit
+			end
+		end
+	end
+
 	table_clear(_horde_clusters)
 	table_clear(_horde_cluster_by_unit)
 
@@ -1185,6 +1210,8 @@ local function _build_horde_clusters(units, num_units)
 	if not player_unit or not mod.detect_alive(player_unit) then
 		return
 	end
+
+	local player_pos = Unit.world_position(player_unit, 1)
 
 	if num_units < HORDE_MIN_UNITS_FOR_CLUSTER then
 		return
@@ -1217,21 +1244,14 @@ local function _build_horde_clusters(units, num_units)
 			local tags = breed and breed.tags
 
 			if tags and (tags.horde or tags.roamer) then
-				local pos
+				local wp = Unit.world_position(unit, 1, _pos_vec)
 
-				if entry and entry.pos then
-					pos = entry.pos
-				else
-					local wp = Unit.world_position(unit, 1, _pos_vec)
-					pos = wp and Vector3(wp.x, wp.y, wp.z) or nil
-					if entry then
-						entry.pos = pos
-					end
-				end
+				if wp then
+					local pos_x = wp.x
+					local pos_y = wp.y
 
-				if pos then
-					local gx = math_floor(pos.x * INV_HASH_CELL_SIZE)
-					local gy = math_floor(pos.y * INV_HASH_CELL_SIZE)
+					local gx = math_floor(pos_x * INV_HASH_CELL_SIZE)
+					local gy = math_floor(pos_y * INV_HASH_CELL_SIZE)
 					local key = gx * 73856093 + gy * 19349663
 
 					if key then
@@ -1360,6 +1380,42 @@ local function _build_horde_clusters(units, num_units)
 			end
 
 			if count >= HORDE_MIN_UNITS_FOR_CLUSTER then
+				local in_cluster = {}
+				for _j = 1, #cluster_units do
+					in_cluster[cluster_units[_j]] = true
+				end
+
+				local rep_unit = nil
+				for _j = 1, #cluster_units do
+					local _r = old_rep_of[cluster_units[_j]]
+					if _r and in_cluster[_r] and mod.detect_alive(_r) then
+						rep_unit = _r
+						break
+					end
+				end
+
+				if not rep_unit and player_pos then
+					local best_d = math.huge
+					for _j = 1, #cluster_units do
+						local _u = cluster_units[_j]
+						local _wp = Unit.world_position(_u, 1, _pos_vec)
+						if _wp then
+							local _dx = _wp.x - player_pos.x
+							local _dy = _wp.y - player_pos.y
+							local _dz = _wp.z - player_pos.z
+							local _d = _dx * _dx + _dy * _dy + _dz * _dz
+							if _d < best_d then
+								best_d = _d
+								rep_unit = _u
+							end
+						end
+					end
+				end
+
+				if not rep_unit then
+					rep_unit = cluster_units[1]
+				end
+
 				local inv = 1 / count
 
 				local cx = (min_x + max_x) * 0.5
@@ -1372,11 +1428,10 @@ local function _build_horde_clusters(units, num_units)
 				if width < 1.5 or height < 1.5 then
 					local rep = cluster_units[1]
 					if rep then
-						local entry = mod.enemy_cache[rep]
-						local pos = entry and entry.pos
-						if pos then
-							cx = cx * 0.7 + pos.x * 0.3
-							cy = cy * 0.7 + pos.y * 0.3
+						local wp = Unit.world_position(rep, 1, _pos_vec)
+						if wp then
+							cx = cx * 0.7 + wp.x * 0.3
+							cy = cy * 0.7 + wp.y * 0.3
 						end
 					end
 				end
@@ -1428,7 +1483,7 @@ local function _build_horde_clusters(units, num_units)
 					breed_name = breed.name,
 					units = cluster_units,
 					count = count,
-					rep_unit = cluster_units[1],
+					rep_unit = rep_unit,
 					center = {
 						x = cx,
 						y = cy,
@@ -1582,12 +1637,10 @@ mod.remove_dead = function()
 		-- Distance check
 		if not remove and player_pos and alive then
 			local wp = Unit.world_position(unit, 1, _pos_vec)
-			if wp then
-				entry.pos = Vector3(wp.x, wp.y, wp.z)
-			end
-			local pos = entry.pos
+			local pos = wp
 
 			if pos then
+				entry.pos = Vector3(pos.x, pos.y, pos.z)
 				local dx = pos.x - player_pos.x
 				local dy = pos.y - player_pos.y
 				local dz = pos.z - player_pos.z
@@ -2001,7 +2054,7 @@ mod.update_enemies = function(dt, t)
 				else
 					goto continue_enemy_loop
 				end
-				local pos = entry.pos
+				local pos = wp
 
 				local dx = pos.x - player_pos.x
 				local dy = pos.y - player_pos.y

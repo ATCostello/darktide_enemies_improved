@@ -240,7 +240,7 @@ View.on_enter = function(self)
 	for i = 1, L.PRESETS do
 		self._cp_pre[i] = w["cp_pre_" .. i]
 	end
-	self._cp_ids = { "cp_panel", "cp_title", "cp_swatch", "cp_default", "cp_done" }
+	self._cp_ids = { "cp_panel", "cp_title", "cp_swatch", "cp_hex", "cp_default", "cp_done" }
 	for c = 1, L.CP_CH do
 		local ids = self._cp_ids
 		ids[#ids + 1] = "cp_l" .. c
@@ -901,7 +901,6 @@ View._fill_slot = function(self, slot, row)
 	end
 end
 
-
 View._poll_text_inputs = function(self, input_service)
 	self.is_text_input_focused = false
 
@@ -1394,7 +1393,7 @@ View._cp_open = function(self, row, anchor_id)
 		return
 	end
 	local n = row.has_alpha and 4 or 3
-	local W, H = L.CP_W, 208 + 38 * n
+	local W, H = L.CP_W, 246 + 38 * n
 	local ax, ay = self:_scenegraph_position(anchor_id)
 	local rw, rh = self:_scenegraph_size("root")
 	local px = math_clamp(ax, PK_LEFT_MIN + W / 2, rw / 2 - W / 2 - 10)
@@ -1414,13 +1413,14 @@ View._cp_open = function(self, row, anchor_id)
 	put("cp_panel", px, top + H / 2, W, H)
 	put("cp_title", px, y0 + 15)
 	put("cp_swatch", px, y0 + 58)
+	put("cp_hex", px, y0 + 105 + 38 * n)
 	for c = 1, L.CP_CH do
 		local y = y0 + 90 + 38 * (c - 1) + 15
 		put("cp_l" .. c, il + 12, y)
 		put("cp_s" .. c, il + 177, y)
 		put("cp_v" .. c, il + 356, y)
 	end
-	local py = y0 + 90 + 38 * n
+	local py = y0 + 90 + 38 * (n + 1)
 	for k = 1, L.PRESETS do
 		put("cp_pre_" .. k, il + 15 + (k - 1) * 33, py + 15)
 	end
@@ -1457,6 +1457,12 @@ View._cp_refresh = function(self)
 			sl.content.value01 = math_clamp(v / 255, 0, 1)
 		end
 		set_text(self._cp_v[ch], tostring(math_floor(v + 0.5)))
+	end
+	local hex = self._widgets_by_name.cp_hex
+	if hex and not (hex.content and hex.content.is_writing) then
+		hex.content.input_text = colour_hex(c)
+		hex.content.setting_value = hex.content.input_text
+		hex.content.display_text = hex.content.input_text
 	end
 end
 
@@ -1514,7 +1520,7 @@ View._cp_input = function(self, input_service)
 	end
 end
 
-View._cp_poll = function(self)
+View._cp_poll = function(self, input_service)
 	local cp = self._cp
 	if not (cp and cp.armed) then
 		return
@@ -1531,6 +1537,144 @@ View._cp_poll = function(self)
 				self:_cp_refresh()
 			end
 		end
+	end
+
+	local hex = self._widgets_by_name.cp_hex
+	if hex then
+		local hc = hex.content
+		hc.input_hotspot = hc.input_hotspot or {}
+		hc.hotspot = hc.hotspot or {}
+		hc.input_hotspot.parent = hc
+		hc.hotspot.parent = hc
+		hc.max_length = 9
+
+		if hc.is_writing then
+			self.is_text_input_focused = true
+			if hc._ei_start_colour == nil then
+				hc._ei_start_colour = copy_colour(cp.row.get())
+				hc._ei_last_text = nil
+			end
+		end
+
+		local was_writing = hc._ei_was_writing == true
+		local finish_now = false
+
+		if hc.is_writing and input_service then
+			local clicked_away = false
+			if input_service:get("left_pressed") then
+				clicked_away = not (hc.input_hotspot.is_hover or hc.hotspot.is_hover)
+			end
+			local pressed_accept = false
+			local pressed_cancel = false
+			pcall(function()
+				pressed_accept = input_service:get("execute") == true or input_service:get("confirm") == true
+			end)
+			pcall(function()
+				pressed_cancel = input_service:get("back") == true
+			end)
+			if clicked_away or pressed_accept or pressed_cancel then
+				finish_now = true
+				if pressed_cancel then
+					self._text_finished_cancel = true
+				end
+			end
+		end
+
+		if hc.is_writing then
+			local cur = hc.input_text
+			if cur ~= hc._ei_last_text then
+				hc._ei_last_text = cur
+				if type(cur) == "string" then
+					local hexstr = cur:gsub("#", "")
+					local nums = {}
+					local ok = false
+					if #hexstr == 6 or #hexstr == 8 then
+						ok = true
+						for i = 1, #hexstr, 2 do
+							local n = tonumber(hexstr:sub(i, i + 1), 16)
+							if n == nil then
+								ok = false
+								break
+							end
+							nums[#nums + 1] = n
+						end
+					end
+					if ok then
+						local c = copy_colour(hc._ei_start_colour or cp.row.get())
+						if #nums == 3 then
+							c[2], c[3], c[4] = nums[1], nums[2], nums[3]
+						elseif #nums == 4 then
+							c[1], c[2], c[3], c[4] = nums[1], nums[2], nums[3], nums[4]
+						end
+						cp.row.set(c)
+						self:_cp_refresh()
+					end
+				end
+			end
+		end
+
+		if hc.is_writing and finish_now then
+			hc.is_writing = false
+		end
+
+		if was_writing and not hc.is_writing then
+			local was_cancel = self._text_finished_cancel == true
+			if was_cancel then
+				if hc._ei_start_colour then
+					cp.row.set(copy_colour(hc._ei_start_colour))
+					self:_cp_refresh()
+				end
+				self._text_finished_cancel = nil
+			else
+				local v = hc.input_text
+				local valid = false
+				if type(v) == "string" then
+					local hexstr = v:gsub("#", "")
+					local nums = {}
+					if #hexstr == 6 or #hexstr == 8 then
+						local ok = true
+						for i = 1, #hexstr, 2 do
+							local n = tonumber(hexstr:sub(i, i + 1), 16)
+							if n == nil then
+								ok = false
+								break
+							end
+							nums[#nums + 1] = n
+						end
+						if ok then
+							local c = copy_colour(hc._ei_start_colour or cp.row.get())
+							if #nums == 3 then
+								c[2], c[3], c[4] = nums[1], nums[2], nums[3]
+							elseif #nums == 4 then
+								c[1], c[2], c[3], c[4] = nums[1], nums[2], nums[3], nums[4]
+							end
+							cp.row.set(c)
+							valid = true
+						end
+					end
+				end
+				if valid then
+					self:_written(true)
+					self:_cp_refresh()
+				else
+					if hc._ei_start_colour then
+						cp.row.set(copy_colour(hc._ei_start_colour))
+					end
+					self:_cp_refresh()
+				end
+			end
+			hc._ei_start_colour = nil
+			hc._ei_last_text = nil
+		end
+
+		if not hc.is_writing then
+			local c = cp.row.get()
+			hc.input_text = colour_hex(c)
+			hc.setting_value = hc.input_text
+			hc.display_text = hc.input_text
+		end
+
+		hc._ei_was_writing = hc.is_writing == true
 	end
 end
 
@@ -1754,7 +1898,7 @@ View._poll_inputs = function(self, dt)
 		end
 	end
 	if self._cp then
-		self:_cp_poll()
+		self:_cp_poll(input_service)
 	end
 
 	local sc = w.scroll.content
