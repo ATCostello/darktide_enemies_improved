@@ -439,7 +439,8 @@ local function _render_readable_damage_number(
 			font_size = font_size * scale_size
 		end
 
-		position[1] = x_position + damage_number_settings.x_offset + current_order * damage_number_settings.x_offset_between_numbers
+		local _marker_scale2 = (ui_content and ui_content.scale or 1) / (fs.text_scale or 1)
+		position[1] = x_position + (damage_number_settings.x_offset + current_order * damage_number_settings.x_offset_between_numbers) * _marker_scale2
 		position[2] = y_position
 		position[3] = z_position + current_order
 
@@ -489,7 +490,8 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 
 		local num_damage_numbers = #damage_numbers
 
-		position[1] = position[1] + (fs.hb_size_width * 0.4)
+		local _marker_scale = (ui_content.scale or 1) / (fs.text_scale or 1)
+		position[1] = position[1] + (fs.hb_size_width * 0.4) * _marker_scale
 		position[2] = position[2]
 			+ (
 					ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset

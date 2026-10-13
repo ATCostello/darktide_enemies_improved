@@ -618,8 +618,15 @@ local function layout_rows(widget, scale, dt, ctx)
 				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + (breed.base_height * 0.8))
 				local head_screen = Camera.world_to_screen(camera, head_pos)
 				local body_screen = Camera.world_to_screen(camera, body_center)
+				local _ui_scale = ctx.inverse_scale or 1
 				if head_screen and body_screen and scale and scale > 0.001 then
-					_body_screen_offset_y = (body_screen.y - head_screen.y) / scale
+					-- scale^2 in the divisor makes the icon drift further down as distance increases
+					_body_screen_offset_y = ((body_screen.y - head_screen.y) * _ui_scale) / (scale * scale)
+					-- clamp so it never reaches the ground
+					local _max_body_offset = 90 * fs.text_scale
+					if _body_screen_offset_y > _max_body_offset then
+						_body_screen_offset_y = _max_body_offset
+					end
 				end
 			end
 		end
@@ -628,7 +635,7 @@ local function layout_rows(widget, scale, dt, ctx)
 		if _body_screen_offset_y then
 			if widget._smoothed_body_offset_y then
 				_body_screen_offset_y = widget._smoothed_body_offset_y
-					+ (_body_screen_offset_y - widget._smoothed_body_offset_y) * math.min(dt * 100, 1)
+					+ (_body_screen_offset_y - widget._smoothed_body_offset_y) * math.min(dt * 100, 50)
 			end
 			widget._smoothed_body_offset_y = _body_screen_offset_y
 		end
@@ -1481,6 +1488,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	layout_ctx.parent = parent
 	layout_ctx.marker = marker
 	layout_ctx.unit = unit
+	layout_ctx.inverse_scale = ui_renderer and ui_renderer.inverse_scale or 1
 	layout_rows(widget, marker.scale, dt, layout_ctx)
 end
 
