@@ -734,7 +734,7 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "spatial_culling",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "spatial_culling_tooltip",
 		},
 		{
