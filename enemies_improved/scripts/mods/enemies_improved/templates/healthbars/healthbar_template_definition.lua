@@ -486,6 +486,7 @@ local _create_definition = function(template, scenegraph_id)
 			pass_type = "texture",
 			style_id = "icon_background",
 			value = "content/ui/materials/frames/talents/talent_icon_container",
+			value_id = "icon_background_shape_value",
 			style = {
 				vertical_alignment = "center",
 				horizontal_alignment = "center",
@@ -522,8 +523,8 @@ local _create_definition = function(template, scenegraph_id)
 				size = { 40, 40 },
 				default_size = { 40, 40 },
 
-				color = { 255, 255, 180, 80 },
-				default_alpha = 255,
+				color = { 0, 255, 180, 80 },
+				default_alpha = 0,
 				blend_mode = "add",
 				scale_to_material = true,
 
@@ -532,7 +533,7 @@ local _create_definition = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.glow_enabled
+				return content.hb_built and fs.hb_enable_bar and content.icon_enabled
 			end,
 		},
 		-- ELITE ICON
@@ -634,8 +635,16 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 - 2 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 - 2 * fs.text_scale, 20 },
+
+				size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+
 				default_alpha = 255,
 				drop_shadow = true,
 			},
@@ -664,8 +673,15 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 * fs.text_scale, 20 },
+
+				size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
 
 				drop_shadow = true,
 				default_alpha = 255,
@@ -695,8 +711,15 @@ local _create_definition = function(template, scenegraph_id)
 				default_font_size = 16,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
-				size = { bar_width * 4 * fs.text_scale, 20 },
-				default_size = { bar_width * 4 * fs.text_scale, 20 },
+
+				size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
+				default_size = {
+					bar_width,
+					bar_height + 4 + (2 * fs.hb_padding_scale),
+				},
 
 				drop_shadow = true,
 				default_alpha = 255,

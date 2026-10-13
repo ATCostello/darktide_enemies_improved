@@ -38,6 +38,10 @@ local enemy_type_settings = {
 	["debuff_type_show_on_body_override"] = false,
 	["marker_type_enable"] = "dont_override",
 
+	["healthbar_type_show_dps"] = "dont_override",
+
+	["healthbar_type_custom_name"] = "",
+
 	["reset_type_to_default"] = false,
 }
 
@@ -70,6 +74,10 @@ local enemy_override_settings = {
 
 	["debuff_individual_show_on_body_override"] = false,
 
+	["healthbar_individual_show_dps"] = "dont_override",
+
+	["healthbar_individual_custom_name"] = "",
+
 	["reset_individual_to_default"] = false,
 }
 
@@ -82,6 +90,8 @@ local is_override_setting = function(setting_name)
 		or setting_name == "outline_individual_enable"
 		or setting_name == "healthbar_individual_force"
 		or setting_name == "debuff_individual_enable"
+		or setting_name == "healthbar_type_show_dps"
+		or setting_name == "healthbar_individual_show_dps"
 end
 
 local migrate_override_value = function(setting_name)
@@ -93,7 +103,35 @@ local migrate_override_value = function(setting_name)
 	end
 end
 
+-- The old single "horde" group was split into "melee_horde" and "ranged_horde". Copy any
+-- existing _horde_ group override onto both new groups, then drop the stale key.
+local migrate_horde_group_overrides = function()
+	for setting_name in next, enemy_type_settings do
+		if setting_name ~= "reset_type_to_default" and string_find(setting_name, "_type_", 1, true) then
+			local old_key = setting_name:gsub("_type_", "_horde_")
+			local old_value = mod:get(old_key)
+
+			if old_value ~= nil then
+				local melee_key = setting_name:gsub("_type_", "_melee_horde_")
+				local ranged_key = setting_name:gsub("_type_", "_ranged_horde_")
+
+				if mod:get(melee_key) == nil then
+					mod:set(melee_key, old_value)
+				end
+
+				if mod:get(ranged_key) == nil then
+					mod:set(ranged_key, old_value)
+				end
+
+				mod:set(old_key, nil)
+			end
+		end
+	end
+end
+
 mod.migrate_override_settings = function()
+	migrate_horde_group_overrides()
+
 	for setting_name in next, enemy_type_settings do
 		if is_override_setting(setting_name) then
 			migrate_override_value(setting_name)
@@ -128,6 +166,12 @@ mod.migrate_override_settings = function()
 		else
 			mod:set("debuff_horde_global_enable", false)
 		end
+	end
+
+	-- the text alignment dropdown used to store "middle", which is not a valid engine
+	-- alignment (the engine only understands "center"). Normalise any legacy value.
+	if mod:get("hb_text_alignment") == "middle" then
+		mod:set("hb_text_alignment", "center")
 	end
 end
 
@@ -182,7 +226,7 @@ mod.reset_all_overrides = function()
 
 	local reset_message = mod.custom_localize("reset_all_to_default_message") or ""
 	mod:notify(reset_message)
-
+	
 	mod.init_healthbar_defaults()
 
 	for setting_name in next, enemy_type_settings do
@@ -197,11 +241,47 @@ end
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
 
+mod.breed_colour_preset_table = function(preset)
+	if preset == "red" then
+		return {
+			melee_horde = { 255, 255, 40, 40 },
+			ranged_horde = { 255, 255, 40, 40 },
+			elite = { 255, 255, 40, 40 },
+			captain = { 255, 255, 40, 40 },
+			disabler = { 255, 255, 40, 40 },
+			witch = { 255, 255, 40, 40 },
+			monster = { 255, 255, 40, 40 },
+			sniper = { 255, 255, 40, 40 },
+			far = { 255, 255, 40, 40 },
+			special = { 255, 255, 40, 40 },
+			enemy = { 255, 255, 40, 40 },
+			shield = { 255, 255, 40, 40 },
+		}
+	end
+
+	-- "colourful" and any unknown / nil preset
+	return {
+		melee_horde = { 255, 150, 60, 60 },
+		ranged_horde = { 255, 150, 60, 60 },
+		elite = { 255, 0, 120, 255 },
+		captain = { 255, 255, 140, 0 },
+		disabler = { 255, 255, 255, 0 },
+		witch = { 255, 255, 0, 180 },
+		monster = { 255, 180, 0, 255 },
+		sniper = { 255, 255, 0, 0 },
+		far = { 255, 0, 255, 120 },
+		special = { 255, 40, 230, 230 },
+		enemy = { 255, 200, 200, 200 },
+		shield = { 255, 200, 200, 200 },
+	}
+end
+
 mod.set_breed_colours = function()
 	local bc = mod.BREED_COLOURS
 	if not bc then
 		bc = {
-			horde = { 255, 150, 60, 60 },
+			melee_horde = { 255, 150, 60, 60 },
+			ranged_horde = { 255, 150, 60, 60 },
 			elite = { 255, 0, 120, 255 },
 			captain = { 255, 255, 140, 0 },
 			disabler = { 255, 255, 255, 0 },
@@ -209,7 +289,7 @@ mod.set_breed_colours = function()
 			monster = { 255, 180, 0, 255 },
 			sniper = { 255, 255, 0, 0 },
 			far = { 255, 0, 255, 120 },
-			special = { 255, 255, 0, 255 },
+			special = { 255, 40, 230, 230 },
 			enemy = { 255, 200, 200, 200 },
 			shield = { 255, 200, 200, 200 },
 		}
@@ -217,7 +297,8 @@ mod.set_breed_colours = function()
 	end
 	local preset = mod:get("healthbar_colour_preset")
 	if preset == "red" then
-		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 255, 40, 40
+		bc.melee_horde[1], bc.melee_horde[2], bc.melee_horde[3], bc.melee_horde[4] = 255, 255, 40, 40
+		bc.ranged_horde[1], bc.ranged_horde[2], bc.ranged_horde[3], bc.ranged_horde[4] = 255, 255, 40, 40
 		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 255, 40, 40
 		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 40, 40
 		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 40, 40
@@ -229,7 +310,8 @@ mod.set_breed_colours = function()
 		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 255, 40, 40
 		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 255, 40, 40
 	elseif preset == "colourful" then
-		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 150, 60, 60
+		bc.melee_horde[1], bc.melee_horde[2], bc.melee_horde[3], bc.melee_horde[4] = 255, 150, 60, 60
+		bc.ranged_horde[1], bc.ranged_horde[2], bc.ranged_horde[3], bc.ranged_horde[4] = 255, 150, 60, 60
 		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 0, 120, 255
 		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 140, 0
 		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 255, 0
@@ -237,11 +319,12 @@ mod.set_breed_colours = function()
 		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
 		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
 		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
-		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 40, 230, 230
 		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
 		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
 	else
-		bc.horde[1], bc.horde[2], bc.horde[3], bc.horde[4] = 255, 150, 60, 60
+		bc.melee_horde[1], bc.melee_horde[2], bc.melee_horde[3], bc.melee_horde[4] = 255, 150, 60, 60
+		bc.ranged_horde[1], bc.ranged_horde[2], bc.ranged_horde[3], bc.ranged_horde[4] = 255, 150, 60, 60
 		bc.elite[1], bc.elite[2], bc.elite[3], bc.elite[4] = 255, 0, 120, 255
 		bc.captain[1], bc.captain[2], bc.captain[3], bc.captain[4] = 255, 255, 140, 0
 		bc.disabler[1], bc.disabler[2], bc.disabler[3], bc.disabler[4] = 255, 255, 255, 0
@@ -249,7 +332,7 @@ mod.set_breed_colours = function()
 		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
 		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
 		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
-		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 40, 230, 230
 		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
 		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
 	end
@@ -281,7 +364,7 @@ mod.init_healthbar_defaults = function()
 	end
 
 	if mod:get("healthbar_shield_enable") == nil then
-		mod:set("healthbar_shield_enable", false)
+		mod:set("healthbar_shield_enable", "false_override")
 	end
 
 	-- bar colours
@@ -804,11 +887,21 @@ mod._on_setting_changed_impl = function(setting_id)
 	mod.update_dmf_settings_colours(setting_id)
 end
 
+local CLOSING_SETTINGS_VIEWS = {
+	dmf_options_view = true,
+	options_view = true,
+	enemies_improved_editor = true,
+}
+
+mod.refresh_settings_close = function()
+	mod.clear_caches()
+	mod.build_frame_settings()
+	mod.remove_all_enemy_outlines()
+end
+
 mod:hook_safe(CLASS.UIViewHandler, "close_view", function(self, view_name, ...)
-	if view_name == "dmf_options_view" or view_name == "options_view" then
-		mod.clear_caches()
-		mod.build_frame_settings()
-		mod.remove_all_enemy_outlines()
+	if CLOSING_SETTINGS_VIEWS[view_name] then
+		mod.refresh_settings_close()
 	end
 end)
 
@@ -869,3 +962,10 @@ mod:hook_safe(CLASS.BaseView, "update", function(self)
 
 	last_category = current_category
 end)
+
+-----------------------------------------------------------------------
+-- Native settings API (editor)
+-----------------------------------------------------------------------
+mod.settings_api = mod.setting_schema
+		and mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_api")
+	or nil

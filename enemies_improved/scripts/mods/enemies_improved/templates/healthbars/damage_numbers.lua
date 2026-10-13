@@ -28,6 +28,7 @@ local math_floor = math.floor
 local string_format = string.format
 local table_remove = table.remove
 local table_clone = table.clone
+local table_clear = table.clear
 local next = next
 
 -- grab passed template values
@@ -56,7 +57,7 @@ local function _init_damage_colors()
 	CACHED_DAMAGE_COLORS.default = fs.main_colour
 	CACHED_DAMAGE_COLORS.crit = fs.damage_number_crit_colour
 	CACHED_DAMAGE_COLORS.weakspot = fs.damage_number_weakspot_colour
-	CACHED_DAMAGE_COLORS.dot = fs.dn_dot_colour
+	CACHED_DAMAGE_COLORS.dot = fs.dn_dot_colour or fs.main_colour
 	-- toughness colours
 	CACHED_DAMAGE_COLORS.toughness_default = fs.toughness_colour
 end
@@ -341,7 +342,7 @@ local function _floating_damage_number_function(
 	position[1] = x_position
 end
 
-local function _readable_damage_number_function(
+local function _render_readable_damage_number(
 	ui_content,
 	ui_renderer,
 	ui_style,
@@ -438,7 +439,7 @@ local function _readable_damage_number_function(
 			font_size = font_size * scale_size
 		end
 
-		position[1] = x_position + current_order * damage_number_settings.x_offset_between_numbers
+		position[1] = x_position + damage_number_settings.x_offset + current_order * damage_number_settings.x_offset_between_numbers
 		position[2] = y_position
 		position[3] = z_position + current_order
 
@@ -454,10 +455,14 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	local show_dps = ui_content.show_dps
+	if show_dps == nil then
+		show_dps = fs.hb_show_dps
+	end
 	if fs.hb_damage_number_type ~= damage_number_types.readable then
 		local damage_numbers = ui_content.damage_numbers
 
-		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
+		if (not damage_numbers or #damage_numbers == 0) and not (show_dps and ui_content.damage_has_started) then
 			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
 			return
 		end
@@ -480,7 +485,6 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 			default_color = fs.toughness_colour
 		end
 
-		-- reuse same table reference
 		local text_color = ui_style.text_color
 
 		local num_damage_numbers = #damage_numbers
@@ -505,7 +509,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			if fs.hb_show_dps and ui_content.dead then
+			if show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
 				local dps_value = dps_damage / math_max(dps_timer, 1)
@@ -514,7 +518,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				ui_content.dps = dps_value
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
-					position[1] = x_position
+					position[1] = x_position + damage_number_settings.x_offset
 					position[2] = y_position - dps_y_offset
 					position[3] = z_position
 				else
@@ -537,7 +541,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 		end
 
 		mod.num_damage_numbers = num_damage_numbers
-		if fs.show_damage_numbers and num_damage_numbers > 0 and not (fs.hb_show_dps and ui_content.dead) then
+		if fs.show_damage_numbers and num_damage_numbers > 0 and not (show_dps and ui_content.dead) then
 			if fs.hb_damage_number_type == damage_number_types.floating then
 				_floating_damage_number_function(
 					ui_content,
@@ -585,10 +589,14 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 	--if ui_renderer.alpha_multiplier and ui_renderer.alpha_multiplier <= 0 then
 	--	return
 	--end
+	local show_dps = ui_content.show_dps
+	if show_dps == nil then
+		show_dps = fs.hb_show_dps
+	end
 	if fs.hb_damage_number_type == damage_number_types.readable then
 		local damage_numbers = ui_content.damage_numbers
 
-		if (not damage_numbers or #damage_numbers == 0) and not (fs.hb_show_dps and ui_content.damage_has_started) then
+		if (not damage_numbers or #damage_numbers == 0) and not (show_dps and ui_content.damage_has_started) then
 			ui_style.font_size = template.damage_number_settings.default_font_size * RESOLUTION_LOOKUP.scale
 			return
 		end
@@ -634,7 +642,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				ui_content.damage_has_started_timer = ui_content.damage_has_started_timer + dt
 			end
 
-			if fs.hb_show_dps and ui_content.dead then
+			if show_dps and ui_content.dead then
 				local dps_timer = ui_content.damage_has_started_timer or 0
 				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
 				local dps_value = dps_damage / math_max(dps_timer, 1)
@@ -643,7 +651,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				ui_content.dps = dps_value
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
-					position[1] = x_position
+					position[1] = x_position + damage_number_settings.x_offset
 					position[2] = y_position - dps_y_offset
 					position[3] = z_position
 				else
@@ -667,9 +675,9 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 
 		mod.num_damage_numbers = num_damage_numbers
 
-		if fs.show_damage_numbers and num_damage_numbers > 0 and not (fs.hb_show_dps and ui_content.dead) then
+		if fs.show_damage_numbers and num_damage_numbers > 0 and not (show_dps and ui_content.dead) then
 			if fs.hb_damage_number_type == damage_number_types.readable then
-				_readable_damage_number_function(
+				_render_readable_damage_number(
 					ui_content,
 					ui_renderer,
 					ui_style,
@@ -693,8 +701,13 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 	end
 end
 
+local function _reset_damage_colors()
+	table_clear(CACHED_DAMAGE_COLORS)
+end
+
 return {
 	init = _init,
+	reset_colors = _reset_damage_colors,
 	damage_number_function = _damage_number_function,
 	readable_damage_number_function = _readable_damage_number_function,
 }

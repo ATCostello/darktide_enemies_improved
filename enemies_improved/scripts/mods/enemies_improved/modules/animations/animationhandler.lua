@@ -694,8 +694,11 @@ local function handle_animation_event(unit, event_index)
 		return
 	end
 
-	local breed = entry.unit_data_ext:breed()
-	local breed_name = breed and breed.name
+	local breed_name = entry.breed_name
+	if not breed_name then
+		local breed = entry.unit_data_ext:breed()
+		breed_name = breed and breed.name
+	end
 
 	if not breed_name then
 		return
@@ -760,8 +763,11 @@ local function handle_animation_event_from_name(unit, event_name)
 		return
 	end
 
-	local breed = entry.unit_data_ext:breed()
-	local breed_name = breed and breed.name
+	local breed_name = entry.breed_name
+	if not breed_name then
+		local breed = entry.unit_data_ext:breed()
+		breed_name = breed and breed.name
+	end
 
 	if not breed_name then
 		return
@@ -781,7 +787,7 @@ end
 mod:hook_safe(CLASS.AnimationSystem, "rpc_minion_anim_event", function(self, channel_id, unit_id, event_index)
 	local unit = Managers.state.unit_spawner:unit(unit_id)
 
-	if not unit or not Unit.alive(unit) then
+	if not unit or not mod.enemy_cache[unit] or not Unit.alive(unit) then
 		return
 	end
 
@@ -789,7 +795,7 @@ mod:hook_safe(CLASS.AnimationSystem, "rpc_minion_anim_event", function(self, cha
 end)
 
 mod:hook_safe("Unit", "animation_event", function(unit, event_name)
-	if not unit or not Unit.alive(unit) then
+	if not unit or not mod.enemy_cache[unit] or not Unit.alive(unit) then
 		return
 	end
 

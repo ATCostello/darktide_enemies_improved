@@ -152,25 +152,25 @@ if mod.DEBUG then
 	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
 end
 
-local function healthbar_enabled_for(unit, breed, breed_type)
+local function healthbar_enabled_for(unit, breed, breed_type, t)
 	local enemy_individual = breed and breed.name
 
 	local individual_state = enemy_individual
 		and fs.breed_healthbar_force
 		and fs.breed_healthbar_force[enemy_individual]
 	local group_state = breed_type and fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[breed_type]
-	local debuffed = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit)
+	local debuffed = fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t)
 
 	local effective = individual_state
 	if effective ~= "true_override" and effective ~= "false_override" then
 		effective = group_state
 	end
 
-	if effective == "false_override" then
+	if effective == "false_override" and not fs.force_on_in_training then
 		return false
 	end
 
-	if breed_type == "horde" then
+	if mod.is_horde_group(breed_type) then
 		local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 
 		if cluster and cluster.rep_unit ~= unit then
@@ -185,6 +185,26 @@ local function healthbar_enabled_for(unit, breed, breed_type)
 	end
 
 	return true
+end
+
+local function show_dps_for(breed, breed_type)
+	local enemy_individual = breed and breed.name
+	local individual_state = enemy_individual and fs.breed_show_dps and fs.breed_show_dps[enemy_individual]
+	local group_state = breed_type and fs.breed_type_show_dps and fs.breed_type_show_dps[breed_type]
+
+	local effective = individual_state
+
+	if effective ~= "true_override" and effective ~= "false_override" then
+		effective = group_state
+	end
+
+	if effective == "true_override" then
+		return true
+	elseif effective == "false_override" then
+		return false
+	end
+
+	return fs.hb_show_dps
 end
 
 -----------------------------------------------------------------------
@@ -221,6 +241,16 @@ local function is_weakspot(breed, zone)
 	return t and t[zone]
 end
 
+local function safe_was_crit(extension)
+	if not extension then
+		return false
+	end
+
+	local ok, was_crit = pcall(extension.was_hit_by_critical_hit_this_render_frame, extension)
+
+	return ok and was_crit or false
+end
+
 local function format_number(n)
 	return tostring(n):gsub("%.", ",")
 end
@@ -234,9 +264,19 @@ local function get_text_option(content, option)
 	local breed = content.breed
 
 	if option == "enemy_type" then
+		local custom = mod:get("healthbar_" .. tostring(breed_type) .. "_custom_name")
+
+		if type(custom) == "string" and custom ~= "" then
+			return custom
+		end
+
 		return mod.custom_localize(breed_type) or ""
 	elseif option == "enemy_name" then
-		local name = mod.custom_localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
+		local name = mod.enemy_custom_name and mod.enemy_custom_name(breed, breed_type)
+
+		if not name then
+			name = mod.custom_localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
+		end
 
 		local is_weakened = mod.is_weakened and content.unit and mod.is_weakened(content.unit, breed)
 		if is_weakened then
@@ -244,7 +284,9 @@ local function get_text_option(content, option)
 		end
 
 		if content.in_horde_cluster then
-			local cluster_string = name .. " " .. mod.custom_localize("horde")
+			local cluster_string = name
+				.. " "
+				.. (mod.custom_localize(content._breed_type) or mod.custom_localize("horde") or "")
 
 			if content.cluster_count then
 				cluster_string = cluster_string .. " (x " .. content.cluster_count .. ")"
@@ -356,49 +398,14 @@ local function get_text_option(content, option)
 	end
 end
 
-template.on_enter = function(widget, marker, template)
+local function apply_breed_style(widget, breed, breed_type, scale)
+	scale = scale or 1
+
 	local content = widget.content
 	local style = widget.style
 
-	template.position_offset[3] = fs.hb_y_offset
-
-	content.hb_built = false
-	content.draw_hb = false
-
-	content.damage_taken = 0
-	content.dps_damage = 0
-	content.damage_numbers = {}
-	content.spawn_progress_timer = 0
-
-	local unit = marker.unit
-	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
-	local breed = unit_data_extension and unit_data_extension:breed()
-
-	content.breed = breed
-	content.unit_data_extension = unit_data_extension
-	content.unit = unit
-
-	local bar_settings = template.bar_settings
-	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
-
-	content._breed_type = mod.find_breed_category(unit)
-	breed_type = content._breed_type
-
-	content.special_attack_imminent = false
-
-	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
-	content.toughness_extension = ScriptUnit_has_extension(unit, "toughness_system")
-
 	-- set frame background
 	content.frame = fs.frame_type
-
-	local current_level = Managers.state.mission and Managers.state.mission:mission()
-
-	if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
-		content.is_in_shooting_range = true
-	else
-		content.is_in_shooting_range = false
-	end
 
 	-------------------------------------------------------------------
 	-- Icon logic / colors
@@ -424,13 +431,42 @@ template.on_enter = function(widget, marker, template)
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
 
+	local shape_scale = 1
+	local shape_y_offset = 0
+
 	-- apply values to relevant icon
+	local icon_offset_x_target = 0
+	local icon_offset_y_target = 0
+
 	local function apply_icon_settings(content_icon, style_icon)
-		if content._last_icon_scale == marker.scale then
+		if content._last_icon_scale == scale then
+			local dx = icon_offset_x_target - (content._last_icon_offset_x or 0)
+			local dy = icon_offset_y_target - (content._last_icon_offset_y or 0)
+
+			if dx ~= 0 or dy ~= 0 then
+				style_icon.offset[1] = (style_icon.offset[1] or 0) + dx
+				style.icon_background1.offset[1] = (style.icon_background1.offset[1] or 0) + dx
+				style.icon_background.offset[1] = (style.icon_background.offset[1] or 0) + dx
+			end
+			style_icon.offset[2] = (style_icon.default_offset[2] or 0) + shape_y_offset + icon_offset_y_target
+			style.icon_background1.offset[2] = (style.icon_background1.default_offset[2] or 0)
+				+ shape_y_offset
+				+ icon_offset_y_target
+			style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0)
+				+ shape_y_offset
+				+ icon_offset_y_target
+
+			content._last_icon_offset_x = icon_offset_x_target
+			content._last_icon_offset_y = icon_offset_y_target
+			content._fs_gen = fs._gen
+
 			return content_icon, style_icon
 		end
 
-		content._last_icon_scale = marker.scale
+		content._last_icon_scale = scale
+
+		content._last_icon_offset_x = icon_offset_x_target
+		content._last_icon_offset_y = icon_offset_y_target
 
 		content_icon = icon_enabled
 		content.icon_enabled = content_icon
@@ -442,34 +478,79 @@ template.on_enter = function(widget, marker, template)
 
 		-- apply full scale:
 
-		style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale
-		style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale
-		style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * marker.scale
-		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * marker.scale
-		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
-		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+		style_icon.size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * scale
+		style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * scale
+		style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * scale
+		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * scale
+		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale * shape_scale) * scale
+		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale * shape_scale) * scale
 
-		style_icon.default_size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * marker.scale
-		style_icon.default_size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * marker.scale
-		style.icon_background1.default_size[1] = (style.icon_background1.default_size[1] * icon_full_scale)
-			* marker.scale
-		style.icon_background1.default_size[2] = (style.icon_background1.default_size[2] * icon_full_scale)
-			* marker.scale
-		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale) * marker.scale
-		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale) * marker.scale
+		style_icon.default_size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * scale
+		style_icon.default_size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * scale
+		style.icon_background1.default_size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * scale
+		style.icon_background1.default_size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * scale
+		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale * shape_scale)
+			* scale
+		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale * shape_scale)
+			* scale
 
-		style_icon.offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * marker.scale
-		style_icon.default_offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * marker.scale
+		style_icon.offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * scale + icon_offset_x_target
+		style_icon.default_offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * scale
 		style.icon_background1.offset[1] = style.icon_background1.default_offset[1]
-			- (16 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * scale
+			+ icon_offset_x_target
 		style.icon_background1.default_offset[1] = style.icon_background1.default_offset[1]
-			- (16 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * scale
 		style.icon_background.offset[1] = style.icon_background.default_offset[1]
-			- (16 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * scale
+			+ icon_offset_x_target
 		style.icon_background.default_offset[1] = style.icon_background.default_offset[1]
-			- (16 * icon_full_scale) * marker.scale
+			- (16 * icon_full_scale) * scale
+
+		style_icon.offset[2] = (style_icon.default_offset[2] or 0) + shape_y_offset
+		style.icon_background1.offset[2] = (style.icon_background1.default_offset[2] or 0) + shape_y_offset
+		style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+
+		content._fs_gen = fs._gen
 
 		return content_icon, style_icon
+	end
+
+	-- icon background shape
+	local shape = mod.ICON_BACKGROUND_SHAPES[fs.healthbar_type_icon_background_shape]
+		or mod.ICON_BACKGROUND_SHAPES.hexagon
+
+	shape_scale = shape.scale or 1
+	shape_y_offset = shape.y_offset or 0
+
+	content.icon_background_shape_value = shape.value
+
+	if shape.material_values and style.icon_background.material_values then
+		local mv = style.icon_background.material_values
+		mv.frame = shape.material_values.frame
+		mv.icon_mask = shape.material_values.icon_mask
+		mv.intensity = shape.material_values.intensity
+		mv.saturation = shape.material_values.saturation
+	end
+
+	style.icon_background.color[1] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[1]
+	) or 255
+	style.icon_background.color[2] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[2]
+	) or 15
+	style.icon_background.color[3] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[3]
+	) or 15
+	style.icon_background.color[4] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[4]
+	) or 15
+
+	style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+	style.icon_background.default_offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+
+	if content._fs_gen ~= fs._gen then
+		content._last_icon_scale = nil
 	end
 
 	-- do stuff per breed type
@@ -502,7 +583,7 @@ template.on_enter = function(widget, marker, template)
 		if breed_type == "shield" then
 			content.icon_shield, style.icon_shield = apply_icon_settings(content.icon_shield, style.icon_shield)
 		end
-		if breed_type == "horde" then
+		if mod.is_horde_group(breed_type) then
 			content.icon_enabled = false
 		end
 	end
@@ -515,7 +596,9 @@ template.on_enter = function(widget, marker, template)
 	style.current_toughness_electric.color[3] = fs.toughness_colour[3]
 	style.current_toughness_electric.color[4] = fs.toughness_colour[4]
 
-	local bar_color = mod.BREED_COLOURS[breed_type] or mod.BREED_COLOURS.horde
+	local bar_color = mod.BREED_COLOURS and mod.BREED_COLOURS[breed_type]
+		or mod.BREED_COLOURS and mod.BREED_COLOURS.melee_horde
+		or { 255, 255, 0, 0 }
 
 	-- INDIVIDUAL COLOUR OVERRIDES
 	if breed then
@@ -528,10 +611,6 @@ template.on_enter = function(widget, marker, template)
 				local tags = breed_settings.tags
 				local individual_breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
 
-				--if breed_settings.name == "renegade_vanguard" or breed_settings.name == "cultist_vanguard" then
-				--	individual_breed_type = "elite"
-				--end
-
 				if individual_breed_type == breed_type then
 					if fs.breed_healthbar_enabled[enemy_individual] then
 						bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
@@ -542,7 +621,7 @@ template.on_enter = function(widget, marker, template)
 	end
 
 	-- WEAKENED BOSS COLOUR OVERRIDE
-	local is_weakened = mod.is_weakened and mod.is_weakened(unit, breed)
+	local is_weakened = content.unit and mod.is_weakened and mod.is_weakened(content.unit, breed)
 
 	if fs.healthbar_weakened_enable and is_weakened then
 		bar_color = fs.healthbar_weakened_colour
@@ -569,16 +648,10 @@ template.on_enter = function(widget, marker, template)
 		end
 	end
 
-	local icon_offset_y = 0
-
-	if style.icon_elite.color[1] > 0 then
-		style.icon_elite.offset[2] = icon_offset_y
-	end
-
 	-- update damage number settings
 	--template.damage_number_settings
 	template.damage_number_settings.duration = fs.damage_number_duration
-	template.damage_number_settings.x_offset = fs.hb_size_width * 0.35
+	template.damage_number_settings.x_offset = (fs.readable_damage_number_x_offset or 0) * fs.hb_size_width
 	template.damage_number_settings.x_offset_between_numbers = 16
 		* fs.text_scale
 		* fs.damage_number_scale
@@ -589,6 +662,476 @@ template.on_enter = function(widget, marker, template)
 	template.damage_number_settings.dps_font_size = 18 * fs.text_scale * fs.damage_number_scale
 	template.damage_number_settings.expand_bonus_scale = 4 * fs.text_scale * fs.damage_number_scale
 	template.show_dps = fs.hb_show_dps
+end
+
+local function apply_state_body(widget, scale, alert_active)
+	local content = widget.content
+	local style = widget.style
+	local health_fraction = content.health_fraction
+	local health_ghost_fraction = content.health_ghost_fraction
+	local breed_type = content._breed_type or "enemy"
+
+	local size = template.size
+	size[1] = fs.hb_size_width
+	size[2] = fs.hb_size_height
+	local scaled_bar_width = 0
+
+	-- higher ghostbar speed = shorter shrink duration
+	template.bar_settings.duration_health_ghost = GHOSTBAR_BASE_DURATION / (fs.hb_ghostbar_speed or 1)
+
+	-- only do healthbar calculations if theyre enabled... Still lets the damage numbers do their thing :)
+	if health_fraction and health_ghost_fraction then
+		local bar_settings = template.bar_settings
+		local spacing = bar_settings.bar_spacing
+		local bar_width = template.size[1]
+		local bar_height = template.size[2]
+
+		local default_width_offset = -bar_width * 0.5
+		scale = scale or 1
+		content.scale = scale
+
+		local health_max_style = style.health_max
+		--health_max_style.default_size[1] = bar_width * scale
+		--health_max_style.size[1] = bar_width * scale
+		--health_max_style.size[2] = bar_height * scale
+
+		local current_health_style = style.current_health
+		local ghost_bar_style = style.ghost_bar
+
+		local scaled_bar_width = bar_width * scale
+		content.scaled_bar_width = scaled_bar_width
+		content.scaled_bar_height = bar_height * scale
+
+		local scaled_health_width = scaled_bar_width * health_fraction
+
+		local frame_style = style.frame
+		--frame_style.size[1] = (bar_width + 12) * scale
+
+		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
+		local scaled_ghost_width = scaled_bar_width * ghost_fraction
+	end
+
+	local icon_color = mod.ICON_COLOURS[breed_type]
+
+	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
+	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale * fs.healthbar_type_icon_scale
+	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
+	local icon_glow_colour = mod.ICON_COLOURS["glow"]
+	local icon_glow_colour_default = mod.ICON_COLOURS["glow_default"]
+	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
+
+	-- apply values to relevant icon
+	--local function icon_special_attack(content_icon, style_icon)
+	if fs.healthbar_specials_enable and alert_active then
+		-- get special colour
+		local spec_col = fs.outline_specials_colour
+
+		if not content.alert_healthbar then
+			----- TURN ON
+			-- set alert glow intensity
+			style.icon_background1.default_alpha = 255
+
+			-- set alert glow colour
+			style.icon_background1.color[1] = 255
+			style.icon_background1.color[2] = spec_col[2]
+			style.icon_background1.color[3] = spec_col[3]
+			style.icon_background1.color[4] = spec_col[4]
+			content.alert_healthbar = true
+		elseif content.alert_healthbar and fs.specials_flash then
+			----- TURN OFF
+			-- set alert glow intensity
+			style.icon_background1.default_alpha = 0
+			style.icon_background1.color[1] = 0
+
+			content.alert_healthbar = false
+		end
+	else
+		if content.alert_healthbar then
+			content.alert_healthbar = false
+		end
+
+		-- set alert glow colour
+		style.icon_background1.default_alpha = 0
+		style.icon_background1.color[1] = 0
+		style.icon_background1.color[2] = icon_glow_colour[2]
+		style.icon_background1.color[3] = icon_glow_colour[3]
+		style.icon_background1.color[4] = icon_glow_colour[4]
+
+		if icon_glow_intensity > 0 then
+			content.glow_enabled = true
+		else
+			content.glow_enabled = false
+		end
+	end
+
+	--return content_icon, style_icon
+	--end
+
+	-- do stuff per breed type
+	--[[if fs.healthbar_type_icon_enable then
+		if breed_type == "far" then
+			content.icon_elite_ranged, style.icon_elite_ranged =
+				icon_special_attack(content.icon_elite_ranged, style.icon_elite_ranged)
+		end
+		if breed_type == "elite" then
+			content.icon_elite, style.icon_elite = icon_special_attack(content.icon_elite, style.icon_elite)
+		end
+		if breed_type == "special" then
+			content.icon_special, style.icon_special = icon_special_attack(content.icon_special, style.icon_special)
+		end
+		if breed_type == "disabler" then
+			content.icon_disabler, style.icon_disabler = icon_special_attack(content.icon_disabler, style.icon_disabler)
+		end
+		if breed_type == "sniper" then
+			content.icon_sniper, style.icon_sniper = icon_special_attack(content.icon_sniper, style.icon_sniper)
+		end
+		if breed_type == "captain" or breed_type == "cultist_captain" then
+			content.icon_captain, style.icon_captain = icon_special_attack(content.icon_captain, style.icon_captain)
+		end
+		if breed_type == "witch" then
+			content.icon_witch, style.icon_witch = icon_special_attack(content.icon_witch, style.icon_witch)
+		end
+		if breed_type == "monster" then
+			content.icon_boss, style.icon_boss = icon_special_attack(content.icon_boss, style.icon_boss)
+		end
+		if mod.is_horde_group(breed_type) then
+			content.icon_enabled = false
+		end
+	end]]
+
+	-------------------------------------------------------------------
+	-- Height / healthbar position logic
+	-------------------------------------------------------------------
+
+	if fs.hb_text_top_left_01 then
+		content.header_text = get_text_option(content, fs.hb_text_top_left_01)
+		if
+			fs.hb_text_top_left_01 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.header_text.text_color[2] = fs.toughness_colour[2]
+			style.header_text.text_color[3] = fs.toughness_colour[3]
+			style.header_text.text_color[4] = fs.toughness_colour[4]
+		else
+			style.header_text.text_color[2] = fs.main_colour[2]
+			style.header_text.text_color[3] = fs.main_colour[3]
+			style.header_text.text_color[4] = fs.main_colour[4]
+		end
+
+		style.header_text.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.header_text.size[1] = 500 * scale
+		style.header_text.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.header_text.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.header_text.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.header_text.offset[1] = -250 * scale
+			style.header_text.default_offset[1] = -250 * scale
+		else
+			style.header_text.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.header_text.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
+	end
+
+	if fs.hb_text_bottom_left_01 then
+		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
+		if
+			fs.hb_text_bottom_left_01 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.health_counter.text_color[2] = fs.toughness_colour[2]
+			style.health_counter.text_color[3] = fs.toughness_colour[3]
+			style.health_counter.text_color[4] = fs.toughness_colour[4]
+		else
+			style.health_counter.text_color[2] = fs.main_colour[2]
+			style.health_counter.text_color[3] = fs.main_colour[3]
+			style.health_counter.text_color[4] = fs.main_colour[4]
+		end
+		style.health_counter.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.health_counter.size[1] = 500 * scale
+		style.health_counter.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.health_counter.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.health_counter.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.health_counter.offset[1] = -250 * scale
+			style.health_counter.default_offset[1] = -250 * scale
+		else
+			style.health_counter.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.health_counter.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
+	end
+
+	if fs.hb_text_bottom_left_02 then
+		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
+		if
+			fs.hb_text_bottom_left_02 == "health"
+			and fs.toughness_text_colour_enabled
+			and content.current_toughness
+			and content.current_toughness > 0
+		then
+			style.armour_type.text_color[2] = fs.toughness_colour[2]
+			style.armour_type.text_color[3] = fs.toughness_colour[3]
+			style.armour_type.text_color[4] = fs.toughness_colour[4]
+		else
+			style.armour_type.text_color[2] = fs.main_colour[2]
+			style.armour_type.text_color[3] = fs.main_colour[3]
+			style.armour_type.text_color[4] = fs.main_colour[4]
+		end
+		style.armour_type.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.armour_type.size[1] = 500 * scale
+		style.armour_type.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.armour_type.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.armour_type.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.armour_type.offset[1] = -250 * scale
+			style.armour_type.default_offset[1] = -250 * scale
+		else
+			style.armour_type.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.armour_type.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
+	end
+end
+
+local function apply_built_scale(widget, marker_scale)
+	local content = widget.content
+	local style = widget.style
+
+	if fs.healthbar_enable and (not content.dead or fs.widget_removal_delay > 0) then
+		content.hb_built = true
+	end
+	if fs.show_damage_numbers or content.show_dps then
+		content.dn_built = true
+	end
+
+	local scale = marker_scale * fs.text_scale
+	content.scale = scale
+
+	local header_style = style.header_text
+	local health_counter = style.health_counter
+	local armour_type = style.armour_type
+	local damage_numbers = style.readable_damage_numbers
+
+	if header_style then
+		header_style.font_size = header_style.default_font_size * scale
+	end
+	if health_counter then
+		health_counter.font_size = health_counter.default_font_size * scale
+	end
+	if armour_type then
+		armour_type.font_size = armour_type.default_font_size * scale
+	end
+
+	if damage_numbers then
+		damage_numbers.font_size = damage_numbers.default_font_size * scale
+	end
+end
+
+local function push_damage_number(
+	widget,
+	damage_diff,
+	t,
+	hit_was_critical,
+	hit_was_weakspot,
+	dot_only,
+	max_health_setting,
+	was_critical
+)
+	local content = widget.content
+	local damage_number_settings = template.damage_number_settings
+	local damage_numbers = content.damage_numbers
+	if not damage_numbers then
+		damage_numbers = {}
+		content.damage_numbers = damage_numbers
+	end
+	local latest_damage_number = damage_numbers[#damage_numbers]
+	if was_critical == nil then
+		was_critical = hit_was_critical
+	end
+
+	local should_add = true
+
+	if latest_damage_number then
+		local add_numbers_together_timer = fs.hb_damage_number_type == damage_number_types.flashy
+				and damage_number_settings.add_numbers_together_timer_flashy
+			or damage_number_settings.add_numbers_together_timer
+
+		if add_numbers_together_timer > t - latest_damage_number.start_time then
+			should_add = false
+		end
+	end
+
+	if fs.hb_damage_numbers_add_total then
+		content.add_on_next_number = false
+	else
+		content.add_on_next_number = true
+	end
+
+	if fs.show_damage_numbers or fs.hb_text_show_damage then
+		if content.add_on_next_number or was_critical or should_add then
+			local damage_number = damage_number_pool[#damage_number_pool]
+			if damage_number then
+				damage_number_pool[#damage_number_pool] = nil
+			else
+				damage_number = {}
+			end
+			damage_number.expand_time = 0
+			damage_number.time = 0
+			damage_number.start_time = t
+			damage_number.duration = damage_number_settings.duration
+			damage_number.value = damage_diff
+			damage_number.expand_duration = damage_number_settings.expand_duration
+			damage_number.random_number = math_random()
+			damage_number.float_right = math_random() > 0.5
+			damage_number.hit_world_position = nil
+			damage_number.shrink_start_t = nil
+			damage_number.y_position = nil
+
+			damage_number.hit_weakspot = hit_was_weakspot
+			damage_number.is_dot = dot_only
+			damage_number.was_critical = hit_was_critical
+			local dn_index = #damage_numbers + 1
+			damage_numbers[dn_index] = damage_number
+
+			-- Prevent runaway memory usage
+			if #damage_numbers > 20 then
+				local removed = table_remove(damage_numbers, 1)
+				damage_number_pool[#damage_number_pool + 1] = removed
+			end
+
+			if content.add_on_next_number then
+				content.add_on_next_number = nil
+			end
+
+			if was_critical then
+				content.add_on_next_number = true
+			end
+
+			if content.last_hit_world_position then
+				damage_number.hit_world_position = Vector3Box(content.last_hit_world_position:unbox())
+			end
+		else
+			latest_damage_number.value = math_clamp(latest_damage_number.value + damage_diff, 0, max_health_setting)
+			latest_damage_number.time = 0
+			latest_damage_number.expand_time = 0
+			latest_damage_number.expand_duration = damage_number_settings.expand_duration
+			latest_damage_number.shrink_start_t = nil
+			latest_damage_number.y_position = nil
+			latest_damage_number.start_time = t
+
+			if not content.last_hit_world_position then
+				latest_damage_number.hit_world_position = nil
+			end
+
+			latest_damage_number.hit_weakspot = hit_was_weakspot
+			latest_damage_number.is_dot = dot_only
+			latest_damage_number.was_critical = hit_was_critical
+		end
+	end
+
+	if not content.damage_has_started then
+		content.damage_has_started = true
+	end
+
+	content.last_damage_taken_time = t
+end
+
+template.get_text_option = get_text_option
+template.apply_breed_style = apply_breed_style
+template.push_damage_number = push_damage_number
+
+template.apply_state = function(widget, scale, dt, t, alert_active)
+	widget.content.draw_hb = true
+	apply_state_body(widget, scale, alert_active)
+
+	-- Keep text labels anchored to the healthbar at the current distance scale.
+	do
+		local content = widget.content
+		local style = widget.style
+		local alignment = fs.hb_text_alignment or "left"
+
+		local function anchor_text(text_style)
+			if not text_style then
+				return
+			end
+
+			text_style.text_horizontal_alignment = alignment
+
+			text_style.size[1] = 500
+			text_style.default_size[1] = 500
+
+			if alignment == "right" then
+				text_style.offset[1] = fs.hb_size_width * 0.5 - 500
+				text_style.default_offset[1] = fs.hb_size_width * 0.5 - 500
+			elseif alignment == "center" then
+				text_style.offset[1] = -250
+				text_style.default_offset[1] = -250
+			else
+				text_style.offset[1] = -fs.hb_size_width * 0.5
+				text_style.default_offset[1] = -fs.hb_size_width * 0.5
+			end
+		end
+
+		anchor_text(style.header_text)
+		anchor_text(style.health_counter)
+		anchor_text(style.armour_type)
+	end
+
+	apply_built_scale(widget, scale)
+end
+
+template.on_enter = function(widget, marker, template)
+	local content = widget.content
+
+	template.position_offset[3] = fs.hb_y_offset
+
+	content.hb_built = false
+	content.draw_hb = false
+
+	content.damage_taken = 0
+	content.dps_damage = 0
+	content.damage_numbers = {}
+	content.spawn_progress_timer = 0
+
+	local unit = marker.unit
+	local unit_data_extension = ScriptUnit_extension(unit, "unit_data_system")
+	local breed = unit_data_extension and unit_data_extension:breed()
+
+	content.breed = breed
+	content.unit_data_extension = unit_data_extension
+	content.unit = unit
+
+	local bar_settings = template.bar_settings
+	marker.bar_logic = HudHealthBarLogic:new(bar_settings)
+
+	content._breed_type = mod.find_breed_category(unit)
+	local breed_type = content._breed_type
+
+	content.special_attack_imminent = false
+
+	content.health_extension = ScriptUnit_has_extension(unit, "health_system")
+	content.toughness_extension = ScriptUnit_has_extension(unit, "toughness_system")
+
+	local current_level = Managers.state.mission and Managers.state.mission:mission()
+
+	if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
+		content.is_in_shooting_range = true
+	else
+		content.is_in_shooting_range = false
+	end
+
+	apply_breed_style(widget, breed, breed_type, marker.scale)
 end
 
 local function _get_network_values(game_session, game_object_id)
@@ -609,13 +1152,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	widget._next_update = widget._next_update or 0
 
+	local content = widget.content
+	local unit = marker.unit
+	local crit_extension = unit and ScriptUnit_has_extension(unit, "health_system")
+
+	-- the extension only exposes crits for a single logic tick, so latch it before the throttle return
+	if safe_was_crit(crit_extension) then
+		content._pending_crit = true
+	end
+
 	if t < widget._next_update then
 		return
 	end
-
-	local content = widget.content
-	local style = widget.style
-	local unit = marker.unit
 
 	-- if not on screen or draw == false, throttle heavily....
 	if not marker.is_inside_frustum or content.draw_hb == false then
@@ -628,8 +1176,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	else
 		widget._next_update = t + fs.general_throttle_rate * 3
 	end
-
-	fs = mod.frame_settings
 
 	if not unit then
 		content.draw_hb = false
@@ -654,17 +1200,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local entry = mod.enemy_cache[unit]
 
+	content.show_dps = show_dps_for(content.breed, content._breed_type)
+
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
 		if fs.widget_removal_delay > 0 then
-			content.dead = fs.hb_show_dps or false
+			content.dead = content.show_dps or false
 			content.hb_built = true
 
 			if not content.last_damage_taken_time then
 				content.last_damage_taken_time = t
 			end
-		elseif fs.hb_show_dps then
+		elseif content.show_dps then
 			content.dead = true
 			content.hb_built = false
 		else
@@ -673,22 +1221,26 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	template.max_distance = fs.draw_distance_broadphase or fs.draw_distance
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+	if template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
 
+	local check_los = template.check_line_of_sight
 	local line_of_sight_progress = content.line_of_sight_progress or 0
 
-	if template.check_line_of_sight then
+	if check_los then
 		if marker.raycast_initialized then
 			local raycast_result = marker.raycast_result
 			local line_of_sight_speed = 8
 
 			if raycast_result then
-				line_of_sight_progress = math.max(line_of_sight_progress - dt * line_of_sight_speed, 0)
+				line_of_sight_progress = math_max(line_of_sight_progress - dt * line_of_sight_speed, 0)
 			else
-				line_of_sight_progress = math.min(line_of_sight_progress + dt * line_of_sight_speed, 1)
+				line_of_sight_progress = math_min(line_of_sight_progress + dt * line_of_sight_speed, 1)
 			end
 		end
-	elseif not template.check_line_of_sight then
+	else
 		line_of_sight_progress = 1
 	end
 
@@ -714,7 +1266,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		effective = group_state
 	end
 
-	if effective == "false_override" then
+	if effective == "false_override" and not fs.force_on_in_training then
 		content.draw_hb = false
 	end
 
@@ -783,7 +1335,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	content.toughness_fraction = toughness_fraction
 
 	-------------------------------------------------------------------
-	-- Horde cluster: pooled HP + center position with stable max
+	-- Horde clusters
 	-------------------------------------------------------------------
 	local cluster = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
 	local in_horde_cluster = false
@@ -1063,14 +1615,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 	local latest_damage_number = damage_numbers[#damage_numbers]
 
-	if damage_taken_since_last > 0 and health_extension and not is_dead then
+	if damage_taken_since_last > 0 and health_extension then
 		content.visibility_delay = damage_number_settings.visibility_delay
 		content.damage_taken = total_damage_taken
-		content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last
+		if not is_dead then
+			content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last
+		end
 
 		if show_damage_number then
 			if fs.hb_damage_show_only_latest then
-				if healthbar_enabled_for(unit, breed, breed_type) then
+				if healthbar_enabled_for(unit, breed, breed_type, t) then
 					-- add new unit to the end
 					if not table_contains(mod.latest_damaged_enemies, unit) then
 						table_insert(mod.latest_damaged_enemies, unit)
@@ -1084,106 +1638,19 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			local damage_diff = math.ceil(damage_taken_since_last)
-			local should_add = true
-			local was_critical = health_extension and health_extension:was_hit_by_critical_hit_this_render_frame()
+			local was_critical = content._pending_crit or safe_was_crit(health_extension)
+			local hit_was_weakspot = is_weakspot(content.breed, content.last_hit_zone_name) or false
 
-			if latest_damage_number then
-				local add_numbers_together_timer = fs.hb_damage_number_type == damage_number_types.flashy
-						and damage_number_settings.add_numbers_together_timer_flashy
-					or damage_number_settings.add_numbers_together_timer
-
-				if add_numbers_together_timer > t - latest_damage_number.start_time then
-					should_add = false
-				end
-			end
-
-			if fs.hb_damage_numbers_add_total then
-				content.add_on_next_number = false
-			else
-				content.add_on_next_number = true
-			end
-
-			if fs.show_damage_numbers or fs.hb_text_show_damage then
-				if content.add_on_next_number or was_critical or should_add then
-					local damage_number = damage_number_pool[#damage_number_pool]
-					if damage_number then
-						damage_number_pool[#damage_number_pool] = nil
-					else
-						damage_number = {}
-					end
-					damage_number.expand_time = 0
-					damage_number.time = 0
-					damage_number.start_time = t
-					damage_number.duration = damage_number_settings.duration
-					damage_number.value = damage_diff
-					damage_number.expand_duration = damage_number_settings.expand_duration
-					damage_number.random_number = math_random()
-					damage_number.float_right = math_random() > 0.5
-					damage_number.hit_world_position = nil
-					damage_number.shrink_start_t = nil
-					damage_number.y_position = nil
-
-					local breed_local = content.breed
-
-					if is_weakspot(breed_local, content.last_hit_zone_name) then
-						damage_number.hit_weakspot = true
-					else
-						damage_number.hit_weakspot = false
-					end
-
-					damage_number.was_critical = was_critical
-					local dn_index = #damage_numbers + 1
-					damage_numbers[dn_index] = damage_number
-
-					-- Prevent runaway memory usage
-					if #damage_numbers > 20 then
-						local removed = table_remove(damage_numbers, 1)
-						damage_number_pool[#damage_number_pool + 1] = removed
-					end
-
-					if content.add_on_next_number then
-						content.add_on_next_number = nil
-					end
-
-					if was_critical then
-						content.add_on_next_number = true
-					end
-
-					if content.last_hit_world_position then
-						damage_number.hit_world_position = Vector3Box(content.last_hit_world_position:unbox())
-					end
-				else
-					latest_damage_number.value =
-						math_clamp(latest_damage_number.value + damage_diff, 0, max_health_setting)
-					latest_damage_number.time = 0
-					latest_damage_number.expand_time = 0
-					latest_damage_number.expand_duration = damage_number_settings.expand_duration
-					latest_damage_number.shrink_start_t = nil
-					latest_damage_number.y_position = nil
-					latest_damage_number.start_time = t
-
-					if not content.last_hit_world_position then
-						latest_damage_number.hit_world_position = nil
-					end
-
-					local breed_local = content.breed
-					local hit_zone_weakspot_types = breed_local and breed_local.hit_zone_weakspot_types
-
-					if is_weakspot(breed_local, content.last_hit_zone_name) then
-						latest_damage_number.hit_weakspot = true
-					else
-						latest_damage_number.hit_weakspot = false
-					end
-
-					latest_damage_number.was_critical = was_critical
-				end
-			end
-
-			if not content.damage_has_started then
-				content.damage_has_started = true
-			end
-
-			content.last_damage_taken_time = t
+			push_damage_number(
+				widget,
+				damage_diff,
+				t,
+				was_critical or false,
+				hit_was_weakspot,
+				false,
+				max_health_setting,
+				was_critical or false
+			)
 		end
 
 		-------------------------------------------------------------------
@@ -1198,10 +1665,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			content._last_health_max = health_max
 			content._last_damage_value = latest_damage_number and latest_damage_number.value
 		end
+
+		content._pending_crit = nil
 	end
 
-	-- killed in the same frame damage was taken: seed DPS data so it shows on the death frame
-	if damage_taken_since_last > 0 and health_extension and is_dead and fs.hb_show_dps then
+	if damage_taken_since_last > 0 and health_extension and is_dead and content.show_dps then
 		content.damage_taken = total_damage_taken
 		content.dps_damage = (content.dps_damage or 0) + damage_taken_since_last
 		content.last_damage_taken_time = t
@@ -1214,193 +1682,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- Health bar / ghost / toughness
 	-------------------------------------------------------------------
 
-	local size = template.size
-	size[1] = fs.hb_size_width
-	size[2] = fs.hb_size_height
-
-	-- higher ghostbar speed = shorter shrink duration
-	template.bar_settings.duration_health_ghost = GHOSTBAR_BASE_DURATION / (fs.hb_ghostbar_speed or 1)
-
-	-- only do healthbar calculations if theyre enabled... Still lets the damage numbers do their thing :)
-	if health_fraction and health_ghost_fraction then
-		local bar_settings = template.bar_settings
-		local spacing = bar_settings.bar_spacing
-		local bar_width = template.size[1]
-		local bar_height = template.size[2]
-
-		local default_width_offset = -bar_width * 0.5
-		local scale = marker.scale or 1
-		content.scale = scale
-
-		local health_max_style = style.health_max
-		--health_max_style.default_size[1] = bar_width * scale
-		--health_max_style.size[1] = bar_width * scale
-		--health_max_style.size[2] = bar_height * scale
-
-		local current_health_style = style.current_health
-		local ghost_bar_style = style.ghost_bar
-
-		local scaled_bar_width = bar_width * scale
-		content.scaled_bar_width = scaled_bar_width
-		content.scaled_bar_height = bar_height * scale
-
-		local scaled_health_width = scaled_bar_width * health_fraction
-
-		local frame_style = style.frame
-		--frame_style.size[1] = (bar_width + 12) * scale
-
-		local ghost_fraction = math_max(health_ghost_fraction - health_fraction, 0)
-		local scaled_ghost_width = scaled_bar_width * ghost_fraction
-	end
-
 	content.health_fraction = health_fraction
 	content.health_ghost_fraction = health_ghost_fraction
 	content.toughness_fraction = toughness_fraction
-
-	local icon_color = mod.ICON_COLOURS[breed_type]
-
-	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
-	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale * fs.healthbar_type_icon_scale
-	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
-	local icon_glow_colour = mod.ICON_COLOURS["glow"]
-	local icon_glow_colour_default = mod.ICON_COLOURS["glow_default"]
-	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
-
-	-- apply values to relevant icon
-	--local function icon_special_attack(content_icon, style_icon)
-	if entry and fs.healthbar_specials_enable and entry.alert_outline then
-		-- get special colour
-		local spec_col = fs.outline_specials_colour
-
-		if not content.alert_healthbar then
-			----- TURN ON
-			-- set alert glow intensity
-			style.icon_background1.default_alpha = 255
-
-			-- set alert glow colour
-			style.icon_background1.color[2] = spec_col[2]
-			style.icon_background1.color[3] = spec_col[3]
-			style.icon_background1.color[4] = spec_col[4]
-			content.alert_healthbar = true
-		elseif content.alert_healthbar and fs.specials_flash then
-			----- TURN OFF
-			-- set alert glow intensity
-			style.icon_background1.default_alpha = 0
-
-			content.alert_healthbar = false
-		end
-	else
-		if content.alert_healthbar then
-			content.alert_healthbar = false
-		end
-
-		-- set alert glow colour
-		style.icon_background1.default_alpha = icon_glow_intensity * 2.5
-		style.icon_background1.color[2] = icon_glow_colour[2]
-		style.icon_background1.color[3] = icon_glow_colour[3]
-		style.icon_background1.color[4] = icon_glow_colour[4]
-
-		if icon_glow_intensity > 0 then
-			content.glow_enabled = true
-		else
-			content.glow_enabled = false
-		end
-	end
-
-	--return content_icon, style_icon
-	--end
-
-	-- do stuff per breed type
-	--[[if fs.healthbar_type_icon_enable then
-		if breed_type == "far" then
-			content.icon_elite_ranged, style.icon_elite_ranged =
-				icon_special_attack(content.icon_elite_ranged, style.icon_elite_ranged)
-		end
-		if breed_type == "elite" then
-			content.icon_elite, style.icon_elite = icon_special_attack(content.icon_elite, style.icon_elite)
-		end
-		if breed_type == "special" then
-			content.icon_special, style.icon_special = icon_special_attack(content.icon_special, style.icon_special)
-		end
-		if breed_type == "disabler" then
-			content.icon_disabler, style.icon_disabler = icon_special_attack(content.icon_disabler, style.icon_disabler)
-		end
-		if breed_type == "sniper" then
-			content.icon_sniper, style.icon_sniper = icon_special_attack(content.icon_sniper, style.icon_sniper)
-		end
-		if breed_type == "captain" or breed_type == "cultist_captain" then
-			content.icon_captain, style.icon_captain = icon_special_attack(content.icon_captain, style.icon_captain)
-		end
-		if breed_type == "witch" then
-			content.icon_witch, style.icon_witch = icon_special_attack(content.icon_witch, style.icon_witch)
-		end
-		if breed_type == "monster" then
-			content.icon_boss, style.icon_boss = icon_special_attack(content.icon_boss, style.icon_boss)
-		end
-		if breed_type == "horde" then
-			content.icon_enabled = false
-		end
-	end]]
-
-	-------------------------------------------------------------------
-	-- Height / healthbar position logic
-	-------------------------------------------------------------------
-
 	content.health_current = health_current
 	content.health_max = health_max
 	content.health_percent = health_percent
 
-	if fs.hb_text_top_left_01 then
-		content.header_text = get_text_option(content, fs.hb_text_top_left_01)
-		if
-			fs.hb_text_top_left_01 == "health"
-			and fs.toughness_text_colour_enabled
-			and content.current_toughness
-			and content.current_toughness > 0
-		then
-			style.header_text.text_color[2] = fs.toughness_colour[2]
-			style.header_text.text_color[3] = fs.toughness_colour[3]
-			style.header_text.text_color[4] = fs.toughness_colour[4]
-		else
-			style.header_text.text_color[2] = fs.main_colour[2]
-			style.header_text.text_color[3] = fs.main_colour[3]
-			style.header_text.text_color[4] = fs.main_colour[4]
-		end
-	end
-	if fs.hb_text_bottom_left_01 then
-		content.health_counter = get_text_option(content, fs.hb_text_bottom_left_01)
-		if
-			fs.hb_text_bottom_left_01 == "health"
-			and fs.toughness_text_colour_enabled
-			and content.current_toughness
-			and content.current_toughness > 0
-		then
-			style.health_counter.text_color[2] = fs.toughness_colour[2]
-			style.health_counter.text_color[3] = fs.toughness_colour[3]
-			style.health_counter.text_color[4] = fs.toughness_colour[4]
-		else
-			style.health_counter.text_color[2] = fs.main_colour[2]
-			style.health_counter.text_color[3] = fs.main_colour[3]
-			style.health_counter.text_color[4] = fs.main_colour[4]
-		end
-	end
-	if fs.hb_text_bottom_left_02 then
-		content.armour_type = get_text_option(content, fs.hb_text_bottom_left_02)
-		if
-			fs.hb_text_bottom_left_02 == "health"
-			and fs.toughness_text_colour_enabled
-			and content.current_toughness
-			and content.current_toughness > 0
-		then
-			style.armour_type.text_color[2] = fs.toughness_colour[2]
-			style.armour_type.text_color[3] = fs.toughness_colour[3]
-			style.armour_type.text_color[4] = fs.toughness_colour[4]
-		else
-			style.armour_type.text_color[2] = fs.main_colour[2]
-			style.armour_type.text_color[3] = fs.main_colour[3]
-			style.armour_type.text_color[4] = fs.main_colour[4]
-		end
-	end
+	apply_state_body(widget, marker.scale, entry and entry.alert_outline)
 
 	--end
 
@@ -1427,12 +1716,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	if breed_type == "horde" and not fs.horde_enable and not in_horde_cluster then
+	if mod.is_horde_group(breed_type) and not fs.horde_enable and not in_horde_cluster then
 		local horde_individual = breed and breed.name
 		local individual_state = horde_individual
 			and fs.breed_healthbar_force
 			and fs.breed_healthbar_force[horde_individual]
-		local group_state = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled["horde"]
+		local group_state = fs.breed_type_healthbar_enabled and fs.breed_type_healthbar_enabled[breed_type]
 
 		local effective = individual_state
 		if effective ~= "true_override" and effective ~= "false_override" then
@@ -1440,24 +1729,18 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 
 		local forced_on = effective == "true_override"
-			or (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit))
+			or (fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t))
 
 		if not forced_on then
 			content.draw_hb = false
 		end
 	end
 
-	-- always show in the meat grinder skips the hide-after-no-damage logic (useful for testing)
-	local skip_hide_after_no_damage = false
-	if fs.always_show_in_meatgrinder then
-		local current_level = Managers_state.mission and Managers_state.mission:mission()
-		if current_level and current_level.game_mode_name and current_level.game_mode_name == "shooting_range" then
-			skip_hide_after_no_damage = true
-		end
-	end
+	-- force-on in the training grounds skips the hide-after-no-damage logic (useful for testing)
+	local skip_hide_after_no_damage = fs.force_on_in_training or false
 
 	-- enemies with an active debuff keep their healthbar visible to track DOTs
-	if not skip_hide_after_no_damage and fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit) then
+	if not skip_hide_after_no_damage and fs.hb_show_when_debuffed and mod.unit_has_active_debuff(unit, t) then
 		skip_hide_after_no_damage = true
 	end
 
@@ -1473,11 +1756,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if not skip_hide_after_no_damage then
-		if fs.horde_hide_after_no_damage and breed_type == "horde" and time_since_last_damage > 5 then
+		if fs.horde_hide_after_no_damage and mod.is_horde_group(breed_type) and time_since_last_damage > 5 then
 			content.draw_hb = false
 		end
 
-		if fs.hide_after_no_damage and breed_type ~= "horde" and time_since_last_damage > 5 then
+		if fs.hide_after_no_damage and not mod.is_horde_group(breed_type) and time_since_last_damage > 5 then
 			content.draw_hb = false
 		end
 	end
@@ -1488,7 +1771,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.hb_damage_show_only_latest then
 		if table_contains(mod.latest_damaged_enemies, unit) then
-			if healthbar_enabled_for(unit, breed, breed_type) then
+			if healthbar_enabled_for(unit, breed, breed_type, t) then
 				content.draw_hb = true
 			else
 				content.draw_hb = false
@@ -1504,34 +1787,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	if content.draw_hb and line_of_sight_progress > 0 then
-		if fs.healthbar_enable and (not content.dead or fs.widget_removal_delay > 0) then
-			content.hb_built = true
-		end
-		if fs.show_damage_numbers or fs.hb_show_dps then
-			content.dn_built = true
-		end
-
-		local scale = marker.scale * fs.text_scale
-		content.scale = scale
-
-		local header_style = style.header_text
-		local health_counter = style.health_counter
-		local armour_type = style.armour_type
-		local damage_numbers = style.readable_damage_numbers
-
-		if header_style then
-			header_style.font_size = header_style.default_font_size * scale
-		end
-		if health_counter then
-			health_counter.font_size = health_counter.default_font_size * scale
-		end
-		if armour_type then
-			armour_type.font_size = armour_type.default_font_size * scale
-		end
-
-		if damage_numbers then
-			damage_numbers.font_size = damage_numbers.default_font_size * scale
-		end
+		apply_built_scale(widget, marker.scale)
 	else
 		content.hb_built = false
 	end

@@ -6,6 +6,8 @@ local Managers = Managers
 mod.enemy_debuffs = mod.enemy_debuffs or {}
 mod.marked_dead = mod.marked_dead or {}
 
+local fs = mod.frame_settings
+
 local function _on_ei_marker_created(marker_id, entry, unit)
 	mod._on_ei_marker_created(marker_id, entry, unit)
 end
@@ -16,8 +18,6 @@ end
 local Managers_event = Managers.event
 
 mod.update_enemy_debuffs = function(entry, t)
-	local fs = mod.frame_settings
-
 	if not fs.debuff_enable then
 		return
 	end
@@ -51,7 +51,7 @@ mod.update_enemy_debuffs = function(entry, t)
 	end
 
 	-- Only block if ACTUALLY dead
-	if mod.marked_dead[unit] and not mod.detect_alive(unit) then
+	if marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end
 
