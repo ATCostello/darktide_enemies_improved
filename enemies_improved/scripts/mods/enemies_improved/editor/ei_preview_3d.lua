@@ -14,7 +14,7 @@ local GUARD_FRAMES = 30
 local LOAD_TIMEOUT = 30
 local SPAWN_SEED = 7
 local BASE_YAW = math.pi + 0.45
-local RELEASE_PER_FRAME = 16
+local RELEASE_PER_FRAME = 4
 local FORCE_STREAM_TIMEOUT = 2
 local FORCE_TEXTURE_TIMEOUT = 12
 local STREAM_ATTEMPTS = 3
@@ -253,6 +253,7 @@ function P3D.new(view)
 		_frames = 0,
 		_yaw = 0,
 		aspect = 0.8,
+		_release_hold = 0,
 	}, P3D)
 
 	set_pending("(world)")
@@ -409,6 +410,11 @@ function P3D:_retire_stale()
 
 	if moved > 0 then
 		crumb(string.format("retired %d packages (%d held)", moved, self:_held_count()))
+
+		-- Keep the retired packages off-limits to the engine unload path for a
+		-- short while. The old subject units are only marked for deletion, so
+		-- unloading their resources immediately can leave dangling references.
+		self._release_hold = math.max(self._release_hold or 0, 60)
 	end
 end
 
@@ -514,7 +520,6 @@ function P3D:destroy()
 	self._destroyed = true
 
 	pcall(self._clear_subject, self)
-	pcall(self._release_packages, self)
 	pcall(self._destroy_lighting, self)
 
 	if self.ws then
@@ -523,6 +528,9 @@ function P3D:destroy()
 
 		self.ws = nil
 	end
+
+	-- Release resource packages only after the world and its units are gone.
+	pcall(self._release_packages, self)
 
 	pcall(set_pending, nil)
 end
@@ -1098,19 +1106,38 @@ function P3D:_spawn()
 			pcall(d.VisualLoadoutCustomization.spawn_item, pick.item, attach, unit, false, false, false, nil, nil)
 
 		if iok and item_unit then
+			-- spawn_item returns a map from spawned unit to its direct child
+			-- attachment units. Collect every descendant so they are streamed
+			-- and, more importantly, removed again on the next breed switch.
+			local child_units = {}
+			local seen = { [item_unit] = true }
+
+			if type(atts) == "table" then
+				for _, list in pairs(atts) do
+					if type(list) == "table" then
+						for k = 1, #list do
+							local child = list[k]
+
+							if child and not seen[child] then
+								seen[child] = true
+								child_units[#child_units + 1] = child
+							end
+						end
+					end
+				end
+			end
+
 			local part = {
 				unit = item_unit,
-				attachments = atts and atts[item_unit],
+				attachments = child_units,
 				outline = pick.outline,
 			}
 
 			self._parts[#self._parts + 1] = part
 			units[#units + 1] = item_unit
 
-			if part.attachments then
-				for j = 1, #part.attachments do
-					units[#units + 1] = part.attachments[j]
-				end
+			for j = 1, #child_units do
+				units[#units + 1] = child_units[j]
 			end
 		else
 			crumb("attach failed " .. pick.name .. ": " .. tostring(item_unit))
@@ -1220,6 +1247,8 @@ function P3D:_stream_done(timeout)
 
 	self._streaming = nil
 
+	self._release_hold = math.max(self._release_hold or 0, 30)
+
 	self._state = "ready"
 	self._frames = 0
 
@@ -1248,7 +1277,15 @@ function P3D:update(dt, t)
 		end
 	end
 
-	self:_flush_retired(RELEASE_PER_FRAME)
+	if self._streaming then
+		-- Never release package resources while the new subject is still
+		-- streaming: the engine may still touch their meshes/textures.
+		self._release_hold = math.max(self._release_hold or 0, 1)
+	elseif self._release_hold and self._release_hold > 0 then
+		self._release_hold = self._release_hold - 1
+	else
+		self:_flush_retired(RELEASE_PER_FRAME)
+	end
 
 	if state == "loading" and not self._spawned then
 		self._load_time = self._load_time + dt
