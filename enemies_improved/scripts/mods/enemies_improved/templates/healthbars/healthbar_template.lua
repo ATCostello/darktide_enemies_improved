@@ -822,18 +822,16 @@ local function apply_state_body(widget, scale, alert_active)
 
 		style.header_text.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.header_text.size[1] = 500 * scale
-		style.header_text.default_size[1] = 500 * scale
+		style.header_text.default_size[1] = 500
 
-		if fs.hb_text_alignment == "right" then
-			style.header_text.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-			style.header_text.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-		elseif fs.hb_text_alignment == "center" then
-			style.header_text.offset[1] = -250 * scale
-			style.header_text.default_offset[1] = -250 * scale
+		local text_alignment = fs.hb_text_alignment or "left"
+		style.header_text.text_horizontal_alignment = text_alignment
+		if text_alignment == "right" then
+			style.header_text.default_offset[1] = fs.hb_size_width * 0.5 - 500
+		elseif text_alignment == "center" then
+			style.header_text.default_offset[1] = -250
 		else
-			style.header_text.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
-			style.header_text.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.header_text.default_offset[1] = -fs.hb_size_width * 0.5
 		end
 	end
 
@@ -855,18 +853,16 @@ local function apply_state_body(widget, scale, alert_active)
 		end
 		style.health_counter.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.health_counter.size[1] = 500 * scale
-		style.health_counter.default_size[1] = 500 * scale
+		style.health_counter.default_size[1] = 500
 
-		if fs.hb_text_alignment == "right" then
-			style.health_counter.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-			style.health_counter.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-		elseif fs.hb_text_alignment == "center" then
-			style.health_counter.offset[1] = -250 * scale
-			style.health_counter.default_offset[1] = -250 * scale
+		local text_alignment = fs.hb_text_alignment or "left"
+		style.health_counter.text_horizontal_alignment = text_alignment
+		if text_alignment == "right" then
+			style.health_counter.default_offset[1] = fs.hb_size_width * 0.5 - 500
+		elseif text_alignment == "center" then
+			style.health_counter.default_offset[1] = -250
 		else
-			style.health_counter.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
-			style.health_counter.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.health_counter.default_offset[1] = -fs.hb_size_width * 0.5
 		end
 	end
 
@@ -888,18 +884,16 @@ local function apply_state_body(widget, scale, alert_active)
 		end
 		style.armour_type.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.armour_type.size[1] = 500 * scale
-		style.armour_type.default_size[1] = 500 * scale
+		style.armour_type.default_size[1] = 500
 
-		if fs.hb_text_alignment == "right" then
-			style.armour_type.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-			style.armour_type.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
-		elseif fs.hb_text_alignment == "center" then
-			style.armour_type.offset[1] = -250 * scale
-			style.armour_type.default_offset[1] = -250 * scale
+		local text_alignment = fs.hb_text_alignment or "left"
+		style.armour_type.text_horizontal_alignment = text_alignment
+		if text_alignment == "right" then
+			style.armour_type.default_offset[1] = fs.hb_size_width * 0.5 - 500
+		elseif text_alignment == "center" then
+			style.armour_type.default_offset[1] = -250
 		else
-			style.armour_type.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
-			style.armour_type.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.armour_type.default_offset[1] = -fs.hb_size_width * 0.5
 		end
 	end
 end
