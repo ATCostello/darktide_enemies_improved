@@ -94,6 +94,7 @@ local insert_fonts = function(localisation_table)
 		local new_localised_readable_text = {
 			en = apply_font_to_text(text, data.value),
 			ru = apply_font_to_text(text, data.value), -- одинаково для всех языков
+			["zh-cn"] = apply_font_to_text(text, data.value),
 		}
 		localisation_table[data.value] = new_localised_readable_text
 	end
@@ -200,6 +201,7 @@ local insert_enemy_names = function(localisation_table)
 			local new_localised_readable_text = {
 				en = Localize(data.text),
 				ru = Localize(data.text),
+				["zh-cn"] = Localize(data.text),
 			}
 
 			if not localisation_table[data.text] then
@@ -2395,6 +2397,11 @@ table.insert(localisations_to_add, {
 		ru = "Выберите форму, рисуемую позади иконки типа врага.",
 		["zh-cn"] = "选择敌人类型图标背后绘制的形状。",
 	},
+	healthbar_type_icon_offset_tooltip = {
+		en = "X/Y offset of the healthbar type icon",
+		ru = "Смещение по X/Y для иконки типа на полоске здоровья",
+		["zh-cn"] = "类型图标的X/Y偏移",
+	},
 	healthbar_icon_shape_hexagon = {
 		en = "Hexagon (default)",
 		ru = "Шестиугольник (по умолчанию)",
@@ -2419,6 +2426,11 @@ table.insert(localisations_to_add, {
 		en = "Circle",
 		ru = "Круг",
 		["zh-cn"] = "圆形",
+	},
+	healthbar_type_icon_background_colour_tooltip = {
+		en = "Background colour of the healthbar type icon",
+		ru = "Цвет фона иконки типа на полоске здоровья",
+		["zh-cn"] = "血条类型图标背景颜色",
 	},
 	show_dn_in_range_only = {
 		en = "Only show damage numbers in Meat Grinder?",
@@ -3588,6 +3600,99 @@ table.insert(localisations_to_add, {
 	},
 })
 
+-- colour picker (_rgb) labels missing from above groups
+table.insert(localisations_to_add, {
+	debuff_group_colour_rgb = {
+		en = "Debuff Icon Colour",
+		ru = "Цвет иконки ослаблений",
+		["zh-cn"] = "减益图标颜色",
+	},
+	debuff_max_stacks_colour_rgb = {
+		en = "Debuff Max Stacks Colour",
+		ru = "Цвет максимальных стаков ослаблений",
+		["zh-cn"] = "减益最大层数颜色",
+	},
+	hb_ghostbar_colour_rgb = {
+		en = "Ghostbar colour",
+		ru = "Цвет призрачной полосы",
+		["zh-cn"] = "延迟血条颜色",
+	},
+	healthbar_icon_type_colour_rgb = {
+		en = "Healthbar Icon Colour",
+		ru = "Цвет иконки полоски здоровья",
+		["zh-cn"] = "血条图标颜色",
+	},
+	healthbar_individual_colour_rgb = {
+		en = "Healthbar colour (Enemy Specific)",
+		ru = "Цвет полоски здоровья (для конкретного врага)",
+		["zh-cn"] = "血条颜色（敌人专属）",
+	},
+	healthbar_type_colour_rgb = {
+		en = "Healthbar colour (Enemy Type Specific)",
+		ru = "Цвет полоски здоровья (для данного типа)",
+		["zh-cn"] = "血条颜色（类型专属）",
+	},
+	healthbar_type_icon_background_colour_rgb = {
+		en = "Healthbar Icon Background Colour",
+		ru = "Цвет фона иконки полоски здоровья",
+		["zh-cn"] = "血条图标背景颜色",
+	},
+	healthbar_weakened_colour_rgb = {
+		en = "Weakened colour",
+		ru = "Цвет для ослабленных",
+		["zh-cn"] = "被削弱颜色",
+	},
+	main_font_colour_rgb = {
+		en = "Colour for main text font (Global)",
+		ru = "Цвет шрифта основного текста (глобально)",
+		["zh-cn"] = "主文本颜色（全局）",
+	},
+	marker_bg_colour_rgb = {
+		en = "Colour for marker background",
+		ru = "Цвет фона маркера",
+		["zh-cn"] = "标记背景颜色",
+	},
+	outline_individual_colour_rgb = {
+		en = "Outline colour (Enemy Specific)",
+		ru = "Цвет контура (для конкретного врага)",
+		["zh-cn"] = "轮廓颜色（敌人专属）",
+	},
+	outline_type_colour_rgb = {
+		en = "Outline colour (Enemy Type Specific)",
+		ru = "Цвет контура (для данного типа)",
+		["zh-cn"] = "轮廓颜色（类型专属）",
+	},
+	secondary_font_colour_rgb = {
+		en = "Colour for secondary text font (Global)",
+		ru = "Цвет второстепенного текста (глобально)",
+		["zh-cn"] = "次要文本颜色（全局）",
+	},
+	toughness_colour_rgb = {
+		en = "Toughness Bar Colour",
+		ru = "Цвет полоски стойкости",
+		["zh-cn"] = "坚韧条颜色",
+	},
+})
+
+-- text alignment options
+table.insert(localisations_to_add, {
+	left = {
+		en = "Left",
+		ru = "По левому краю",
+		["zh-cn"] = "左对齐",
+	},
+	center = {
+		en = "Center",
+		ru = "По центру",
+		["zh-cn"] = "居中",
+	},
+	right = {
+		en = "Right",
+		ru = "По правому краю",
+		["zh-cn"] = "右对齐",
+	},
+})
+
 -- add localisations to main map
 for i = 1, #localisations_to_add do
 	if localisations_to_add[i] then
@@ -4132,44 +4237,75 @@ local insert_editor_localisation = function(localisation_table)
 
 		editor_settings = {
 			en = "Live 3D Editor",
+			ru = "Живой 3D-редактор",
+			["zh-cn"] = "实时3D编辑器",
 		},
 		open_editor = {
 			en = "Open Live Editor",
+			ru = "Открыть живой редактор",
+			["zh-cn"] = "打开实时编辑器",
 		},
 		open_editor_tooltip = {
 			en = "Click this button to open the live 3d editor for Enemies Improved directly from the settings page.",
+			ru = "Нажмите эту кнопку, чтобы открыть живой 3D-редактор Enemies Improved прямо со страницы настроек.",
+			["zh-cn"] = "点击此按钮，在设置页面直接打开 Enemies Improved 的实时3D编辑器。",
 		},
 		open_editor_keybind = {
 			en = "Keybind to open Live Editor",
+			ru = "Горячая клавиша для открытия редактора",
+			["zh-cn"] = "打开实时编辑器的按键绑定",
 		},
 		open_editor_keybind_tooltip = {
 			en = "Set a hotkey to open the live 3d editor for enemies improved from wherever you want.",
+			ru = "Установите горячую клавишу для открытия живого 3D-редактора Enemies Improved из любого места.",
+			["zh-cn"] = "设置从任意位置打开 Enemies Improved 实时3D编辑器的快捷键。",
 		},
 
 		damage_number_crit_colour_rgb = {
 			en = "Critical Damage Colour",
+			ru = "Цвет критического урона",
+			["zh-cn"] = "暴击伤害颜色",
 		},
 		damage_number_weakspot_colour_rgb = {
 			en = "Weakspot Damage Colour",
+			ru = "Цвет урона по уязвимому месту",
+			["zh-cn"] = "弱点伤害颜色",
 		},
 		outline_tagged_colour_rgb = {
 			en = "Tagged Outline Colour",
+			ru = "Цвет контура отмеченного врага",
+			["zh-cn"] = "标记轮廓颜色",
 		},
 		outline_tagged_passive_colour_rgb = {
 			en = "Passive Tagged Outline Colour",
+			ru = "Цвет контура пассивно отмеченного врага",
+			["zh-cn"] = "队友标记轮廓颜色",
 		},
 		outline_companion_colour_rgb = {
 			en = "Companion's Tagged Outline Colour",
+			ru = "Цвет контура спутника",
+			["zh-cn"] = "随从标记轮廓颜色",
+		},
+		outlines_style = {
+			en = "Outline style",
+			ru = "Стиль контура",
+			["zh-cn"] = "轮廓样式",
 		},
 		outline_veteran_tagged_colour_rgb = {
 			en = "Veteran's Target Tagged Outline Colour",
+			ru = "Цвет контура цели Ветерана",
+			["zh-cn"] = "老兵标记轮廓颜色",
 		},
 
 		outline_specials_colour_rgb = {
 			en = "Special Attack Colour",
+			ru = "Цвет специальных атак",
+			["zh-cn"] = "特殊攻击颜色",
 		},
 		outline_stagger_colour_rgb = {
 			en = "Staggered Colour",
+			ru = "Цвет оглушения",
+			["zh-cn"] = "硬直颜色",
 		},
 	}
 

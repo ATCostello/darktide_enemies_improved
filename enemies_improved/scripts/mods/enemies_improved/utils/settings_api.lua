@@ -738,6 +738,16 @@ local TYPE_FIELDS = {
 		tooltip = "healthbar_type_show_dps_tooltip",
 		group = "damage",
 	},
+	{
+		key = "custom_name",
+		kind = "text",
+		id = "healthbar_%s_custom_name",
+		label = "healthbar_type_custom_name",
+		tooltip = "healthbar_type_custom_name_tooltip",
+		group = "healthbar",
+		default = "",
+		max_length = 48,
+	},
 }
 
 local BREED_FIELDS = {
@@ -891,6 +901,16 @@ local BREED_FIELDS = {
 		label = "healthbar_individual_show_dps",
 		tooltip = "healthbar_individual_show_dps_tooltip",
 		group = "damage",
+	},
+	{
+		key = "custom_name",
+		kind = "text",
+		id = "healthbar_%s_custom_name",
+		label = "healthbar_individual_custom_name",
+		tooltip = "healthbar_individual_custom_name_tooltip",
+		group = "healthbar",
+		default = "",
+		max_length = 48,
 	},
 }
 

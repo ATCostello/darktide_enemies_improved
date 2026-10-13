@@ -25,16 +25,17 @@ local COL = {
 local SEL_EDGE = { 255, 255, 214, 96 }
 local SEL_FILL = { 205, 120, 96, 30 }
 
-local SLOT_KEYS = { "lbl", "hov", "btn", "dec", "sl", "inc", "val", "tg", "sw", "rs" }
+local SLOT_KEYS = { "lbl", "hov", "btn", "dec", "sl", "inc", "val", "tg", "sw", "rs", "txt" }
 local VIS = {
-	header = { true, false, false, false, false, false, false, false, false, false },
-	note = { true, true, true, false, false, false, false, false, false, false },
-	bool = { true, true, true, false, false, false, false, false, false, true },
-	enum = { true, true, true, false, false, false, false, false, false, true },
-	tri = { true, true, true, false, false, false, false, false, false, true },
-	num = { true, true, false, true, true, true, true, false, false, true },
-	int = { true, true, false, true, true, true, true, false, false, true },
-	color = { true, true, false, false, false, false, false, true, true, true },
+	header = { true, false, false, false, false, false, false, false, false, false, false },
+	note = { true, true, true, false, false, false, false, false, false, false, false },
+	bool = { true, true, true, false, false, false, false, false, false, true, false },
+	enum = { true, true, true, false, false, false, false, false, false, true, false },
+	tri = { true, true, true, false, false, false, false, false, false, true, false },
+	num = { true, true, false, true, true, true, true, false, false, true, false },
+	int = { true, true, false, true, true, true, true, false, false, true, false },
+	color = { true, true, false, false, false, false, false, true, true, true, false },
+	text = { true, true, false, false, false, false, false, false, false, false, true },
 }
 local FMT = { [0] = "%.0f", "%.1f", "%.2f", "%.3f", "%.4f" }
 
@@ -862,6 +863,24 @@ View._fill_slot = function(self, slot, row)
 		set_label(btn, confirming and row.confirm or row.button)
 		btn.content.hotspot.is_selected = confirming
 		btn.content.hotspot.double_click_callback = (row.confirm == nil) and slot.btn_cb or nil
+	elseif kind == "text" then
+		local txt = slot.txt
+		local value = row.get()
+		value = type(value) == "string" and value or ""
+		txt.content.input_text = value
+		txt.content.input_hotspot = txt.content.input_hotspot or {}
+		txt.content.hotspot = txt.content.hotspot or {}
+		txt.content.input_hotspot.parent = txt.content
+		txt.content.hotspot.parent = txt.content
+		txt.content.setting_value = value
+		txt.content.display_text = value
+		txt.content.max_length = row.max_length or 48
+		txt.content.placeholder_text = mod:localize(row.placeholder_text or "healthbar_custom_name_placeholder")
+		txt.content.show_length_limit = true
+		txt.content.disabled = dim and true or false
+		txt.content.hotspot.disabled = dim and true or false
+		txt.content.input_hotspot.disabled = dim and true or false
+		slot._was_text_writing = false
 	elseif kind == "num" or kind == "int" then
 		local v = row.get() or row.min
 		local sl = slot.sl
@@ -880,6 +899,119 @@ View._fill_slot = function(self, slot, row)
 			slot.tg.content.hotspot.is_selected = on
 		end
 	end
+end
+
+
+View._poll_text_inputs = function(self, input_service)
+	self.is_text_input_focused = false
+
+	local slots = self._slots
+	for i = 1, #slots do
+		local slot = slots[i]
+		local row = slot.row
+		local txt = slot.txt
+
+		if row and row.kind == "text" and txt then
+			local c = txt.content
+			c.input_hotspot = c.input_hotspot or {}
+			c.hotspot = c.hotspot or {}
+			c.input_hotspot.parent = c
+			c.hotspot.parent = c
+			c.max_length = c.max_length or row.max_length or 48
+
+			if c.is_writing then
+				self.is_text_input_focused = true
+			end
+
+			local was_writing = c._ei_was_writing == true
+			local finish_now = false
+
+			if c.is_writing and input_service then
+				local clicked_away = false
+
+				if input_service:get("left_pressed") then
+					clicked_away = not (c.input_hotspot.is_hover or c.hotspot.is_hover)
+				end
+
+				local pressed_accept = false
+				local pressed_cancel = false
+
+				pcall(function()
+					pressed_accept = input_service:get("execute") == true or input_service:get("confirm") == true
+				end)
+
+				pcall(function()
+					pressed_cancel = input_service:get("back") == true
+				end)
+
+				if clicked_away or pressed_accept or pressed_cancel then
+					finish_now = true
+
+					if pressed_cancel then
+						self._text_finished_cancel = true
+					end
+				end
+			end
+
+			if c.is_writing and finish_now then
+				c.is_writing = false
+			end
+
+			if was_writing and not c.is_writing then
+				local v = c.input_text
+				if type(v) ~= "string" then
+					v = tostring(v or "")
+				end
+
+				local valid = true
+
+				if c.max_length and Utf8 and Utf8.string_length(v) > c.max_length then
+					valid = false
+				end
+
+				if valid then
+					pcall(row.set, v)
+					c.setting_value = v
+					c.input_text = v
+					c.display_text = v
+				else
+					local current = row.get()
+					current = type(current) == "string" and current or ""
+
+					c.input_text = current
+					c.setting_value = current
+					c.display_text = current
+				end
+			end
+
+			if not c.is_writing then
+				local current = row.get()
+				current = type(current) == "string" and current or ""
+
+				if c.setting_value ~= current then
+					c.input_text = current
+					c.setting_value = current
+					c.display_text = current
+				end
+			end
+
+			c._ei_was_writing = c.is_writing == true
+		end
+	end
+end
+
+View._writing_input = function(self)
+	local slots = self._slots
+
+	for i = 1, #slots do
+		local txt = slots[i].txt
+
+		if txt and txt.content.is_writing then
+			return txt.content
+		end
+	end
+
+	return nil
 end
 
 View._list_total = function(self)
@@ -1664,6 +1796,9 @@ View.update = function(self, dt, t, input_service, view_data)
 		end
 	end
 	local pass_input, pass_draw = View.super.update(self, dt, t, input_service)
+	if self._ready then
+		self:_poll_text_inputs(input_service)
+	end
 	if self._ready and self._draw_dirty then
 		self:_rebuild_draw()
 	end
@@ -1705,7 +1840,9 @@ View._handle_input = function(self, input_service, dt, t)
 		return
 	end
 
-	if input_service:get("back") then
+	if self._text_finished_cancel then
+		self._text_finished_cancel = nil
+	elseif (not self:_writing_input()) and input_service:get("back") then
 		self:cb_close()
 		return
 	end

@@ -284,7 +284,7 @@ PAGE.healthbars = function(B, S)
 		"hb_text_show_max_health", "hb_text_show_damage",
 	}, HB)
 	B.sub("ei_sec_type_icon")
-	B.settings({ "healthbar_type_icon_enable", "healthbar_type_icon_scale", "healthbar_type_icon_background_shape" }, HB)
+	B.settings({ "healthbar_type_icon_enable", "healthbar_type_icon_scale", "healthbar_type_icon_background_shape", "healthbar_type_icon_background_colour_rgb" }, HB)
 	B.sub("ei_sec_when")
 	B.settings({
 		"hb_hide_after_no_damage", "hb_damage_show_only_latest", "hb_damage_show_only_latest_value",
@@ -454,10 +454,10 @@ PAGE.debuffs = function(B, S)
 		max_colour.label = LOC("ei_lbl_max_stacks_colour")
 	end
 	B.sub("ei_sec_debuff_bulk")
-	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_on", "ei_btn_all_on", true))
-	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_off", "ei_btn_all_off", false))
 	B.grid("ei_sec_debuff_toggles", "toggles", debuff_toggle_cells(S, DB))
 	B.grid("ei_sec_debuff_colours", "colours", debuff_colour_cells(S, DB))
+	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_on", "ei_btn_all_on", true))
+	B.add(debuff_toggle_all_row(S, "ei_debuff_toggle_all_off", "ei_btn_all_off", false))
 end
 
 PAGE.markers = function(B, S)
@@ -534,7 +534,7 @@ end
 -- Enemies page
 -- ---------------------------------------------------------------------------
 
-local KIND_OF = { bool = "bool", num = "num", int = "int", rgb = "color", tri = "tri" }
+local KIND_OF = { bool = "bool", num = "num", int = "int", rgb = "color", tri = "tri", text = "text" }
 
 local function master_of(field_key)
 	if field_key:find("^outline") or field_key:find("^odist") then
@@ -618,6 +618,8 @@ Pages.enemy_rows = function(scope, key, hooks)
 			max = f.max,
 			step = f.step,
 			decimals = f.decimals,
+			max_length = f.max_length,
+			placeholder_text = f.placeholder or "healthbar_custom_name_placeholder",
 			has_alpha = false,
 			get = function()
 				return S.ov_get(scope, key, fk)

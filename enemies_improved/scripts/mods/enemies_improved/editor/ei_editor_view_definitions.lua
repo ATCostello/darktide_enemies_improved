@@ -2,6 +2,10 @@ local UIWidget = require("scripts/managers/ui/ui_widget")
 local UIResolution = require("scripts/managers/ui/ui_resolution")
 local ButtonPassTemplates = require("scripts/ui/pass_templates/button_pass_templates")
 
+local mod = get_mod("enemies_improved")
+local dmf = get_mod("DMF")
+local TextInputUtils = dmf and dmf:io_dofile("dmf/scripts/mods/dmf/modules/ui/options/text_input_utils") or nil
+
 local PANEL_W, PANEL_H = 1760, 920
 
 local L = {
@@ -332,6 +336,80 @@ for i = 1, L.CHIPS do
 	widget_definitions["chip_" .. i] = button_widget("chip_" .. i, 0, -328, 100, 30, 14, true)
 end
 
+
+local function text_input_widget(id, x, y, w, h)
+	local passes = TextInputUtils and TextInputUtils.clone_simple_input_field() or {}
+	if #passes == 0 then
+		passes = {
+			{ pass_type = "hotspot", content_id = "hotspot" },
+			{ pass_type = "rect", style_id = "background" },
+		}
+	end
+	for i = 1, #passes do
+		local pass = passes[i]
+		local sid = pass.style_id or pass.value_id
+
+		if pass.pass_type == "hotspot" then
+			pass.content_id = "input_hotspot"
+			pass.style_id = "input_hotspot"
+			pass.content = { use_is_focused = true }
+			sid = pass.style_id
+		end
+
+		if sid ~= "text" then
+			pass.style = pass.style or {}
+			pass.style.offset = { 0, 0, 0 }
+
+			if sid == "background" or sid == "focused" or pass.pass_type == "hotspot" or sid == "input_hotspot" then
+				pass.style.size = { w, h }
+			elseif sid == "baseline" then
+				pass.style.size = { w, 2 }
+				pass.style.vertical_alignment = "top"
+				pass.style.offset = { 0, h - 2, 0 }
+			elseif sid == "limit_text" then
+				pass.visibility_function = function (content)
+					return content.max_length and content.show_length_limit
+				end
+			end
+
+			if pass.pass_type == "text" or pass.pass_type == "text_input" then
+				pass.style.size = { w - 16, h }
+				pass.style.offset = { 8, 0, 0 }
+				pass.style.text_vertical_alignment = "center"
+				pass.style.font_size = 13
+				pass.style.font_type = "proxima_nova_medium"
+
+				if sid ~= "limit_text" then
+					pass.style.text_horizontal_alignment = "left"
+				end
+			end
+
+			if sid == "focused" then
+				pass.visibility_function = function (content)
+					local hotspot = content.input_hotspot
+					return not content.disabled and (hotspot and (hotspot.is_focused or hotspot.is_selected))
+				end
+			end
+		end
+	end
+
+	passes[#passes + 1] = {
+		pass_type = "logic",
+		value = function (pass_, renderer_, style_, content)
+			local hotspot = content.hotspot
+			local input_hotspot = content.input_hotspot
+
+			if hotspot and input_hotspot then
+				input_hotspot.force_disabled = hotspot.force_disabled
+				input_hotspot.is_focused = hotspot.is_focused
+			end
+		end,
+	}
+
+	node(id, x, y, w, h, 3)
+	return UIWidget.create_definition(passes, id, { input_text = "", input_hotspot = {}, hotspot = {} }, { w, h })
+end
+
 local function row_y(i)
 	return L.LIST_TOP + L.PITCH / 2 + (i - 1) * L.PITCH
 end
@@ -385,6 +463,7 @@ for i = 1, L.ROWS do
 	}, p .. "lbl", { text = "" })
 
 	widget_definitions[p .. "btn"] = button_widget(p .. "btn", cx(X.btn[1], X.btn[2]), y, X.btn[2], 36, 16, true)
+	widget_definitions[p .. "txt"] = text_input_widget(p .. "txt", cx(X.btn[1], X.btn[2]), y, X.btn[2], 36)
 	widget_definitions[p .. "dec"] = button_widget(p .. "dec", cx(X.dec[1], X.dec[2]), y, X.dec[2], 32, 20)
 	widget_definitions[p .. "sl"] = slider_widget(p .. "sl", cx(X.sl[1], X.sl[2]), y, X.sl[2], 32)
 	widget_definitions[p .. "inc"] = button_widget(p .. "inc", cx(X.inc[1], X.inc[2]), y, X.inc[2], 32, 20)

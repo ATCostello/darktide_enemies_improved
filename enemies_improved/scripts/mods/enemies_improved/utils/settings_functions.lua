@@ -270,7 +270,7 @@ mod.breed_colour_preset_table = function(preset)
 		monster = { 255, 180, 0, 255 },
 		sniper = { 255, 255, 0, 0 },
 		far = { 255, 0, 255, 120 },
-		special = { 255, 255, 0, 255 },
+		special = { 255, 40, 230, 230 },
 		enemy = { 255, 200, 200, 200 },
 		shield = { 255, 200, 200, 200 },
 	}
@@ -289,7 +289,7 @@ mod.set_breed_colours = function()
 			monster = { 255, 180, 0, 255 },
 			sniper = { 255, 255, 0, 0 },
 			far = { 255, 0, 255, 120 },
-			special = { 255, 255, 0, 255 },
+			special = { 255, 40, 230, 230 },
 			enemy = { 255, 200, 200, 200 },
 			shield = { 255, 200, 200, 200 },
 		}
@@ -319,7 +319,7 @@ mod.set_breed_colours = function()
 		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
 		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
 		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
-		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 40, 230, 230
 		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
 		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
 	else
@@ -332,7 +332,7 @@ mod.set_breed_colours = function()
 		bc.monster[1], bc.monster[2], bc.monster[3], bc.monster[4] = 255, 180, 0, 255
 		bc.sniper[1], bc.sniper[2], bc.sniper[3], bc.sniper[4] = 255, 255, 0, 0
 		bc.far[1], bc.far[2], bc.far[3], bc.far[4] = 255, 0, 255, 120
-		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 255, 0, 255
+		bc.special[1], bc.special[2], bc.special[3], bc.special[4] = 255, 40, 230, 230
 		bc.enemy[1], bc.enemy[2], bc.enemy[3], bc.enemy[4] = 255, 200, 200, 200
 		bc.shield[1], bc.shield[2], bc.shield[3], bc.shield[4] = 255, 200, 200, 200
 	end

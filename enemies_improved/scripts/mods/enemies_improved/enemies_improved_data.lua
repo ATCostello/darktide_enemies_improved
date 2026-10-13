@@ -344,6 +344,8 @@ local healthbar_colour_presets = {
 mod.ICON_BACKGROUND_SHAPES = {
 	hexagon = {
 		value = "content/ui/materials/frames/talents/talent_icon_container",
+		scale = 1,
+		y_offset = 0,
 		material_values = {
 			frame = "content/ui/textures/frames/horde/hex_frame_horde",
 			icon_mask = "content/ui/textures/frames/horde/hex_frame_horde_mask",
@@ -353,15 +355,23 @@ mod.ICON_BACKGROUND_SHAPES = {
 	},
 	square = {
 		value = "content/ui/materials/icons/list_buttons/box",
+		scale = 1.5,
+		y_offset = 0,
 	},
 	diamond = {
 		value = "content/ui/materials/icons/difficulty/difficulty_indicator_full",
+		scale = 1.5,
+		y_offset = 0.2,
 	},
 	shield = {
 		value = "content/ui/materials/icons/presets/preset_04",
+		scale = 1.5,
+		y_offset = 2,
 	},
 	circle = {
 		value = "content/ui/materials/backgrounds/scanner/scanner_drill_circle_filled",
+		scale = 1,
+		y_offset = 0,
 	},
 }
 
@@ -375,7 +385,7 @@ mod.ICON_COLOURS = {
 	monster = { 255, 180, 0, 255 },
 	sniper = { 255, 255, 0, 0 },
 	far = { 255, 0, 255, 120 },
-	special = { 255, 255, 0, 255 },
+	special = { 255, 40, 230, 230 },
 	enemy = { 255, 200, 200, 200 },
 	glow = { 255, 200, 170, 80 },
 	glow_default = { 255, 200, 170, 80 },
@@ -479,7 +489,7 @@ mod.OUTLINE_COLOURS = {
 	monster = { 255, 180/4, 0, 255/4 },
 	sniper = { 255, 255/4, 0, 0 },
 	far = { 255, 0, 255/4, 120/4 },
-	special = { 255, 255/4, 0, 255/4 },
+	special = { 255, 40/4, 230/4, 230/4 },
 	enemy = { 255, 200/4, 200/4, 200/4 },
 	shield = { 255, 50/4, 150/4, 255/4 },
 }
@@ -1709,6 +1719,34 @@ table.insert(mod.settings_widgets, {
 				{ text = "healthbar_icon_shape_circle", value = "circle" },
 			},
 			tooltip = "healthbar_type_icon_background_shape_tooltip",
+		},
+		{
+			setting_id = "healthbar_type_icon_background_colour_R",
+			type = "numeric",
+			default_value = 15,
+			range = { 0, 255 },
+			tooltip = "healthbar_type_icon_background_colour_tooltip",
+		},
+		{
+			setting_id = "healthbar_type_icon_background_colour_G",
+			type = "numeric",
+			default_value = 15,
+			range = { 0, 255 },
+			tooltip = "healthbar_type_icon_background_colour_tooltip",
+		},
+		{
+			setting_id = "healthbar_type_icon_background_colour_B",
+			type = "numeric",
+			default_value = 15,
+			range = { 0, 255 },
+			tooltip = "healthbar_type_icon_background_colour_tooltip",
+		},
+		{
+			setting_id = "healthbar_type_icon_background_colour_A",
+			type = "numeric",
+			default_value = 255,
+			range = { 0, 255 },
+			tooltip = "healthbar_type_icon_background_colour_tooltip",
 		},
 	},
 })

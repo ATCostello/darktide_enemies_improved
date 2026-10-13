@@ -378,14 +378,6 @@ mod.enemy_custom_name = function(breed, breed_type)
 		end
 	end
 
-	if breed_type then
-		local custom = mod:get("healthbar_" .. breed_type .. "_custom_name")
-
-		if type(custom) == "string" and custom ~= "" then
-			return custom
-		end
-	end
-
 	return nil
 end
 

@@ -264,6 +264,12 @@ local function get_text_option(content, option)
 	local breed = content.breed
 
 	if option == "enemy_type" then
+		local custom = mod:get("healthbar_" .. tostring(breed_type) .. "_custom_name")
+
+		if type(custom) == "string" and custom ~= "" then
+			return custom
+		end
+
 		return mod.custom_localize(breed_type) or ""
 	elseif option == "enemy_name" then
 		local name = mod.enemy_custom_name and mod.enemy_custom_name(breed, breed_type)
@@ -393,6 +399,8 @@ local function get_text_option(content, option)
 end
 
 local function apply_breed_style(widget, breed, breed_type, scale)
+	scale = scale or 1
+
 	local content = widget.content
 	local style = widget.style
 
@@ -423,13 +431,42 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 	local icon_glow_colour = mod.ICON_COLOURS["glow"]
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
 
+	local shape_scale = 1
+	local shape_y_offset = 0
+
 	-- apply values to relevant icon
+	local icon_offset_x_target = 0
+	local icon_offset_y_target = 0
+
 	local function apply_icon_settings(content_icon, style_icon)
 		if content._last_icon_scale == scale then
+			local dx = icon_offset_x_target - (content._last_icon_offset_x or 0)
+			local dy = icon_offset_y_target - (content._last_icon_offset_y or 0)
+
+			if dx ~= 0 or dy ~= 0 then
+				style_icon.offset[1] = (style_icon.offset[1] or 0) + dx
+				style.icon_background1.offset[1] = (style.icon_background1.offset[1] or 0) + dx
+				style.icon_background.offset[1] = (style.icon_background.offset[1] or 0) + dx
+			end
+			style_icon.offset[2] = (style_icon.default_offset[2] or 0) + shape_y_offset + icon_offset_y_target
+			style.icon_background1.offset[2] = (style.icon_background1.default_offset[2] or 0)
+				+ shape_y_offset
+				+ icon_offset_y_target
+			style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0)
+				+ shape_y_offset
+				+ icon_offset_y_target
+
+			content._last_icon_offset_x = icon_offset_x_target
+			content._last_icon_offset_y = icon_offset_y_target
+			content._fs_gen = fs._gen
+
 			return content_icon, style_icon
 		end
 
 		content._last_icon_scale = scale
+
+		content._last_icon_offset_x = icon_offset_x_target
+		content._last_icon_offset_y = icon_offset_y_target
 
 		content_icon = icon_enabled
 		content.icon_enabled = content_icon
@@ -445,24 +482,36 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 		style_icon.size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * scale
 		style.icon_background1.size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * scale
 		style.icon_background1.size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * scale
-		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale) * scale
-		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale) * scale
+		style.icon_background.size[1] = (style.icon_background.default_size[1] * icon_full_scale * shape_scale) * scale
+		style.icon_background.size[2] = (style.icon_background.default_size[2] * icon_full_scale * shape_scale) * scale
 
 		style_icon.default_size[1] = ((style_icon.default_size[1] * icon_scale) * icon_full_scale) * scale
 		style_icon.default_size[2] = ((style_icon.default_size[2] * icon_scale) * icon_full_scale) * scale
 		style.icon_background1.default_size[1] = (style.icon_background1.default_size[1] * icon_full_scale) * scale
 		style.icon_background1.default_size[2] = (style.icon_background1.default_size[2] * icon_full_scale) * scale
-		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale) * scale
-		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale) * scale
+		style.icon_background.default_size[1] = (style.icon_background.default_size[1] * icon_full_scale * shape_scale)
+			* scale
+		style.icon_background.default_size[2] = (style.icon_background.default_size[2] * icon_full_scale * shape_scale)
+			* scale
 
-		style_icon.offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * scale
+		style_icon.offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * scale + icon_offset_x_target
 		style_icon.default_offset[1] = style_icon.default_offset[1] - (16 * icon_full_scale) * scale
-		style.icon_background1.offset[1] = style.icon_background1.default_offset[1] - (16 * icon_full_scale) * scale
+		style.icon_background1.offset[1] = style.icon_background1.default_offset[1]
+			- (16 * icon_full_scale) * scale
+			+ icon_offset_x_target
 		style.icon_background1.default_offset[1] = style.icon_background1.default_offset[1]
 			- (16 * icon_full_scale) * scale
-		style.icon_background.offset[1] = style.icon_background.default_offset[1] - (16 * icon_full_scale) * scale
+		style.icon_background.offset[1] = style.icon_background.default_offset[1]
+			- (16 * icon_full_scale) * scale
+			+ icon_offset_x_target
 		style.icon_background.default_offset[1] = style.icon_background.default_offset[1]
 			- (16 * icon_full_scale) * scale
+
+		style_icon.offset[2] = (style_icon.default_offset[2] or 0) + shape_y_offset
+		style.icon_background1.offset[2] = (style.icon_background1.default_offset[2] or 0) + shape_y_offset
+		style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+
+		content._fs_gen = fs._gen
 
 		return content_icon, style_icon
 	end
@@ -470,6 +519,9 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 	-- icon background shape
 	local shape = mod.ICON_BACKGROUND_SHAPES[fs.healthbar_type_icon_background_shape]
 		or mod.ICON_BACKGROUND_SHAPES.hexagon
+
+	shape_scale = shape.scale or 1
+	shape_y_offset = shape.y_offset or 0
 
 	content.icon_background_shape_value = shape.value
 
@@ -479,6 +531,26 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 		mv.icon_mask = shape.material_values.icon_mask
 		mv.intensity = shape.material_values.intensity
 		mv.saturation = shape.material_values.saturation
+	end
+
+	style.icon_background.color[1] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[1]
+	) or 255
+	style.icon_background.color[2] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[2]
+	) or 15
+	style.icon_background.color[3] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[3]
+	) or 15
+	style.icon_background.color[4] = (
+		fs.healthbar_type_icon_background_colour and fs.healthbar_type_icon_background_colour[4]
+	) or 15
+
+	style.icon_background.offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+	style.icon_background.default_offset[2] = (style.icon_background.default_offset[2] or 0) + shape_y_offset
+
+	if content._fs_gen ~= fs._gen then
+		content._last_icon_scale = nil
 	end
 
 	-- do stuff per breed type
@@ -574,12 +646,6 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 			ghost_color[3] = ghost_rgb[3] * fs.hb_ghostbar_opacity
 			ghost_color[4] = ghost_rgb[4] * fs.hb_ghostbar_opacity
 		end
-	end
-
-	local icon_offset_y = 0
-
-	if style.icon_elite.color[1] > 0 then
-		style.icon_elite.offset[2] = icon_offset_y
 	end
 
 	-- update damage number settings
@@ -755,6 +821,20 @@ local function apply_state_body(widget, scale, alert_active)
 		end
 
 		style.header_text.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.header_text.size[1] = 500 * scale
+		style.header_text.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.header_text.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.header_text.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.header_text.offset[1] = -250 * scale
+			style.header_text.default_offset[1] = -250 * scale
+		else
+			style.header_text.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.header_text.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
 	end
 
 	if fs.hb_text_bottom_left_01 then
@@ -774,6 +854,20 @@ local function apply_state_body(widget, scale, alert_active)
 			style.health_counter.text_color[4] = fs.main_colour[4]
 		end
 		style.health_counter.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.health_counter.size[1] = 500 * scale
+		style.health_counter.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.health_counter.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.health_counter.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.health_counter.offset[1] = -250 * scale
+			style.health_counter.default_offset[1] = -250 * scale
+		else
+			style.health_counter.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.health_counter.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
 	end
 
 	if fs.hb_text_bottom_left_02 then
@@ -793,6 +887,20 @@ local function apply_state_body(widget, scale, alert_active)
 			style.armour_type.text_color[4] = fs.main_colour[4]
 		end
 		style.armour_type.text_horizontal_alignment = fs.hb_text_alignment
+
+		style.armour_type.size[1] = 500 * scale
+		style.armour_type.default_size[1] = 500 * scale
+
+		if fs.hb_text_alignment == "right" then
+			style.armour_type.offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+			style.armour_type.default_offset[1] = (fs.hb_size_width + (8 * 1 - scale)) * 0.5 * scale - 500 * scale
+		elseif fs.hb_text_alignment == "center" then
+			style.armour_type.offset[1] = -250 * scale
+			style.armour_type.default_offset[1] = -250 * scale
+		else
+			style.armour_type.offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+			style.armour_type.default_offset[1] = (-fs.hb_size_width + (-8 * 1 - scale)) * 0.5 * scale
+		end
 	end
 end
 
@@ -946,6 +1054,40 @@ template.push_damage_number = push_damage_number
 template.apply_state = function(widget, scale, dt, t, alert_active)
 	widget.content.draw_hb = true
 	apply_state_body(widget, scale, alert_active)
+
+	-- Keep text labels anchored to the healthbar at the current distance scale.
+	do
+		local content = widget.content
+		local style = widget.style
+		local alignment = fs.hb_text_alignment or "left"
+
+		local function anchor_text(text_style)
+			if not text_style then
+				return
+			end
+
+			text_style.text_horizontal_alignment = alignment
+
+			text_style.size[1] = 500
+			text_style.default_size[1] = 500
+
+			if alignment == "right" then
+				text_style.offset[1] = fs.hb_size_width * 0.5 - 500
+				text_style.default_offset[1] = fs.hb_size_width * 0.5 - 500
+			elseif alignment == "center" then
+				text_style.offset[1] = -250
+				text_style.default_offset[1] = -250
+			else
+				text_style.offset[1] = -fs.hb_size_width * 0.5
+				text_style.default_offset[1] = -fs.hb_size_width * 0.5
+			end
+		end
+
+		anchor_text(style.header_text)
+		anchor_text(style.health_counter)
+		anchor_text(style.armour_type)
+	end
+
 	apply_built_scale(widget, scale)
 end
 

@@ -48,6 +48,7 @@ mod.build_frame_settings = function(dt)
 	local fs = mod.frame_settings
 
 	fs.dt = dt or 0
+	fs._gen = (fs._gen or 0) + 1
 
 	fs.mod_enabled = mod:get("mod_enabled")
 	fs.global_scale = mod:get("global_scale") or 1
@@ -272,6 +273,14 @@ mod.build_frame_settings = function(dt)
 	fs.hb_gap_padding_scale = mod:get("hb_gap_padding_scale") * fs.global_scale
 	fs.healthbar_type_icon_scale = (mod:get("healthbar_type_icon_scale") or 1) * fs.global_scale
 	fs.healthbar_type_icon_background_shape = mod:get("healthbar_type_icon_background_shape") or "hexagon"
+	local ibr = mod:get("healthbar_type_icon_background_colour_R")
+	local ibg = mod:get("healthbar_type_icon_background_colour_G")
+	local ibb = mod:get("healthbar_type_icon_background_colour_B")
+	local iba = mod:get("healthbar_type_icon_background_colour_A")
+	if not ibr or not ibg or not ibb then
+		ibr, ibg, ibb, iba = 15, 15, 15, 255
+	end
+	fs.healthbar_type_icon_background_colour = { iba or 255, ibr, ibg, ibb }
 	fs.hb_text_show_damage = mod:get("hb_text_show_damage")
 	fs.frame_type = mod:get("hb_frame")
 	fs.hb_padding_scale = mod:get("hb_padding_scale")
