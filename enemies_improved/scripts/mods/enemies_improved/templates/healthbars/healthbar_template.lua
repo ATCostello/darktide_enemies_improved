@@ -246,7 +246,9 @@ local function safe_was_crit(extension)
 		return false
 	end
 
-	local ok, was_crit = pcall(extension.was_hit_by_critical_hit_this_render_frame, extension)
+	local ok, was_crit = pcall(function()
+		return extension:was_hit_by_critical_hit_this_render_frame()
+	end)
 
 	return ok and was_crit or false
 end
@@ -1551,7 +1553,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content.hit_weakspot = false
 			end
 
-			content.was_critical = health_extension:was_hit_by_critical_hit_this_render_frame()
+			content.was_critical = safe_was_crit(health_extension)
 
 			local last_hit_world_position = health_extension:last_hit_world_position()
 
