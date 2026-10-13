@@ -308,6 +308,24 @@ function P3D.new(view)
 
 	pcall(self._spawn_lighting, self)
 
+	-- Remember every unit that exists before any enemy is spawned, so
+	-- _clear_subject can wipe only the spawned (and possibly orphaned)
+	-- units without touching level geometry, lights or the base rig.
+	local world = self.ws and self.ws:world()
+	local base = {}
+
+	if world then
+		local ok, units = pcall(World.units, world)
+
+		if ok and type(units) == "table" then
+			for i = 1, #units do
+				base[units[i]] = true
+			end
+		end
+	end
+
+	self._base_world_units = base
+
 	return self
 end
 
@@ -502,6 +520,39 @@ function P3D:_clear_subject()
 		pcall(spawner.remove_pending_units, spawner)
 	end
 
+	-- Robust fallback: physically destroy any units that appeared in the
+	-- world after creation (subject, attachment and failed-spawn units)
+	-- and were not already removed above. Multiple passes handle units that
+	-- owned children being destroyed first on a later pass.
+	local world = self.ws and self.ws:world()
+	local protected = self._base_world_units
+
+	if world then
+		local progress = true
+		local passes = 0
+
+		while progress and passes < 12 do
+			passes = passes + 1
+			progress = false
+
+			local ok, units = pcall(World.units, world)
+
+			if ok and type(units) == "table" then
+				for i = 1, #units do
+					local unit = units[i]
+
+					if Unit.alive(unit) and not (protected and protected[unit]) then
+						local dok = pcall(World.destroy_unit, world, unit)
+
+						if dok then
+							progress = true
+						end
+					end
+				end
+			end
+		end
+	end
+
 	self._parts = {}
 	self._spawned = nil
 	self._settle = nil
@@ -529,8 +580,7 @@ function P3D:destroy()
 		self.ws = nil
 	end
 
-	-- Release resource packages only after the world and its units are gone.
-	pcall(self._release_packages, self)
+	-- Packages are intentionally retained (see above).
 
 	pcall(set_pending, nil)
 end
@@ -1277,15 +1327,10 @@ function P3D:update(dt, t)
 		end
 	end
 
-	if self._streaming then
-		-- Never release package resources while the new subject is still
-		-- streaming: the engine may still touch their meshes/textures.
-		self._release_hold = math.max(self._release_hold or 0, 1)
-	elseif self._release_hold and self._release_hold > 0 then
-		self._release_hold = self._release_hold - 1
-	else
-		self:_flush_retired(RELEASE_PER_FRAME)
-	end
+	-- Deliberately do not release loaded resource packages. Unloading them
+	-- has repeatedly crashed the engine (refcount not zero) even after the
+	-- spawned units were deleted, so packages are retained for the whole
+	-- preview session and only freed when the game closes.
 
 	if state == "loading" and not self._spawned then
 		self._load_time = self._load_time + dt
