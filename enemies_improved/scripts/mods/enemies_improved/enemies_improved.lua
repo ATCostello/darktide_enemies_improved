@@ -933,14 +933,8 @@ mod.scan_enemies = function()
 
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 
-			local is_cluster_rep = false
-			if mod.frame_settings and mod.frame_settings.horde_clusters_enable then
-				local _cl = mod.get_horde_cluster_for_unit and mod.get_horde_cluster_for_unit(unit)
-				is_cluster_rep = _cl and _cl.rep_unit == unit
-			end
-
 			-- VIEW CONE FILTER
-			if forward_bonus <= 0 and not is_crosshair_target and not is_cluster_rep then
+			if forward_bonus <= 0 and not is_crosshair_target then
 				mod.force_remove_unit_markers(unit)
 
 				if mod._cleanup_unit_health_data then
@@ -953,7 +947,7 @@ mod.scan_enemies = function()
 			end
 
 			-- LOS FILTER
-			if physics_world_cache and not is_crosshair_target and not is_cluster_rep then
+			if physics_world_cache and not is_crosshair_target then
 				if not mod.has_line_of_sight(player_unit, unit, physics_world_cache, player_los_pos) then
 					mod.force_remove_unit_markers(unit)
 
@@ -1110,16 +1104,6 @@ mod.scan_enemies = function()
 					keep = mod.crosshair_aimed[unit] == true
 				end
 
-				-- Keep clustered horde representatives from being culled,
-				-- otherwise their healthbar anchor (and thus the cluster bar)
-				-- flickers in and out.
-				if not keep and mod.frame_settings and mod.frame_settings.horde_clusters_enable then
-					local cluster = mod.get_horde_cluster_for_unit(unit)
-					if cluster and cluster.rep_unit == unit then
-						keep = true
-					end
-				end
-
 				if keep then
 					local entry = mod.enemy_cache[unit]
 
@@ -1184,7 +1168,7 @@ end
 local CLUSTER_RADIUS = 10
 local CLUSTER_RADIUS_SQ = CLUSTER_RADIUS * CLUSTER_RADIUS
 local HASH_CELL_SIZE = CLUSTER_RADIUS
-local INV_HASH_CELL_SIZE = 1 / HASH_CELL_SIZE
+local INV_HASH_CELL_SIZE = 2 / HASH_CELL_SIZE
 local HORDE_MIN_UNITS_FOR_CLUSTER = fs.hb_horde_clusters_size or 8
 
 local function _build_horde_clusters(units, num_units)
@@ -1428,10 +1412,11 @@ local function _build_horde_clusters(units, num_units)
 				if width < 1.5 or height < 1.5 then
 					local rep = cluster_units[1]
 					if rep then
-						local wp = Unit.world_position(rep, 1, _pos_vec)
-						if wp then
-							cx = cx * 0.7 + wp.x * 0.3
-							cy = cy * 0.7 + wp.y * 0.3
+						local entry = mod.enemy_cache[rep]
+						local pos = entry and entry.pos
+						if pos then
+							cx = cx * 0.7 + pos.x * 0.3
+							cy = cy * 0.7 + pos.y * 0.3
 						end
 					end
 				end
@@ -2153,7 +2138,12 @@ mod.find_breed_category = function(unit)
 			return "disabler"
 		elseif tags.special and tags.sniper then
 			return "sniper"
-		elseif tags.elite and tags.far or tags.special and tags.far or tags.special and tags.close or tags.elite and tags.close then
+		elseif
+			tags.elite and tags.far
+			or tags.special and tags.far
+			or tags.special and tags.close
+			or tags.elite and tags.close
+		then
 			return "far"
 		elseif tags.elite then
 			return "elite"

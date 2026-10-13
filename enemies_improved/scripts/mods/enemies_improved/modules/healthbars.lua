@@ -72,16 +72,16 @@ mod.update_enemy_healthbars = function(entry, t)
 
 		if entry._ei_marker_created then
 			if not cluster or cluster.rep_unit ~= unit then
-				local marker_id = mod.enemy_healthbars[unit] or (entry.marker and entry.marker.id)
-				if marker_id then
-					Managers_event:trigger("remove_world_marker", marker_id)
-				end
+				--local marker_id = mod.enemy_healthbars[unit] or (entry.marker and entry.marker.id)
+				--if marker_id then
+				--	Managers_event:trigger("remove_world_marker", marker_id)
+				--end
 				mod.enemy_healthbars[unit] = nil
-				mod.enemy_markers[unit] = nil
-				mod.enemy_debuffs[unit] = nil
-				entry._ei_marker_created = false
-				entry._ei_marker_pending = nil
-				entry.marker = nil
+				--mod.enemy_markers[unit] = nil
+				--mod.enemy_debuffs[unit] = nil
+				--entry._ei_marker_created = false
+				--entry._ei_marker_pending = nil
+				--entry.marker = nil
 				return
 			end
 		end
