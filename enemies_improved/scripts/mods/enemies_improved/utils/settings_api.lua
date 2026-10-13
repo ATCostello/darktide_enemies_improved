@@ -214,6 +214,10 @@ end
 S.colour_base = colour_base
 
 function S.colour_has_alpha(base)
+	if type(base) == "string" and base:match("outline_.*_colour") then
+		return true
+	end
+
 	local widget = schema[base .. "_rgb"]
 
 	return widget and widget.has_alpha or false
@@ -985,7 +989,7 @@ function S.ov_get(scope, key, field)
 	local id = ov_id(spec, key)
 
 	if spec.kind == "rgb" then
-		return read_colour(id, S.ov_default(scope, key, field), false)
+		return read_colour(id, S.ov_default(scope, key, field), S.colour_has_alpha(id))
 	end
 
 	local value = mod:get(id)
@@ -1007,7 +1011,7 @@ function S.ov_set(scope, key, field, value)
 	local kind = spec.kind
 
 	if kind == "rgb" then
-		return write_colour(id, value, false)
+		return write_colour(id, value, S.colour_has_alpha(id))
 	end
 
 	if kind == "bool" then
@@ -1041,7 +1045,7 @@ function S.ov_reset(scope, key)
 		local id = ov_id(spec, key)
 
 		if spec.kind == "rgb" then
-			write_colour(id, S.ov_default(scope, key, field), false)
+			write_colour(id, S.ov_default(scope, key, field), S.colour_has_alpha(id))
 		elseif spec.kind == "tri" then
 			mod:set(id, tri_write(spec, S.ov_default(scope, key, field)))
 		elseif spec.nil_default and not (spec.alias and spec.alias[key]) then

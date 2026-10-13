@@ -390,14 +390,18 @@ mod.build_frame_settings = function(dt)
 	local r = mod:get("outline_stagger_colour_R")
 	local g = mod:get("outline_stagger_colour_G")
 	local b = mod:get("outline_stagger_colour_B")
+	local a = mod:get("outline_stagger_colour_A")
 
 	if not r or not g or not b then
 		r = 220
 		g = 220
 		b = 220
 	end
+	if not a then
+		a = 255
+	end
 
-	fs.outline_stagger_colour = ensure_array(fs.outline_stagger_colour, 255, r, g, b)
+	fs.outline_stagger_colour = ensure_array(fs.outline_stagger_colour, a, r, g, b)
 
 	-- DEBUFFS
 	fs.debuff_enable = mod:get("debuff_enable")

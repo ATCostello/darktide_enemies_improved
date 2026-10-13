@@ -859,7 +859,7 @@ function Preview:_outline_colour(fs)
 	then
 		local c = fs.outline_specials_colour
 
-		return c[2], c[3], c[4]
+		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
 	end
 
 	local stagger_enabled
@@ -873,13 +873,13 @@ function Preview:_outline_colour(fs)
 	if flags.stagger and stagger_enabled and pulse_on(time, fs.stagger_flash, fs.stagger_pulse_speed) then
 		local c = fs.outline_stagger_colour
 
-		return c[2], c[3], c[4]
+		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
 	end
 
 	if flags.tagged then
 		local c = self._tag_rgb
 
-		return c[2], c[3], c[4]
+		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
 	end
 
 	local outline = self._res and self._res.outline
@@ -887,7 +887,7 @@ function Preview:_outline_colour(fs)
 	if outline and outline.on and outline.rgb then
 		local c = outline.rgb
 
-		return c[2], c[3], c[4]
+		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
 	end
 
 	return nil

@@ -186,7 +186,7 @@ local function ov_colour_row(S, scope, key, label, colour_fk, toggle_fk, require
 		label = label,
 		tooltip = cf.tooltip_text,
 		requires = requires,
-		has_alpha = false,
+		has_alpha = S.colour_has_alpha(string.format(cf.id, key)),
 		get = function()
 			return S.ov_get(scope, key, colour_fk)
 		end,
@@ -626,7 +626,7 @@ Pages.enemy_rows = function(scope, key, hooks)
 			decimals = f.decimals,
 			max_length = f.max_length,
 			placeholder_text = f.placeholder or "healthbar_custom_name_placeholder",
-			has_alpha = false,
+			has_alpha = f.kind == "rgb" and S.colour_has_alpha(string.format(f.id, key)) or false,
 			get = function()
 				return S.ov_get(scope, key, fk)
 			end,

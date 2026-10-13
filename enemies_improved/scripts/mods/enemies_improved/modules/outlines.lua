@@ -621,6 +621,7 @@ mod.apply_enemy_outlines = function(settings)
 			local r = mod:get("outline_" .. breed .. "_colour_R")
 			local g = mod:get("outline_" .. breed .. "_colour_G")
 			local b = mod:get("outline_" .. breed .. "_colour_B")
+			local a = mod:get("outline_" .. breed .. "_colour_A")
 
 			-- initialise to defaults if nil values...
 			if r == nil or g == nil or b == nil then
@@ -630,6 +631,10 @@ mod.apply_enemy_outlines = function(settings)
 				mod:set("outline_" .. breed .. "_colour_G", g)
 				b = mod.OUTLINE_COLOURS_DEFAULT[breed][4]
 				mod:set("outline_" .. breed .. "_colour_B", b)
+				if a == nil then
+					a = mod.OUTLINE_COLOURS_DEFAULT[breed][1] or 255
+					mod:set("outline_" .. breed .. "_colour_A", a)
+				end
 			end
 
 			if enabled then
@@ -642,10 +647,13 @@ mod.apply_enemy_outlines = function(settings)
 				if not b then
 					b = 0
 				end
+				if not a then
+					a = 255
+				end
 
-				r = r / 255
-				g = g / 255
-				b = b / 255
+				r = r / 255 * (a / 255)
+				g = g / 255 * (a / 255)
+				b = b / 255 * (a / 255)
 
 				settings.MinionOutlineExtension["enemies_" .. breed] = {
 					color = nil,
@@ -698,6 +706,7 @@ mod.apply_enemy_outlines = function(settings)
 				local r = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][2]
 				local g = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][3]
 				local b = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][4]
+				local a = mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual][1] or 255
 
 				if not r then
 					r = 50
@@ -708,10 +717,13 @@ mod.apply_enemy_outlines = function(settings)
 				if not b then
 					b = 0
 				end
+				if not a then
+					a = 255
+				end
 
-				r = r / 255
-				g = g / 255
-				b = b / 255
+				r = r / 255 * (a / 255)
+				g = g / 255 * (a / 255)
+				b = b / 255 * (a / 255)
 
 				settings.MinionOutlineExtension["enemies_" .. enemy_individual] = {
 					priority = OUTLINE_PRIORITY.enemies_individual,
@@ -752,6 +764,7 @@ mod.apply_enemy_outlines = function(settings)
 	local sr = (mod:get("outline_specials_colour_R"))
 	local sg = (mod:get("outline_specials_colour_G"))
 	local sb = (mod:get("outline_specials_colour_B"))
+	local sa = (mod:get("outline_specials_colour_A"))
 
 	if not sr then
 		sr = 255
@@ -762,10 +775,13 @@ mod.apply_enemy_outlines = function(settings)
 	if not sb then
 		sb = 0
 	end
+	if not sa then
+		sa = 255
+	end
 
-	sr = sr / 255
-	sg = sg / 255
-	sb = sb / 255
+	sr = sr / 255 * (sa / 255)
+	sg = sg / 255 * (sa / 255)
+	sb = sb / 255 * (sa / 255)
 
 	settings.MinionOutlineExtension.enemies_improved_alert = {
 		priority = OUTLINE_PRIORITY.enemies_improved_alert,
@@ -785,9 +801,9 @@ mod.apply_enemy_outlines = function(settings)
 
 	-- STAGGERED OUTLINE
 
-	sr = fs.outline_stagger_colour[2] / 255
-	sg = fs.outline_stagger_colour[3] / 255
-	sb = fs.outline_stagger_colour[4] / 255
+	sr = fs.outline_stagger_colour[2] / 255 * (fs.outline_stagger_colour[1] / 255)
+	sg = fs.outline_stagger_colour[3] / 255 * (fs.outline_stagger_colour[1] / 255)
+	sb = fs.outline_stagger_colour[4] / 255 * (fs.outline_stagger_colour[1] / 255)
 
 	settings.MinionOutlineExtension.enemies_improved_staggered = {
 		priority = OUTLINE_PRIORITY.enemies_improved_staggered,
@@ -826,10 +842,11 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_tagged_colour_R")
 	local tg = mod:get("outline_tagged_colour_G")
 	local tb = mod:get("outline_tagged_colour_B")
+	local ta = mod:get("outline_tagged_colour_A") or 255
 
 	if tr and tg and tb and mod:get("outline_tagged_enable") then
 		settings.MinionOutlineExtension.smart_tagged_enemy = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -845,11 +862,12 @@ mod.apply_enemy_outlines = function(settings)
 	local tpr = mod:get("outline_tagged_passive_colour_R")
 	local tpg = mod:get("outline_tagged_passive_colour_G")
 	local tpb = mod:get("outline_tagged_passive_colour_B")
+	local ta = mod:get("outline_tagged_passive_colour_A") or 255
 
 	-- tag
 	if tpr and tpg and tpb and mod:get("outline_tagged_passive_enable") then
 		settings.MinionOutlineExtension.smart_tagged_enemy_passive = {
-			color = { tpr / 255, tpg / 255, tpb / 255 },
+			color = { tpr / 255 * (ta / 255), tpg / 255 * (ta / 255), tpb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -869,9 +887,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_veteran_tagged_colour_R")
 	local tg = mod:get("outline_veteran_tagged_colour_G")
 	local tb = mod:get("outline_veteran_tagged_colour_B")
+	local ta = mod:get("outline_veteran_tagged_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_veteran_tagged_enable") then
 		settings.MinionOutlineExtension.veteran_smart_tag = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -887,10 +906,11 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_companion_colour_R")
 	local tg = mod:get("outline_companion_colour_G")
 	local tb = mod:get("outline_companion_colour_B")
+	local ta = mod:get("outline_companion_colour_A") or 255
 
 	if tr and tg and tb and mod:get("outline_companion_enable") then
 		settings.MinionOutlineExtension.adamant_smart_tag = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -902,7 +922,7 @@ mod.apply_enemy_outlines = function(settings)
 		}
 
 		settings.MinionOutlineExtension.clarity_of_aim_focus = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -918,9 +938,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_special_target_colour_R")
 	local tg = mod:get("outline_special_target_colour_G")
 	local tb = mod:get("outline_special_target_colour_B")
+	local ta = mod:get("outline_special_target_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_special_target_enable") then
 		settings.MinionOutlineExtension.special_target = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline_combat_ability",
 				"minion_outline_combat_ability_reversed_depth",
@@ -941,9 +962,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_psyker_marked_colour_R")
 	local tg = mod:get("outline_psyker_marked_colour_G")
 	local tb = mod:get("outline_psyker_marked_colour_B")
+	local ta = mod:get("outline_psyker_marked_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_psyker_marked_enable") then
 		settings.MinionOutlineExtension.psyker_marked_target = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline_psyker",
 			},
@@ -963,9 +985,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_adamant_mark_colour_R")
 	local tg = mod:get("outline_adamant_mark_colour_G")
 	local tb = mod:get("outline_adamant_mark_colour_B")
+	local ta = mod:get("outline_adamant_mark_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_adamant_mark_enable") then
 		settings.MinionOutlineExtension.adamant_mark_target = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -986,9 +1009,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_hordes_tagged_colour_R")
 	local tg = mod:get("outline_hordes_tagged_colour_G")
 	local tb = mod:get("outline_hordes_tagged_colour_B")
+	local ta = mod:get("outline_hordes_tagged_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_hordes_tagged_enable") then
 		settings.MinionOutlineExtension.hordes_tagged_remaining_target = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -1009,9 +1033,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_broker_proximity_colour_R")
 	local tg = mod:get("outline_broker_proximity_colour_G")
 	local tb = mod:get("outline_broker_proximity_colour_B")
+	local ta = mod:get("outline_broker_proximity_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_broker_proximity_enable") then
 		settings.MinionOutlineExtension.broker_proximity_target = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",
@@ -1032,9 +1057,10 @@ mod.apply_enemy_outlines = function(settings)
 	local tr = mod:get("outline_spillway_void_shield_colour_R")
 	local tg = mod:get("outline_spillway_void_shield_colour_G")
 	local tb = mod:get("outline_spillway_void_shield_colour_B")
+	local ta = mod:get("outline_spillway_void_shield_colour_A") or 255
 	if tr and tg and tb and mod:get("outline_spillway_void_shield_enable") then
 		settings.MinionOutlineExtension.live_story_spillway_void_shield = {
-			color = { tr / 255, tg / 255, tb / 255 },
+			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
 				"minion_outline",
 				"minion_outline_reversed_depth",

@@ -498,7 +498,11 @@ mod.update_breed_colours = function()
 			r = mod:get("outline_" .. enemy_individual .. "_colour_R")
 			g = mod:get("outline_" .. enemy_individual .. "_colour_G")
 			b = mod:get("outline_" .. enemy_individual .. "_colour_B")
-			local a = 255
+			local a = mod:get("outline_" .. enemy_individual .. "_colour_A")
+
+			if not a then
+				a = 255
+			end
 
 			if r and g and b then
 				mod.OUTLINE_COLOURS_OVERRIDE[enemy_individual] = { a, r, g, b }

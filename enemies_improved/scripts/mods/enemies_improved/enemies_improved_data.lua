@@ -922,6 +922,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			sub_widgets = {
 				{
+					setting_id = "outline_specials_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_specials_colour_tooltip",
+				},
+				{
 					setting_id = "outline_specials_colour_R",
 					type = "numeric",
 					default_value = 255,
@@ -1003,6 +1013,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			sub_widgets = {
 				{
+					setting_id = "outline_stagger_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_stagger_colour_tooltip",
+				},
+				{
 					setting_id = "outline_stagger_colour_R",
 					type = "numeric",
 					default_value = 100,
@@ -1061,6 +1081,16 @@ table.insert(mod.settings_widgets, {
 			tooltip = "outline_tagged_colour_tooltip",
 			sub_widgets = {
 				{
+					setting_id = "outline_tagged_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_tagged_colour_tooltip",
+				},
+				{
 					setting_id = "outline_tagged_colour_R",
 					type = "numeric",
 					default_value = 255,
@@ -1093,6 +1123,16 @@ table.insert(mod.settings_widgets, {
 			setting_id = "outline_tagged_passive_colour",
 			type = "group",
 			sub_widgets = {
+				{
+					setting_id = "outline_tagged_passive_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_tagged_passive_colour_tooltip",
+				},
 				{
 					setting_id = "outline_tagged_passive_colour_R",
 					type = "numeric",
@@ -1127,6 +1167,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			sub_widgets = {
 				{
+					setting_id = "outline_companion_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_companion_colour_tooltip",
+				},
+				{
 					setting_id = "outline_companion_colour_R",
 					type = "numeric",
 					default_value = 255,
@@ -1159,6 +1209,16 @@ table.insert(mod.settings_widgets, {
 			setting_id = "outline_veteran_tagged_colour",
 			type = "group",
 			sub_widgets = {
+				{
+					setting_id = "outline_veteran_tagged_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_veteran_tagged_colour_tooltip",
+				},
 				{
 					setting_id = "outline_veteran_tagged_colour_R",
 					type = "numeric",
@@ -1194,6 +1254,16 @@ table.insert(mod.settings_widgets, {
 			tooltip = "outline_special_target_colour_tooltip",
 			sub_widgets = {
 				{
+					setting_id = "outline_special_target_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_special_target_colour_tooltip",
+				},
+				{
 					setting_id = "outline_special_target_colour_R",
 					type = "numeric",
 					default_value = 255,
@@ -1227,6 +1297,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			tooltip = "outline_psyker_marked_colour_tooltip",
 			sub_widgets = {
+				{
+					setting_id = "outline_psyker_marked_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_psyker_marked_colour_tooltip",
+				},
 				{
 					setting_id = "outline_psyker_marked_colour_R",
 					type = "numeric",
@@ -1262,6 +1342,16 @@ table.insert(mod.settings_widgets, {
 			tooltip = "outline_adamant_mark_colour_tooltip",
 			sub_widgets = {
 				{
+					setting_id = "outline_adamant_mark_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_adamant_mark_colour_tooltip",
+				},
+				{
 					setting_id = "outline_adamant_mark_colour_R",
 					type = "numeric",
 					default_value = 128,
@@ -1295,6 +1385,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			tooltip = "outline_hordes_tagged_colour_tooltip",
 			sub_widgets = {
+				{
+					setting_id = "outline_hordes_tagged_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_hordes_tagged_colour_tooltip",
+				},
 				{
 					setting_id = "outline_hordes_tagged_colour_R",
 					type = "numeric",
@@ -1330,6 +1430,16 @@ table.insert(mod.settings_widgets, {
 			tooltip = "outline_broker_proximity_colour_tooltip",
 			sub_widgets = {
 				{
+					setting_id = "outline_broker_proximity_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_broker_proximity_colour_tooltip",
+				},
+				{
 					setting_id = "outline_broker_proximity_colour_R",
 					type = "numeric",
 					default_value = 122,
@@ -1363,6 +1473,16 @@ table.insert(mod.settings_widgets, {
 			type = "group",
 			tooltip = "outline_spillway_void_shield_colour_tooltip",
 			sub_widgets = {
+				{
+					setting_id = "outline_spillway_void_shield_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = {
+						0,
+						255,
+					},
+					tooltip = "outline_spillway_void_shield_colour_tooltip",
+				},
 				{
 					setting_id = "outline_spillway_void_shield_colour_R",
 					type = "numeric",
@@ -2711,6 +2831,16 @@ mod.group_settings_widgets = {
 				type = "group",
 				sub_widgets = {
 					{
+						setting_id = "outline_type_colour_A",
+						type = "numeric",
+						default_value = 255,
+						range = {
+							0,
+							255,
+						},
+						tooltip = "outline_type_colour_tooltip",
+					},
+					{
 						setting_id = "outline_type_colour_R",
 						type = "numeric",
 						default_value = 50,
@@ -2964,6 +3094,16 @@ mod.individual_override_settings = {
 						options = table.clone(override_options),
 						default_value = "dont_override",
 						tooltip = "outline_individual_enable_tooltip",
+					},
+					{
+						setting_id = "outline_individual_colour_A",
+						type = "numeric",
+						default_value = 255,
+						range = {
+							0,
+							255,
+						},
+						tooltip = "outline_individual_colour_tooltip",
 					},
 					{
 						setting_id = "outline_individual_colour_R",
