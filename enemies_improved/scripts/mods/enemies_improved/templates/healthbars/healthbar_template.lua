@@ -277,7 +277,19 @@ local function get_text_option(content, option)
 		local name = mod.enemy_custom_name and mod.enemy_custom_name(breed, breed_type)
 
 		if not name then
-			name = mod.custom_localize(breed.display_name) or Localize(breed.display_name) or breed.display_name
+			name = ""
+
+			local display_name = breed.display_name
+
+			if display_name then
+				local custom = mod.custom_localize(display_name)
+
+				if custom ~= "" and custom:sub(1, 1) ~= "<" then
+					name = custom
+				else
+					name = Localize(display_name) or display_name or ""
+				end
+			end
 		end
 
 		local is_weakened = mod.is_weakened and content.unit and mod.is_weakened(content.unit, breed)
