@@ -2,18 +2,8 @@ local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
 local Managers_player = Managers.player
-local Managers_state = Managers.state
 local Managers_ui = Managers.ui
-local Managers_time = Managers.time
-local ScriptUnit_extension = ScriptUnit.extension
-local ScriptUnit_has_extension = ScriptUnit.has_extension
-local table_clear = table.clear
-local math_lerp = math.lerp
-local math_min = math.min
-local math_max = math.max
 local next = next
-local math_floor = math.floor
-local Unit_alive = Unit.alive
 
 -----------------------------------------------------------------------
 -- Marker Distance * Fade
@@ -64,7 +54,6 @@ mod.apply_marker_fade = function(self)
 
 	local sqrt = math.sqrt
 	local clamp = math.clamp
-	local max = math.max
 	local abs = math.abs
 
 	local cam_pos = Camera.world_position(camera)
@@ -146,7 +135,7 @@ mod.apply_marker_fade = function(self)
 				if cache_entry and cache_entry.breed_name then
 					if fs.breed_dist_enabled[cache_entry.breed_name] then
 						local ind_dist = fs.breed_dist_value[cache_entry.breed_name]
-						if ind_dist and ind_dist > draw_distance then
+						if ind_dist then
 							draw_distance = ind_dist
 						end
 					end
@@ -230,22 +219,27 @@ mod.apply_marker_fade = function(self)
 		end
 
 		local final_alpha = clamp(fade * depth_fade * global_opacity, 0, 1)
+		local widget = marker.widget
 
-		if abs((marker._last_alpha or 1) - final_alpha) >= 0.02 then
-			marker._last_alpha = final_alpha
-			marker.alpha_multiplier = final_alpha
+		if widget then
+			if marker.type == "enemies_improved" then
+				marker._ei_fade_alpha = final_alpha
+				widget.alpha_multiplier = (marker.alpha_multiplier or 1) * final_alpha
+			elseif abs((marker._last_alpha or 1) - final_alpha) >= 0.02 then
+				marker._last_alpha = final_alpha
+				marker.alpha_multiplier = final_alpha
 
-			local widget = marker.widget
-			if widget and widget.style then
-				for key, style_data in next, widget.style do
-					if key ~= "damage_numbers" then
-						if style_data.default_alpha then
-							local a = style_data.default_alpha * final_alpha
-							if style_data.color then
-								style_data.color[1] = a
-							end
-							if style_data.text_color then
-								style_data.text_color[1] = a
+				if widget.style then
+					for key, style_data in next, widget.style do
+						if key ~= "damage_numbers" then
+							if style_data.default_alpha then
+								local a = style_data.default_alpha * final_alpha
+								if style_data.color then
+									style_data.color[1] = a
+								end
+								if style_data.text_color then
+									style_data.text_color[1] = a
+								end
 							end
 						end
 					end

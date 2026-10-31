@@ -9,6 +9,32 @@ local EnemyMarkersTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemie
 local EnemyDebuffTemplate = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/debuff_template")
 local ScriptUnit_extension = ScriptUnit.extension
 
+local function refresh_marker_distance(template, breed)
+	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
+
+	if broadphase and template.max_distance ~= broadphase then
+		template.max_distance = broadphase
+	end
+
+	local draw_distance = fs.draw_distance
+	local breed_name = breed and breed.name
+
+	if breed_name and fs.breed_dist_enabled and fs.breed_dist_enabled[breed_name] then
+		local individual_distance = fs.breed_dist_value and fs.breed_dist_value[breed_name]
+
+		if individual_distance then
+			draw_distance = individual_distance
+		end
+	end
+
+	local fade_settings = template.fade_settings
+
+	if fade_settings and draw_distance and fade_settings.distance_max ~= draw_distance then
+		fade_settings.distance_max = draw_distance
+		fade_settings.distance_min = draw_distance - template.evolve_distance * 2
+	end
+end
+
 template.name = "enemies_improved"
 template.unit_node = "root_point"
 template.position_offset = { 0, 0, fs.hb_y_offset }
@@ -152,10 +178,7 @@ template.on_enter = function(widget, marker, template)
 	end
 
 	template.position_offset = { 0, 0, y_offset }
-	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
-	if template.max_distance ~= broadphase then
-		template.max_distance = broadphase
-	end
+	refresh_marker_distance(template, breed)
 
 	if template.check_line_of_sight ~= fs.check_line_of_sight then
 		template.check_line_of_sight = fs.check_line_of_sight
@@ -305,10 +328,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		widget._next_update = t + fs.general_throttle_rate * 2
 	end
 
-	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
-	if template.max_distance ~= broadphase then
-		template.max_distance = broadphase
-	end
+	refresh_marker_distance(template, content.breed)
 
 	if template.check_line_of_sight ~= fs.check_line_of_sight then
 		template.check_line_of_sight = fs.check_line_of_sight
@@ -383,7 +403,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if marker.is_inside_frustum then
 		if visible then
-			widget.alpha_multiplier = los
+			local fade_alpha = (fs.enable_depth_fading and marker._ei_fade_alpha) or 1
+			widget.alpha_multiplier = los * fade_alpha
 			marker.alpha_multiplier = los
 		elseif not dead_visible then
 			widget.alpha_multiplier = 0
