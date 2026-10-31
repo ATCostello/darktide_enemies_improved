@@ -363,7 +363,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		or false
 
 	marker.draw = visible
-
+	marker.block_fade_settings = not fs.enable_depth_fading
+	
 	if visible and not content._ei_scale_snapped then
 		local snap_scale = marker.scale or 1
 
