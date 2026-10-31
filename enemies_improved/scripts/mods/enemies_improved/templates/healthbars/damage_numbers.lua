@@ -319,6 +319,7 @@ local function _floating_damage_number_function(
 			ui_content.breed and ui_content.breed.base_height * 40 * fs.damage_number_y_offset
 			or 100 * fs.damage_number_y_offset
 		) * (ui_content.scale or 1)
+
 		if damage_number.hit_world_position and ui_content.player_camera and ui_content._marker_world_pos then
 			local inv_scale = ui_renderer.inverse_scale
 			local camera = ui_content.player_camera

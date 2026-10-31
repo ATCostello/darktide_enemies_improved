@@ -430,6 +430,8 @@ template.on_enter = function(widget, marker, template)
 	template.position_offset = { 0, 0, fs.hb_y_offset }
 	content.m_built = false
 	content.draw_mkr = false -- force hidden until ready...
+	content._ei_marker_damage_taken = nil
+	content.last_damage_taken_time = nil
 
 	local unit = marker.unit
 	content.unit = unit
@@ -572,13 +574,25 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		local marker_display = fs.marker_display_option or "always_show"
 
 		if marker_display ~= "always_show" then
-			local time_since_last_damage = t - (content.last_damage_taken_time or 0)
+			if health_extension then
+				local total_damage_taken = health_extension:total_damage_taken()
 
-			local health_ext = content.health_extension
-			if not health_ext then
-				health_ext = ScriptUnit_has_extension(unit, "health_system")
-				content.health_extension = health_ext
+				if total_damage_taken then
+					local previous_damage_taken = content._ei_marker_damage_taken
+
+					if previous_damage_taken then
+						if total_damage_taken > previous_damage_taken then
+							content.last_damage_taken_time = t
+						end
+					elseif total_damage_taken > 0 then
+						content.last_damage_taken_time = t
+					end
+
+					content._ei_marker_damage_taken = total_damage_taken
+				end
 			end
+
+			local time_since_last_damage = t - (content.last_damage_taken_time or 0)
 
 			-- Only show if they ARE damaged
 			if marker_display == "hide_unless_damaged" and time_since_last_damage > 5 then
