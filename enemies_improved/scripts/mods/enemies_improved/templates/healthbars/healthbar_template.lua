@@ -123,7 +123,7 @@ template.damage_number_settings = {
 	flashy_font_size_dmg_scale_range = { 15, 50 },
 }
 
-local previous_health = {}
+local previous_damage_taken = {}
 local last_damaged_time = {}
 local peak_cluster_max_by_rep = {}
 local damage_number_pool = {}
@@ -131,7 +131,7 @@ mod.damage_number_pool = damage_number_pool
 
 if mod.DEBUG then
 	local mem = mod.mem_profile
-	mem.track("healthbar.previous_health", previous_health)
+	mem.track("healthbar.previous_damage_taken", previous_damage_taken)
 	mem.track("healthbar.last_damaged_time", last_damaged_time)
 	mem.track("healthbar.peak_cluster_max_by_rep", peak_cluster_max_by_rep)
 	mem.track("healthbar.damage_number_pool", damage_number_pool)
@@ -1506,14 +1506,32 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-- DAMAGE NUMBERS LOGIC
 	-------------------------------------------------------------------
 
-	local damage_taken_since_last = 0
-	local prev_hp = previous_health[unit]
+	local max_health_setting = health_max
+	max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
+			and Managers.state.difficulty:get_minion_max_health(content.breed.name)
+		or health_max
 
-	if prev_hp then
-		damage_taken_since_last = math.max(prev_hp - health_current, 0)
+	local total_damage_taken
+
+	if not is_dead and health_extension then
+		total_damage_taken = health_extension:total_damage_taken()
+	else
+		total_damage_taken = max_health_setting or health_max
 	end
 
-	previous_health[unit] = health_current
+	local damage_taken_since_last = 0
+
+	if total_damage_taken then
+		local prev_damage = previous_damage_taken[unit]
+
+		if prev_damage then
+			damage_taken_since_last = math_max(total_damage_taken - prev_damage, 0)
+		elseif is_dead then
+			damage_taken_since_last = total_damage_taken
+		end
+
+		previous_damage_taken[unit] = total_damage_taken
+	end
 
 	-- toughness (boss shield damage)
 	if content.current_toughness and content.current_toughness > 0 then
@@ -1529,24 +1547,12 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	local max_health_setting = health_max
-	max_health_setting = (content.breed and content.breed.name and Managers.state.difficulty)
-			and Managers.state.difficulty:get_minion_max_health(content.breed.name)
-		or health_max
-
-	local total_damage_taken
 	local player_camera = parent._parent and parent._parent:player_camera()
 
 	content.player_camera = player_camera
 
 	if player_camera and marker.world_position then
 		content._marker_world_pos = marker.world_position
-	end
-
-	if not is_dead and health_extension then
-		total_damage_taken = health_extension:total_damage_taken()
-	else
-		total_damage_taken = max_health_setting or health_max
 	end
 
 	if health_extension and not is_dead then
@@ -1802,7 +1808,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 end
 
 mod._cleanup_unit_health_data = function(unit)
-	previous_health[unit] = nil
+	previous_damage_taken[unit] = nil
 	last_damaged_time[unit] = nil
 	peak_cluster_max_by_rep[unit] = nil
 end
@@ -1810,7 +1816,7 @@ end
 local table_clear = table.clear
 
 mod._clear_unit_health_data = function()
-	table_clear(previous_health)
+	table_clear(previous_damage_taken)
 	table_clear(last_damaged_time)
 	table_clear(peak_cluster_max_by_rep)
 end

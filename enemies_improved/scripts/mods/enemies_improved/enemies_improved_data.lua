@@ -2221,14 +2221,14 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "hb_damage_numbers_add_total",
 			type = "checkbox",
-			default_value = true,
+			default_value = false,
 			tooltip = "hb_damage_numbers_add_total_tooltip",
 		},
 		{
 			setting_id = "hb_damage_number_types",
 			type = "dropdown",
 			options = damage_number_types,
-			default_value = "readable",
+			default_value = "floating",
 			tooltip = "hb_damage_number_types_tooltip",
 		},
 		{

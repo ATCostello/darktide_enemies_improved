@@ -87,6 +87,7 @@ local Debuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/mo
 local BossDebuffs = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/bossdebuffs")
 
 local SpecialAttacks = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/specialattacks")
+local CustomNames = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/custom_names")
 local AnimationHandler =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/modules/animations/animationhandler")
 
@@ -372,6 +373,14 @@ mod.enemy_custom_name = function(breed, breed_type)
 
 	if breed_name then
 		local custom = mod:get("healthbar_" .. breed_name .. "_custom_name")
+
+		if type(custom) == "string" and custom ~= "" then
+			return custom
+		end
+	end
+
+	if breed_type then
+		local custom = mod:get("healthbar_" .. tostring(breed_type) .. "_custom_name")
 
 		if type(custom) == "string" and custom ~= "" then
 			return custom
@@ -1754,6 +1763,10 @@ mod.clear_caches = function()
 
 	if mod._clear_outline_caches then
 		mod._clear_outline_caches()
+	end
+
+	if mod.refresh_custom_names then
+		mod.refresh_custom_names()
 	end
 end
 

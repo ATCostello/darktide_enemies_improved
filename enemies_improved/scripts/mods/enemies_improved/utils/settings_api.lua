@@ -365,6 +365,7 @@ function S.apply()
 		mod.apply_enemy_outlines(require("scripts/settings/outline/outline_settings"))
 	end)
 	step("load_debuff_colours", mod.load_debuff_colours)
+	step("refresh_custom_names", mod.refresh_custom_names)
 
 	mod.font_type = mod:get("font_type")
 

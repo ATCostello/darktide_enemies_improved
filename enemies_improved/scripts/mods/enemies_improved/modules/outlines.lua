@@ -124,6 +124,37 @@ end
 mod.add_outline = function(unit, outline, outline_system)
 	if unit and outline and outline_system and Unit.alive(unit) then
 		outline_system:add_outline(unit, outline)
+		-- Ensure custom colors are applied for psyker marked outlines
+		if outline == "psyker_marked_target" or outline == "enemies_improved_alert" or outline == "enemies_improved_staggered" or string.find(outline, "psyker") then
+			local ext = outline_system._unit_extension_data and outline_system._unit_extension_data[unit]
+			if ext and ext.outlines then
+				for i = 1, #ext.outlines do
+					local o = ext.outlines[i]
+					if o.name == outline and o.material_layers then
+						-- Force color update
+						local Unit_set_vector3_for_material = Unit.set_vector3_for_material
+						local Vector3_new = Vector3
+						for ii = 1, #o.material_layers do
+							Unit_set_vector3_for_material(unit, o.material_layers[ii], "outline_color", Vector3_new(o.color[1], o.color[2], o.color[3]))
+						end
+						local vis_ext = ScriptUnit.has_extension(unit, "visual_loadout_system")
+						if vis_ext then
+							for slot_name, slot in pairs(vis_ext:inventory_slots()) do
+								if slot.use_outline then
+									local slot_unit = vis_ext:slot_unit(slot_name)
+									if slot_unit then
+										for ii = 1, #o.material_layers do
+											Unit_set_vector3_for_material(slot_unit, o.material_layers[ii], "outline_color", Vector3_new(o.color[1], o.color[2], o.color[3]))
+										end
+									end
+								end
+							end
+						end
+						break
+					end
+				end
+			end
+		end
 	end
 end
 

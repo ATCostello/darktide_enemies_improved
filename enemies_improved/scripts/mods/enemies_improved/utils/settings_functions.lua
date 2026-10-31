@@ -198,6 +198,10 @@ mod.reset_type_to_default = function(enemy_type)
 	mod:notify(reset_message:gsub("_type_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
+
+	if mod.refresh_custom_names then
+		mod.refresh_custom_names()
+	end
 end
 
 mod.reset_individual_to_default = function(enemy_type)
@@ -207,6 +211,10 @@ mod.reset_individual_to_default = function(enemy_type)
 	mod:notify(reset_message:gsub("_individual_", "_" .. enemy_type .. "_"))
 
 	mod.init_healthbar_defaults()
+
+	if mod.refresh_custom_names then
+		mod.refresh_custom_names()
+	end
 end
 
 mod.reset_all_overrides = function()
@@ -235,6 +243,10 @@ mod.reset_all_overrides = function()
 
 	for setting_name in next, enemy_override_settings do
 		mod.update_dmf_settings_colours(setting_name)
+	end
+
+	if mod.refresh_custom_names then
+		mod.refresh_custom_names()
 	end
 end
 
