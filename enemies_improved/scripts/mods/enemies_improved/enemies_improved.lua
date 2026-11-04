@@ -313,6 +313,9 @@ mod.on_disabled = function()
 end
 
 mod.open_editor = function()
+
+	return 
+	--[[
 	local editor = mod.editor
 
 	if not editor then
@@ -323,7 +326,7 @@ mod.open_editor = function()
 		return
 	end
 
-	editor.toggle()
+	editor.toggle()]]
 end
 
 mod.on_all_mods_loaded = function()
@@ -392,7 +395,6 @@ end
 
 local EnemyImprovedTemplate =
 	mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/templates/enemies_improved_template")
-mod.editor = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/editor/ei_editor")
 
 local function add_custom_templates(self)
 	if EnemyImprovedTemplate then

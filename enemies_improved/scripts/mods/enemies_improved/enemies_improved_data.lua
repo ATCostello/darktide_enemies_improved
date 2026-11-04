@@ -613,6 +613,7 @@ mod.settings_widgets = {}
 
 local fonts = mod._get_font_options()
 
+--[[
 table.insert(mod.settings_widgets, {
 	setting_id = "editor_settings",
 	type = "group",
@@ -638,6 +639,7 @@ table.insert(mod.settings_widgets, {
 		},
 	},
 })
+]]
 
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
