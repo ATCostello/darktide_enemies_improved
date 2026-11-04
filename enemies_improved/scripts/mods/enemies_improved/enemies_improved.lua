@@ -1759,7 +1759,6 @@ mod.clear_caches = function()
 	table_clear(_units_to_remove)
 
 	mod._markers_by_id = nil
-	mod._world_markers = nil
 
 	if mod._clear_outline_caches then
 		mod._clear_outline_caches()

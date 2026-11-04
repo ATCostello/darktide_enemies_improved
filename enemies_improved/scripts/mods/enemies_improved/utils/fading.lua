@@ -21,17 +21,10 @@ end
 mod.apply_marker_fade = function(self)
 	local fs = mod.frame_settings
 	local markers_by_id = mod._markers_by_id
-	local world_markers
 
-	if markers_by_id then
-		world_markers = mod._world_markers
-	else
-		local ui_manager = Managers_ui
-		local hud = ui_manager and ui_manager:get_hud()
-		world_markers = hud and hud:element("HudElementWorldMarkers")
-		markers_by_id = world_markers and world_markers._markers_by_id
-		mod._world_markers = world_markers
-	end
+	local ui_manager = Managers_ui
+	local hud = ui_manager and ui_manager:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
 
 	if not world_markers or not markers_by_id then
 		return
