@@ -1849,34 +1849,44 @@ mod.do_crosshair_hitscan = function()
 		return
 	end
 
-	local max_dist = fs.draw_distance_broadphase or fs.draw_distance
+	local max_dist = fs.draw_distance_broadphase or fs.draw_distance or 30
 
-	local hits = PhysicsWorld.raycast(
+	local success, hits = pcall(
+		PhysicsWorld.raycast,
 		physics_world,
 		shoot_position,
 		shoot_direction,
 		max_dist,
 		"all",
+		"types",
+		"both",
 		"max_hits",
-		64,
+		256,
 		"collision_filter",
-		"filter_player_character_shooting_raycast"
+		"filter_player_character_shooting_raycast",
+		"rewind_ms",
+		0
 	)
 
-	if not hits then
+	if not success or not hits then
+		mod:error("Crosshair hitscan failed")
 		return
 	end
+
 	local closest_dist = math.huge
 	local num_hits = #hits
 
 	for i = 1, num_hits do
 		local hit = hits[i]
-		local hit_dist = hit[2]
-		local hit_actor = hit[4]
-		local hit_unit = hit_actor and Actor_unit(hit_actor)
 
-		if hit_dist and hit_dist > 0.1 and hit_unit ~= player_unit and hit_dist < closest_dist then
-			closest_dist = hit_dist
+		if hit then
+			local hit_dist = hit[2]
+			local hit_actor = hit[4]
+			local hit_unit = hit_actor and Actor_unit(hit_actor)
+
+			if hit_unit and hit_unit ~= player_unit and hit_dist and hit_dist > 0.1 and hit_dist < closest_dist then
+				closest_dist = hit_dist
+			end
 		end
 	end
 
