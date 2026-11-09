@@ -456,6 +456,9 @@ mod.build_frame_settings = function(dt)
 
 	fs.ads_opacity_mult = mod:get("ads_opacity_mult")
 	fs.adjust_ads_opacity = mod:get("adjust_ads_opacity")
+
+	fs.max_active_enemies = mod:get("max_active_enemies")
+	fs.depth_fading_amount = mod:get("depth_fading_amount")
 end
 
 mod.set_is_ads = function(player_unit)

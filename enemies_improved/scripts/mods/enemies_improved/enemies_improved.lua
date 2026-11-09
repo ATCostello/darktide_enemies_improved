@@ -26,6 +26,7 @@ local os_clock = os.clock
 -- debug mode toggle!!!
 mod.DEBUG = false
 dbg_ei = mod
+
 if mod.DEBUG then
 	dbg_mod = mod
 
@@ -77,7 +78,6 @@ mod._on_ei_marker_created = function(marker_id, entry, unit)
 	end
 end
 
--- ENEMIES IMPROVED FUNCTIONS
 local FrameSettings = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/frame_settings")
 local SettingsFunctions = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/settings_functions")
 local DistanceFade = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/fading")
@@ -138,8 +138,8 @@ mod.crosshair_target = nil
 mod.crosshair_aimed = {}
 mod._periodic_cache_clear_timer = 0
 
-local CROSSHAIR_SCAN_INTERVAL = 0.05
-local AIM_SCAN_INTERVAL = 0.05
+local CROSSHAIR_SCAN_INTERVAL = 0.15
+local AIM_SCAN_INTERVAL = 0.15
 local TAG_SCAN_INTERVAL = 0.15
 local _crosshair_scan_timer = 0
 local _aim_scan_timer = 0
@@ -153,9 +153,20 @@ local _enemy_units_temp = {}
 local _last_enemy_index = 0
 local _horde_units_all = {}
 local _cull_cells = {}
-local CULL_CELL_SIZE = 5
+
+local CULL_CELL_SIZE = 1
 local INV_CULL_CELL = 1 / CULL_CELL_SIZE
 local MAX_PER_CELL = 3
+
+local MAX_ACTIVE_ENEMIES = mod.frame_settings.max_active_enemies or 20
+
+local AIMED_PRIORITY_BONUS = 100000
+local CROSSHAIR_PRIORITY_BONUS = 500000
+local TAGGED_PRIORITY_BONUS = 5000
+local EXISTING_PRIORITY_BONUS = 100
+
+local _cull_candidates = {}
+local _cull_candidate_count = 0
 
 local _cull_pool = {}
 local _cull_pool_count = 0
@@ -173,6 +184,7 @@ local _dead_cleanup_timer = 0
 
 local _enemy_list = {}
 local _enemy_list_index = {}
+local _active_widget_units = {}
 
 mod.clusters = {}
 mod.clusters._horde_clusters = {}
@@ -211,14 +223,14 @@ local COLOUR_LOOKUP = {
 }
 
 local PRIORITY = {
-	monster = 500,
-	captain = 500,
-	witch = 500,
-	sniper = 500,
-	disabler = 200,
-	far = 100,
-	special = 100,
-	elite = 100,
+	monster = 100,
+	captain = 100,
+	witch = 100,
+	sniper = 100,
+	disabler = 75,
+	far = 50,
+	special = 50,
+	elite = 50,
 	shield = 50,
 	melee_horde = 20,
 	ranged_horde = 20,
@@ -456,30 +468,62 @@ if mod.DEBUG then
 	mem.track("mod.source_unit_cache", mod.source_unit_cache)
 end
 
-local function _get_priority(breed_type, dist_sq, forward_bonus)
-	local base = PRIORITY[breed_type]
+local function _get_priority(breed_type, dist_sq, forward_bonus, unit)
+	local base = PRIORITY[breed_type] or 0
 
-	if not base then
-		base = 0
+	local distance_score = 1000 / (1 + dist_sq * 0.05)
+
+	local score = base + distance_score
+
+	if mod.crosshair_aimed[unit] then
+		score = score + CROSSHAIR_PRIORITY_BONUS
 	end
 
-	return base + 200 / (1 + dist_sq * 0.05) + forward_bonus * 20
+	if mod.tagged_units[unit] then
+		score = score + TAGGED_PRIORITY_BONUS
+	end
+
+	if mod.enemy_cache[unit] then
+		score = score + EXISTING_PRIORITY_BONUS
+	end
+
+	return score
 end
 
--- keeps the per-cell cull sorts off the heap
 local function _cull_sort(a, b)
-	if a.score == b.score then
-		return a.dist_sq < b.dist_sq
+	local a_crosshair = mod.crosshair_aimed[a.unit] == true
+	local b_crosshair = mod.crosshair_aimed[b.unit] == true
+
+	if a_crosshair ~= b_crosshair then
+		return a_crosshair
 	end
-	return a.score > b.score
+
+	local a_aimed = mod.aimed_unit[a.unit] == true
+	local b_aimed = mod.aimed_unit[b.unit] == true
+
+	if a_aimed ~= b_aimed then
+		return a_aimed
+	end
+
+	local a_tagged = mod.tagged_units[a.unit] == true
+	local b_tagged = mod.tagged_units[b.unit] == true
+
+	if a_tagged ~= b_tagged then
+		return a_tagged
+	end
+
+	if a.score ~= b.score then
+		return a.score > b.score
+	end
+
+	return a.dist_sq < b.dist_sq
 end
 
 local function _depth_keep(i, score)
-	if i <= 4 then
+	if i <= MAX_PER_CELL then
 		return true
 	end
 
-	-- nothing past the last layer qualifies on score alone, it can only survive as an aimed unit
 	if i > 100 then
 		return false
 	end
@@ -727,46 +771,36 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
-		if fs.markers_show_only_aimed then
-			_crosshair_scan_timer = _crosshair_scan_timer + dt
+		_crosshair_scan_timer = _crosshair_scan_timer + dt
+
+		if _crosshair_scan_timer >= CROSSHAIR_SCAN_INTERVAL then
+			_crosshair_scan_timer = _crosshair_scan_timer % CROSSHAIR_SCAN_INTERVAL
+
+			mod.do_crosshair_hitscan()
+		end
+
+		-- Target scanning
+		if not fs.spatial_culling then
 			_aim_scan_timer = _aim_scan_timer + dt
-
-			if _crosshair_scan_timer >= CROSSHAIR_SCAN_INTERVAL then
-				_crosshair_scan_timer = _crosshair_scan_timer % CROSSHAIR_SCAN_INTERVAL
-
-				mod.do_crosshair_hitscan()
-			end
 
 			if _aim_scan_timer >= AIM_SCAN_INTERVAL then
 				_aim_scan_timer = _aim_scan_timer % AIM_SCAN_INTERVAL
 
-				table_clear(mod.aimed_unit)
 				mod.do_aim_raycast()
+			end
 
-				for unit in next, mod.crosshair_aimed do
-					mod.aimed_unit[unit] = true
+			if fs.only_tagged_enemies then
+				_tag_scan_timer = _tag_scan_timer + dt
+
+				if _tag_scan_timer >= TAG_SCAN_INTERVAL then
+					_tag_scan_timer = _tag_scan_timer % TAG_SCAN_INTERVAL
+
+					mod.do_tagged_scan()
 				end
+			else
+				_tag_scan_timer = 0
+				table_clear(mod.tagged_units)
 			end
-		else
-			_crosshair_scan_timer = 0
-			_aim_scan_timer = 0
-
-			table_clear(mod.aimed_unit)
-			table_clear(mod.crosshair_aimed)
-			mod.crosshair_target = nil
-		end
-
-		if fs.only_tagged_enemies then
-			_tag_scan_timer = _tag_scan_timer + dt
-
-			if _tag_scan_timer >= TAG_SCAN_INTERVAL then
-				_tag_scan_timer = _tag_scan_timer % TAG_SCAN_INTERVAL
-
-				mod.do_tagged_scan()
-			end
-		else
-			_tag_scan_timer = 0
-			table_clear(mod.tagged_units)
 		end
 
 		self._update_time = (self._update_time or 0) + dt
@@ -1256,6 +1290,10 @@ mod.scan_enemies = function()
 	local range = mod.frame_settings.draw_distance_broadphase or mod.frame_settings.draw_distance
 	local range_sq = range * range
 
+	if not fs.spatial_culling then
+		table_clear(_active_widget_units)
+	end
+
 	local results = mod._broadphase_results
 	table_clear(results)
 
@@ -1275,6 +1313,23 @@ mod.scan_enemies = function()
 	end
 
 	if num_hits == 0 then
+		if fs.spatial_culling then
+			local active = _active_widget_units
+			local cache = mod.enemy_cache
+
+			for i = 1, #active do
+				local unit = active[i]
+				local entry = cache[unit]
+
+				if entry then
+					entry._ei_widget_active = false
+					mod.force_remove_unit_markers(unit)
+				end
+			end
+
+			table_clear(active)
+		end
+
 		return
 	end
 
@@ -1314,24 +1369,12 @@ mod.scan_enemies = function()
 			end
 
 			local is_crosshair_target = mod.crosshair_aimed[unit] == true
-
-			-- VIEW CONE FILTER
-			if forward_bonus <= 0 and not is_crosshair_target then
-				mod.force_remove_unit_markers(unit)
-
-				if mod._cleanup_unit_health_data then
-					mod._cleanup_unit_health_data(unit)
-				end
-				_unregister_enemy(unit)
-				cache[unit] = nil
-				mod.marked_dead[unit] = nil
-				goto skip_breed
-			end
+			local is_aimed = mod.aimed_unit[unit] == true
 
 			local entry = cache[unit]
 			local now = scan_time
 
-			-- LOS STUFF
+			-- LOS CHECK
 			local los_ok = false
 			local should_check_los = true
 
@@ -1355,7 +1398,7 @@ mod.scan_enemies = function()
 				end
 			end
 
-			if not los_ok then
+			if not los_ok and not fs.spatial_culling then
 				if entry or mod.enemy_markers[unit] or mod.enemy_healthbars[unit] or mod.enemy_debuffs[unit] then
 					mod.force_remove_unit_markers(unit)
 
@@ -1421,7 +1464,6 @@ mod.scan_enemies = function()
 				--mod.init_breed_anim_db(unit, breed, breed.name)
 			end
 
-			-- collect ALL horde units BEFORE culling
 			local breed_tags = breed and breed.tags
 			if breed_tags and (breed_tags.horde or breed_tags.roamer) then
 				_horde_units_all[#_horde_units_all + 1] = unit
@@ -1436,11 +1478,7 @@ mod.scan_enemies = function()
 				local gx = math_floor(px * INV_CULL_CELL)
 				local gy = math_floor(py * INV_CULL_CELL)
 
-				local score = _get_priority(breed_type, dist_sq, forward_bonus)
-
-				if entry then
-					score = score + 5 -- small boost if already has a marker. Just to make hordes act a little more stable.
-				end
+				local score = _get_priority(breed_type, dist_sq, forward_bonus, unit)
 
 				local key = gx * 73856093 + gy * 19349663
 				local list = _get_cull_cell(key)
@@ -1458,6 +1496,7 @@ mod.scan_enemies = function()
 				e.unit = unit
 				e.score = score
 				e.dist_sq = dist_sq
+				e.forward_bonus = forward_bonus
 
 				e.unit_data_ext = unit_data_ext
 				e.breed = breed
@@ -1480,7 +1519,6 @@ mod.scan_enemies = function()
 
 						dead = false,
 
-						-- cache extensions
 						health_ext = ScriptUnit_has_extension(unit, "health_system"),
 						unit_data_ext = unit_data_ext,
 						behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
@@ -1495,7 +1533,6 @@ mod.scan_enemies = function()
 						special_attack_imminent = false,
 						special_attack_timer = 0,
 
-						-- outlines
 						alert_outline = false,
 						stagger_outline = false,
 						outline_name = nil,
@@ -1504,6 +1541,8 @@ mod.scan_enemies = function()
 
 						_ei_marker_created = false,
 						_los_ok = los_ok,
+
+						_ei_widget_active = true,
 					}
 					_register_enemy(unit)
 					mod.marked_dead[unit] = nil
@@ -1513,6 +1552,8 @@ mod.scan_enemies = function()
 					entry._los_ok = los_ok
 					mod.marked_dead[unit] = nil
 					entry._dead_at = nil
+					entry._ei_widget_active = true
+					_active_widget_units[#_active_widget_units + 1] = unit
 				end
 			end
 			::skip_breed::
@@ -1520,102 +1561,152 @@ mod.scan_enemies = function()
 	end
 
 	if fs.spatial_culling then
+		MAX_ACTIVE_ENEMIES = math_max(1, fs.max_active_enemies or 20)
+
+		local candidates = _cull_candidates
+		local candidate_count = 0
+
 		for _, list in pairs(_cull_cells) do
-			local num_in_list = #list
-
-			if num_in_list > 1 then
-				table.sort(list, _cull_sort)
-			end
-
-			for i = 1, num_in_list do
-				local data = list[i]
-				local unit = data.unit
-				local keep = _depth_keep(i, data.score)
-
-				if not keep then
-					keep = mod.crosshair_aimed[unit] == true
-				end
-
-				if keep then
-					local entry = mod.enemy_cache[unit]
-
-					if not entry then
-						local breed = data.breed
-
-						entry = {
-							unit = unit,
-							seen = true,
-							dead = false,
-
-							health_ext = ScriptUnit_has_extension(unit, "health_system"),
-							unit_data_ext = data.unit_data_ext,
-							behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
-
-							is_horde = _is_horde_from_breed(unit, breed),
-
-							breed = breed,
-							breed_name = breed and breed.name,
-							breed_type = data.breed_type,
-
-							_priority_score = data.score,
-
-							pos = {
-								x = data.x,
-								y = data.y,
-								z = data.z,
-							},
-							_ei_marker_created = false,
-							_los_ok = data.los_ok,
-						}
-
-						mod.enemy_cache[unit] = entry
-
-						_register_enemy(unit)
-					else
-						entry.seen = true
-						entry._priority_score = data.score
-						entry._los_ok = data.los_ok
-
-						mod.store_enemy_position(entry, data.x, data.y, data.z)
-
-						entry._dead_at = nil
-					end
-
-					mod.marked_dead[unit] = nil
-				else
-					mod.force_remove_unit_markers(unit)
-
-					if mod._cleanup_unit_health_data then
-						mod._cleanup_unit_health_data(unit)
-					end
-
-					cache[unit] = nil
-					_unregister_enemy(unit)
-					mod.marked_dead[unit] = nil
-				end
-
-				data.unit = nil
-				data.unit_data_ext = nil
-				data.breed = nil
-				data.breed_type = nil
-
-				data.x = nil
-				data.y = nil
-				data.z = nil
-
-				data.los_ok = nil
-
-				local pool_count = _cull_pool_count
-
-				if pool_count < MAX_CULL_POOL then
-					pool_count = pool_count + 1
-					_cull_pool[pool_count] = data
-					_cull_pool_count = pool_count
-				end
+			for i = 1, #list do
+				candidate_count = candidate_count + 1
+				candidates[candidate_count] = list[i]
 			end
 
 			table_clear(list)
 		end
+
+		mod.do_aim_raycast(candidates, candidate_count)
+		mod.do_tagged_scan(candidates, candidate_count)
+
+		for i = 1, candidate_count do
+			local data = candidates[i]
+
+			data.score = _get_priority(data.breed_type, data.dist_sq, data.forward_bonus or 0, data.unit)
+		end
+
+		if candidate_count > 1 then
+			table.sort(candidates, _cull_sort)
+		end
+
+		local cache = mod.enemy_cache
+		local active = _active_widget_units
+
+		table_clear(active)
+
+		local kept = 0
+
+		for i = 1, candidate_count do
+			local data = candidates[i]
+			local unit = data.unit
+
+			if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
+				local entry = cache[unit]
+
+				if not entry then
+					local breed = data.breed
+
+					entry = {
+						unit = unit,
+						seen = true,
+						dead = false,
+
+						health_ext = ScriptUnit_has_extension(unit, "health_system"),
+						unit_data_ext = data.unit_data_ext,
+						behavior_ext = ScriptUnit_has_extension(unit, "behavior_system"),
+
+						is_horde = _is_horde_from_breed(unit, breed),
+
+						breed = breed,
+						breed_name = breed and breed.name,
+						breed_type = data.breed_type,
+
+						_priority_score = data.score,
+
+						pos = {
+							x = data.x,
+							y = data.y,
+							z = data.z,
+						},
+
+						_ei_marker_created = false,
+						_los_ok = data.los_ok,
+						_los_checked_at = scan_time,
+
+						_ei_widget_active = false,
+					}
+
+					cache[unit] = entry
+					_register_enemy(unit)
+				else
+					entry.seen = true
+					entry._priority_score = data.score
+					entry._los_ok = data.los_ok
+					entry._dead_at = nil
+
+					mod.store_enemy_position(entry, data.x, data.y, data.z)
+				end
+
+				local is_crosshair = mod.crosshair_aimed[unit] == true
+				local is_aimed = mod.aimed_unit[unit] == true
+				local is_tagged = mod.tagged_units[unit] == true
+
+				local keep_widgets = kept < MAX_ACTIVE_ENEMIES
+
+				if fs.markers_show_only_aimed then
+					keep_widgets = is_crosshair or is_aimed
+				end
+
+				if not data.los_ok and (not is_crosshair or not is_aimed or not is_tagged) then
+					keep_widgets = false
+				end
+
+				if is_crosshair or is_tagged then
+					keep_widgets = true
+				end
+
+				if keep_widgets then
+					if not entry._ei_widget_active then
+						entry._ei_widget_active = true
+					end
+
+					active[#active + 1] = unit
+					kept = kept + 1
+				else
+					if entry._ei_widget_active then
+						mod.force_remove_unit_markers(unit)
+					end
+
+					entry._ei_widget_active = false
+				end
+
+				mod.marked_dead[unit] = nil
+			end
+
+			data.unit = nil
+			data.unit_data_ext = nil
+			data.breed = nil
+			data.breed_type = nil
+
+			data.x = nil
+			data.y = nil
+			data.z = nil
+			data.dist_sq = nil
+			data.score = nil
+			data.forward_bonus = nil
+			data.los_ok = nil
+
+			local pool_count = _cull_pool_count
+
+			if pool_count < MAX_CULL_POOL then
+				pool_count = pool_count + 1
+				_cull_pool[pool_count] = data
+				_cull_pool_count = pool_count
+			end
+
+			candidates[i] = nil
+		end
+
+		_cull_candidate_count = 0
 	end
 end
 
@@ -1904,6 +1995,9 @@ mod.clear_caches = function()
 	table_clear(_enemy_list)
 	table_clear(_enemy_list_index)
 	table_clear(_enemy_units_temp)
+	table_clear(_active_widget_units)
+
+	_last_enemy_index = 0
 
 	table_clear(_cull_cell_pool)
 	_cull_cell_pool_count = 0
@@ -1994,6 +2088,7 @@ end
 
 mod.do_crosshair_hitscan = function()
 	mod.crosshair_target = nil
+
 	table_clear(mod.crosshair_aimed)
 
 	local ui_manager = Managers.ui
@@ -2082,7 +2177,11 @@ mod.do_crosshair_hitscan = function()
 	end
 end
 
-mod.do_aim_raycast = function()
+-----------------------------------------------------------------------
+-- Candidate targeting
+-----------------------------------------------------------------------
+
+mod.do_aim_raycast = function(candidates, candidate_count)
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
 	local world_markers = hud and hud:element("HudElementWorldMarkers")
@@ -2098,40 +2197,36 @@ mod.do_aim_raycast = function()
 	end
 
 	local cam_pos = Camera.local_position(camera)
-	local px, py, pz = cam_pos.x, cam_pos.y, cam_pos.z
-
 	local forward = Quaternion_forward(Camera.local_rotation(camera))
 
-	local cone_cos = math.cos(math.rad(fs.aim_cone_angle or 8))
+	local px, py, pz = cam_pos.x, cam_pos.y, cam_pos.z
+
+	local cone_fov = (fs.markers_show_only_aimed and (fs.aim_cone_angle or 16)) or 45
+	local cone_cos = math.cos(math.rad(cone_fov))
 	local cone_cos_sq = cone_cos * cone_cos
 
 	local draw_dist_sq = fs.draw_distance * fs.draw_distance
-
 	local breed_dist_enabled = fs.breed_dist_enabled
 	local breed_dist_value = fs.breed_dist_value
 
-	local enemy_list = _enemy_list
-	local cache = mod.enemy_cache
 	local aimed = mod.aimed_unit
-	local detect_alive = mod.detect_alive
 
-	for i = 1, #enemy_list do
-		local unit = enemy_list[i]
-		local entry = cache[unit]
+	table_clear(aimed)
 
-		if entry and entry.seen and detect_alive(unit) then
-			local enemy_pos = POSITION_LOOKUP[unit]
+	if candidates then
+		for i = 1, candidate_count do
+			local data = candidates[i]
+			local unit = data.unit
 
-			if enemy_pos then
-				local dx = enemy_pos.x - px
-				local dy = enemy_pos.y - py
-				local dz = (enemy_pos.z - pz) * 0.3
+			if unit then
+				local dx = data.x - px
+				local dy = data.y - py
+				local dz = (data.z - pz) * 0.3
 
 				local dist_sq = dx * dx + dy * dy + dz * dz
 
 				local max_dist_sq = draw_dist_sq
-
-				local breed_name = entry.breed_name
+				local breed_name = data.breed and data.breed.name
 
 				if breed_name and breed_dist_enabled[breed_name] then
 					local individual_distance = breed_dist_value[breed_name]
@@ -2141,7 +2236,7 @@ mod.do_aim_raycast = function()
 					end
 				end
 
-				if dist_sq > 0 and dist_sq < max_dist_sq then
+				if dist_sq > 0 and dist_sq <= max_dist_sq then
 					local dot = dx * forward.x + dy * forward.y + dz * forward.z
 
 					if dot > 0 and dot * dot > cone_cos_sq * dist_sq then
@@ -2150,11 +2245,46 @@ mod.do_aim_raycast = function()
 				end
 			end
 		end
+	else
+		local enemy_list = _enemy_list
+		local cache = mod.enemy_cache
+
+		for i = 1, #enemy_list do
+			local unit = enemy_list[i]
+			local entry = cache[unit]
+
+			if entry and entry.seen and mod.detect_alive(unit) then
+				local pos = entry.pos
+
+				if pos then
+					local dx = pos.x - px
+					local dy = pos.y - py
+					local dz = (pos.z - pz) * 0.3
+
+					local dist_sq = dx * dx + dy * dy + dz * dz
+					local max_dist_sq =
+						_get_enemy_max_dist_sq(entry, draw_dist_sq, breed_dist_enabled, breed_dist_value)
+
+					if dist_sq > 0 and dist_sq <= max_dist_sq then
+						local dot = dx * forward.x + dy * forward.y + dz * forward.z
+
+						if dot > 0 and dot * dot > cone_cos_sq * dist_sq then
+							aimed[unit] = true
+						end
+					end
+				end
+			end
+		end
+	end
+
+	for unit in next, mod.crosshair_aimed do
+		aimed[unit] = true
 	end
 end
 
-mod.do_tagged_scan = function()
+mod.do_tagged_scan = function(candidates, candidate_count)
 	local tagged = mod.tagged_units
+
 	table_clear(tagged)
 
 	local extension_manager = Managers_state.extension
@@ -2169,17 +2299,28 @@ mod.do_tagged_scan = function()
 		return
 	end
 
-	local enemy_list = _enemy_list
-	local cache = mod.enemy_cache
-	local detect_alive = mod.detect_alive
+	if candidates then
+		for i = 1, candidate_count do
+			local unit = candidates[i].unit
 
-	for i = 1, #enemy_list do
-		local unit = enemy_list[i]
-		local entry = cache[unit]
+			if unit and HEALTH_ALIVE[unit] and Unit_alive(unit) then
+				if smart_tag_system:unit_tag_id(unit) then
+					tagged[unit] = true
+				end
+			end
+		end
+	else
+		local enemy_list = _enemy_list
+		local cache = mod.enemy_cache
 
-		if entry and entry.seen and detect_alive(unit) then
-			if smart_tag_system:unit_tag_id(unit) then
-				tagged[unit] = true
+		for i = 1, #enemy_list do
+			local unit = enemy_list[i]
+			local entry = cache[unit]
+
+			if entry and entry.seen and mod.detect_alive(unit) then
+				if smart_tag_system:unit_tag_id(unit) then
+					tagged[unit] = true
+				end
 			end
 		end
 	end
@@ -2189,18 +2330,22 @@ mod.update_enemies = function(dt, t)
 	mod.scan_enemies()
 
 	local cache = mod.enemy_cache
-	local temp = _enemy_list
-
+	local temp = _active_widget_units
 	local count = #temp
+	local cache_count = #_enemy_list
 
-	if count == 0 then
+	if cache_count == 0 then
 		_last_enemy_index = 0
 		table_clear(mod.clusters._horde_clusters)
 		table_clear(mod.clusters._horde_cluster_by_unit)
 		return
 	end
 
-	local start_index = (_last_enemy_index % count) + 1
+	local start_index = 1
+
+	if count > 0 then
+		start_index = (_last_enemy_index % count) + 1
+	end
 
 	if fs.horde_clusters_enable then
 		_cluster_update_timer = _cluster_update_timer + dt
@@ -2264,6 +2409,16 @@ mod.update_enemies = function(dt, t)
 
 		if entry and entry.seen then
 			if is_alive(unit) then
+				local widget_active = entry._ei_widget_active ~= false
+
+				if fs.markers_show_only_aimed then
+					widget_active = widget_active and (mod.aimed_unit[unit] or mod.crosshair_aimed[unit])
+				end
+
+				if fs.only_tagged_enemies then
+					widget_active = widget_active and mod.tagged_units[unit]
+				end
+
 				if player_pos then
 					local pos = entry.pos
 
@@ -2281,7 +2436,7 @@ mod.update_enemies = function(dt, t)
 						local max_dist_sq =
 							_get_enemy_max_dist_sq(entry, base_dist_sq, breed_dist_enabled, breed_dist_value)
 
-						if dist_sq <= max_dist_sq then
+						if dist_sq <= max_dist_sq and widget_active then
 							if markers_enable then
 								update_markers(entry, t)
 							end
@@ -2304,7 +2459,7 @@ mod.update_enemies = function(dt, t)
 							end
 						end
 					end
-				else
+				elseif widget_active then
 					if markers_enable then
 						update_markers(entry, t)
 					end
@@ -2344,7 +2499,11 @@ mod.update_enemies = function(dt, t)
 		end
 	end
 
-	_last_enemy_index = (idx - 2) % count + 1
+	if count > 0 then
+		_last_enemy_index = (idx - 2) % count + 1
+	else
+		_last_enemy_index = 0
+	end
 
 	if fs.enable_depth_fading then
 		mod.apply_marker_fade()

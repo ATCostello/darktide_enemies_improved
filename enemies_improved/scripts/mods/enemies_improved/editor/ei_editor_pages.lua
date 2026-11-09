@@ -233,17 +233,18 @@ PAGE.general = function(B, S)
 	B.settings({ "healthbar_enable", "hb_show_damage_numbers", "debuff_enable", "markers_enable", "outlines_enable" })
 	B.sub("ei_sec_visibility")
 	B.settings({
-		"draw_distance", "enable_depth_fading", "global_opacity", "markers_show_only_aimed",
+		"draw_distance", "enable_depth_fading", "depth_fading_amount", "global_opacity", "markers_show_only_aimed","aim_cone_angle",
 		"only_tagged_enemies", "only_in_meatgrinder", "always_show_in_meatgrinder",
 	})
 	B.sub("ei_sec_targeting")
-	B.settings({ "aim_cone_angle", "remove_tag_skull", "adjust_ads_opacity", "ads_opacity_mult" })
+	B.settings({ "remove_tag_skull", "adjust_ads_opacity", "ads_opacity_mult" })
 	B.sub("ei_sec_text")
 	B.settings({
 		"font_type", "text_scale", "main_font_colour_rgb", "secondary_font_colour_rgb", "mod_name_pizazz_toggle",
 	})
 	B.sub("ei_sec_performance")
-	B.settings({ "spatial_culling", "general_throttle_rate", "off_screen_throttle_rate" })
+	B.settings({ "spatial_culling", "max_active_enemies","general_throttle_rate", "off_screen_throttle_rate" })
+
 end
 
 PAGE.healthbars = function(B, S)
