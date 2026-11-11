@@ -743,12 +743,12 @@ table.insert(mod.settings_widgets, {
 			},
 			tooltip = "depth_fading_amount_tooltip",
 		},
-		{
+		--[[{
 			setting_id = "spatial_culling",
 			type = "checkbox",
 			default_value = true,
 			tooltip = "spatial_culling_tooltip",
-		},
+		},]]
 		{
 			setting_id = "max_active_enemies",
 			type = "numeric",

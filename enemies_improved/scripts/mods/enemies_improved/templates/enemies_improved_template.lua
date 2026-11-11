@@ -283,7 +283,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local saved_draw = marker.draw
 
 	widget._next_update = 0
-	marker.draw = true
+	marker.draw = false
 
 	if breed and alive then
 		local root_position = Unit.world_position(unit, 1)
@@ -306,6 +306,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			marker.scale = 1
 		else
 			marker.scale = parent:_get_scale(template.scale_settings, distance)
+		end
+	end
+
+	local initial_scale = marker.scale or 1
+
+	for _, style in pairs(widget.style) do
+		if style.default_font_size then
+			style.font_size = style.default_font_size * initial_scale
 		end
 	end
 
@@ -388,37 +396,40 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		or false
 
 	marker.draw = visible
+
 	marker.block_fade_settings = not fs.enable_depth_fading
 
 	if visible and not content._ei_scale_snapped then
 		local snap_scale = marker.scale or 1
 
-		if snap_scale ~= 1 then
-			for _, pass_style in pairs(widget.style) do
-				local default_size = pass_style.default_size
+		for _, pass_style in pairs(widget.style) do
+			local default_size = pass_style.default_size
 
-				if default_size then
-					local current_size = pass_style.area_size or pass_style.texture_size or pass_style.size
+			if default_size then
+				local current_size = pass_style.area_size or pass_style.texture_size or pass_style.size
 
-					if current_size then
-						current_size[1] = default_size[1] * snap_scale
-						current_size[2] = default_size[2] * snap_scale
-					end
+				if current_size then
+					current_size[1] = default_size[1] * snap_scale
+					current_size[2] = default_size[2] * snap_scale
 				end
+			end
 
-				local default_offset = pass_style.default_offset
+			local default_offset = pass_style.default_offset
 
-				if default_offset and pass_style.offset then
-					pass_style.offset[1] = default_offset[1] * snap_scale
-					pass_style.offset[2] = default_offset[2] * snap_scale
-				end
+			if default_offset and pass_style.offset then
+				pass_style.offset[1] = default_offset[1] * snap_scale
+				pass_style.offset[2] = default_offset[2] * snap_scale
+			end
 
-				local default_pivot = pass_style.default_pivot
+			local default_pivot = pass_style.default_pivot
 
-				if default_pivot and pass_style.pivot then
-					pass_style.pivot[1] = default_pivot[1] * snap_scale
-					pass_style.pivot[2] = default_pivot[2] * snap_scale
-				end
+			if default_pivot and pass_style.pivot then
+				pass_style.pivot[1] = default_pivot[1] * snap_scale
+				pass_style.pivot[2] = default_pivot[2] * snap_scale
+			end
+
+			if pass_style.default_font_size then
+				pass_style.font_size = pass_style.default_font_size * snap_scale
 			end
 		end
 

@@ -243,7 +243,7 @@ PAGE.general = function(B, S)
 		"font_type", "text_scale", "main_font_colour_rgb", "secondary_font_colour_rgb", "mod_name_pizazz_toggle",
 	})
 	B.sub("ei_sec_performance")
-	B.settings({ "spatial_culling", "max_active_enemies","general_throttle_rate", "off_screen_throttle_rate" })
+	B.settings({ "max_active_enemies","general_throttle_rate", "off_screen_throttle_rate" })
 
 end
 

@@ -9,6 +9,9 @@ local _create_definition = function(template, scenegraph_id)
 	local bar_width = size[1]
 	local bar_height = size[2]
 
+	local initial_text_scale = fs.text_scale or 1
+	local initial_font_size = 16 * initial_text_scale
+
 	local bar_offset = { -bar_width * 0.5, 0, 0 }
 
 	local icon_style = {
@@ -52,7 +55,7 @@ local _create_definition = function(template, scenegraph_id)
 				--style.size[2] = scaled_bar_height + 6 + 1 * fs.hb_padding_scale
 			end,
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar and fs.frame_type ~= "" then
+				if fs.hb_enable_bar and fs.frame_type ~= "" then
 					return true
 				else
 					return false
@@ -80,7 +83,7 @@ local _create_definition = function(template, scenegraph_id)
 				style.size[2] = scaled_bar_height
 			end,
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar then
+				if fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -153,7 +156,7 @@ local _create_definition = function(template, scenegraph_id)
 			end,
 
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar then
+				if fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -186,8 +189,7 @@ local _create_definition = function(template, scenegraph_id)
 
 			visibility_function = function(content)
 				if
-					content.hb_built
-					and fs.hb_enable_bar
+					fs.hb_enable_bar
 					and fs.toughness_enabled
 					and (content.current_toughness and content.current_toughness > 0)
 				then
@@ -452,7 +454,7 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar then
+				if fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -474,7 +476,7 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 100,
 			},
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar then
+				if fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -507,7 +509,7 @@ local _create_definition = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled
+				return fs.hb_enable_bar and content.icon_enabled
 			end,
 		},
 		{ -- icon glow
@@ -533,7 +535,7 @@ local _create_definition = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled
+				return fs.hb_enable_bar and content.icon_enabled
 			end,
 		},
 		-- ELITE ICON
@@ -543,7 +545,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/interactions/icons/enemy_priority",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_elite
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_elite
 			end,
 		}, -- BOSS ICON
 		{
@@ -552,7 +554,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_damnation",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_boss
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_boss
 			end,
 		},
 		{ -- DAEMONHOST ICON
@@ -561,7 +563,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/icons/speaker",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_witch
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_witch
 			end,
 		},
 		{ -- CAPTAIN ICON
@@ -570,7 +572,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_captain
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_captain
 			end,
 		},
 		{ -- Ranged elites
@@ -579,7 +581,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/circumstances/assault_01",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_elite_ranged
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_elite_ranged
 			end,
 		},
 		{ -- specialists
@@ -588,7 +590,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_special
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_special
 			end,
 		},
 		{ -- shield
@@ -597,7 +599,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/interactions/icons/void_shield",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_shield
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_shield
 			end,
 		},
 		{ -- disablers
@@ -606,7 +608,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/generic/exclamation_mark",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_disabler
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_disabler
 			end,
 		},
 		{ -- snipers
@@ -615,7 +617,7 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/weapons/actions/ads",
 			style = icon_style,
 			visibility_function = function(content)
-				return content.hb_built and fs.hb_enable_bar and content.icon_enabled and content.icon_sniper
+				return fs.hb_enable_bar and content.icon_enabled and content.icon_sniper
 			end,
 		}, -- header text
 		{
@@ -631,29 +633,30 @@ local _create_definition = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
 				default_offset = { -bar_width * 0.5, -bar_height - 8 * fs.text_scale * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
-				font_size = 16,
-				default_font_size = 16,
+				font_size = initial_font_size,
+				default_font_size = initial_font_size,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
 
 				size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 				default_size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 
 				default_alpha = 255,
 				drop_shadow = true,
 			},
+			change_function = function(content, style)
+				local scale = content.distance_scale or 1
+
+				style.font_size = initial_font_size * scale
+			end,
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_text then
-					return true
-				else
-					return false
-				end
+				return fs.hb_enable_text
 			end,
 		}, -- Health text
 		{
@@ -669,29 +672,30 @@ local _create_definition = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				default_offset = { -bar_width * 0.5, ((bar_height + 16) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
-				font_size = 16,
-				default_font_size = 16,
+				font_size = initial_font_size,
+				default_font_size = initial_font_size,
 				text_color = fs.main_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.main_colour or { 220, 220, 220, 220 },
 
 				size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 				default_size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			change_function = function(content, style)
+				local scale = content.distance_scale or 1
+
+				style.font_size = initial_font_size * scale
+			end,
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_text then
-					return true
-				else
-					return false
-				end
+				return fs.hb_enable_text
 			end,
 		},
 		{ -- armour types
@@ -707,29 +711,30 @@ local _create_definition = function(template, scenegraph_id)
 				offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				default_offset = { -bar_width * 0.5, ((bar_height + 34) * fs.text_scale) * fs.hb_gap_padding_scale, 1 },
 				font_type = mod.font_type,
-				font_size = 16,
-				default_font_size = 16,
+				font_size = initial_font_size,
+				default_font_size = initial_font_size,
 				text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 				default_text_color = fs.secondary_colour or { 220, 220, 220, 220 },
 
 				size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 				default_size = {
-					bar_width,
+					500,
 					bar_height + 4 + (2 * fs.hb_padding_scale),
 				},
 
 				drop_shadow = true,
 				default_alpha = 255,
 			},
+			change_function = function(content, style)
+				local scale = content.distance_scale or 1
+
+				style.font_size = initial_font_size * scale
+			end,
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_text then
-					return true
-				else
-					return false
-				end
+				return fs.hb_enable_text
 			end,
 		},
 		-- readable damage numbers

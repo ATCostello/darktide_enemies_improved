@@ -624,6 +624,8 @@ mod.open_editor = function()
 	editor.toggle()
 end
 
+local outline_settings = require("scripts/settings/outline/outline_settings")
+
 mod.on_all_mods_loaded = function()
 	mod.migrate_override_settings()
 
@@ -637,7 +639,6 @@ mod.on_all_mods_loaded = function()
 
 	mod.build_frame_settings()
 
-	local outline_settings = require("scripts/settings/outline/outline_settings")
 	mod.apply_enemy_outlines(outline_settings)
 
 	mod.load_toggled_debuffs_state()
@@ -2134,7 +2135,6 @@ mod.do_crosshair_hitscan = function()
 	)
 
 	if not success or not hits then
-		mod:error("Crosshair hitscan failed")
 		return
 	end
 
