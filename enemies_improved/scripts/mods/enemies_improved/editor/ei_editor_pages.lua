@@ -281,7 +281,10 @@ PAGE.healthbars = function(B, S)
 	end
 	B.sub("ei_sec_text_lines")
 	B.settings({
-		"hb_enable_text", "hb_text_alignment", "hb_text_top_left_01", "hb_text_bottom_left_01", "hb_text_bottom_left_02",
+		"hb_enable_text", "hb_text_alignment",
+		"hb_text_top_left_01", "hb_text_top_left_01_only_meatgrinder",
+		"hb_text_bottom_left_01", "hb_text_bottom_left_01_only_meatgrinder",
+		"hb_text_bottom_left_02", "hb_text_bottom_left_02_only_meatgrinder",
 		"hb_text_show_max_health", "hb_text_show_damage",
 	}, HB)
 	B.sub("ei_sec_type_icon")

@@ -1268,6 +1268,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
+		content.draw_hb = false
 		if fs.widget_removal_delay > 0 then
 			content.dead = content.show_dps or false
 			content.hb_built = true
@@ -1410,9 +1411,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if cluster.rep_unit ~= unit then
 			content.draw_hb = false
 			content.in_horde_cluster = false
+		else
+			content.in_horde_cluster = in_horde_cluster
 		end
-
-		content.in_horde_cluster = in_horde_cluster
 
 		local next_cluster_update = content._next_cluster_update or 0
 
@@ -1604,6 +1605,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	content._marker_world_pos = marker.world_position
 
+	if parent and parent._parent and parent._parent.player_camera then
+		content.player_camera = parent._parent:player_camera()
+	end
+
 	if health_extension and not is_dead then
 		local last_damaging_unit = health_extension:last_damaging_unit()
 
@@ -1625,16 +1630,11 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			local last_hit_world_position = health_extension:last_hit_world_position()
 
 			if last_hit_world_position then
-				local marker_pos = content._marker_world_pos and content._marker_world_pos:unbox()
-				if not marker_pos or Vector3.distance(last_hit_world_position, marker_pos) < 2 then
-					local box = content.last_hit_world_position
-					if not box then
-						content.last_hit_world_position = Vector3Box(last_hit_world_position)
-					else
-						box:store(last_hit_world_position)
-					end
+				local box = content.last_hit_world_position
+				if not box then
+					content.last_hit_world_position = Vector3Box(last_hit_world_position)
 				else
-					content.last_hit_world_position = nil
+					box:store(last_hit_world_position)
 				end
 			elseif content.last_hit_world_position then
 				content.last_hit_world_position = nil

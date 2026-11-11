@@ -163,6 +163,7 @@ local MAX_ACTIVE_ENEMIES = mod.frame_settings.max_active_enemies or 20
 local AIMED_PRIORITY_BONUS = 100000
 local CROSSHAIR_PRIORITY_BONUS = 500000
 local TAGGED_PRIORITY_BONUS = 5000
+local CLUSTER_REP_PRIORITY_BONUS = 2000
 local EXISTING_PRIORITY_BONUS = 100
 
 local _cull_candidates = {}
@@ -280,6 +281,10 @@ local function _get_cull_cell(key)
 	if count > 0 then
 		list = _cull_cell_pool[count]
 		_cull_cell_pool[count] = nil
+				local units_copy = {}
+
+				for j = 1, #cluster_units do
+					units_copy[j] = c
 		_cull_cell_pool_count = count - 1
 	else
 		list = {}
@@ -1581,8 +1586,24 @@ mod.scan_enemies = function()
 
 		for i = 1, candidate_count do
 			local data = candidates[i]
+			local unit = data.unit
 
-			data.score = _get_priority(data.breed_type, data.dist_sq, data.forward_bonus or 0, data.unit)
+			data.score = _get_priority(data.breed_type, data.dist_sq, data.forward_bonus or 0, unit)
+
+			if fs.horde_clusters_enable and mod.get_horde_cluster_for_unit then
+				local cluster = mod.get_horde_cluster_for_unit(unit)
+
+				if cluster then
+					data.cluster = cluster
+
+					if cluster.rep_unit == unit then
+						data.cluster_rep = true
+						data.score = data.score + CLUSTER_REP_PRIORITY_BONUS
+					else
+						data.cluster_member = true
+					end
+				end
+			end
 		end
 
 		if candidate_count > 1 then
@@ -1650,6 +1671,7 @@ mod.scan_enemies = function()
 				local is_crosshair = mod.crosshair_aimed[unit] == true
 				local is_aimed = mod.aimed_unit[unit] == true
 				local is_tagged = mod.tagged_units[unit] == true
+				local is_cluster_member = data.cluster_member == true
 
 				local keep_widgets = kept < MAX_ACTIVE_ENEMIES
 
@@ -1665,13 +1687,20 @@ mod.scan_enemies = function()
 					keep_widgets = true
 				end
 
+				if is_cluster_member and not is_crosshair and not is_tagged and not is_aimed then
+					keep_widgets = false
+				end
+
 				if keep_widgets then
 					if not entry._ei_widget_active then
 						entry._ei_widget_active = true
 					end
 
 					active[#active + 1] = unit
-					kept = kept + 1
+
+					if not is_cluster_member then
+						kept = kept + 1
+					end
 				else
 					if entry._ei_widget_active then
 						mod.force_remove_unit_markers(unit)
@@ -1695,6 +1724,9 @@ mod.scan_enemies = function()
 			data.score = nil
 			data.forward_bonus = nil
 			data.los_ok = nil
+			data.cluster = nil
+			data.cluster_rep = nil
+			data.cluster_member = nil
 
 			local pool_count = _cull_pool_count
 
@@ -2416,7 +2448,20 @@ mod.update_enemies = function(dt, t)
 				end
 
 				if fs.only_tagged_enemies then
-					widget_active = widget_active and mod.tagged_units[unit]
+					local is_tagged = mod.tagged_units[unit] == true
+
+					if not is_tagged then
+						if
+							entry._ei_marker_created
+							or mod.enemy_markers[unit]
+							or mod.enemy_healthbars[unit]
+							or mod.enemy_debuffs[unit]
+						then
+							mod.force_remove_unit_markers(unit)
+						end
+					end
+
+					widget_active = widget_active and is_tagged
 				end
 
 				if player_pos then

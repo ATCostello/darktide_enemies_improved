@@ -1788,6 +1788,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_text_top_left_01_tooltip",
 		},
 		{
+			setting_id = "hb_text_top_left_01_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
+		},
+		{
 			setting_id = "hb_text_bottom_left_01",
 			type = "dropdown",
 			options = table.clone(enemy_type_options),
@@ -1795,11 +1801,23 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_text_bottom_left_01_tooltip",
 		},
 		{
+			setting_id = "hb_text_bottom_left_01_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
+		},
+		{
 			setting_id = "hb_text_bottom_left_02",
 			type = "dropdown",
 			options = table.clone(enemy_type_options),
 			default_value = "nothing",
 			tooltip = "hb_text_bottom_left_02_tooltip",
+		},
+		{
+			setting_id = "hb_text_bottom_left_02_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
 		},
 	},
 })

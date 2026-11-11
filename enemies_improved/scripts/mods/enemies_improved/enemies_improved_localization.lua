@@ -2007,6 +2007,18 @@ table.insert(localisations_to_add, {
 		ru = "Включает отображение максимального здоровья в текущих текстовых элементах здоровья.",
 		["zh-cn"] = "在当前血量旁显示最大血量。",
 	},
+	hb_text_top_left_01_only_meatgrinder = {
+		en = "Only show above healthbar text in Meat Grinder?",
+	},
+	hb_text_bottom_left_01_only_meatgrinder = {
+		en = "Only show below healthbar text 1 in Meat Grinder?",
+	},
+	hb_text_bottom_left_02_only_meatgrinder = {
+		en = "Only show below healthbar text 2 in Meat Grinder?",
+	},
+	hb_text_only_meatgrinder_tooltip = {
+		en = "When enabled, this specific healthbar text slot is only shown while in the Meat Grinder (shooting range). Useful for testing layouts without cluttering normal gameplay.",
+	},
 	hb_gap_padding_scale = {
 		en = "Healthbar widget gap scale",
 		ru = "Масштаб промежутка между элементами полоски здоровья",

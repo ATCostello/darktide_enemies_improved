@@ -314,9 +314,15 @@ local function _build_horde_clusters(units, num_units)
 					smooth_z = prev.z + (target_z - prev.z) * 0.2
 				end
 
+				local units_copy = {}
+
+				for j = 1, #cluster_units do
+					units_copy[j] = cluster_units[j]
+				end
+
 				local cluster = {
 					breed_name = breed.name,
-					units = cluster_units,
+					units = units_copy,
 					count = count,
 					rep_unit = rep_unit,
 					center = {

@@ -14,6 +14,18 @@ local _create_definition = function(template, scenegraph_id)
 
 	local bar_offset = { -bar_width * 0.5, 0, 0 }
 
+	local function text_slot_visible(content, only_meatgrinder)
+		if not fs.hb_enable_text then
+			return false
+		end
+
+		if only_meatgrinder and not content.is_in_shooting_range then
+			return false
+		end
+
+		return true
+	end
+
 	local icon_style = {
 		vertical_alignment = "center",
 		horizontal_alignment = "center",
@@ -55,7 +67,7 @@ local _create_definition = function(template, scenegraph_id)
 				--style.size[2] = scaled_bar_height + 6 + 1 * fs.hb_padding_scale
 			end,
 			visibility_function = function(content)
-				if fs.hb_enable_bar and fs.frame_type ~= "" then
+				if (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar and fs.frame_type ~= "" then
 					return true
 				else
 					return false
@@ -83,7 +95,7 @@ local _create_definition = function(template, scenegraph_id)
 				style.size[2] = scaled_bar_height
 			end,
 			visibility_function = function(content)
-				if fs.hb_enable_bar then
+				if (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -156,7 +168,7 @@ local _create_definition = function(template, scenegraph_id)
 			end,
 
 			visibility_function = function(content)
-				if fs.hb_enable_bar then
+				if (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -189,7 +201,8 @@ local _create_definition = function(template, scenegraph_id)
 
 			visibility_function = function(content)
 				if
-					fs.hb_enable_bar
+					(content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
 					and fs.toughness_enabled
 					and (content.current_toughness and content.current_toughness > 0)
 				then
@@ -228,7 +241,8 @@ local _create_definition = function(template, scenegraph_id)
 
 			visibility_function = function(content)
 				if
-					fs.hb_enable_bar
+					(content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
 					and fs.toughness_electric
 					and content.hb_built
 					and fs.toughness_enabled
@@ -271,7 +285,8 @@ local _create_definition = function(template, scenegraph_id)
 
 			visibility_function = function(content)
 				if
-					fs.hb_enable_bar
+					(content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
 					and fs.toughness_electric
 					and content.hb_built
 					and fs.toughness_enabled
@@ -311,7 +326,8 @@ local _create_definition = function(template, scenegraph_id)
 			end,
 			visibility_function = function(content)
 				if
-					fs.hb_enable_bar
+					(content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
 					and fs.hb_endcaps_enabled
 					and content.hb_built
 					and fs.toughness_enabled
@@ -352,7 +368,8 @@ local _create_definition = function(template, scenegraph_id)
 			visibility_function = function(content)
 				-- with the toughness bar off the health endcap goes back to always showing, but it still respects the toggle and the healthbar being hidden
 				if
-					fs.hb_enable_bar
+					(content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
 					and fs.hb_endcaps_enabled
 					and content.hb_built
 					and (
@@ -384,7 +401,12 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar and fs.healthbar_segments_enable then
+				if
+					(content.draw_hb == nil or content.draw_hb == true)
+					and content.hb_built
+					and fs.hb_enable_bar
+					and fs.healthbar_segments_enable
+				then
 					return true
 				else
 					return false
@@ -407,7 +429,12 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar and fs.healthbar_segments_enable then
+				if
+					(content.draw_hb == nil or content.draw_hb == true)
+					and content.hb_built
+					and fs.hb_enable_bar
+					and fs.healthbar_segments_enable
+				then
 					return true
 				else
 					return false
@@ -429,7 +456,12 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content)
-				if content.hb_built and fs.hb_enable_bar and fs.healthbar_segments_enable then
+				if
+					(content.draw_hb == nil or content.draw_hb == true)
+					and content.hb_built
+					and fs.hb_enable_bar
+					and fs.healthbar_segments_enable
+				then
 					return true
 				else
 					return false
@@ -454,7 +486,7 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 200,
 			},
 			visibility_function = function(content)
-				if fs.hb_enable_bar then
+				if (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -476,7 +508,7 @@ local _create_definition = function(template, scenegraph_id)
 				default_alpha = 100,
 			},
 			visibility_function = function(content)
-				if fs.hb_enable_bar then
+				if (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar then
 					return true
 				else
 					return false
@@ -509,7 +541,7 @@ local _create_definition = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled
+				return (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar and content.icon_enabled
 			end,
 		},
 		{ -- icon glow
@@ -535,7 +567,7 @@ local _create_definition = function(template, scenegraph_id)
 				},
 			},
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled
+				return (content.draw_hb == nil or content.draw_hb == true) and fs.hb_enable_bar and content.icon_enabled
 			end,
 		},
 		-- ELITE ICON
@@ -545,7 +577,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/interactions/icons/enemy_priority",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_elite
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_elite
 			end,
 		}, -- BOSS ICON
 		{
@@ -554,7 +589,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_damnation",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_boss
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_boss
 			end,
 		},
 		{ -- DAEMONHOST ICON
@@ -563,7 +601,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/icons/speaker",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_witch
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_witch
 			end,
 		},
 		{ -- CAPTAIN ICON
@@ -572,7 +613,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_auric",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_captain
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_captain
 			end,
 		},
 		{ -- Ranged elites
@@ -581,7 +625,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/circumstances/assault_01",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_elite_ranged
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_elite_ranged
 			end,
 		},
 		{ -- specialists
@@ -590,7 +637,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/difficulty/flat/difficulty_skull_uprising",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_special
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_special
 			end,
 		},
 		{ -- shield
@@ -599,7 +649,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/hud/interactions/icons/void_shield",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_shield
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_shield
 			end,
 		},
 		{ -- disablers
@@ -608,7 +661,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/generic/exclamation_mark",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_disabler
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_disabler
 			end,
 		},
 		{ -- snipers
@@ -617,7 +673,10 @@ local _create_definition = function(template, scenegraph_id)
 			value = "content/ui/materials/icons/weapons/actions/ads",
 			style = icon_style,
 			visibility_function = function(content)
-				return fs.hb_enable_bar and content.icon_enabled and content.icon_sniper
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and fs.hb_enable_bar
+					and content.icon_enabled
+					and content.icon_sniper
 			end,
 		}, -- header text
 		{
@@ -656,7 +715,8 @@ local _create_definition = function(template, scenegraph_id)
 				style.font_size = initial_font_size * scale
 			end,
 			visibility_function = function(content)
-				return fs.hb_enable_text
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and text_slot_visible(content, fs.hb_text_top_left_01_only_meatgrinder)
 			end,
 		}, -- Health text
 		{
@@ -695,7 +755,8 @@ local _create_definition = function(template, scenegraph_id)
 				style.font_size = initial_font_size * scale
 			end,
 			visibility_function = function(content)
-				return fs.hb_enable_text
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and text_slot_visible(content, fs.hb_text_bottom_left_01_only_meatgrinder)
 			end,
 		},
 		{ -- armour types
@@ -734,7 +795,8 @@ local _create_definition = function(template, scenegraph_id)
 				style.font_size = initial_font_size * scale
 			end,
 			visibility_function = function(content)
-				return fs.hb_enable_text
+				return (content.draw_hb == nil or content.draw_hb == true)
+					and text_slot_visible(content, fs.hb_text_bottom_left_02_only_meatgrinder)
 			end,
 		},
 		-- readable damage numbers
