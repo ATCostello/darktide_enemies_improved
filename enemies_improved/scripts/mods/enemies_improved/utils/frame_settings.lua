@@ -176,7 +176,7 @@ mod.build_frame_settings = function(dt)
 	fs.font_type = mod:get("font_type")
 	fs.check_line_of_sight = true
 	fs.enable_depth_fading = mod:get("enable_depth_fading")
-	fs.spatial_culling = mod:get("spatial_culling")
+	fs.spatial_culling = true --mod:get("spatial_culling") -- force enable spatial culling, as it's now kind of essential for FPS
 
 	local r = mod:get("main_font_colour_R")
 	local g = mod:get("main_font_colour_G")
@@ -268,8 +268,11 @@ mod.build_frame_settings = function(dt)
 	fs.healthbar_segments_enable = mod:get("healthbar_segments_enable")
 	fs.hb_text_show_max_health = mod:get("hb_text_show_max_health")
 	fs.hb_text_top_left_01 = mod:get("hb_text_top_left_01")
+	fs.hb_text_top_left_01_only_meatgrinder = mod:get("hb_text_top_left_01_only_meatgrinder")
 	fs.hb_text_bottom_left_01 = mod:get("hb_text_bottom_left_01")
+	fs.hb_text_bottom_left_01_only_meatgrinder = mod:get("hb_text_bottom_left_01_only_meatgrinder")
 	fs.hb_text_bottom_left_02 = mod:get("hb_text_bottom_left_02")
+	fs.hb_text_bottom_left_02_only_meatgrinder = mod:get("hb_text_bottom_left_02_only_meatgrinder")
 	fs.hb_gap_padding_scale = mod:get("hb_gap_padding_scale") * fs.global_scale
 	fs.healthbar_type_icon_scale = (mod:get("healthbar_type_icon_scale") or 1) * fs.global_scale
 	fs.healthbar_type_icon_background_shape = mod:get("healthbar_type_icon_background_shape") or "hexagon"
@@ -456,6 +459,9 @@ mod.build_frame_settings = function(dt)
 
 	fs.ads_opacity_mult = mod:get("ads_opacity_mult")
 	fs.adjust_ads_opacity = mod:get("adjust_ads_opacity")
+
+	fs.max_active_enemies = mod:get("max_active_enemies")
+	fs.depth_fading_amount = mod:get("depth_fading_amount")
 end
 
 mod.set_is_ads = function(player_unit)

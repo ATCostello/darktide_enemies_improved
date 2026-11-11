@@ -480,18 +480,18 @@ mod.ICON_SETTINGS = {
 }
 
 mod.OUTLINE_COLOURS = {
-	melee_horde = { 255, 150/4, 60/4, 60/4 },
-	ranged_horde = { 255, 150/4, 60/4, 60/4 },
-	elite = { 255, 0, 120/4, 255/4 },
-	captain = { 255, 255/4, 140/4, 0 },
-	disabler = { 255, 255/4, 255/4, 0 },
-	witch = { 255, 255/4, 0, 180/4 },
-	monster = { 255, 180/4, 0, 255/4 },
-	sniper = { 255, 255/4, 0, 0 },
-	far = { 255, 0, 255/4, 120/4 },
-	special = { 255, 40/4, 230/4, 230/4 },
-	enemy = { 255, 200/4, 200/4, 200/4 },
-	shield = { 255, 50/4, 150/4, 255/4 },
+	melee_horde = { 255, 150 / 4, 60 / 4, 60 / 4 },
+	ranged_horde = { 255, 150 / 4, 60 / 4, 60 / 4 },
+	elite = { 255, 0, 120 / 4, 255 / 4 },
+	captain = { 255, 255 / 4, 140 / 4, 0 },
+	disabler = { 255, 255 / 4, 255 / 4, 0 },
+	witch = { 255, 255 / 4, 0, 180 / 4 },
+	monster = { 255, 180 / 4, 0, 255 / 4 },
+	sniper = { 255, 255 / 4, 0, 0 },
+	far = { 255, 0, 255 / 4, 120 / 4 },
+	special = { 255, 40 / 4, 230 / 4, 230 / 4 },
+	enemy = { 255, 200 / 4, 200 / 4, 200 / 4 },
+	shield = { 255, 50 / 4, 150 / 4, 255 / 4 },
 }
 
 mod.ICON_COLOURS_DEFAULT = table.clone(mod.ICON_COLOURS)
@@ -688,12 +688,12 @@ table.insert(mod.settings_widgets, {
 		{
 			setting_id = "aim_cone_angle",
 			type = "numeric",
-			default_value = 8,
+			default_value = 16,
 			decimals_number = 1,
 			step_size_value = 0.5,
 			range = {
 				1,
-				30,
+				45,
 			},
 			tooltip = "aim_cone_angle_tooltip",
 		},
@@ -734,10 +734,34 @@ table.insert(mod.settings_widgets, {
 			tooltip = "enable_depth_fading_tooltip",
 		},
 		{
+			setting_id = "depth_fading_amount",
+			type = "numeric",
+			default_value = 0.7,
+			decimals_number = 2,
+			step_size_value = 0.05,
+			range = {
+				0,
+				1,
+			},
+			tooltip = "depth_fading_amount_tooltip",
+		},
+		--[[{
 			setting_id = "spatial_culling",
 			type = "checkbox",
-			default_value = false,
+			default_value = true,
 			tooltip = "spatial_culling_tooltip",
+		},]]
+		{
+			setting_id = "max_active_enemies",
+			type = "numeric",
+			default_value = 20,
+			decimals_number = 0,
+			step_size_value = 1,
+			range = {
+				10,
+				50,
+			},
+			tooltip = "max_active_enemies_tooltip",
 		},
 		{
 			setting_id = "only_in_meatgrinder",
@@ -1766,6 +1790,12 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_text_top_left_01_tooltip",
 		},
 		{
+			setting_id = "hb_text_top_left_01_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
+		},
+		{
 			setting_id = "hb_text_bottom_left_01",
 			type = "dropdown",
 			options = table.clone(enemy_type_options),
@@ -1773,11 +1803,23 @@ table.insert(mod.settings_widgets, {
 			tooltip = "hb_text_bottom_left_01_tooltip",
 		},
 		{
+			setting_id = "hb_text_bottom_left_01_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
+		},
+		{
 			setting_id = "hb_text_bottom_left_02",
 			type = "dropdown",
 			options = table.clone(enemy_type_options),
 			default_value = "nothing",
 			tooltip = "hb_text_bottom_left_02_tooltip",
+		},
+		{
+			setting_id = "hb_text_bottom_left_02_only_meatgrinder",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "hb_text_only_meatgrinder_tooltip",
 		},
 	},
 })

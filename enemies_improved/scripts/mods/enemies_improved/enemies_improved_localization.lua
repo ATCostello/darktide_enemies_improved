@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "3.0.10NoEditor"
+mod.version = "3.1.0NE"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -1006,15 +1006,27 @@ table.insert(localisations_to_add, {
 		ru = "Включает затухание по расстоянию для всех элементов Улучшенных врагов: дальнобойные враги становятся более прозрачными. Также включает «затухание стака» — элементы интерфейса врагов, находящихся за другими врагами, становятся прозрачнее, чтобы ближние враги были лучше видны.",
 		["zh-cn"] = "开启后远处敌人UI会更透明，同时后方敌人UI会渐隐，优先显示近处敌人。",
 	},
+	depth_fading_amount = {
+		en = "Depth Fading Amount",
+	},
+	depth_fading_amount_tooltip = {
+		en = "The amount the enemies improved widgets will be dimmed with distance and/or enemies infront of them. A lower value means more fading, higher means less fading. Good values are generally around 0.6-0.9.",
+	},
 	spatial_culling = {
 		en = "Enable Spatial Culling?",
 		ru = "Включить пространственное отсечение?",
 		["zh-cn"] = "启用空间筛选",
 	},
 	spatial_culling_tooltip = {
-		en = "Toggle spatial culling for Enemies Improved UI elements.\n\nThe culling essentially gives each enemy a priority based on their distance to the player, their class, and if you're looking close to them… and then hides ones that are further/less priority. So in a dense cluster, you'll see all the front running enemies, and important elites like disablers, snipers, daemonhosts etc. But the others at the back/in the middle of the group won't even get counted/included until they become at the front.\n\nShould help FPS in dense elite hordes.\n\n\nThis used to be enabled by default, but since doing some more optimisations, I'd actually suggest disabling it, so you will always get an accurate view of all enemies, with none hidden.",
+		en = "Toggle spatial culling for Enemies Improved UI elements.\n\nThe culling essentially gives each enemy a priority based on their distance to the player, their class, and if you're looking close to them… and then hides ones that are further/less priority. So in a dense cluster, you'll see all the front running enemies, and important elites like disablers, snipers, daemonhosts etc. But the others at the back/in the middle of the group won't even get counted/included until they become at the front.\n\nHelps FPS in dense elite hordes.\n\n\nSTRONGLY SUGGEST KEEPING THIS ENABLED",
 		ru = "Включает пространственное отсечение для элементов интерфейса Улучшенных врагов. Каждому врагу присваивается приоритет на основе расстояния до игрока, его класса и того, смотрите ли вы на него. Враги с более низким приоритетом скрываются. Это позволяет видеть передних врагов и важных элитных (обездвиживателей, снайперов, демонхостов) в плотной группе, а задние/средние не отображаются, пока не окажутся спереди. Помогает сохранить FPS в плотных скоплениях элитной орды.",
 		["zh-cn"] = "为UI元素启用空间筛选，根据距离、类型优先级隐藏远处敌人，提升密集怪群时的帧率。",
+	},
+	max_active_enemies = {
+		en = "Max Active Enemies",
+	},
+	max_active_enemies_tooltip = {
+		en = "Set a limit on the number of enemies active at once. This is the largest gain for performance, and should be used alongside the spatial culling setting for best results. Darktide struggles rendering more than around 40-50 widgets at once, so using this setting at a lower value (i.e. 25) will massively help performance in dense enemy situations.",
 	},
 	check_line_of_sight = {
 		en = "Check for line of sight?",
@@ -1702,7 +1714,7 @@ table.insert(localisations_to_add, {
 	},
 	overhead_marker_uses_healthbar_colour_tooltip = {
 		en = "Toggles the overhead markers to use the enemies' healthbar colour instead of the default colour.",
-		ru = "Включает использование цвета полоски здоровья врага для маркера вместо цвета по умолчанию.",
+		ru = "Включает использование цвета полоски здоровья врага д����я маркера вместо цвета по умолчанию.",
 		["zh-cn"] = "开启后头顶标记使用敌人血条颜色，而非默认颜色。",
 	},
 	marker_visual_style = {
@@ -1994,6 +2006,18 @@ table.insert(localisations_to_add, {
 		en = "Toggles displaying the max health on the current health text elements.",
 		ru = "Включает отображение максимального здоровья в текущих текстовых элементах здоровья.",
 		["zh-cn"] = "在当前血量旁显示最大血量。",
+	},
+	hb_text_top_left_01_only_meatgrinder = {
+		en = "Only show above healthbar text in Meat Grinder?",
+	},
+	hb_text_bottom_left_01_only_meatgrinder = {
+		en = "Only show below healthbar text 1 in Meat Grinder?",
+	},
+	hb_text_bottom_left_02_only_meatgrinder = {
+		en = "Only show below healthbar text 2 in Meat Grinder?",
+	},
+	hb_text_only_meatgrinder_tooltip = {
+		en = "When enabled, this specific healthbar text slot is only shown while in the Meat Grinder (shooting range). Useful for testing layouts without cluttering normal gameplay.",
 	},
 	hb_gap_padding_scale = {
 		en = "Healthbar widget gap scale",
@@ -2794,17 +2818,17 @@ table.insert(localisations_to_add, {
 	},
 	debuffs_combine_tooltip = {
 		en = "Should multiple debuffs that apply a similar effect be combined into one entry?\nFor example, if enabled, multiple '+ Damage Taken' debuffs applied via different sources would combine into one value.",
-		ru = "Объединять ли несколько ослаблений с одинаковым эффектом в одну запись? Например, при включении несколько ослаблений «+ Урон» от разных источников объединятся в одно значение.",
+		ru = "Объединять ли несколько ослаблений с одинак��вым эффектом в одну запись? Например, при включении несколько ослаблений «+ Урон» от разных источников объединятся в одно значение.",
 		["zh-cn"] = "多个同类增伤/减益合并显示为一个数值。",
 	},
 	debuff_names_fade = {
 		en = "Fade out debuffs",
 		ru = "Затухание ослаблений",
-		["zh-cn"] = "减益自动淡出",
+		["zh-cn"] = "减益自动��出",
 	},
 	debuff_names_fade_tooltip = {
 		en = "Toggles fading out of the text-based debuff names after a short delay.\n\nIf this is disabled, debuff names will always show when applied.",
-		ru = "Включает затухание текстовых названий ослаблений после короткой задержки. При отключении названия всегда видны.",
+		ru = "Включает затухание текстовых ��а��ваний ослаблений после короткой задержки. При отключении названия всегда видны.",
 		["zh-cn"] = "减益效果短暂显示后自动消失，关闭则持续显示。",
 	},
 	debuff_show_on_body = {
@@ -3051,7 +3075,7 @@ table.insert(localisations_to_add, {
 	debuff_boss_healthbar_enable = {
 		en = "Show boss debuffs on base-game boss healthbar?",
 		ru = "Показывать ослабления боссов на стандартной полоске здоровья босса?",
-		["zh-cn"] = "在Boss原始血条上显示减益效果？",
+		["zh-cn"] = "在Boss原始血条上显示减益效果��",
 	},
 	debuff_boss_healthbar_enable_tooltip = {
 		en = "Shows active debuffs (bleed, burn, rending, etc.) on the boss healthbar at the top of the screen. Uses the same debuff detection system.",
@@ -4451,7 +4475,7 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "邪教徒",
 		},
 
-		editor_settings = {
+		--[[editor_settings = {
 			en = "Live 3D Editor",
 			ru = "Живой 3D-редактор",
 			["zh-cn"] = "实时3D编辑器",
@@ -4475,7 +4499,7 @@ local insert_editor_localisation = function(localisation_table)
 			en = "Set a hotkey to open the live 3d editor for enemies improved from wherever you want.",
 			ru = "Установите горячую клавишу для открытия живого 3D-редактора Enemies Improved из любого места.",
 			["zh-cn"] = "设置从任意位置打开 Enemies Improved 实时3D编辑器的快捷键。",
-		},
+		},]]
 
 		damage_number_crit_colour_rgb = {
 			en = "Critical Damage Colour",
@@ -4543,7 +4567,6 @@ local insert_editor_localisation = function(localisation_table)
 			ru = "Spillway Void Shield Outline Colour",
 			["zh-cn"] = "Spillway Void Shield Outline Colour",
 		},
-
 
 		outline_specials_colour_rgb = {
 			en = "Special Attack Colour",

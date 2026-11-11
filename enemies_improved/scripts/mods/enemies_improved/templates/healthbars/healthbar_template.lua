@@ -7,6 +7,7 @@ local UIFontSettings = require("scripts/managers/ui/ui_font_settings")
 local UIWidget = require("scripts/managers/ui/ui_widget")
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
+local breed_category_cache = {}
 
 local template = {}
 local fs = mod.frame_settings
@@ -615,21 +616,26 @@ local function apply_breed_style(widget, breed, breed_type, scale)
 		or { 255, 255, 0, 0 }
 
 	-- INDIVIDUAL COLOUR OVERRIDES
+	-------------------------------------------------------------------
+
 	if breed then
 		local enemy_individual = breed.name
 
-		if enemy_individual then
-			local breed_settings = minion_breeds[enemy_individual]
+		if enemy_individual and fs.breed_healthbar_enabled[enemy_individual] then
+			local individual_breed_type = breed_category_cache[enemy_individual]
 
-			if breed_settings then
-				local tags = breed_settings.tags
-				local individual_breed_type = mod.find_breed_category_by_tags(tags, enemy_individual)
+			if individual_breed_type == nil then
+				local breed_settings = minion_breeds[enemy_individual]
 
-				if individual_breed_type == breed_type then
-					if fs.breed_healthbar_enabled[enemy_individual] then
-						bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual]
-					end
+				if breed_settings then
+					individual_breed_type = mod.find_breed_category_by_tags(breed_settings.tags, enemy_individual)
 				end
+
+				breed_category_cache[enemy_individual] = individual_breed_type or false
+			end
+
+			if individual_breed_type == breed_type then
+				bar_color = mod.BREED_COLOURS_OVERRIDE[enemy_individual] or bar_color
 			end
 		end
 	end
@@ -685,6 +691,9 @@ local function apply_state_body(widget, scale, alert_active)
 	local health_ghost_fraction = content.health_ghost_fraction
 	local breed_type = content._breed_type or "enemy"
 
+	scale = scale or 1
+	content.distance_scale = scale
+
 	local size = template.size
 	size[1] = fs.hb_size_width
 	size[2] = fs.hb_size_height
@@ -725,13 +734,7 @@ local function apply_state_body(widget, scale, alert_active)
 		local scaled_ghost_width = scaled_bar_width * ghost_fraction
 	end
 
-	local icon_color = mod.ICON_COLOURS[breed_type]
-
-	local icon_enabled = mod.ICON_SETTINGS[breed_type].enabled
-	local icon_full_scale = mod.ICON_SETTINGS[breed_type].scale * fs.healthbar_type_icon_scale
-	local icon_scale = mod.ICON_SETTINGS[breed_type].icon_scale
-	local icon_glow_colour = mod.ICON_COLOURS["glow"]
-	local icon_glow_colour_default = mod.ICON_COLOURS["glow_default"]
+	local icon_glow_colour = mod.ICON_COLOURS.glow
 	local icon_glow_intensity = mod.ICON_SETTINGS[breed_type].glow_intensity
 
 	-- apply values to relevant icon
@@ -836,7 +839,7 @@ local function apply_state_body(widget, scale, alert_active)
 
 		style.header_text.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.header_text.default_size[1] = 500
+		--style.header_text.default_size[1] = 500
 
 		local text_alignment = fs.hb_text_alignment or "left"
 		style.header_text.text_horizontal_alignment = text_alignment
@@ -867,7 +870,7 @@ local function apply_state_body(widget, scale, alert_active)
 		end
 		style.health_counter.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.health_counter.default_size[1] = 500
+		--style.health_counter.default_size[1] = 500
 
 		local text_alignment = fs.hb_text_alignment or "left"
 		style.health_counter.text_horizontal_alignment = text_alignment
@@ -898,7 +901,7 @@ local function apply_state_body(widget, scale, alert_active)
 		end
 		style.armour_type.text_horizontal_alignment = fs.hb_text_alignment
 
-		style.armour_type.default_size[1] = 500
+		--style.armour_type.default_size[1] = 500
 
 		local text_alignment = fs.hb_text_alignment or "left"
 		style.armour_type.text_horizontal_alignment = text_alignment
@@ -923,23 +926,11 @@ local function apply_built_scale(widget, marker_scale)
 		content.dn_built = true
 	end
 
-	local scale = marker_scale * fs.text_scale
+	content.distance_scale = marker_scale or 1
+
+	local scale = content.distance_scale * fs.text_scale
 	content.scale = scale
-
-	local header_style = style.header_text
-	local health_counter = style.health_counter
-	local armour_type = style.armour_type
 	local damage_numbers = style.readable_damage_numbers
-
-	if header_style then
-		header_style.font_size = header_style.default_font_size * scale
-	end
-	if health_counter then
-		health_counter.font_size = health_counter.default_font_size * scale
-	end
-	if armour_type then
-		armour_type.font_size = armour_type.default_font_size * scale
-	end
 
 	if damage_numbers then
 		damage_numbers.font_size = damage_numbers.default_font_size * scale
@@ -959,11 +950,8 @@ local function push_damage_number(
 	local content = widget.content
 	local damage_number_settings = template.damage_number_settings
 	local damage_numbers = content.damage_numbers
-	if not damage_numbers then
-		damage_numbers = {}
-		content.damage_numbers = damage_numbers
-	end
 	local latest_damage_number = damage_numbers[#damage_numbers]
+
 	if was_critical == nil then
 		was_critical = hit_was_critical
 	end
@@ -1063,7 +1051,6 @@ template.apply_state = function(widget, scale, dt, t, alert_active)
 	widget.content.draw_hb = true
 	apply_state_body(widget, scale, alert_active)
 
-	-- Keep text labels anchored to the healthbar at the current distance scale.
 	do
 		local content = widget.content
 		local style = widget.style
@@ -1076,8 +1063,8 @@ template.apply_state = function(widget, scale, dt, t, alert_active)
 
 			text_style.text_horizontal_alignment = alignment
 
-			text_style.size[1] = 500
-			text_style.default_size[1] = 500
+			--text_style.size[1] = 500
+			--text_style.default_size[1] = 500
 
 			if alignment == "right" then
 				text_style.offset[1] = fs.hb_size_width * 0.5 - 500
@@ -1099,8 +1086,77 @@ template.apply_state = function(widget, scale, dt, t, alert_active)
 	apply_built_scale(widget, scale)
 end
 
+local function get_initial_distance_scale(marker, template)
+	local distance = marker.distance
+	local hud = Managers.ui and Managers.ui:get_hud()
+	local world_markers = hud and hud:element("HudElementWorldMarkers")
+
+	if not distance and world_markers then
+		local camera = world_markers._get_camera and world_markers:_get_camera()
+
+		if not camera and world_markers._parent then
+			camera = world_markers._parent:player_camera()
+		end
+
+		local position
+
+		if marker.world_position and marker.world_position.unbox then
+			position = marker.world_position:unbox()
+		elseif marker.unit and Unit.alive(marker.unit) then
+			local unit = marker.unit
+			local unit_node = template.unit_node
+			local node = unit_node and Unit.has_node(unit, unit_node) and Unit.node(unit, unit_node) or 1
+
+			position = Unit.world_position(unit, node)
+
+			if position then
+				local offset = template.position_offset
+
+				if offset then
+					position.x = position.x + offset[1]
+					position.y = position.y + offset[2]
+					position.z = position.z + offset[3]
+				end
+			end
+		end
+
+		if camera and position and Camera and Camera.local_position then
+			local camera_position = Camera.local_position(camera)
+
+			distance = Vector3.distance(position, camera_position)
+		end
+	end
+
+	local scale_settings = template and template.scale_settings
+
+	if distance and world_markers and world_markers._get_scale and scale_settings then
+		return world_markers:_get_scale(scale_settings, distance)
+	end
+
+	return marker.scale or 1
+end
+
 template.on_enter = function(widget, marker, template)
 	local content = widget.content
+
+	local initial_distance_scale = get_initial_distance_scale(marker, template)
+	local initial_scale = initial_distance_scale * (fs.text_scale or 1)
+
+	content.scale = initial_scale
+	content.distance_scale = initial_distance_scale
+
+	local style = widget.style
+
+	local function initialise_text_scale(text_style)
+		if text_style then
+			local font_size = text_style.default_font_size or 16
+			text_style.font_size = font_size * initial_distance_scale
+		end
+	end
+
+	initialise_text_scale(style.header_text)
+	initialise_text_scale(style.health_counter)
+	initialise_text_scale(style.armour_type)
 
 	template.position_offset[3] = fs.hb_y_offset
 
@@ -1164,7 +1220,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local unit = marker.unit
 	local crit_extension = unit and ScriptUnit_has_extension(unit, "health_system")
 
-	-- the extension only exposes crits for a single logic tick, so latch it before the throttle return
 	if safe_was_crit(crit_extension) then
 		content._pending_crit = true
 	end
@@ -1174,7 +1229,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	-- if not on screen or draw == false, throttle heavily....
-	if not marker.is_inside_frustum or content.draw_hb == false then
+	if not marker.is_inside_frustum then
 		widget._next_update = t + fs.off_screen_throttle_rate
 	-- distance based updates
 	elseif marker.distance < 50 then
@@ -1213,6 +1268,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local is_alive = mod.detect_alive(unit)
 
 	if not is_alive then
+		content.draw_hb = false
 		if fs.widget_removal_delay > 0 then
 			content.dead = content.show_dps or false
 			content.hb_built = true
@@ -1283,57 +1339,58 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	-------------------------------------------------------------------
 
 	local health_extension = content.health_extension
+
 	local health_current = 0
 	local health_max = 0
 	local health_percent = 0
 	local is_dead = true
 
 	if health_extension and is_alive then
-		local ok, v = pcall(health_extension.current_health, health_extension)
-		if ok then
-			health_current = v or 0
-		end
-		ok, v = pcall(health_extension.max_health, health_extension)
-		if ok then
-			health_max = v or 0
-		end
+		health_current = health_extension:current_health() or 0
+		health_max = health_extension:max_health() or 0
 
 		if health_current > health_max then
 			health_max = health_current
 		end
 
-		ok, v = pcall(health_extension.current_health_percent, health_extension)
-		if ok then
-			health_percent = v or 0
-		end
-		ok, v = pcall(health_extension.is_alive, health_extension)
-		if ok then
-			is_dead = not v
-		end
+		health_percent = health_extension:current_health_percent() or 0
+		is_dead = not health_extension:is_alive()
 	elseif health_extension then
 		health_max = content.health_max or 0
 	end
 
+	-------------------------------------------------------------------
+	-- Toughness
+	-------------------------------------------------------------------
+
 	local toughness_extension = content.toughness_extension
+
 	local toughness_max = 0
 	local toughness_current = 0
 	local toughness_fraction = 0
+	local toughness_damage = 0
 
 	if toughness_extension and is_alive then
 		if toughness_extension.max_toughness then
 			-- MinionToughnessExtension
-			toughness_max = toughness_extension:max_toughness()
-			toughness_damage = toughness_extension:toughness_damage()
+			toughness_max = toughness_extension:max_toughness() or 0
+			toughness_damage = toughness_extension:toughness_damage() or 0
+
 			toughness_current = toughness_max - toughness_damage
 		else
 			-- MinionToughnessHuskExtension
 			toughness_damage, toughness_max =
 				_get_network_values(toughness_extension._game_session, toughness_extension._game_object_id)
+
+			toughness_damage = toughness_damage or 0
+			toughness_max = toughness_max or 0
+
 			toughness_current = toughness_max - toughness_damage
 		end
+
 		if toughness_extension.current_toughness_percent then
 			toughness_fraction = toughness_extension:current_toughness_percent() or 0
-		else
+		elseif toughness_max > 0 then
 			toughness_fraction = toughness_current / toughness_max
 		end
 	end
@@ -1354,9 +1411,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		if cluster.rep_unit ~= unit then
 			content.draw_hb = false
 			content.in_horde_cluster = false
+		else
+			content.in_horde_cluster = in_horde_cluster
 		end
-
-		content.in_horde_cluster = in_horde_cluster
 
 		local next_cluster_update = content._next_cluster_update or 0
 
@@ -1419,7 +1476,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			if rep_unit and Unit.alive(rep_unit) then
 				local rp = Unit.world_position(rep_unit, 1)
 
-				-- clamp Z so it never goes below actual unit height
 				local min_z = rp.z + 1.2
 				if cz < min_z then
 					cz = min_z
@@ -1547,12 +1603,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		end
 	end
 
-	local player_camera = parent._parent and parent._parent:player_camera()
+	content._marker_world_pos = marker.world_position
 
-	content.player_camera = player_camera
-
-	if player_camera and marker.world_position then
-		content._marker_world_pos = marker.world_position
+	if parent and parent._parent and parent._parent.player_camera then
+		content.player_camera = parent._parent:player_camera()
 	end
 
 	if health_extension and not is_dead then
@@ -1571,21 +1625,16 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 				content.hit_weakspot = false
 			end
 
-			content.was_critical = safe_was_crit(health_extension)
+			content.was_critical = content._pending_crit or false
 
 			local last_hit_world_position = health_extension:last_hit_world_position()
 
 			if last_hit_world_position then
-				local marker_pos = content._marker_world_pos and content._marker_world_pos:unbox()
-				if not marker_pos or Vector3.distance(last_hit_world_position, marker_pos) < 2 then
-					local box = content.last_hit_world_position
-					if not box then
-						content.last_hit_world_position = Vector3Box(last_hit_world_position)
-					else
-						box:store(last_hit_world_position)
-					end
+				local box = content.last_hit_world_position
+				if not box then
+					content.last_hit_world_position = Vector3Box(last_hit_world_position)
 				else
-					content.last_hit_world_position = nil
+					box:store(last_hit_world_position)
 				end
 			elseif content.last_hit_world_position then
 				content.last_hit_world_position = nil
@@ -1594,33 +1643,8 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	end
 
 	local damage_number_settings = template.damage_number_settings
-	local Managers_player_local = Managers_player
-	local local_player = Managers_player_local:local_player(1)
-	local local_player_unit = local_player and local_player.player_unit
-
-	template.skip_damage_from_others = false --fs.hb_damage_numbers_track_friendly
 
 	local show_damage_number = true
-	local last_damaging_unit = content.last_damaging_unit
-	local last_was_player_damage = false
-
-	local owner_unit = nil
-
-	if last_damaging_unit and local_player_unit then
-		if last_damaging_unit == local_player_unit then
-			last_was_player_damage = true
-		end
-	end
-
-	if template.skip_damage_from_others then
-		if last_was_player_damage then
-			show_damage_number = true
-		else
-			show_damage_number = false
-		end
-	else
-		show_damage_number = true
-	end
 
 	local damage_numbers = content.damage_numbers
 	if not damage_numbers then

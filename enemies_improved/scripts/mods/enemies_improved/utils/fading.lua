@@ -64,7 +64,7 @@ mod.apply_marker_fade = function(self)
 
 	local draw_distance_base = fs.draw_distance
 
-	local STACK_FADE_FACTOR = 0.9
+	local STACK_FADE_FACTOR = fs.depth_fading_amount or 0.7
 	local DEPTH_THRESHOLD = 0.05
 	local MAX_STACK_DIST_SQ = 100
 	local MAX_DEPTH_STACK = 100
