@@ -281,10 +281,6 @@ local function _get_cull_cell(key)
 	if count > 0 then
 		list = _cull_cell_pool[count]
 		_cull_cell_pool[count] = nil
-				local units_copy = {}
-
-				for j = 1, #cluster_units do
-					units_copy[j] = c
 		_cull_cell_pool_count = count - 1
 	else
 		list = {}
