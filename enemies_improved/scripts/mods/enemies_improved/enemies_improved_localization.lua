@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "3.1.0NE"
+mod.version = "3.1.1NE"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -2818,7 +2818,7 @@ table.insert(localisations_to_add, {
 	},
 	debuffs_combine_tooltip = {
 		en = "Should multiple debuffs that apply a similar effect be combined into one entry?\nFor example, if enabled, multiple '+ Damage Taken' debuffs applied via different sources would combine into one value.",
-		ru = "Объединять ли несколько ослаблений с одинак��вым эффектом в одну запись? Например, при включении несколько ослаблений «+ Урон» от разных источников объединятся в одно значение.",
+		ru = "Объединять ли несколько ослаблений с одинаковым эффектом в одну запись? Например, при включении несколько ослаблений «+ Урон» от разных источников объединятся в одно значение.",
 		["zh-cn"] = "多个同类增伤/减益合并显示为一个数值。",
 	},
 	debuff_names_fade = {
@@ -3075,7 +3075,7 @@ table.insert(localisations_to_add, {
 	debuff_boss_healthbar_enable = {
 		en = "Show boss debuffs on base-game boss healthbar?",
 		ru = "Показывать ослабления боссов на стандартной полоске здоровья босса?",
-		["zh-cn"] = "在Boss原始血条上显示减益效果��",
+		["zh-cn"] = "在Boss原始血条上显示减益效果？",
 	},
 	debuff_boss_healthbar_enable_tooltip = {
 		en = "Shows active debuffs (bleed, burn, rending, etc.) on the boss healthbar at the top of the screen. Uses the same debuff detection system.",
@@ -4475,7 +4475,7 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "邪教徒",
 		},
 
-		--[[editor_settings = {
+		editor_settings = {
 			en = "Live 3D Editor",
 			ru = "Живой 3D-редактор",
 			["zh-cn"] = "实时3D编辑器",
@@ -4499,7 +4499,7 @@ local insert_editor_localisation = function(localisation_table)
 			en = "Set a hotkey to open the live 3d editor for enemies improved from wherever you want.",
 			ru = "Установите горячую клавишу для открытия живого 3D-редактора Enemies Improved из любого места.",
 			["zh-cn"] = "设置从任意位置打开 Enemies Improved 实时3D编辑器的快捷键。",
-		},]]
+		},
 
 		damage_number_crit_colour_rgb = {
 			en = "Critical Damage Colour",

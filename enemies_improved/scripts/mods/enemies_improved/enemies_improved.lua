@@ -1585,10 +1585,6 @@ mod.scan_enemies = function()
 
 			data.score = _get_priority(data.breed_type, data.dist_sq, data.forward_bonus or 0, unit)
 
-			-- Make spatial culling cluster-aware. Only the cluster
-			-- representative creates/owns a healthbar, so it must win a slot
-			-- ahead of the other horde members. The non-reps are not counted
-			-- against MAX_ACTIVE_ENEMIES at all (they cannot show a bar).
 			if fs.horde_clusters_enable and mod.get_horde_cluster_for_unit then
 				local cluster = mod.get_horde_cluster_for_unit(unit)
 
@@ -1670,6 +1666,7 @@ mod.scan_enemies = function()
 				local is_crosshair = mod.crosshair_aimed[unit] == true
 				local is_aimed = mod.aimed_unit[unit] == true
 				local is_tagged = mod.tagged_units[unit] == true
+				local is_cluster_member = data.cluster_member == true
 
 				local keep_widgets = kept < MAX_ACTIVE_ENEMIES
 
@@ -1685,13 +1682,20 @@ mod.scan_enemies = function()
 					keep_widgets = true
 				end
 
+				if is_cluster_member and not is_crosshair and not is_tagged and not is_aimed then
+					keep_widgets = false
+				end
+
 				if keep_widgets then
 					if not entry._ei_widget_active then
 						entry._ei_widget_active = true
 					end
 
 					active[#active + 1] = unit
-					kept = kept + 1
+
+					if not is_cluster_member then
+						kept = kept + 1
+					end
 				else
 					if entry._ei_widget_active then
 						mod.force_remove_unit_markers(unit)
@@ -1715,6 +1719,9 @@ mod.scan_enemies = function()
 			data.score = nil
 			data.forward_bonus = nil
 			data.los_ok = nil
+			data.cluster = nil
+			data.cluster_rep = nil
+			data.cluster_member = nil
 
 			local pool_count = _cull_pool_count
 
@@ -2436,7 +2443,20 @@ mod.update_enemies = function(dt, t)
 				end
 
 				if fs.only_tagged_enemies then
-					widget_active = widget_active and mod.tagged_units[unit]
+					local is_tagged = mod.tagged_units[unit] == true
+
+					if not is_tagged then
+						if
+							entry._ei_marker_created
+							or mod.enemy_markers[unit]
+							or mod.enemy_healthbars[unit]
+							or mod.enemy_debuffs[unit]
+						then
+							mod.force_remove_unit_markers(unit)
+						end
+					end
+
+					widget_active = widget_active and is_tagged
 				end
 
 				if player_pos then

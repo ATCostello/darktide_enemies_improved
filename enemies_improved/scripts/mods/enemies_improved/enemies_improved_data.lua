@@ -638,8 +638,7 @@ table.insert(mod.settings_widgets, {
 			function_name = "open_editor",
 		},
 	},
-})
-]]
+})]]
 
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
