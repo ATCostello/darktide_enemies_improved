@@ -613,33 +613,6 @@ mod.settings_widgets = {}
 
 local fonts = mod._get_font_options()
 
---[[
-table.insert(mod.settings_widgets, {
-	setting_id = "editor_settings",
-	type = "group",
-	tab = "Visual Editor",
-	sub_widgets = {
-		{
-			setting_id = "open_editor",
-			tooltip = "open_editor_tooltip",
-			type = "button",
-			button_text = "open_editor_button",
-			button_trigger = "pressed",
-			function_name = "open_editor",
-		},
-		{
-			setting_id = "open_editor_keybind",
-			tooltip = "open_editor_keybind_tooltip",
-			type = "keybind",
-			default_value = {},
-			keybind_global = false,
-			keybind_trigger = "pressed",
-			keybind_type = "function_call",
-			function_name = "open_editor",
-		},
-	},
-})]]
-
 -- GENERAL SETTINGS
 table.insert(mod.settings_widgets, {
 	setting_id = "general_settings",

@@ -612,7 +612,7 @@ local function layout_rows(widget, scale, dt, ctx)
 	if show_on_body then
 		local camera = parent and parent._parent and parent._parent:player_camera()
 		local head_pos = marker and marker.world_position and marker.world_position:unbox()
-		if camera and breed and breed.base_height and head_pos and unit then
+		if camera and breed and breed.base_height and head_pos and unit and Unit.alive(unit) then
 			local root_pos = Unit.world_position(unit, 1)
 			if root_pos then
 				local body_center = Vector3(root_pos.x, root_pos.y, root_pos.z + (breed.base_height * 0.8))
