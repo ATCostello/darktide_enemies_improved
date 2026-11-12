@@ -706,6 +706,27 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "init", function(self)
 	add_custom_templates(self)
 end)
 
+mod.hit_positions = {}
+mod.HIT_POSITION_MAX_AGE = 1.0
+
+mod:hook_safe("AttackReportManager", "add_attack_result", function(self, damage_profile, attacked_unit, attacking_unit, attack_direction, hit_world_position)
+	if not attacked_unit or not hit_world_position then
+		return
+	end
+
+	local entry = mod.hit_positions[attacked_unit]
+
+	if entry then
+		entry.position:store(hit_world_position)
+		entry.time = mod.get_time()
+	else
+		mod.hit_positions[attacked_unit] = {
+			position = Vector3Box(hit_world_position),
+			time = mod.get_time(),
+		}
+	end
+end)
+
 mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, marker)
 	local widget = marker and marker.widget
 
@@ -1024,6 +1045,10 @@ mod.force_remove_unit_markers = function(unit)
 	markers[unit] = nil
 	healthbars[unit] = nil
 	debuffs[unit] = nil
+
+	if mod.hit_positions then
+		mod.hit_positions[unit] = nil
+	end
 
 	local cluster = mod.get_horde_cluster_for_unit(unit)
 
@@ -2020,6 +2045,10 @@ mod.clear_caches = function()
 	table_clear(mod.enemy_debuffs)
 	table_clear(mod.enemy_cache)
 	table_clear(mod.marked_dead)
+
+	if mod.hit_positions then
+		table_clear(mod.hit_positions)
+	end
 
 	table_clear(_enemy_list)
 	table_clear(_enemy_list_index)

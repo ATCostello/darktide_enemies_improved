@@ -104,7 +104,7 @@ template.damage_number_settings = {
 	default_color = "white",
 	default_font_size = 16 * fs.text_scale,
 	dps_font_size = 22 * fs.text_scale,
-	dps_y_offset = -36,
+	dps_y_offset = -125,
 	duration = fs.damage_number_duration,
 	expand_bonus_scale = 4,
 	expand_duration = 0.2,
@@ -919,7 +919,7 @@ local function apply_built_scale(widget, marker_scale)
 	local content = widget.content
 	local style = widget.style
 
-	if fs.healthbar_enable and (not content.dead or fs.widget_removal_delay > 0) then
+	if fs.healthbar_enable and not content.dead then
 		content.hb_built = true
 	end
 	if fs.show_damage_numbers or content.show_dps then
@@ -1162,6 +1162,7 @@ template.on_enter = function(widget, marker, template)
 
 	content.hb_built = false
 	content.draw_hb = false
+	content.dead = false
 
 	content.damage_taken = 0
 	content.dps_damage = 0
@@ -1269,18 +1270,14 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if not is_alive then
 		content.draw_hb = false
-		if fs.widget_removal_delay > 0 then
-			content.dead = content.show_dps or false
-			content.hb_built = true
+		content.dead = true
+		content.hb_built = false
 
+		if fs.widget_removal_delay > 0 then
 			if not content.last_damage_taken_time then
 				content.last_damage_taken_time = t
 			end
-		elseif content.show_dps then
-			content.dead = true
-			content.hb_built = false
-		else
-			content.draw_hb = false
+		elseif not content.show_dps then
 			return
 		end
 	end
@@ -1626,19 +1623,31 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			content.was_critical = content._pending_crit or false
+		end
 
-			local last_hit_world_position = health_extension:last_hit_world_position()
+		local last_hit_world_position
 
-			if last_hit_world_position then
-				local box = content.last_hit_world_position
-				if not box then
-					content.last_hit_world_position = Vector3Box(last_hit_world_position)
-				else
-					box:store(last_hit_world_position)
-				end
-			elseif content.last_hit_world_position then
-				content.last_hit_world_position = nil
+		if health_extension.last_hit_world_position then
+			last_hit_world_position = health_extension:last_hit_world_position()
+		end
+
+		if not last_hit_world_position and mod.hit_positions then
+			local hit = mod.hit_positions[unit]
+
+			if hit and (mod.get_time() - hit.time) <= (mod.HIT_POSITION_MAX_AGE or 1) then
+				last_hit_world_position = hit.position:unbox()
 			end
+		end
+
+		if last_hit_world_position then
+			local box = content.last_hit_world_position
+			if not box then
+				content.last_hit_world_position = Vector3Box(last_hit_world_position)
+			else
+				box:store(last_hit_world_position)
+			end
+		elseif content.last_hit_world_position and not health_extension.last_hit_world_position then
+			content.last_hit_world_position = nil
 		end
 	end
 
@@ -1809,7 +1818,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if fs.hb_damage_show_only_latest then
 		if table_contains(mod.latest_damaged_enemies, unit) then
-			if healthbar_enabled_for(unit, breed, breed_type, t) then
+			if is_alive and healthbar_enabled_for(unit, breed, breed_type, t) then
 				content.draw_hb = true
 			else
 				content.draw_hb = false
@@ -1826,6 +1835,9 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	if content.draw_hb and line_of_sight_progress > 0 then
 		apply_built_scale(widget, marker.scale)
+	elseif not is_alive then
+		apply_built_scale(widget, marker.scale)
+		content.hb_built = false
 	else
 		content.hb_built = false
 	end
@@ -1835,6 +1847,10 @@ mod._cleanup_unit_health_data = function(unit)
 	previous_damage_taken[unit] = nil
 	last_damaged_time[unit] = nil
 	peak_cluster_max_by_rep[unit] = nil
+
+	if mod.hit_positions then
+		mod.hit_positions[unit] = nil
+	end
 end
 
 local table_clear = table.clear

@@ -856,7 +856,7 @@ local _create_definition = function(template, scenegraph_id)
 				text_vertical_alignment = "bottom",
 				offset = {
 					-size[1] * 0.5,
-					-size[2],
+					-size[2] * 0.7,
 					1,
 				},
 				font_type = mod.font_type,

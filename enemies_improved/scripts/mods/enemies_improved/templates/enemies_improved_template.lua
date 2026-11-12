@@ -261,7 +261,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		content._ei_dead_at = content._ei_dead_at or t
 	end
 
-	local dps_visible = fs.hb_show_dps
+	local dps_visible = content.show_dps
+	if dps_visible == nil then
+		dps_visible = fs.hb_show_dps
+	end
 	local dead_visible = dps_visible or fs.widget_removal_delay > 0
 
 	if not alive and not dead_visible then
@@ -375,7 +378,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 	local los = content.line_of_sight_progress or 1
 
-	local has_healthbar = fs.healthbar_enable and (content.hb_built or false) or false
+	local has_healthbar = alive and fs.healthbar_enable and (content.hb_built or false) or false
 
 	local has_markers = content.m_built or false
 
