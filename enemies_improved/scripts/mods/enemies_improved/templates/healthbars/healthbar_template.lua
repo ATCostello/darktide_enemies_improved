@@ -130,14 +130,6 @@ local peak_cluster_max_by_rep = {}
 local damage_number_pool = {}
 mod.damage_number_pool = damage_number_pool
 
-if mod.DEBUG then
-	local mem = mod.mem_profile
-	mem.track("healthbar.previous_damage_taken", previous_damage_taken)
-	mem.track("healthbar.last_damaged_time", last_damaged_time)
-	mem.track("healthbar.peak_cluster_max_by_rep", peak_cluster_max_by_rep)
-	mem.track("healthbar.damage_number_pool", damage_number_pool)
-end
-
 local armor_type_string_lookup = {
 	armored = "loc_weapon_stats_display_armored",
 	berserker = "loc_weapon_stats_display_berzerker",
@@ -148,10 +140,6 @@ local armor_type_string_lookup = {
 }
 
 mod.latest_damaged_enemies = {}
-
-if mod.DEBUG then
-	mod.mem_profile.track("mod.latest_damaged_enemies", mod.latest_damaged_enemies)
-end
 
 local function healthbar_enabled_for(unit, breed, breed_type, t)
 	local enemy_individual = breed and breed.name
@@ -242,16 +230,18 @@ local function is_weakspot(breed, zone)
 	return t and t[zone]
 end
 
-local function safe_was_crit(extension)
+local function was_crit(extension)
 	if not extension then
 		return false
 	end
 
-	local ok, was_crit = pcall(function()
-		return extension:was_hit_by_critical_hit_this_render_frame()
-	end)
+	if not extension:is_alive() then
+		return false
+	end
 
-	return ok and was_crit or false
+	local was_crit = extension:was_hit_by_critical_hit_this_render_frame()
+
+	return was_crit or false
 end
 
 local function format_number(n)
@@ -1221,10 +1211,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	local unit = marker.unit
 	local crit_extension = unit and ScriptUnit_has_extension(unit, "health_system")
 
-	if safe_was_crit(crit_extension) then
-		content._pending_crit = true
-	end
-
 	if t < widget._next_update then
 		return
 	end
@@ -1280,6 +1266,10 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		elseif not content.show_dps then
 			return
 		end
+	end
+
+	if is_alive and was_crit(crit_extension) then
+		content._pending_crit = true
 	end
 
 	local broadphase = fs.draw_distance_broadphase or fs.draw_distance
@@ -1430,13 +1420,15 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 
 				if entry and entry.health_ext and mod.detect_alive(u) then
 					local he = entry.health_ext
-					local ok, v = pcall(he.current_health, he)
-					if ok then
-						total_current = total_current + (v or 0)
-					end
-					ok, v = pcall(he.max_health, he)
-					if ok then
-						total_max_instant = total_max_instant + (v or 0)
+
+					if he then
+						if he:current_health() then
+							total_current = total_current + (he:current_health() or 0)
+						end
+
+						if he:max_health() then
+							total_max_instant = total_max_instant + (he:max_health() or 0)
+						end
 					end
 				end
 			end
@@ -1685,7 +1677,7 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 			end
 
 			local damage_diff = math.ceil(damage_taken_since_last)
-			local was_critical = content._pending_crit or safe_was_crit(health_extension)
+			local was_critical = content._pending_crit or (is_alive and was_crit(health_extension))
 			local hit_was_weakspot = is_weakspot(content.breed, content.last_hit_zone_name) or false
 
 			push_damage_number(

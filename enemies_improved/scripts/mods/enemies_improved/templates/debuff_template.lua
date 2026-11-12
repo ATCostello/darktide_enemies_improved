@@ -69,10 +69,6 @@ compute_layout()
 
 local active_pool = {}
 
-if mod.DEBUG then
-	mod.mem_profile.track("debuff.active_pool", active_pool)
-end
-
 template.size = size
 template.name = "enemy_debuff"
 
@@ -620,9 +616,8 @@ local function layout_rows(widget, scale, dt, ctx)
 				local body_screen = Camera.world_to_screen(camera, body_center)
 				local _ui_scale = ctx.inverse_scale or 1
 				if head_screen and body_screen and scale and scale > 0.001 then
-					-- scale^2 in the divisor makes the icon drift further down as distance increases
 					_body_screen_offset_y = ((body_screen.y - head_screen.y) * _ui_scale) / (scale * scale)
-					-- clamp so it never reaches the ground
+
 					local _max_body_offset = 90 * fs.text_scale
 					if _body_screen_offset_y > _max_body_offset then
 						_body_screen_offset_y = _max_body_offset

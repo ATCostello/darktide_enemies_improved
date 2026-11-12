@@ -441,7 +441,9 @@ local function _render_readable_damage_number(
 		end
 
 		local _marker_scale2 = (ui_content and ui_content.scale or 1) / (fs.text_scale or 1)
-		position[1] = x_position + (damage_number_settings.x_offset + current_order * damage_number_settings.x_offset_between_numbers) * _marker_scale2
+		position[1] = x_position
+			+ (damage_number_settings.x_offset + current_order * damage_number_settings.x_offset_between_numbers)
+				* _marker_scale2
 		position[2] = y_position
 		position[3] = z_position + current_order
 
@@ -517,7 +519,7 @@ local _damage_number_function = function(pass, ui_renderer, ui_style, ui_content
 				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
 				local dps_value = dps_damage / math_max(dps_timer, 1)
 				local text = string_format("%d DPS", dps_value)
-				local dps_y_offset = damage_number_settings.dps_y_offset
+				local dps_y_offset = damage_number_settings.dps_y_offset * ui_content.scale
 				ui_content.dps = dps_value
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
@@ -650,7 +652,7 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 				local dps_damage = ui_content.dps_damage or ui_content.damage_taken or 0
 				local dps_value = dps_damage / math_max(dps_timer, 1)
 				local text = string_format("%d DPS", dps_value)
-				local dps_y_offset = damage_number_settings.dps_y_offset
+				local dps_y_offset = damage_number_settings.dps_y_offset/2 * ui_content.scale
 				ui_content.dps = dps_value
 
 				if fs.hb_damage_number_type == damage_number_types.readable then
