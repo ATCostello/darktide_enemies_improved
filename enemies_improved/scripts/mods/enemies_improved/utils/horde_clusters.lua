@@ -350,13 +350,14 @@ local function _build_horde_clusters(units, num_units)
 					if e and mod.detect_alive(u) then
 						local he = e.health_ext
 						if he then
-							local ok, v = pcall(he.current_health, he)
-							if ok then
-								total_current = total_current + (v or 0)
+							local current_health = he:current_health() or 0
+							if current_health then
+								total_current = total_current + current_health
 							end
-							ok, v = pcall(he.max_health, he)
-							if ok then
-								total_max = total_max + (v or 0)
+
+							local max_health = he:max_health() or 0
+							if max_health then
+								total_max = total_max + max_health
 							end
 						end
 					end

@@ -25,18 +25,9 @@ local os_clock = os.clock
 
 -- debug mode toggle!!!
 mod.DEBUG = false
-dbg_ei = mod
 
 if mod.DEBUG then
 	dbg_mod = mod
-
-	local MemProfile = mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/utils/mem_profile")
-	mod.mem_profile = MemProfile
-
-	mod.update = function(dt)
-		mod.mem_profile.tick(dt)
-		mod.mem_profile.render_gui()
-	end
 end
 
 mod.detect_alive = function(unit)
@@ -134,14 +125,10 @@ mod.enabled = true
 
 mod.aimed_unit = {}
 mod.tagged_units = {}
-mod.crosshair_target = nil
-mod.crosshair_aimed = {}
 mod._periodic_cache_clear_timer = 0
 
-local CROSSHAIR_SCAN_INTERVAL = 0.15
 local AIM_SCAN_INTERVAL = 0.15
 local TAG_SCAN_INTERVAL = 0.15
-local _crosshair_scan_timer = 0
 local _aim_scan_timer = 0
 local _tag_scan_timer = 0
 
@@ -161,7 +148,6 @@ local MAX_PER_CELL = 3
 local MAX_ACTIVE_ENEMIES = mod.frame_settings.max_active_enemies or 20
 
 local AIMED_PRIORITY_BONUS = 100000
-local CROSSHAIR_PRIORITY_BONUS = 500000
 local TAGGED_PRIORITY_BONUS = 5000
 local CLUSTER_REP_PRIORITY_BONUS = 2000
 local EXISTING_PRIORITY_BONUS = 100
@@ -449,26 +435,6 @@ local function _clear_active_outline_tracking()
 	table_clear(stagger)
 end
 
-if mod.DEBUG then
-	local mem = mod.mem_profile
-	mem.track("cluster._horde_clusters", mod.clusters._horde_clusters)
-	mem.track("cluster._horde_cluster_by_unit", mod.clusters._horde_cluster_by_unit)
-	mem.track("cluster._cull_pool", _cull_pool)
-	mem.track("cluster._spatial_hash", mod.clusters._spatial_hash)
-	mem.track("cluster._visited", mod.clusters._visited)
-	mem.track("cluster._z_samples", mod.clusters._z_samples)
-	mem.track("cluster._bfs_queue", mod.clusters._bfs_queue)
-	mem.track("mod._broadphase_results", mod._broadphase_results)
-	mem.track("mod._broadphase_scratch", mod._broadphase_scratch)
-	mem.track("mod._broadphase_seen", mod._broadphase_seen)
-	mem.track("mod.enemy_cache", mod.enemy_cache)
-	mem.track("mod.enemy_markers", mod.enemy_markers)
-	mem.track("mod.enemy_healthbars", mod.enemy_healthbars)
-	mem.track("mod.enemy_debuffs", mod.enemy_debuffs)
-	mem.track("mod.marked_dead", mod.marked_dead)
-	mem.track("mod.source_unit_cache", mod.source_unit_cache)
-end
-
 local function _get_priority(breed_type, dist_sq, forward_bonus, unit)
 	local base = PRIORITY[breed_type] or 0
 
@@ -476,8 +442,8 @@ local function _get_priority(breed_type, dist_sq, forward_bonus, unit)
 
 	local score = base + distance_score
 
-	if mod.crosshair_aimed[unit] then
-		score = score + CROSSHAIR_PRIORITY_BONUS
+	if mod.aimed_unit[unit] then
+		score = score + AIMED_PRIORITY_BONUS
 	end
 
 	if mod.tagged_units[unit] then
@@ -492,13 +458,6 @@ local function _get_priority(breed_type, dist_sq, forward_bonus, unit)
 end
 
 local function _cull_sort(a, b)
-	local a_crosshair = mod.crosshair_aimed[a.unit] == true
-	local b_crosshair = mod.crosshair_aimed[b.unit] == true
-
-	if a_crosshair ~= b_crosshair then
-		return a_crosshair
-	end
-
 	local a_aimed = mod.aimed_unit[a.unit] == true
 	local b_aimed = mod.aimed_unit[b.unit] == true
 
@@ -709,23 +668,27 @@ end)
 mod.hit_positions = {}
 mod.HIT_POSITION_MAX_AGE = 1.0
 
-mod:hook_safe("AttackReportManager", "add_attack_result", function(self, damage_profile, attacked_unit, attacking_unit, attack_direction, hit_world_position)
-	if not attacked_unit or not hit_world_position then
-		return
-	end
+mod:hook_safe(
+	"AttackReportManager",
+	"add_attack_result",
+	function(self, damage_profile, attacked_unit, attacking_unit, attack_direction, hit_world_position)
+		if not attacked_unit or not hit_world_position then
+			return
+		end
 
-	local entry = mod.hit_positions[attacked_unit]
+		local entry = mod.hit_positions[attacked_unit]
 
-	if entry then
-		entry.position:store(hit_world_position)
-		entry.time = mod.get_time()
-	else
-		mod.hit_positions[attacked_unit] = {
-			position = Vector3Box(hit_world_position),
-			time = mod.get_time(),
-		}
+		if entry then
+			entry.position:store(hit_world_position)
+			entry.time = mod.get_time()
+		else
+			mod.hit_positions[attacked_unit] = {
+				position = Vector3Box(hit_world_position),
+				time = mod.get_time(),
+			}
+		end
 	end
-end)
+)
 
 mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_hook, self, marker)
 	local widget = marker and marker.widget
@@ -767,18 +730,6 @@ mod:hook(CLASS.HudElementWorldMarkers, "_unregister_marker", function(previous_h
 	end
 end)
 
-mod.aimed_unit = {}
-mod.tagged_units = {}
-mod.crosshair_target = nil
-mod.crosshair_aimed = {}
-mod._periodic_cache_clear_timer = 0
-
-if mod.DEBUG then
-	mod.mem_profile.track("mod.aimed_unit", mod.aimed_unit)
-	mod.mem_profile.track("mod.tagged_units", mod.tagged_units)
-	mod.mem_profile.track("mod.crosshair_aimed", mod.crosshair_aimed)
-end
-
 mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	add_custom_templates(self)
 
@@ -794,14 +745,6 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 	end
 
 	if mod.enabled then
-		_crosshair_scan_timer = _crosshair_scan_timer + dt
-
-		if _crosshair_scan_timer >= CROSSHAIR_SCAN_INTERVAL then
-			_crosshair_scan_timer = _crosshair_scan_timer % CROSSHAIR_SCAN_INTERVAL
-
-			mod.do_crosshair_hitscan()
-		end
-
 		-- Target scanning
 		if not fs.spatial_culling then
 			_aim_scan_timer = _aim_scan_timer + dt
@@ -1395,7 +1338,6 @@ mod.scan_enemies = function()
 				forward_bonus = mod.get_forward_dot(player_unit, unit, camera_forward)
 			end
 
-			local is_crosshair_target = mod.crosshair_aimed[unit] == true
 			local is_aimed = mod.aimed_unit[unit] == true
 
 			local entry = cache[unit]
@@ -1413,7 +1355,7 @@ mod.scan_enemies = function()
 			end
 
 			if should_check_los then
-				if physics_world_cache and not is_crosshair_target then
+				if physics_world_cache then
 					los_ok = mod.has_line_of_sight(player_unit, unit, physics_world_cache, player_los_pos)
 				else
 					los_ok = true
@@ -1689,7 +1631,6 @@ mod.scan_enemies = function()
 					mod.store_enemy_position(entry, data.x, data.y, data.z)
 				end
 
-				local is_crosshair = mod.crosshair_aimed[unit] == true
 				local is_aimed = mod.aimed_unit[unit] == true
 				local is_tagged = mod.tagged_units[unit] == true
 				local is_cluster_member = data.cluster_member == true
@@ -1697,18 +1638,18 @@ mod.scan_enemies = function()
 				local keep_widgets = kept < MAX_ACTIVE_ENEMIES
 
 				if fs.markers_show_only_aimed then
-					keep_widgets = is_crosshair or is_aimed
+					keep_widgets = is_aimed
 				end
 
-				if not data.los_ok and (not is_crosshair or not is_aimed or not is_tagged) then
+				if not data.los_ok and (not is_aimed or not is_tagged) then
 					keep_widgets = false
 				end
 
-				if is_crosshair or is_tagged then
+				if is_tagged then
 					keep_widgets = true
 				end
 
-				if is_cluster_member and not is_crosshair and not is_tagged and not is_aimed then
+				if is_cluster_member and not is_tagged and not is_aimed then
 					keep_widgets = false
 				end
 
@@ -1887,9 +1828,9 @@ mod.remove_dead = function()
 				local health_ext = entry.health_ext
 
 				if health_ext then
-					local ok, pct = pcall(health_ext.current_health_percent, health_ext)
+					local health_percent = health_ext:current_health_percent() or 0
 
-					if ok and pct <= 0 then
+					if health_percent and health_percent <= 0 then
 						if keep_dead_window then
 							if not entry._dead_at then
 								entry._dead_at = t
@@ -2062,12 +2003,8 @@ mod.clear_caches = function()
 	table_clear(mod.clusters._old_rep_of)
 	table_clear(mod.clusters._cluster_members)
 
-	--table_clear(mod.latest_damaged_enemies)
-	--table_clear(mod.latest_damaged_enemies_set)
 	table_clear(mod.aimed_unit)
 	table_clear(mod.tagged_units)
-	table_clear(mod.crosshair_aimed)
-	mod.crosshair_target = nil
 
 	if mod._clear_unit_health_data then
 		mod._clear_unit_health_data()
@@ -2097,140 +2034,6 @@ mod.clear_caches = function()
 
 	if mod.refresh_custom_names then
 		mod.refresh_custom_names()
-	end
-end
-
-mod.get_crosshair_shooting_vector = function(hud)
-	local player_extensions = hud and hud:player_extensions()
-
-	if player_extensions then
-		local unit_data_extension = player_extensions.unit_data
-		local first_person_extension = player_extensions.first_person
-		local weapon_extension = player_extensions.weapon
-
-		if unit_data_extension and first_person_extension and weapon_extension then
-			local first_person_unit = first_person_extension:first_person_unit()
-
-			if first_person_unit and Unit_alive(first_person_unit) then
-				local shoot_position = Unit.world_position(first_person_unit, 1)
-				local shoot_rotation = Unit.world_rotation(first_person_unit, 1)
-
-				shoot_rotation = Recoil.apply_weapon_recoil_rotation(
-					weapon_extension:recoil_template(),
-					unit_data_extension:read_component("recoil"),
-					unit_data_extension:read_component("movement_state"),
-					unit_data_extension:read_component("locomotion"),
-					unit_data_extension:read_component("inair_state"),
-					shoot_rotation
-				)
-
-				shoot_rotation = Sway.apply_sway_rotation(
-					weapon_extension:sway_template(),
-					unit_data_extension:read_component("sway"),
-					shoot_rotation
-				)
-
-				return shoot_position, Quaternion_forward(shoot_rotation)
-			end
-		end
-	end
-
-	local camera = hud and hud:player_camera()
-
-	if camera then
-		return Camera.local_position(camera), Quaternion_forward(Camera.local_rotation(camera))
-	end
-
-	return nil, nil
-end
-
-mod.do_crosshair_hitscan = function()
-	mod.crosshair_target = nil
-
-	table_clear(mod.crosshair_aimed)
-
-	local ui_manager = Managers.ui
-	local hud = ui_manager and ui_manager:get_hud()
-	if not hud then
-		return
-	end
-
-	local world = Managers.world:world("level_world")
-	local physics_world = world and World.get_data(world, "physics_world")
-	if not physics_world then
-		return
-	end
-
-	local player = Managers.player:local_player(1)
-	local player_unit = player and player.player_unit
-	if not player_unit or not mod.detect_alive(player_unit) then
-		return
-	end
-
-	local shoot_position, shoot_direction = mod.get_crosshair_shooting_vector(hud)
-	if not shoot_position or not shoot_direction then
-		return
-	end
-
-	local max_dist = fs.draw_distance_broadphase or fs.draw_distance or 30
-
-	local success, hits = pcall(
-		PhysicsWorld.raycast,
-		physics_world,
-		shoot_position,
-		shoot_direction,
-		max_dist,
-		"all",
-		"types",
-		"both",
-		"max_hits",
-		256,
-		"collision_filter",
-		"filter_player_character_shooting_raycast",
-		"rewind_ms",
-		0
-	)
-
-	if not success or not hits then
-		return
-	end
-
-	local closest_dist = math.huge
-	local num_hits = #hits
-
-	for i = 1, num_hits do
-		local hit = hits[i]
-
-		if hit then
-			local hit_dist = hit[2]
-			local hit_actor = hit[4]
-			local hit_unit = hit_actor and Actor_unit(hit_actor)
-
-			if hit_unit and hit_unit ~= player_unit and hit_dist and hit_dist > 0.1 and hit_dist < closest_dist then
-				closest_dist = hit_dist
-			end
-		end
-	end
-
-	if closest_dist == math.huge then
-		return
-	end
-
-	for i = 1, num_hits do
-		local hit = hits[i]
-		local hit_dist = hit[2]
-		local hit_actor = hit[4]
-		local hit_unit = hit_actor and Actor_unit(hit_actor)
-
-		if hit_unit and hit_unit ~= player_unit and hit_dist and hit_dist <= closest_dist + 0.05 then
-			if HEALTH_ALIVE[hit_unit] and Unit_alive(hit_unit) then
-				mod.crosshair_aimed[hit_unit] = true
-
-				if not mod.crosshair_target then
-					mod.crosshair_target = hit_unit
-				end
-			end
-		end
 	end
 end
 
@@ -2332,10 +2135,6 @@ mod.do_aim_raycast = function(candidates, candidate_count)
 				end
 			end
 		end
-	end
-
-	for unit in next, mod.crosshair_aimed do
-		aimed[unit] = true
 	end
 end
 
@@ -2469,7 +2268,7 @@ mod.update_enemies = function(dt, t)
 				local widget_active = entry._ei_widget_active ~= false
 
 				if fs.markers_show_only_aimed then
-					widget_active = widget_active and (mod.aimed_unit[unit] or mod.crosshair_aimed[unit])
+					widget_active = widget_active and mod.aimed_unit[unit]
 				end
 
 				if fs.only_tagged_enemies then
@@ -2683,13 +2482,15 @@ mod.is_weakened = function(unit, breed)
 		return false
 	end
 
-	local ok, max_health = pcall(health_extension.max_health, health_extension)
-
-	if not ok or not max_health then
+	if not health_extension:max_health() then
 		return false
 	end
 
 	local difficulty = Managers.state.difficulty
+
+	if not difficulty then
+		return false
+	end
 
 	if not (breed.name and difficulty) then
 		return false
@@ -2697,33 +2498,23 @@ mod.is_weakened = function(unit, breed)
 
 	local initial_max_health = math.floor(difficulty:get_minion_max_health(breed.name))
 
-	if max_health < initial_max_health then
+	if health_extension:max_health() < initial_max_health then
 		return true
 	end
 
-	local ok_havoc, parsed_havoc = pcall(function()
-		return difficulty:get_parsed_havoc_data()
-	end)
+	if difficulty:get_parsed_havoc_data() then
+		local game_mode = Managers.state.game_mode:game_mode()
 
-	if ok_havoc and parsed_havoc then
-		local ok_game_mode, game_mode = pcall(function()
-			return Managers.state.game_mode:game_mode()
-		end)
+		if game_mode and game_mode.extension then
+			local havoc_extension = game_mode:extension("havoc")
 
-		if ok_game_mode and game_mode and game_mode.extension then
-			local ok_havoc_ext, havoc_extension = pcall(function()
-				return game_mode:extension("havoc")
-			end)
+			if havoc_extension then
+				local havoc_health_override_value = havoc_extension:get_modifier_value("modify_monster_health")
 
-			if ok_havoc_ext and havoc_extension then
-				local ok_value, havoc_health_override_value = pcall(function()
-					return havoc_extension:get_modifier_value("modify_monster_health")
-				end)
-
-				if ok_value and havoc_health_override_value then
+				if havoc_health_override_value then
 					local multiplied_max_health = initial_max_health + initial_max_health * havoc_health_override_value
 
-					if max_health < multiplied_max_health then
+					if health_extension:max_health() < multiplied_max_health then
 						return true
 					end
 				end
@@ -2758,8 +2549,8 @@ mod.unit_has_active_debuff = function(unit, t)
 	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
 
 	if buff_extension then
-		local ok, keywords = pcall(buff_extension.keywords, buff_extension)
-		if ok and keywords then
+		local keywords = buff_extension.keywords
+		if keywords then
 			for name, _ in pairs(keywords) do
 				if debuffs[name] then
 					result = true
@@ -2769,16 +2560,18 @@ mod.unit_has_active_debuff = function(unit, t)
 		end
 
 		if not result then
-			local ok2, buffs = pcall(buff_extension.buffs, buff_extension)
-			if ok2 and buffs then
+			local buffs = buff_extension.buffs
+			if buffs then
 				local num_buffs = #buffs
 
 				for i = 1, num_buffs do
 					local buff = buffs[i]
-					local ok3, name = pcall(buff.template_name, buff)
-					if ok3 and name and debuffs[name] then
-						result = true
-						break
+					if buff then
+						local name = buff.template_name
+						if name and debuffs[name] then
+							result = true
+							break
+						end
 					end
 				end
 			end
