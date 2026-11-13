@@ -2549,7 +2549,8 @@ mod.unit_has_active_debuff = function(unit, t)
 	local buff_extension = ScriptUnit_has_extension(unit, "buff_system")
 
 	if buff_extension then
-		local keywords = buff_extension.keywords
+		local keywords = buff_extension:keywords()
+
 		if keywords then
 			for name, _ in pairs(keywords) do
 				if debuffs[name] then
@@ -2560,7 +2561,7 @@ mod.unit_has_active_debuff = function(unit, t)
 		end
 
 		if not result then
-			local buffs = buff_extension.buffs
+			local buffs = buff_extension:buffs()
 			if buffs then
 				local num_buffs = #buffs
 
