@@ -1,7 +1,8 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
--- Cache frequently used globals
+local HitZone = require("scripts/utilities/attack/hit_zone")
+
 local Managers = Managers
 local Unit = Unit
 local World = World
@@ -18,7 +19,6 @@ local Actor_unit = Actor.unit
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local Managers_ui = Managers.ui
 
--- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
 local _cached_physics_world = nil
@@ -26,7 +26,6 @@ local _physics_world_checked = false
 local _smart_tag_system = nil
 local _smart_tag_checked = false
 
--- the players head node never changes for a given player unit
 local _los_origin_unit = nil
 local _los_origin_node = nil
 local _los_origin_pos = Vector3.zero()
@@ -35,8 +34,10 @@ local _los_spine_pos = Vector3.zero()
 
 local fs = mod.frame_settings
 
--- Central priority table for all outlines (lower number = higher priority)
 local OUTLINE_PRIORITY = {
+	-- Weakspot highlighting runs on its own material layer, so it is never
+	-- replaced by any of the unit-wide outlines below.
+	weakspot_outline = 0,
 	special_target = 3,
 	psyker_marked_target = 2,
 	smart_tagged_enemy = 3,
@@ -124,14 +125,12 @@ end
 mod.add_outline = function(unit, outline, outline_system)
 	if unit and outline and outline_system and Unit.alive(unit) then
 		outline_system:add_outline(unit, outline)
-		-- Ensure custom colors are applied for psyker marked outlines
 		if outline == "psyker_marked_target" or outline == "enemies_improved_alert" or outline == "enemies_improved_staggered" or string.find(outline, "psyker") then
 			local ext = outline_system._unit_extension_data and outline_system._unit_extension_data[unit]
 			if ext and ext.outlines then
 				for i = 1, #ext.outlines do
 					local o = ext.outlines[i]
 					if o.name == outline and o.material_layers then
-						-- Force color update
 						local Unit_set_vector3_for_material = Unit.set_vector3_for_material
 						local Vector3_new = Vector3
 						for ii = 1, #o.material_layers do
@@ -528,6 +527,329 @@ mod.get_forward_dot = function(player_unit, enemy_unit, forward)
 	return dot
 end
 
+-----------------------------------------------------------------------
+-- WEAKSPOT OUTLINE
+--
+-- The stock outline system enables its material layers on the whole unit,
+-- so it cannot colour just the weakspot. Instead we use our own outline
+-- layer on the visual-loadout units that contain the weakspot geometry
+-- (the face/head/hair slots for most breeds). Because the layer is
+-- independent of the engine outlines it always wins over them, which gives
+-- it the effective highest priority. Breeds whose weakspot is baked into
+-- the body mesh get a wire sphere at the hit-zone position instead.
+-----------------------------------------------------------------------
+
+local WEAKSPOT_LAYER = "enemies_improved_weakspot"
+local WEAKSPOT_MATERIAL = "content/characters/materials/minion_outline"
+
+local WEAKSPOT_ZONE_SLOTS = {
+	head = {
+		slot_face = true,
+		slot_head = true,
+		slot_hair = true,
+		slot_head_attachment = true,
+		slot_headgear = true,
+		slot_mask = true,
+		slot_beard = true,
+		slot_helmet_decal = true,
+	},
+	shield = { slot_shield = true },
+	backpack = { slot_variation_gear = true },
+	canister = { slot_variation_gear = true },
+}
+
+local _weakspot_zones_by_breed = {}
+local _weakspot_temp_units = {}
+local _weakspot_line_object = nil
+local _weakspot_line_world = nil
+
+local function weakspot_vector()
+	local c = fs.outline_weakspot_colour
+	local a = (c and c[1] or 255) / 255
+	local r, g, b = (c and c[2] or 255) / 255, (c and c[3] or 80) / 255, (c and c[4] or 220) / 255
+
+	-- Always create a fresh Vector3. In-place mutation marks engine vectors as
+	-- stale, which other mods' material hooks (e.g. SoloPlay) reject.
+	return Vector3(r * a, g * a, b * a)
+end
+
+local function weakspot_zones(breed)
+	local breed_name = breed and breed.name
+
+	if not breed_name then
+		return nil
+	end
+
+	local cached = _weakspot_zones_by_breed[breed_name]
+
+	if cached ~= nil then
+		return cached
+	end
+
+	local result = {}
+	local weakspot_types = breed.hit_zone_weakspot_types
+
+	if weakspot_types then
+		for zone in pairs(weakspot_types) do
+			local slots = WEAKSPOT_ZONE_SLOTS[zone]
+
+			if slots then
+				for slot_name in pairs(slots) do
+					result[#result + 1] = slot_name
+				end
+			elseif not result.marker then
+				result.marker = zone
+			end
+		end
+	end
+
+	_weakspot_zones_by_breed[breed_name] = result
+	return result
+end
+
+local function reset_table(t)
+	for i = 1, #t do
+		t[i] = nil
+	end
+end
+
+local function table_contains(t, value)
+	for i = 1, #t do
+		if t[i] == value then
+			return true
+		end
+	end
+
+	return false
+end
+
+local function hide_weakspot_unit(entry, unit)
+	if not unit then
+		return
+	end
+
+	if Unit.alive(unit) then
+		Unit.set_material_layer(unit, WEAKSPOT_LAYER, false)
+	end
+
+	local units = entry._weakspot_units
+
+	if units then
+		for i = #units, 1, -1 do
+			if units[i] == unit then
+				table.remove(units, i)
+			end
+		end
+	end
+end
+
+local function hide_weakspot_outline(entry)
+	if not entry then
+		return
+	end
+
+	local units = entry._weakspot_units
+
+	if units then
+		for i = #units, 1, -1 do
+			hide_weakspot_unit(entry, units[i])
+		end
+	end
+
+	entry._weakspot_marker = nil
+	entry._weakspot_marker_zone = nil
+end
+
+mod.hide_weakspot_outline = hide_weakspot_outline
+
+mod.clear_all_weakspot_outlines = function()
+	for _, entry in next, mod.enemy_cache or {} do
+		hide_weakspot_outline(entry)
+	end
+
+	if _weakspot_line_object then
+		LineObject.reset(_weakspot_line_object)
+		LineObject.dispatch(_weakspot_line_world, _weakspot_line_object)
+	end
+end
+
+mod.update_weakspot_outlines = function(entry)
+	if not fs.outline_weakspot_enable then
+		hide_weakspot_outline(entry)
+		return
+	end
+
+	local unit = entry and entry.unit
+
+	if not unit or not Unit.alive(unit) or not entry.seen or not HEALTH_ALIVE[unit] then
+		hide_weakspot_outline(entry)
+		return
+	end
+
+	local zones = weakspot_zones(entry.breed)
+
+	if not zones or (#zones == 0 and not zones.marker) then
+		hide_weakspot_outline(entry)
+		return
+	end
+
+	local slot_units = _weakspot_temp_units
+
+	reset_table(slot_units)
+
+	local visual_loadout_extension = ScriptUnit_has_extension(unit, "visual_loadout_system")
+			and ScriptUnit.extension(unit, "visual_loadout_system")
+		or nil
+
+	if visual_loadout_extension then
+		local inventory_slots = visual_loadout_extension:inventory_slots()
+
+		for i = 1, #zones do
+			local slot_name = zones[i]
+			local slot = inventory_slots[slot_name]
+
+			if slot then
+				local slot_unit, attachments = visual_loadout_extension:slot_unit(slot_name)
+
+				slot_unit = slot_unit or slot.unit
+
+				if slot_unit and slot_unit ~= unit and Unit.alive(slot_unit) then
+					slot_units[#slot_units + 1] = slot_unit
+				end
+
+				if attachments then
+					for j = 1, #attachments do
+						local attachment = attachments[j]
+
+						if attachment and Unit.alive(attachment) then
+							slot_units[#slot_units + 1] = attachment
+						end
+					end
+				end
+			end
+		end
+	end
+
+	local units = entry._weakspot_units
+
+	if not units then
+		units = {}
+		entry._weakspot_units = units
+	end
+
+	if #slot_units > 0 then
+		for i = #units, 1, -1 do
+			if not table_contains(slot_units, units[i]) then
+				hide_weakspot_unit(entry, units[i])
+			end
+		end
+
+		local color = weakspot_vector()
+
+		for i = 1, #slot_units do
+			local slot_unit = slot_units[i]
+
+			if not table_contains(units, slot_unit) then
+				Unit.add_material_layer(slot_unit, WEAKSPOT_LAYER, WEAKSPOT_MATERIAL, true)
+				Unit.set_material_layer(slot_unit, WEAKSPOT_LAYER, true)
+				Unit.set_unit_culling(slot_unit, false, true)
+				units[#units + 1] = slot_unit
+			end
+
+			Unit.set_vector3_for_material(slot_unit, WEAKSPOT_LAYER, "outline_color", color)
+			Unit.set_material_layer(slot_unit, WEAKSPOT_LAYER, true)
+		end
+
+		entry._weakspot_marker = nil
+		entry._weakspot_marker_zone = nil
+	elseif zones.marker then
+		hide_weakspot_outline(entry)
+		entry._weakspot_marker = true
+		entry._weakspot_marker_zone = zones.marker
+	else
+		hide_weakspot_outline(entry)
+	end
+end
+
+local function get_weakspot_line_object()
+	local world = Managers.world and Managers.world:world("level_world")
+
+	if not world then
+		return nil
+	end
+
+	if _weakspot_line_world ~= world then
+		if _weakspot_line_object and _weakspot_line_world then
+			LineObject.reset(_weakspot_line_object)
+			LineObject.dispatch(_weakspot_line_world, _weakspot_line_object)
+			World.destroy_line_object(_weakspot_line_world, _weakspot_line_object)
+		end
+
+		_weakspot_line_object = nil
+		_weakspot_line_world = world
+	end
+
+	if not _weakspot_line_object then
+		local ok, line_object = pcall(function()
+			return World.create_line_object(world)
+		end)
+
+		if ok and line_object then
+			_weakspot_line_object = line_object
+		end
+	end
+
+	return _weakspot_line_object
+end
+
+mod.draw_weakspot_markers = function()
+	if not fs.outline_weakspot_enable then
+		if _weakspot_line_object and _weakspot_line_world then
+			LineObject.reset(_weakspot_line_object)
+			LineObject.dispatch(_weakspot_line_world, _weakspot_line_object)
+		end
+
+		return
+	end
+
+	local line_object = get_weakspot_line_object()
+
+	if not line_object then
+		return
+	end
+
+	LineObject.reset(line_object)
+
+	local c = fs.outline_weakspot_colour or {}
+	local line_color = Color(c[1] or 255, c[2] or 255, c[3] or 80, c[4] or 220)
+
+	for _, entry in next, mod.enemy_cache or {} do
+		if
+			entry and entry._weakspot_marker and entry.seen and entry.unit
+			and Unit.alive(entry.unit) and HEALTH_ALIVE[entry.unit]
+		then
+			local zone = entry._weakspot_marker_zone or "head"
+			local unit_data_extension = ScriptUnit_has_extension(entry.unit, "unit_data_system")
+				and ScriptUnit.extension(entry.unit, "unit_data_system")
+				or nil
+
+			if unit_data_extension and unit_data_extension:hit_zone_actors(zone) then
+				local ok, position = pcall(function()
+					return HitZone.hit_zone_center_of_mass(entry.unit, zone, true)
+				end)
+
+				if ok and position then
+					local scale = Unit.world_scale(entry.unit, 1)
+					local radius = 0.16 * (scale and scale.x or 1)
+					LineObject.add_sphere(line_object, line_color, position, radius)
+				end
+			end
+		end
+	end
+
+	LineObject.dispatch(_weakspot_line_world, line_object)
+end
+
 mod.update_enemy_outlines = function(entry, player_unit)
 	if not fs.outlines_enable then
 		return
@@ -613,7 +935,6 @@ mod.default_outline_enabled = {
 	shield = false,
 }
 
--- some base game breeds are missing the use_outline tag on their gear slots, so the outline colour never reaches it
 local breeds_missing_outline_tag = {
 	cultist_ritualist = true,
 	cultist_assault = true,
@@ -634,7 +955,6 @@ local function fix_missing_outline_tag(unit, breed)
 	end
 
 	for slot_name, slot in pairs(visual_loadout_extension:inventory_slots()) do
-		-- only slots that spawned a unit, material override slots have none and the outline system errors on them
 		if slot.use_outline == nil and visual_loadout_extension:slot_unit(slot_name) then
 			slot.use_outline = true
 		end
@@ -853,8 +1173,6 @@ mod.apply_enemy_outlines = function(settings)
 	}
 
 	-- VANILLA OUTLINE COLOUR OVERRIDES
-
-	-- Enable toggles for the vanilla outline overrides (default on)
 	local outline_override_toggles = {
 		"outline_tagged_enable",
 		"outline_tagged_passive_enable",
@@ -998,7 +1316,8 @@ mod.apply_enemy_outlines = function(settings)
 		settings.MinionOutlineExtension.psyker_marked_target = {
 			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
-				"minion_outline_psyker",
+				"minion_outline",
+				"minion_outline_reversed_depth",
 			},
 			priority = OUTLINE_PRIORITY.psyker_marked_target,
 			override_global_visibility = nil,

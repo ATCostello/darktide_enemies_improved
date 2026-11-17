@@ -3,16 +3,15 @@ mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_l
 local StaggerSettings = require("scripts/settings/damage/stagger_settings")
 local stagger_types = StaggerSettings.stagger_types
 local BreedActions = require("scripts/settings/breed/breed_actions")
---local BreedActions = table.copy(BreedActions) -- keep a local copy always...
 local Stagger = require("scripts/utilities/attack/stagger")
 
 local DMF = get_mod("DMF")
 
-local _io = DMF and DMF:persistent_table("_io")
-if _io and not _io.initialized then
-	_io = DMF.deepcopy(Mods.lua.io)
+local ei_io = DMF and DMF:persistent_table("ei_io")
+if ei_io and not ei_io.initialized then
+	ei_io = DMF.deepcopy(Mods.lua.io)
 end
-_io = _io or Mods.lua.io
+ei_io = ei_io or Mods.lua.io
 
 local Unit_alive = Unit.alive
 local Application_flow_callback_context_unit = Application.flow_callback_context_unit
@@ -20,10 +19,6 @@ local type = type
 
 mod.anim_db = mod.anim_db or {}
 mod.anim_db_dirty = false
-
-if mod.DEBUG then
-	--mod.dbg_breedactions = BreedActions
-end
 
 local function serialize_table(val, indent)
 	indent = indent or 0
@@ -53,24 +48,6 @@ local function serialize_table(val, indent)
 	end
 end
 
-mod.prune_anim_db = function()
-	for breed_name, db in pairs(mod.anim_db) do
-		-- remove empty subtables
-		if next(db.name_to_id) == nil then
-			db.name_to_id = {}
-		end
-		if next(db.id_to_name) == nil then
-			db.id_to_name = {}
-		end
-		if next(db.special_attacks) == nil then
-			db.special_attacks = {}
-		end
-		if next(db.staggers) == nil then
-			db.staggers = {}
-		end
-	end
-end
-
 mod.save_anim_db = function()
 	mod:echo("[ANIM_DB] Saving...")
 	if not mod.anim_db_dirty then
@@ -78,7 +55,7 @@ mod.save_anim_db = function()
 	end
 	local path = "../mods/enemies_improved/scripts/mods/enemies_improved/modules/animations/anim_db.lua"
 
-	local file, err = _io.open(path, "w+")
+	local file, err = ei_io.open(path, "w+")
 	if not file then
 		mod:echo("[ANIM_DB] Failed to open file: " .. tostring(err))
 		return
@@ -92,7 +69,7 @@ mod.save_anim_db = function()
 	mod.anim_db_dirty = false
 
 	if mod.DEBUG then
-		--mod:echo("[ANIM_DB] Saved successfully")
+		mod:echo("[ANIM_DB] Saved successfully")
 	end
 end
 
@@ -104,12 +81,12 @@ mod.load_anim_db = function()
 	if local_anim_db then
 		mod.anim_db = local_anim_db
 		if mod.DEBUG then
-			--mod:echo("[ANIM_DB] Loaded from storage")
+			mod:echo("[ANIM_DB] Loaded from storage")
 		end
 	else
 		mod.anim_db = {}
 		if mod.DEBUG then
-			--mod:echo("[ANIM_DB] Failed to load from storage, creating new.")
+			mod:echo("[ANIM_DB] Failed to load from storage, creating new.")
 		end
 	end
 end
@@ -134,38 +111,9 @@ mod.clean_anim_db = function()
 	end
 
 	if mod.DEBUG then
-		--mod:echo("[ANIM_DB] Cleaned invalid mappings")
+		mod:echo("[ANIM_DB] Cleaned invalid mappings")
 	end
 end
-
---[[ -- mod:settings stuff, too much memory hog
-mod.load_anim_db = function()
-	local saved = mod:get("anim_db")
-
-	if saved then
-		mod.anim_db = saved
-		if mod.DEBUG then
-			mod:echo("[ANIM_DB] Loaded from storage")
-		end
-	else
-		mod.anim_db = {}
-	end
-
-	mod.clean_anim_db()
-end
-
-mod.save_anim_db = function()
-	if not mod.anim_db_dirty then
-		return
-	end
-
-	mod:set("anim_db", mod.anim_db)
-	mod.anim_db_dirty = false
-
-	if mod.DEBUG then
-		mod:echo("[ANIM_DB] Saved to storage")
-	end
-end]]
 
 ---------------------------------------------------------------------------------------------
 -- ANIMATION BASED SPECIAL ATTACK DETECTION
@@ -504,9 +452,7 @@ local function collect_anim_events_recursive(t, results)
 
 	for key, value in pairs(t) do
 		local key_str = type(key) == "string" and string.lower(key) or nil
-		----------	---------------------------------------
-		-- Only look at keys likely to contain anim events
-		-------------------------------------------------
+
 		local is_anim_key = key_str
 			and (string.find(key_str, "anim") or key_str == "animation" or key_str == "anim_event")
 
@@ -522,9 +468,6 @@ local function collect_anim_events_recursive(t, results)
 			end
 		end
 
-		-------------------------------------------------
-		-- Recurse deeper
-		-------------------------------------------------
 		if type(value) == "table" then
 			collect_anim_events_recursive(value, results)
 		end
@@ -547,9 +490,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 		mod.anim_db[breed_name] = db
 	end
 
-	-------------------------------------------------
-	-- 1. Collect ALL animation events
-	-------------------------------------------------
+	-- Collect ALL animation events
 	local results = {}
 	local breed_actions = BreedActions[breed_name]
 
@@ -559,28 +500,28 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 
 	collect_anim_events_recursive(breed_actions, results)
 
-	-------------------------------------------------
-	-- 2. Resolve event_name → event_id
-	-------------------------------------------------
+	-- Get event id from name
 	for event_name, _ in pairs(results) do
 		if not db.name_to_id[event_name] then
-			local id = Unit.animation_event(unit, event_name)
+			local id = nil
 
+			if Unit.has_animation_event(unit, event_name) then
+				id = Unit.animation_event(unit, event_name)
+			end
+			
 			if id and id >= 0 then
 				db.name_to_id[event_name] = id
 				db.id_to_name[id] = event_name
 				mod.anim_db_dirty = true
 
 				if mod.DEBUG then
-					--mod:echo(string.format("[DISCOVERED][%s] %s -> %d", breed_name, event_name, id))
+					mod:echo(string.format("[DISCOVERED][%s] %s -> %d", breed_name, event_name, id))
 				end
 			end
 		end
 	end
 
-	-------------------------------------------------
-	-- 3. Cache SPECIAL ATTACKS directly by ID
-	-------------------------------------------------
+	-- cache by special attack id
 	local special_table = mod.special_attack_animations[breed_name]
 
 	if special_table then
@@ -594,9 +535,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 		end
 	end
 
-	-------------------------------------------------
-	-- 4. Cache STAGGERS directly by ID
-	-------------------------------------------------
+	-- cache by Stagger ID
 	local stagger_root = breed_actions.stagger
 	local stagger_table = stagger_root and stagger_root.stagger_anims
 	local breed_stagger_durations = breed and breed.stagger_durations
@@ -616,7 +555,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 
 		if not id then
 			if mod.DEBUG then
-				--mod:echo("[STAGGER MISS] no id for anim: " .. tostring(anim_name))
+				mod:echo("[STAGGER MISS] no id for anim: " .. tostring(anim_name))
 			end
 		end
 
@@ -630,7 +569,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 			mod.anim_db_dirty = true
 
 			if mod.DEBUG then
-				--mod:echo(string.format("[STAGGER MAP][%s] %s -> %d", tostring(stagger_type), anim_name, id))
+				mod:echo(string.format("[STAGGER MAP][%s] %s -> %d", tostring(stagger_type), anim_name, id))
 			end
 		end
 	end
@@ -655,9 +594,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 				duration = stagger_data.duration
 			end
 
-			-------------------------------------------------
-			-- CASE 1: simple animation field
-			-------------------------------------------------
+			-- 1. animation field
 			if type(stagger_data) == "string" then
 				register_stagger_anim(db, stagger_data, stagger_type, duration)
 			elseif type(stagger_data) == "table" then
@@ -671,9 +608,7 @@ mod.init_breed_anim_db = function(unit, breed, breed_name)
 					end
 				end
 
-				-------------------------------------------------
-				-- CASE 2: complex stagger_anims tree
-				-------------------------------------------------
+				-- 2. stagger_anims
 				for stagger_type, stagger_data in pairs(stagger_table) do
 					local duration = nil
 
@@ -711,12 +646,10 @@ local function handle_animation_event(unit, event_index)
 
 	if mod.DEBUG then
 		if db.id_to_name[event_index] then
-			--mod:echo(breed_name .. " : " .. db.id_to_name[event_index])
+			mod:echo(breed_name .. " : " .. db.id_to_name[event_index])
 		end
 	end
-	-------------------------------------------------
-	-- SPECIAL ATTACK (O(1))
-	-------------------------------------------------
+	-- SPECIAL ATTACK
 	local attack_data = db.special_attacks[event_index]
 
 	if attack_data then
@@ -727,13 +660,11 @@ local function handle_animation_event(unit, event_index)
 		entry.special_attack_timer = now + attack_data.duration
 
 		if mod.DEBUG then
-			--mod:echo(string.format("[SPECIAL][%s] %s", breed_name, entry.special_attack_event))
+			mod:echo(string.format("[SPECIAL][%s] %s", breed_name, entry.special_attack_event))
 		end
 	end
 
-	-------------------------------------------------
-	-- STAGGER (O(1))
-	-------------------------------------------------
+	-- STAGGER
 	local stagger = db.staggers[event_index]
 
 	if stagger then
@@ -745,14 +676,14 @@ local function handle_animation_event(unit, event_index)
 		mod.get_stagger_calculation_results()
 
 		if mod.DEBUG then
-			--mod:echo(
-			--	string.format(
-			--		"[STAGGER][%s] type=%s duration=%.2f",
-			--		breed_name,
-			--		tostring(stagger.type),
-			--		stagger.duration
-			--	)
-			--)
+			mod:echo(
+				string.format(
+					"[STAGGER][%s] type=%s duration=%.2f",
+					breed_name,
+					tostring(stagger.type),
+					stagger.duration
+				)
+			)
 		end
 	end
 end

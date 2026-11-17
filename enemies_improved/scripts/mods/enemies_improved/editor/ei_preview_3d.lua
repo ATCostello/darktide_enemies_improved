@@ -308,9 +308,6 @@ function P3D.new(view)
 
 	pcall(self._spawn_lighting, self)
 
-	-- Remember every unit that exists before any enemy is spawned, so
-	-- _clear_subject can wipe only the spawned (and possibly orphaned)
-	-- units without touching level geometry, lights or the base rig.
 	local world = self.ws and self.ws:world()
 	local base = {}
 
@@ -429,9 +426,6 @@ function P3D:_retire_stale()
 	if moved > 0 then
 		crumb(string.format("retired %d packages (%d held)", moved, self:_held_count()))
 
-		-- Keep the retired packages off-limits to the engine unload path for a
-		-- short while. The old subject units are only marked for deletion, so
-		-- unloading their resources immediately can leave dangling references.
 		self._release_hold = math.max(self._release_hold or 0, 60)
 	end
 end
@@ -520,10 +514,6 @@ function P3D:_clear_subject()
 		pcall(spawner.remove_pending_units, spawner)
 	end
 
-	-- Robust fallback: physically destroy any units that appeared in the
-	-- world after creation (subject, attachment and failed-spawn units)
-	-- and were not already removed above. Multiple passes handle units that
-	-- owned children being destroyed first on a later pass.
 	local world = self.ws and self.ws:world()
 	local protected = self._base_world_units
 
@@ -579,8 +569,6 @@ function P3D:destroy()
 
 		self.ws = nil
 	end
-
-	-- Packages are intentionally retained (see above).
 
 	pcall(set_pending, nil)
 end
@@ -1156,9 +1144,6 @@ function P3D:_spawn()
 			pcall(d.VisualLoadoutCustomization.spawn_item, pick.item, attach, unit, false, false, false, nil, nil)
 
 		if iok and item_unit then
-			-- spawn_item returns a map from spawned unit to its direct child
-			-- attachment units. Collect every descendant so they are streamed
-			-- and, more importantly, removed again on the next breed switch.
 			local child_units = {}
 			local seen = { [item_unit] = true }
 
@@ -1326,11 +1311,6 @@ function P3D:update(dt, t)
 			self:_stream_done(true)
 		end
 	end
-
-	-- Deliberately do not release loaded resource packages. Unloading them
-	-- has repeatedly crashed the engine (refcount not zero) even after the
-	-- spawned units were deleted, so packages are retained for the whole
-	-- preview session and only freed when the game closes.
 
 	if state == "loading" and not self._spawned then
 		self._load_time = self._load_time + dt

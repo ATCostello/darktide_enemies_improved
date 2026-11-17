@@ -366,7 +366,6 @@ local _create_definition = function(template, scenegraph_id)
 				style.size[1] = 2 * scale
 			end,
 			visibility_function = function(content)
-				-- with the toughness bar off the health endcap goes back to always showing, but it still respects the toggle and the healthbar being hidden
 				if
 					(content.draw_hb == nil or content.draw_hb == true)
 					and fs.hb_enable_bar

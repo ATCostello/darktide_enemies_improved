@@ -479,7 +479,7 @@ View.cb_pv_enemy = function(self)
 	self:_touch()
 	self:picker_open("pv_enemy", self._breed_opts, self._st.breed, function(name)
 		if self._is_enemies then
-			self:_select_node("breed", name) -- switches to the breed's type chip
+			self:_select_node("breed", name)
 		else
 			self:_set_subject(name)
 		end
@@ -732,7 +732,6 @@ end
 
 View.cb_chip = function(self, i)
 	self:_touch()
-	-- on the Enemies page a click always (re)selects the chip's type node
 	if self._subs[i] and (i ~= self._sub or self._is_enemies) then
 		self:_set_sub(i)
 	end

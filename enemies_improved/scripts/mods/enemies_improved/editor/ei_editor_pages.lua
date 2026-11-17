@@ -496,7 +496,8 @@ PAGE.outlines = function(B, S)
 	end
 	B.sub("ei_sec_tag_colours")
 	B.settings({
-		"outlines_style", "outline_tagged_enable", "outline_tagged_colour_rgb", "outline_tagged_passive_enable",
+		"outlines_style", --"outline_weakspot_enable", "outline_weakspot_colour_rgb",
+		"outline_tagged_enable", "outline_tagged_colour_rgb", "outline_tagged_passive_enable",
 		"outline_tagged_passive_colour_rgb", "outline_companion_enable", "outline_companion_colour_rgb",
 		"outline_veteran_tagged_enable", "outline_veteran_tagged_colour_rgb",
 		"outline_special_target_enable", "outline_special_target_colour_rgb",

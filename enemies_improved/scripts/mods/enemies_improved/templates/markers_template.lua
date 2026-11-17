@@ -634,7 +634,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 		line_of_sight_progress = 1
 	end
 
-	-- colours still get read fresh every update so setting changes apply straight away
 	local bar_color = mod.BREED_COLOURS and mod.BREED_COLOURS[content.breed_type]
 		or mod.BREED_COLOURS and mod.BREED_COLOURS.melee_horde
 		or { 255, 255, 0, 0 }
@@ -645,7 +644,6 @@ template.update_function = function(parent, ui_renderer, widget, marker, templat
 	if enemy_individual then
 		local breed_settings = content.breed_settings
 		if breed_settings then
-			-- the tags never change, so only work out the category once per marker
 			local individual_breed_type = content._ei_ind_breed_type
 
 			if individual_breed_type == nil then

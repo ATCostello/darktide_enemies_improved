@@ -25,7 +25,7 @@ local os_clock = os.clock
 
 -- debug mode toggle!!!
 mod.DEBUG = false
-
+dbg_ei = mod
 if mod.DEBUG then
 	dbg_mod = mod
 end
@@ -501,9 +501,6 @@ end
 
 local fs = mod.frame_settings
 
------------------------------------------------------------------------
--- preload resources + reset caches on game state change
------------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
 	local pkg = Managers.package
 
@@ -567,6 +564,10 @@ end
 mod.on_disabled = function()
 	if mod.editor then
 		mod.editor.close_all()
+	end
+
+	if mod.clear_all_weakspot_outlines then
+		mod.clear_all_weakspot_outlines()
 	end
 end
 
@@ -781,6 +782,10 @@ mod:hook_safe(CLASS.HudElementWorldMarkers, "update", function(self, dt, t)
 			mod.update_enemies(elapsed, t)
 		end
 
+		if mod.draw_weakspot_markers then
+			mod.draw_weakspot_markers()
+		end
+
 		local has_specials = fs.outline_specials_enable or fs.marker_specials_enable or fs.healthbar_specials_enable
 
 		local stagger_horde = fs.outline_stagger_horde_enable
@@ -991,6 +996,10 @@ mod.force_remove_unit_markers = function(unit)
 
 	if mod.hit_positions then
 		mod.hit_positions[unit] = nil
+	end
+
+	if entry and mod.hide_weakspot_outline then
+		mod.hide_weakspot_outline(entry)
 	end
 
 	local cluster = mod.get_horde_cluster_for_unit(unit)
@@ -1979,6 +1988,10 @@ end
 mod.clear_caches = function()
 	mod.remove_all_ei_markers()
 
+	if mod.clear_all_weakspot_outlines then
+		mod.clear_all_weakspot_outlines()
+	end
+
 	table_clear(mod._broadphase_results)
 	table_clear(mod.source_unit_cache)
 	table_clear(mod.enemy_markers)
@@ -2235,6 +2248,7 @@ mod.update_enemies = function(dt, t)
 	local breed_dist_value = fs.breed_dist_value
 
 	local outlines_enable = fs.outlines_enable
+	local weakspot_outlines_enable = fs.outline_weakspot_enable
 	local healthbars_enable = fs.healthbar_enable or fs.show_damage_numbers
 	local debuffs_enable = fs.debuff_enable
 	local markers_enable = fs.markers_enable
@@ -2242,6 +2256,7 @@ mod.update_enemies = function(dt, t)
 
 	local update_markers = mod.update_enemy_markers
 	local update_outlines = mod.update_enemy_outlines
+	local update_weakspot_outlines = mod.update_weakspot_outlines
 	local update_healthbars = mod.update_enemy_healthbars
 	local update_debuffs = mod.update_enemy_debuffs
 	local update_special = mod.update_special_attack_detection
@@ -2315,6 +2330,11 @@ mod.update_enemies = function(dt, t)
 								_refresh_outline_tracking(entry)
 							end
 
+							--[[
+							if weakspot_outlines_enable then
+								update_weakspot_outlines(entry)
+							end]]
+
 							if healthbars_enable then
 								update_healthbars(entry, t)
 							end
@@ -2337,6 +2357,11 @@ mod.update_enemies = function(dt, t)
 						update_outlines(entry, player_unit)
 						_refresh_outline_tracking(entry)
 					end
+
+					--[[
+					if weakspot_outlines_enable then
+						update_weakspot_outlines(entry)
+					end]]
 
 					if healthbars_enable then
 						update_healthbars(entry, t)
@@ -2468,7 +2493,6 @@ mod.find_breed_category = function(unit, breed)
 	return "enemy"
 end
 
--- Returns true if the unit is a weakened boss (spawned with reduced max health).
 mod.is_weakened = function(unit, breed)
 	local breed = breed or mod.get_unit_breed(unit)
 
@@ -2527,7 +2551,6 @@ end
 
 local DEBUFF_CACHE_TTL = 0.2
 
--- Returns true if the unit currently has any active debuff tracked by the mod
 mod.unit_has_active_debuff = function(unit, t)
 	local debuffs = mod.debuffs
 

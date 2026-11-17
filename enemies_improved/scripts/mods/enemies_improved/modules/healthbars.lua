@@ -117,7 +117,6 @@ mod.update_enemy_healthbars = function(entry, t)
 		return
 	end
 
-	-- Only block if ACTUALLY dead
 	if marked_dead[unit] and not mod.detect_alive(unit) then
 		return
 	end

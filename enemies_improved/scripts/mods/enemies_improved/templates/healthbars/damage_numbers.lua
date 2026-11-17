@@ -5,6 +5,8 @@ local UIRenderer = require("scripts/managers/ui/ui_renderer")
 local template = {}
 local damage_number_types = table.enum("readable", "floating", "flashy")
 
+local FALLBACK_Y_OFFSET = 14
+
 -----------------------------------------------------------------------
 -- Cached locals / helpers
 -----------------------------------------------------------------------
@@ -109,7 +111,7 @@ local function _flashy_damage_number_function(
 			start_x = x_position + (hit_w2s[1] - marker_w2s[1]) * inv_scale
 			start_y = y_position + (hit_w2s[2] - marker_w2s[2]) * inv_scale + hb_off_y
 		else
-			start_y = y_position + hb_off_y
+			start_y = y_position + hb_off_y + FALLBACK_Y_OFFSET * (ui_content.scale or 1)
 		end
 
 		local duration = damage_number.duration / 2
@@ -328,7 +330,7 @@ local function _floating_damage_number_function(
 			start_x = x_position + (hit_w2s[1] - marker_w2s[1]) * inv_scale
 			start_y = y_position + (hit_w2s[2] - marker_w2s[2]) * inv_scale
 		else
-			start_y = y_position + hb_off_y
+			start_y = y_position + hb_off_y + FALLBACK_Y_OFFSET * (ui_content.scale or 1)
 		end
 
 		position[3] = z_position + current_order * 2
@@ -628,10 +630,9 @@ local _readable_damage_number_function = function(pass, ui_renderer, ui_style, u
 			default_color = fs.toughness_colour
 		end
 
-		-- reuse same table reference
 		local text_color = ui_style.text_color
 
-		local hb_off_y = (100 * fs.damage_number_y_offset) * (ui_content.scale or 1)
+		local hb_off_y = (100 * fs.damage_number_y_offset + FALLBACK_Y_OFFSET) * (ui_content.scale or 1)
 		local num_damage_numbers = #damage_numbers
 		local z_position = position[3]
 		local y_position = position[2] + hb_off_y

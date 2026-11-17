@@ -103,8 +103,6 @@ local migrate_override_value = function(setting_name)
 	end
 end
 
--- The old single "horde" group was split into "melee_horde" and "ranged_horde". Copy any
--- existing _horde_ group override onto both new groups, then drop the stale key.
 local migrate_horde_group_overrides = function()
 	for setting_name in next, enemy_type_settings do
 		if setting_name ~= "reset_type_to_default" and string_find(setting_name, "_type_", 1, true) then
@@ -168,8 +166,6 @@ mod.migrate_override_settings = function()
 		end
 	end
 
-	-- the text alignment dropdown used to store "middle", which is not a valid engine
-	-- alignment (the engine only understands "center"). Normalise any legacy value.
 	if mod:get("hb_text_alignment") == "middle" then
 		mod:set("hb_text_alignment", "center")
 	end
@@ -866,6 +862,14 @@ mod._on_setting_changed_impl = function(setting_id)
 		local outline_settings = require("scripts/settings/outline/outline_settings")
 		mod.apply_enemy_outlines(outline_settings)
 		mod.remove_all_enemy_outlines()
+	end
+
+	if setting_id and string_find(setting_id, "outline_weakspot") then
+		mod.build_frame_settings()
+
+		if mod.clear_all_weakspot_outlines then
+			mod.clear_all_weakspot_outlines()
+		end
 	end
 
 	-- update breed settings

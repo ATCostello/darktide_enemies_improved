@@ -859,7 +859,11 @@ function Preview:_outline_colour(fs)
 	then
 		local c = fs.outline_specials_colour
 
-		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		if c and c[1] and c[2] and c[3] and c[4] then
+			return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		else
+			return 255, 255, 255
+		end
 	end
 
 	local stagger_enabled
@@ -873,13 +877,21 @@ function Preview:_outline_colour(fs)
 	if flags.stagger and stagger_enabled and pulse_on(time, fs.stagger_flash, fs.stagger_pulse_speed) then
 		local c = fs.outline_stagger_colour
 
-		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		if c and c[1] and c[2] and c[3] and c[4] then
+			return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		else
+			return 255, 255, 255
+		end
 	end
 
 	if flags.tagged then
 		local c = self._tag_rgb
 
-		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		if c and c[1] and c[2] and c[3] and c[4] then
+			return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		else
+			return 255, 255, 255
+		end
 	end
 
 	local outline = self._res and self._res.outline
@@ -887,7 +899,11 @@ function Preview:_outline_colour(fs)
 	if outline and outline.on and outline.rgb then
 		local c = outline.rgb
 
-		return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		if c and c[1] and c[2] and c[3] and c[4] then
+			return c[2] * (c[1] / 255), c[3] * (c[1] / 255), c[4] * (c[1] / 255)
+		else
+			return 255, 255, 255
+		end
 	end
 
 	return nil
@@ -1415,8 +1431,6 @@ function Preview:_relayout()
 	local by = res and res.bar and res.bar.y or 0
 	local frac
 
-	-- on-body debuff placement: the same projection as the HUD's camera path, from the 3D frame instead.
-	-- + = below the bar (the HUD's body-minus-bar screen delta, in reference units).
 	self._body_offset_y = nil
 
 	if ready then
@@ -1623,7 +1637,6 @@ function Preview:draw(dt, t, input_service, render_settings)
 		service = service:null_service()
 	end
 
-	-- an error inside UIWidget.draw leaves these changed: restore them
 	local alpha = render_settings.alpha_multiplier
 	local flags = render_settings.material_flags
 	local intensity = render_settings.color_intensity_multiplier
