@@ -164,12 +164,6 @@ mod.build_frame_settings = function(dt)
 
 	-- GENERAL
 	fs.outlines_enable = mod:get("outlines_enable")
-	fs.outline_weakspot_enable = mod:get("outline_weakspot_enable")
-	local wr = mod:get("outline_weakspot_colour_R")
-	local wg = mod:get("outline_weakspot_colour_G")
-	local wb = mod:get("outline_weakspot_colour_B")
-	local wa = mod:get("outline_weakspot_colour_A")
-	fs.outline_weakspot_colour = ensure_array(fs.outline_weakspot_colour, wa or 255, wr or 255, wg or 80, wb or 220)
 	fs.text_scale = mod:get("text_scale") * fs.global_scale
 	fs.font_type = mod:get("font_type")
 	fs.check_line_of_sight = true

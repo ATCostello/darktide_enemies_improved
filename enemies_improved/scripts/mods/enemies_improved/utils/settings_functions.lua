@@ -230,7 +230,7 @@ mod.reset_all_overrides = function()
 
 	local reset_message = mod.custom_localize("reset_all_to_default_message") or ""
 	mod:notify(reset_message)
-	
+
 	mod.init_healthbar_defaults()
 
 	for setting_name in next, enemy_type_settings do
@@ -862,14 +862,6 @@ mod._on_setting_changed_impl = function(setting_id)
 		local outline_settings = require("scripts/settings/outline/outline_settings")
 		mod.apply_enemy_outlines(outline_settings)
 		mod.remove_all_enemy_outlines()
-	end
-
-	if setting_id and string_find(setting_id, "outline_weakspot") then
-		mod.build_frame_settings()
-
-		if mod.clear_all_weakspot_outlines then
-			mod.clear_all_weakspot_outlines()
-		end
 	end
 
 	-- update breed settings
