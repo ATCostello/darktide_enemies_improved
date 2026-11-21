@@ -925,7 +925,7 @@ mod.get_marker_by_id = function(id)
 	if not markers_by_id then
 		local ui_manager = Managers.ui
 		local hud = ui_manager and ui_manager:get_hud()
-		local world_markers = hud and hud:element("HudElementWorldMarkers")
+		local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 		markers_by_id = world_markers and world_markers._markers_by_id
 	end
 
@@ -1012,7 +1012,7 @@ end
 mod.remove_all_ei_markers = function()
 	local ui_manager = Managers.ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 	if not world_markers then
 		return
 	end
@@ -2041,7 +2041,7 @@ end
 mod.do_aim_raycast = function(candidates, candidate_count)
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	if not world_markers then
 		return
@@ -2247,7 +2247,7 @@ mod.update_enemies = function(dt, t)
 	local get_position = Unit.world_position
 
 	local hud = Managers_ui and Managers_ui:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	mod._markers_by_id = world_markers and world_markers._markers_by_id
 

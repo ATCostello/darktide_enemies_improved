@@ -1079,7 +1079,7 @@ end
 local function get_initial_distance_scale(marker, template)
 	local distance = marker.distance
 	local hud = Managers.ui and Managers.ui:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	if not distance and world_markers then
 		local camera = world_markers._get_camera and world_markers:_get_camera()

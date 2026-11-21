@@ -471,7 +471,7 @@ end
 mod.get_camera_forward = function()
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 	if not world_markers then
 		return nil
 	end
