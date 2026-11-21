@@ -1,5 +1,5 @@
 local mod = get_mod("enemies_improved")
-mod.version = "3.1.4NE"
+mod.version = "3.1.5NE"
 mod:info("Enemies Improved is installed, using version: " .. tostring(mod.version))
 
 local next = next
@@ -93,14 +93,13 @@ local insert_fonts = function(localisation_table)
 
 		local new_localised_readable_text = {
 			en = apply_font_to_text(text, data.value),
-			ru = apply_font_to_text(text, data.value), -- одинаково для всех языков
+			ru = apply_font_to_text(text, data.value),
 			["zh-cn"] = apply_font_to_text(text, data.value),
 		}
 		localisation_table[data.value] = new_localised_readable_text
 	end
 end
 
--- Get all enemy names from breeds, to allow specific enemy colour changes.
 local Breeds = require("scripts/settings/breed/breeds")
 local BreedQueries = require("scripts/utilities/breed_queries")
 local minion_breeds = BreedQueries.minion_breeds_by_name()
@@ -796,7 +795,6 @@ table.insert(localisations_to_add, {
 		ru = "ВЫБЕРИТЕ ТИП ВРАГА",
 		["zh-cn"] = "选择敌人类型",
 	},
-	-- New Vanguard breed display names (added as safety net for breed localization)
 	loc_breed_display_name_cultist_vanguard = {
 		en = "Cultist Vanguard",
 		ru = "Авангард культа",
@@ -1184,6 +1182,47 @@ table.insert(localisations_to_add, {
 		en = "Colour for special target outlines.",
 		ru = "Colour for special target outlines.",
 		["zh-cn"] = "Colour for special target outlines.",
+	},
+
+	outline_weakspot_enable = {
+		en = "Outline enemy weakspots",
+		ru = "Контур уязвимых мест врагов",
+		["zh-cn"] = "勾勒敌人弱点轮廓",
+	},
+	outline_weakspot_enable_tooltip = {
+		en = "Highlights only the weakspot area (usually the head) in a separate colour, on top of any other outline. Enemies whose weakspot geometry is part of the body mesh are marked with a wire sphere instead.\n\nThis is independent of the global outline toggle.",
+		ru = "Подсвечивает только уязвимое место (обычно голову) отдельным цветом поверх любого другого контура. Если геометрия уязвимого места входит в состав тела, вместо контура отображается каркасная сфера.\n\nНе зависит от глобального переключателя контуров.",
+		["zh-cn"] = "以独立颜色仅高亮弱点区域（通常是头部），并显示在其他轮廓之上。若弱点与身体模型一体，则显示线框球体。\n\n此选项独立于全局轮廓开关。",
+	},
+	outline_weakspot_colour = {
+		en = "Weakspot outline colour",
+		ru = "Цвет контура уязвимых мест",
+		["zh-cn"] = "弱点轮廓颜色",
+	},
+	outline_weakspot_colour_tooltip = {
+		en = "Colour used for the weakspot outline or marker.",
+		ru = "Цвет контура или метки уязвимого места.",
+		["zh-cn"] = "弱点轮廓或标记的颜色。",
+	},
+	outline_weakspot_colour_A = {
+		en = "Weakspot outline: Alpha",
+		ru = "Контур уязвимых мест: прозрачность",
+		["zh-cn"] = "弱点轮廓：透明度",
+	},
+	outline_weakspot_colour_R = {
+		en = "Weakspot outline: Red",
+		ru = "Контур уязвимых мест: красный",
+		["zh-cn"] = "弱点轮廓：红色",
+	},
+	outline_weakspot_colour_G = {
+		en = "Weakspot outline: Green",
+		ru = "Контур уязвимых мест: зелёный",
+		["zh-cn"] = "弱点轮廓：绿色",
+	},
+	outline_weakspot_colour_B = {
+		en = "Weakspot outline: Blue",
+		ru = "Контур уязвимых мест: синий",
+		["zh-cn"] = "弱点轮廓：蓝色",
 	},
 
 	outline_psyker_marked_enable = {
@@ -3405,7 +3444,6 @@ table.insert(localisations_to_add, {
 	},
 })
 
--- enemy individual overrides localisations
 table.insert(localisations_to_add, {
 	["SELECT ENEMY"] = {
 		en = "SELECT AN ENEMY",
@@ -3840,7 +3878,6 @@ table.insert(localisations_to_add, {
 	},
 })
 
--- colour picker (_rgb) labels missing from above groups
 table.insert(localisations_to_add, {
 	debuff_group_colour_rgb = {
 		en = "Debuff Icon Colour",
@@ -4568,6 +4605,11 @@ local insert_editor_localisation = function(localisation_table)
 			["zh-cn"] = "Spillway Void Shield Outline Colour",
 		},
 
+		outline_weakspot_colour_rgb = {
+			en = "Weakspot Outline Colour",
+			ru = "Цвет контура уязвимых мест",
+			["zh-cn"] = "弱点轮廓颜色",
+		},
 		outline_specials_colour_rgb = {
 			en = "Special Attack Colour",
 			ru = "Цвет специальных атак",
@@ -4593,7 +4635,6 @@ end
 
 local apply_colours = function()
 	for key, values in next, mod.localisation do
-		-- apply rgb colours
 		if
 			string.find(key, "colour")
 			and not string.find(key, "colour_R")
@@ -4615,14 +4656,11 @@ local apply_colours = function()
 			end
 		end
 
-		-- adjust tooltip text opacity
 		if string.find(key, "_tooltip") then
 			for language, text in next, values do
 				local rgb = { 144, 155, 136 }
 
 				if rgb ~= nil then
-					-- Strip any colour tags applied by a previous pass, otherwise every
-					-- call wraps the already-wrapped string again and grows it forever.
 					local clean = string.gsub(text, "{#.-}", "")
 					local text = apply_color_to_text(clean, rgb[1], rgb[2], rgb[3])
 

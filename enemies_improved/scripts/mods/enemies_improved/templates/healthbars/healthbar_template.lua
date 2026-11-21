@@ -104,7 +104,7 @@ template.damage_number_settings = {
 	default_color = "white",
 	default_font_size = 16 * fs.text_scale,
 	dps_font_size = 22 * fs.text_scale,
-	dps_y_offset = -125,
+	dps_y_offset = -139,
 	duration = fs.damage_number_duration,
 	expand_bonus_scale = 4,
 	expand_duration = 0.2,
@@ -1079,7 +1079,7 @@ end
 local function get_initial_distance_scale(marker, template)
 	local distance = marker.distance
 	local hud = Managers.ui and Managers.ui:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	if not distance and world_markers then
 		local camera = world_markers._get_camera and world_markers:_get_camera()

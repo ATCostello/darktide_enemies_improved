@@ -577,7 +577,6 @@ local function update_debuff_display(dt, t, widget)
 		local debuff = active[i]
 
 		if debuff then
-			-- Update icon sizes at runtime so boss_debuff_icon_size takes effect
 			if icon_style then
 				icon_style.size[1] = base_icon
 				icon_style.size[2] = base_icon
@@ -870,7 +869,6 @@ local get_y_offset = function(widget)
 	if not health_widget then
 		return y_offset
 	else
-		-- increase offsets based on row to fit our boss debuffs better
 		local base_amount = 40
 		if has_toughness then
 			if
@@ -886,7 +884,6 @@ local get_y_offset = function(widget)
 
 		local increase_amount = base_amount
 
-		-- calculate which row this widget is on
 		if row_offsets then
 			for i = 1, #row_offsets do
 				if health_widget.offset[2] == row_offsets[i] then
@@ -895,7 +892,6 @@ local get_y_offset = function(widget)
 			end
 		end
 
-		-- increase offsets
 		for widget_name, w in pairs(widget) do
 			for style_name, style in pairs(w.style) do
 				if not style.default_offset then
@@ -1008,7 +1004,6 @@ mod:hook_safe("HudElementBossHealth", "event_boss_encounter_end", function(self,
 		return
 	end
 
-	-- Determine which widget groups are still occupied by surviving bosses
 	local active_targets_array = self._active_targets_array or {}
 	local num_active = #active_targets_array
 	local occupied = {}
@@ -1018,7 +1013,6 @@ mod:hook_safe("HudElementBossHealth", "event_boss_encounter_end", function(self,
 		occupied[idx] = true
 	end
 
-	-- Clear only the unoccupied group(s) (the dying boss's group)
 	for i = 1, #widget_groups do
 		if not occupied[i] then
 			local widget = widget_groups[i] and widget_groups[i].boss_debuff

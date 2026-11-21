@@ -25,7 +25,7 @@ local os_clock = os.clock
 
 -- debug mode toggle!!!
 mod.DEBUG = false
-
+dbg_ei = mod
 if mod.DEBUG then
 	dbg_mod = mod
 end
@@ -501,9 +501,6 @@ end
 
 local fs = mod.frame_settings
 
------------------------------------------------------------------------
--- preload resources + reset caches on game state change
------------------------------------------------------------------------
 mod.on_game_state_changed = function(state, state_name)
 	local pkg = Managers.package
 
@@ -927,7 +924,7 @@ mod.get_marker_by_id = function(id)
 	if not markers_by_id then
 		local ui_manager = Managers.ui
 		local hud = ui_manager and ui_manager:get_hud()
-		local world_markers = hud and hud:element("HudElementWorldMarkers")
+		local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 		markers_by_id = world_markers and world_markers._markers_by_id
 	end
 
@@ -1014,7 +1011,7 @@ end
 mod.remove_all_ei_markers = function()
 	local ui_manager = Managers.ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 	if not world_markers then
 		return
 	end
@@ -2043,7 +2040,7 @@ end
 mod.do_aim_raycast = function(candidates, candidate_count)
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	if not world_markers then
 		return
@@ -2249,7 +2246,7 @@ mod.update_enemies = function(dt, t)
 	local get_position = Unit.world_position
 
 	local hud = Managers_ui and Managers_ui:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 
 	mod._markers_by_id = world_markers and world_markers._markers_by_id
 
@@ -2467,7 +2464,6 @@ mod.find_breed_category = function(unit, breed)
 	return "enemy"
 end
 
--- Returns true if the unit is a weakened boss (spawned with reduced max health).
 mod.is_weakened = function(unit, breed)
 	local breed = breed or mod.get_unit_breed(unit)
 
@@ -2526,7 +2522,6 @@ end
 
 local DEBUFF_CACHE_TTL = 0.2
 
--- Returns true if the unit currently has any active debuff tracked by the mod
 mod.unit_has_active_debuff = function(unit, t)
 	local debuffs = mod.debuffs
 

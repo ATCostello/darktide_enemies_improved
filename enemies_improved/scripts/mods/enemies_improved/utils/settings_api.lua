@@ -1159,7 +1159,7 @@ function S.resolve(breed_name)
 	local force_state = S.ov_get("breed", breed_name, "bar_force")
 	local type_state = S.ov_get("type", breed_type, "bar_on")
 	local effective = force_state ~= nil and force_state or type_state
-	local forced_on = effective == true -- a real "force on" also beats the horde gate
+	local forced_on = effective == true
 	local horde_blocked = effective ~= true
 		and is_horde
 		and not (S.get("hb_horde_enable") or S.get("hb_horde_clusters_enable"))

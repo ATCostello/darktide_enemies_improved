@@ -94,8 +94,6 @@ mod.debuff_styles = {
 	},
 }
 
--- pristine group colours: load_debuff_colours overwrites mod.debuff_styles[group].colour from the
--- saved channels, so the editor's reset / "is default" needs the values from before any of that
 mod.debuff_style_default_colours = {}
 
 for group, style in next, mod.debuff_styles do
@@ -1067,6 +1065,47 @@ table.insert(mod.settings_widgets, {
 			default_value = true,
 			tooltip = "outlines_enable_tooltip",
 		},
+		--[[{
+			setting_id = "outline_weakspot_enable",
+			type = "checkbox",
+			default_value = false,
+			tooltip = "outline_weakspot_enable_tooltip",
+		},
+		{
+			setting_id = "outline_weakspot_colour",
+			type = "group",
+			tooltip = "outline_weakspot_colour_tooltip",
+			sub_widgets = {
+				{
+					setting_id = "outline_weakspot_colour_A",
+					type = "numeric",
+					default_value = 255,
+					range = { 0, 255 },
+					tooltip = "outline_weakspot_colour_tooltip",
+				},
+				{
+					setting_id = "outline_weakspot_colour_R",
+					type = "numeric",
+					default_value = 255,
+					range = { 0, 255 },
+					tooltip = "outline_weakspot_colour_tooltip",
+				},
+				{
+					setting_id = "outline_weakspot_colour_G",
+					type = "numeric",
+					default_value = 80,
+					range = { 0, 255 },
+					tooltip = "outline_weakspot_colour_tooltip",
+				},
+				{
+					setting_id = "outline_weakspot_colour_B",
+					type = "numeric",
+					default_value = 220,
+					range = { 0, 255 },
+					tooltip = "outline_weakspot_colour_tooltip",
+				},
+			},
+		},]]
 		{
 			setting_id = "outline_tagged_enable",
 			type = "checkbox",

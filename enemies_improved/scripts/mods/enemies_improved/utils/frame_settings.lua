@@ -19,14 +19,6 @@ local function ensure_array(t, i1, i2, i3, i4)
 	return t
 end
 
-local function ensure_array_indexed(t, i2, i3, i4)
-	if not t then
-		return { [2] = i2, [3] = i3, [4] = i4 }
-	end
-	t[2], t[3], t[4] = i2, i3, i4
-	return t
-end
-
 local function override_value(v, old_default)
 	if v == "true_override" or v == "false_override" or v == "dont_override" then
 		return v
@@ -378,11 +370,12 @@ mod.build_frame_settings = function(dt)
 	fs.specials_flash = mod:get("specials_flash")
 	fs.special_attack_pulse_speed = mod:get("special_attack_pulse_speed")
 
+	local spec_a = mod:get("outline_specials_colour_A")
 	local spec_r = mod:get("outline_specials_colour_R")
 	local spec_g = mod:get("outline_specials_colour_G")
 	local spec_b = mod:get("outline_specials_colour_B")
 	fs.outline_specials_colour =
-		ensure_array_indexed(fs.outline_specials_colour, spec_r or 255, spec_g or 0, spec_b or 0)
+		ensure_array(fs.outline_specials_colour, spec_a or 255, spec_r or 255, spec_g or 0, spec_b or 0)
 
 	-- STAGGER SETTINGS
 	fs.debuff_stagger_enable = mod:get("debuff_stagger_enable")

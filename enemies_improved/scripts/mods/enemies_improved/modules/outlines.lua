@@ -1,7 +1,8 @@
 local mod = get_mod("enemies_improved")
 mod:io_dofile("enemies_improved/scripts/mods/enemies_improved/enemies_improved_localization")
 
--- Cache frequently used globals
+local HitZone = require("scripts/utilities/attack/hit_zone")
+
 local Managers = Managers
 local Unit = Unit
 local World = World
@@ -18,7 +19,6 @@ local Actor_unit = Actor.unit
 local ScriptUnit_has_extension = ScriptUnit.has_extension
 local Managers_ui = Managers.ui
 
--- Cached systems
 local _outline_system = nil
 local _outline_system_checked = false
 local _cached_physics_world = nil
@@ -26,7 +26,6 @@ local _physics_world_checked = false
 local _smart_tag_system = nil
 local _smart_tag_checked = false
 
--- the players head node never changes for a given player unit
 local _los_origin_unit = nil
 local _los_origin_node = nil
 local _los_origin_pos = Vector3.zero()
@@ -35,7 +34,6 @@ local _los_spine_pos = Vector3.zero()
 
 local fs = mod.frame_settings
 
--- Central priority table for all outlines (lower number = higher priority)
 local OUTLINE_PRIORITY = {
 	special_target = 3,
 	psyker_marked_target = 2,
@@ -124,14 +122,12 @@ end
 mod.add_outline = function(unit, outline, outline_system)
 	if unit and outline and outline_system and Unit.alive(unit) then
 		outline_system:add_outline(unit, outline)
-		-- Ensure custom colors are applied for psyker marked outlines
 		if outline == "psyker_marked_target" or outline == "enemies_improved_alert" or outline == "enemies_improved_staggered" or string.find(outline, "psyker") then
 			local ext = outline_system._unit_extension_data and outline_system._unit_extension_data[unit]
 			if ext and ext.outlines then
 				for i = 1, #ext.outlines do
 					local o = ext.outlines[i]
 					if o.name == outline and o.material_layers then
-						-- Force color update
 						local Unit_set_vector3_for_material = Unit.set_vector3_for_material
 						local Vector3_new = Vector3
 						for ii = 1, #o.material_layers do
@@ -475,7 +471,7 @@ end
 mod.get_camera_forward = function()
 	local ui_manager = Managers_ui
 	local hud = ui_manager and ui_manager:get_hud()
-	local world_markers = hud and hud:element("HudElementWorldMarkers")
+	local world_markers = hud and hud._elements and hud:element("HudElementWorldMarkers")
 	if not world_markers then
 		return nil
 	end
@@ -526,6 +522,22 @@ mod.get_forward_dot = function(player_unit, enemy_unit, forward)
 	local dot = forward.x * dx * inv_len + forward.y * dy * inv_len
 
 	return dot
+end
+
+local function reset_table(t)
+	for i = 1, #t do
+		t[i] = nil
+	end
+end
+
+local function table_contains(t, value)
+	for i = 1, #t do
+		if t[i] == value then
+			return true
+		end
+	end
+
+	return false
 end
 
 mod.update_enemy_outlines = function(entry, player_unit)
@@ -613,7 +625,6 @@ mod.default_outline_enabled = {
 	shield = false,
 }
 
--- some base game breeds are missing the use_outline tag on their gear slots, so the outline colour never reaches it
 local breeds_missing_outline_tag = {
 	cultist_ritualist = true,
 	cultist_assault = true,
@@ -634,7 +645,6 @@ local function fix_missing_outline_tag(unit, breed)
 	end
 
 	for slot_name, slot in pairs(visual_loadout_extension:inventory_slots()) do
-		-- only slots that spawned a unit, material override slots have none and the outline system errors on them
 		if slot.use_outline == nil and visual_loadout_extension:slot_unit(slot_name) then
 			slot.use_outline = true
 		end
@@ -853,8 +863,6 @@ mod.apply_enemy_outlines = function(settings)
 	}
 
 	-- VANILLA OUTLINE COLOUR OVERRIDES
-
-	-- Enable toggles for the vanilla outline overrides (default on)
 	local outline_override_toggles = {
 		"outline_tagged_enable",
 		"outline_tagged_passive_enable",
@@ -998,7 +1006,8 @@ mod.apply_enemy_outlines = function(settings)
 		settings.MinionOutlineExtension.psyker_marked_target = {
 			color = { tr / 255 * (ta / 255), tg / 255 * (ta / 255), tb / 255 * (ta / 255) },
 			material_layers = {
-				"minion_outline_psyker",
+				"minion_outline",
+				"minion_outline_reversed_depth",
 			},
 			priority = OUTLINE_PRIORITY.psyker_marked_target,
 			override_global_visibility = nil,
